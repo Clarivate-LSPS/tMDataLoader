@@ -1,0 +1,95 @@
+STUDY_ID	SUBJ_ID	SAMPLE_ID	Tissue Type	Cell Type	Disease	Age	Sex	"Time to Next Relapse, days"	"Time to Next Relapse, days (numerical value)"	Steroids and Immunomodulator	Cyclophosphamide	Treatment
+GSE15245	1371MS	GSM380715	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	32	Male	No Relapse (>1264)		>= 30 days after	>= 1 year after	No Treatment
+GSE15245	1174REB50	GSM380716	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	41	Male	No Relapse (>1264)		>= 30 days after	>= 1 year after	No Treatment
+GSE15245	1076COP48	GSM380717	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	48	Male	No Relapse (>1264)		>= 30 days after	>= 1 year after	No Treatment
+GSE15245	1009REB50	GSM380718	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	28	Male	No Relapse (>1264)		>= 30 days after	>= 1 year after	No Treatment
+GSE15245	975COP75	GSM380720	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	51	Female	No Relapse (>1264)		>= 30 days after	>= 1 year after	No Treatment
+GSE15245	967PMS	GSM380721	Blood	Peripheral Blood Mononuclear Cells	Clinically Isolated Syndrome	26	Male	No Relapse (>1264)		>= 30 days after	>= 1 year after	No Treatment
+GSE15245	767COP49	GSM380724	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	23	Female	No Relapse (>1264)		>= 30 days after	>= 1 year after	No Treatment
+GSE15245	698COP49	GSM380725	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	56	Female	No Relapse (>1264)		>= 30 days after	>= 1 year after	No Treatment
+GSE15245	626PMS	GSM380732	Blood	Peripheral Blood Mononuclear Cells	Clinically Isolated Syndrome	38	Male	No Relapse (>1264)		>= 30 days after	>= 1 year after	No Treatment
+GSE15245	526MS	GSM380733	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	55	Male	No Relapse (>1264)		>= 30 days after	>= 1 year after	No Treatment
+GSE15245	515AV56	GSM380734	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	32	Female	No Relapse (>1264)		>= 30 days after	>= 1 year after	No Treatment
+GSE15245	441PMS	GSM380738	Blood	Peripheral Blood Mononuclear Cells	Clinically Isolated Syndrome	28	Female	No Relapse (>1264)		>= 30 days after	>= 1 year after	No Treatment
+GSE15245	391BFER54	GSM380739	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	53	Male	No Relapse (>1264)		>= 30 days after	>= 1 year after	No Treatment
+GSE15245	383AV55	GSM380740	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	36	Female	No Relapse (>1264)		>= 30 days after	>= 1 year after	No Treatment
+GSE15245	333AV56	GSM380741	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	32	Female	No Relapse (>1264)		>= 30 days after	>= 1 year after	No Treatment
+GSE15245	83MS	GSM380743	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	30	Female	No Relapse (>1264)		>= 30 days after	>= 1 year after	No Treatment
+GSE15245	1308DMS	GSM380745	Blood	Peripheral Blood Mononuclear Cells	Clinically Isolated Syndrome	26	Female	44	44	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	4344DIAG73	GSM380746	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	23	Male	50	50	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	532COP47	GSM380747	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	55	Female	53	53	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	129DMS	GSM380748	Blood	Peripheral Blood Mononuclear Cells	Clinically Isolated Syndrome	42	Female	66	66	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	1493MS	GSM380749	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	25	Male	74	74	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	468DIAG73	GSM380750	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	23	Female	82	82	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	2580IVIG52	GSM380751	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	37	Female	83	83	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	1064COP48	GSM380752	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	48	Female	91	91	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	956DMS	GSM380753	Blood	Peripheral Blood Mononuclear Cells	Clinically Isolated Syndrome	29	Female	110	110	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	545MS	GSM380754	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	44	Male	120	120	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	1312DMS	GSM380755	Blood	Peripheral Blood Mononuclear Cells	Clinically Isolated Syndrome	25	Female	122	122	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	1206DMS	GSM380756	Blood	Peripheral Blood Mononuclear Cells	Clinically Isolated Syndrome	31	Female	131	131	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	970COP48	GSM380757	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	40	Female	133	133	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	950COP75	GSM380759	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	58	Female	146	146	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	341REB51	GSM380760	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	42	Female	178	178	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	2121IVIG52	GSM380762	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	22	Female	182	182	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	3094PR58	GSM380765	Blood	Peripheral Blood Mononuclear Cells	Clinically Isolated Syndrome	31	Female	215	215	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	1554IVIG52	GSM380766	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	33	Male	220	220	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	1210MS	GSM380767	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	45	Female	227	227	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	2771AV54	GSM380769	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	23	Female	266	266	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	785COP49	GSM380771	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	63	Female	306	306	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	186MS	GSM380773	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	33	Female	320	320	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	817COP47	GSM380774	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	51	Female	355	355	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	1187COP49	GSM380776	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	28	Male	358	358	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	1091REB50	GSM380778	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	44	Female	368	368	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	529MS	GSM380779	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	46	Female	416	416	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	2883AV55	GSM380781	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	30	Female	431	431	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	2586REB54	GSM380782	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	27	Female	448	448	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	2721PR58	GSM380783	Blood	Peripheral Blood Mononuclear Cells	Clinically Isolated Syndrome	31	Female	454	454	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	1612AV54	GSM380785	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	27	Male	542	542	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	310MS	GSM380787	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	18	Female	551	551	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	896COP49	GSM380788	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	57	Female	563	563	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	1727AV55	GSM380789	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	41	Female	627	627	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	551AV54	GSM380791	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	33	Female	676	676	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	826PMS	GSM380792	Blood	Peripheral Blood Mononuclear Cells	Clinically Isolated Syndrome	40	Female	692	692	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	1343AV55	GSM380793	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	45	Female	714	714	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	968DMS	GSM380795	Blood	Peripheral Blood Mononuclear Cells	Clinically Isolated Syndrome	27	Female	723	723	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	621COP47	GSM380796	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	26	Male	841	841	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	2309COP75	GSM380797	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	50	Male	857	857	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	1278IVIG53	GSM380798	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	51	Male	905	905	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	882COP48	GSM380799	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	52	Female	935	935	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	1401IVIG52	GSM380800	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	33	Female	954	954	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	1080AV56	GSM380801	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	29	Female	963	963	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	655PMS	GSM380802	Blood	Peripheral Blood Mononuclear Cells	Clinically Isolated Syndrome	34	Male	1071	1071	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	1306IVIG53	GSM380803	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	43	Male	1076	1076	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	1067PMS	GSM380804	Blood	Peripheral Blood Mononuclear Cells	Clinically Isolated Syndrome	19	Male	1131	1131	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	410AV54	GSM380805	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	35	Female	1194	1194	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	411AV54	GSM380806	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	47	Female	1239	1239	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	678MS	GSM380808	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	29	Female	1264	1264	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	996RMS	GSM380719	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	43	Female	No Relapse (>1264)		>= 30 days after	>= 1 year after	No Treatment
+GSE15245	939PMS	GSM380722	Blood	Peripheral Blood Mononuclear Cells	Clinically Isolated Syndrome	50	Female	No Relapse (>1264)		>= 30 days after	>= 1 year after	No Treatment
+GSE15245	911PMS	GSM380723	Blood	Peripheral Blood Mononuclear Cells	Clinically Isolated Syndrome	26	Female	No Relapse (>1264)		>= 30 days after	>= 1 year after	No Treatment
+GSE15245	682PMS	GSM380726	Blood	Peripheral Blood Mononuclear Cells	Clinically Isolated Syndrome	29	Female	No Relapse (>1264)		>= 30 days after	>= 1 year after	No Treatment
+GSE15245	670RMS	GSM380727	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	32	Female	No Relapse (>1264)		>= 30 days after	>= 1 year after	No Treatment
+GSE15245	667PMS	GSM380728	Blood	Peripheral Blood Mononuclear Cells	Clinically Isolated Syndrome	26	Male	No Relapse (>1264)		>= 30 days after	>= 1 year after	No Treatment
+GSE15245	665PMS	GSM380729	Blood	Peripheral Blood Mononuclear Cells	Clinically Isolated Syndrome	36	Female	No Relapse (>1264)		>= 30 days after	>= 1 year after	No Treatment
+GSE15245	658PMS	GSM380730	Blood	Peripheral Blood Mononuclear Cells	Clinically Isolated Syndrome	39	Male	No Relapse (>1264)		>= 30 days after	>= 1 year after	No Treatment
+GSE15245	642PMS	GSM380731	Blood	Peripheral Blood Mononuclear Cells	Clinically Isolated Syndrome	24	Male	No Relapse (>1264)		>= 30 days after	>= 1 year after	No Treatment
+GSE15245	511PMS	GSM380735	Blood	Peripheral Blood Mononuclear Cells	Clinically Isolated Syndrome	27	Female	No Relapse (>1264)		>= 30 days after	>= 1 year after	No Treatment
+GSE15245	459PMS	GSM380736	Blood	Peripheral Blood Mononuclear Cells	Clinically Isolated Syndrome	35	Male	No Relapse (>1264)		>= 30 days after	>= 1 year after	No Treatment
+GSE15245	452PMS	GSM380737	Blood	Peripheral Blood Mononuclear Cells	Clinically Isolated Syndrome	41	Female	No Relapse (>1264)		>= 30 days after	>= 1 year after	No Treatment
+GSE15245	170PMS	GSM380742	Blood	Peripheral Blood Mononuclear Cells	Clinically Isolated Syndrome	54	Female	No Relapse (>1264)		>= 30 days after	>= 1 year after	No Treatment
+GSE15245	55PMS	GSM380744	Blood	Peripheral Blood Mononuclear Cells	Clinically Isolated Syndrome	25	Male	No Relapse (>1264)		>= 30 days after	>= 1 year after	No Treatment
+GSE15245	160PMS	GSM380758	Blood	Peripheral Blood Mononuclear Cells	Clinically Isolated Syndrome	52	Female	141	141	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	518RMS	GSM380761	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	41	Female	179	179	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	568RMS	GSM380763	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	39	Male	183	183	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	458PMS	GSM380764	Blood	Peripheral Blood Mononuclear Cells	Clinically Isolated Syndrome	24	Male	214	214	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	946RMS	GSM380768	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	46	Female	236	236	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	781RMS	GSM380770	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	29	Male	268	268	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	457PMS	GSM380772	Blood	Peripheral Blood Mononuclear Cells	Clinically Isolated Syndrome	42	Female	314	314	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	807RMS	GSM380775	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	31	Male	356	356	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	778RMS	GSM380777	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	26	Female	360	360	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	857RMS	GSM380780	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	19	Male	426	426	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	679RMS	GSM380784	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	41	Female	470	470	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	563PMS	GSM380786	Blood	Peripheral Blood Mononuclear Cells	Clinically Isolated Syndrome	22	Male	545	545	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	605PMS	GSM380790	Blood	Peripheral Blood Mononuclear Cells	Clinically Isolated Syndrome	41	Male	656	656	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	871RMS	GSM380794	Blood	Peripheral Blood Mononuclear Cells	Multiple Sclerosis	37	Male	721	721	>= 30 days after	>= 1 year after	No Treatment
+GSE15245	450PMS	GSM380807	Blood	Peripheral Blood Mononuclear Cells	Clinically Isolated Syndrome	33	Male	1258	1258	>= 30 days after	>= 1 year after	No Treatment

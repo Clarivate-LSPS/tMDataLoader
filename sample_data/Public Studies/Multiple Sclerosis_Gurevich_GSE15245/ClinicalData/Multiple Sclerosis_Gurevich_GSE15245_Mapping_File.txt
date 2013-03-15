@@ -1,0 +1,14 @@
+filename	category_cd	col_nbr	data_label			
+Multiple Sclerosis_Gurevich_GSE15245.txt		1	STUDY_ID			
+Multiple Sclerosis_Gurevich_GSE15245.txt		2	SUBJ_ID			
+Multiple Sclerosis_Gurevich_GSE15245.txt		3	OMIT			
+Multiple Sclerosis_Gurevich_GSE15245.txt	Samples_and_Timepoints	4	Tissue Type			
+Multiple Sclerosis_Gurevich_GSE15245.txt	Samples_and_Timepoints	5	Cell Type			
+Multiple Sclerosis_Gurevich_GSE15245.txt	Subjects+Medical_History	6	Disease			
+Multiple Sclerosis_Gurevich_GSE15245.txt	Subjects+Demographics	7	Age			
+Multiple Sclerosis_Gurevich_GSE15245.txt	Subjects+Demographics	8	Sex			
+Multiple Sclerosis_Gurevich_GSE15245.txt	Clinical_Data	9	"Time to Next Relapse, days"			
+Multiple Sclerosis_Gurevich_GSE15245.txt	Clinical_Data	10	"Time to Next Relapse, days (numerical value)"			
+Multiple Sclerosis_Gurevich_GSE15245.txt	Subjects+Medical_History+Prior_Treatment	11	Steroids and Immunomodulator			
+Multiple Sclerosis_Gurevich_GSE15245.txt	Subjects+Medical_History+Prior_Treatment	12	Cyclophosphamide			
+Multiple Sclerosis_Gurevich_GSE15245.txt	Treatment_Groups	13	Treatment			

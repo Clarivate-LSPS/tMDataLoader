@@ -1,0 +1,11 @@
+filename	category_cd	col_nbr	data_label										
+Inflammatory Bowel Disease_Burczynski_GSE3365.txt		1	STUDY_ID										
+Inflammatory Bowel Disease_Burczynski_GSE3365.txt		2	SUBJ_ID										
+Inflammatory Bowel Disease_Burczynski_GSE3365.txt		3	OMIT										
+Inflammatory Bowel Disease_Burczynski_GSE3365.txt	Samples_and_Timepoints	4	Tissue Type										
+Inflammatory Bowel Disease_Burczynski_GSE3365.txt	Samples_and_Timepoints	5	Cell Type										
+Inflammatory Bowel Disease_Burczynski_GSE3365.txt	Subjects+Medical_History	6	Disease										
+Inflammatory Bowel Disease_Burczynski_GSE3365.txt	Study_Groups	7	Study Groups										
+Inflammatory Bowel Disease_Burczynski_GSE3365.txt	Subjects+Demographics	8	Age										
+Inflammatory Bowel Disease_Burczynski_GSE3365.txt	Subjects+Demographics	9	Race										
+Inflammatory Bowel Disease_Burczynski_GSE3365.txt	Subjects+Demographics	10	Sex										
