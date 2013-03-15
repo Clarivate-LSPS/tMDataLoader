@@ -20,22 +20,22 @@ PREPARING DATA FOR UPLOAD
 First, you need to put studies you want to upload in the corresponding directory on the machine, that you specified in the configuration file.
 It should have the following structure (below is just an example):
 
-YOUR_ETL_DIRECTORY
-	Public Studies <-- put public studies here
-		Multiple Sclerosis_Baranzini_GSE13732
-			ClinicalData
-			ExpressionData
-			MetaData
-		Multiple Sclerosis_Goertsches_GSE24427
-			ClinicalDataToUpload <-- both ClinicalData and ClinicalDataToUpload are fine
-			ExpressionDataToUpload <-- same for this one
-			MetaDataToUpload <-- same for this one
-	Internal Studies <-- put internal studies here
-		MyStudy
-			ClinicalData
-			ExpressionData
-			MetaData
-	_MetaData <-- you can put metadata here if it contains metadata for several studies. Each .txt file will be processed.
+	YOUR_ETL_DIRECTORY
+		Public Studies <-- put public studies here
+			Multiple Sclerosis_Baranzini_GSE13732
+				ClinicalData
+				ExpressionData
+				MetaData
+			Multiple Sclerosis_Goertsches_GSE24427
+				ClinicalDataToUpload <-- both ClinicalData and ClinicalDataToUpload are fine
+				ExpressionDataToUpload <-- same for this one
+				MetaDataToUpload <-- same for this one
+		Internal Studies <-- put internal studies here
+			MyStudy
+				ClinicalData
+				ExpressionData
+				MetaData
+		_MetaData <-- you can put metadata here if it contains metadata for several studies. Each .txt file will be processed.
 			
 Basically, the first level of the directory defines the top category in the Dataset Explorer tree.
 The second level defines the study name that will be used in the tree.
