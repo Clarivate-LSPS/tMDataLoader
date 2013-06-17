@@ -30,9 +30,10 @@ class Logger {
 		config = conf
 	}
 	
-	private void timestamp(LogType ltype) {
+	private String timestamp(LogType ltype) {
 		def tm = new Date()
 		def str = String.format('%tm/%<td %<tT ', tm)
+		
 		switch (ltype) {
 			case LogType.DEBUG:
 				str += 'DBG '
@@ -48,13 +49,16 @@ class Logger {
 				str += 'MSG '
 		}
 		
-		print str
+		return str
 	}
 	
 	void log(LogType ltype, str) {
 		if (ltype != LogType.PROGRESS) {
-			timestamp(ltype)
-			println str
+			str = timestamp(ltype) + str
+			if (ltype == LogType.ERROR)
+				System.err.println(str)
+			else
+				println str
 		}
 		else if (config.isInteractiveMode)
 			print '\r'+str
