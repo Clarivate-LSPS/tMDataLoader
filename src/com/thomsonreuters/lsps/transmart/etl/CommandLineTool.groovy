@@ -26,7 +26,7 @@ class CommandLineTool {
 
 	static main(args) {
 		
-		def version = "0.5"
+		def version = "0.6"
 		
 		def cli = new CliBuilder(usage: 'tm_etl [options] [<data_dir>]')
 		cli.with {
@@ -36,8 +36,9 @@ class CommandLineTool {
 			n longOpt: 'no-rename', 'Don\'t rename folders when failed'
 			v longOpt: 'version', 'Display version information and exit'
 			t longOpt: 'use-t', 'Do not use Z datatype for T expression data (expert option)'
+			s longOpt: 'stop-on-fail', 'Stop when upload is failed'
 		}
-		
+		// TODO: implement stop-on-fail mode!
 		def opts = cli.parse(args)
 		
 		if (opts?.h) {
@@ -84,6 +85,11 @@ class CommandLineTool {
 		
 		if (opts?.n) config.isNoRenameOnFail = true
 		
+		if (opts?.s) {
+			config.stopOnFail = true
+			println ">>> WILL STOP ON FAIL"
+		}
+		
 		if (! config?.db?.jdbcConnectionString) {
 			println "Database connection is not specified\n"
 			return
@@ -103,7 +109,10 @@ class CommandLineTool {
 		config.logger.log("!!! TM_ETL VERSION ${version}")
 		
 		def processor = new DirectoryProcessor(config)
-		processor.process(dir)
+		if (! processor.process(dir)) {
+			config.logger.log(LogType.ERROR, "Stop-On-Fail is active, exiting with status 1")
+			System.exit(1)
+		}
 	}
 
 }

@@ -29,7 +29,7 @@ class DirectoryProcessor {
 		config = conf
 	}
 	
-	void process(dir) {
+	boolean process(dir) {
 		def d = new File(dir)
 		
 		config.logger.log("==== STARTED ====")
@@ -38,17 +38,22 @@ class DirectoryProcessor {
 		// looping through top nodes
 		d.eachDirMatch(~/[^\._].+/) {
 			def node = "\\${it.name}"
-			processStudies(it, node)
+			if (!processStudies(it, node) && config.stopOnFail) {
+				return false
+			}
 		}
 		
 		// looping through MetaData nodes (well, only one)
 		d.eachDirMatch(~/(?i)_MetaData/) { 
 			config.logger.log("=== PROCESSING ROOT METADATA FOLDER ===")
-			processMetaData(it)
+			if (!processMetaData(it) && config.stopOnFail) {
+				return false
+			}
 			config.logger.log("=== FINISHED PROCESSING ROOT METADATA FOLDER ===")
 		}
 		
 		config.logger.log("==== COMPLETED ====")
+		return true
 	}
 	
 	private boolean processMetaData(dir) {
@@ -82,9 +87,10 @@ class DirectoryProcessor {
 		return isAllSuccessful
 	}
 	
-	private void processStudies(d, String parentNode) {
+	private boolean processStudies(d, String parentNode) {
 		
 		config.logger.log("=== PROCESSING STUDIES IN ${parentNode} ===")
+		def isAllSuccessful = true
 		
 		d.eachDirMatch(~/(?!\.|_DONE_|_FAIL_|_DISABLED_).+/) {
 			// looping through studies
@@ -95,7 +101,7 @@ class DirectoryProcessor {
 			
 			def studyInfo = [ 'name': studyName, 'node': "${parentNode}\\${studyName}".toString() ]
 			
-			def isAllSuccessful = true
+			def isStudyUploadSuccessful = true
 			
 			// looking for clinical data first
 			def dataDir = new File(it, 'ClinicalData')
@@ -124,9 +130,11 @@ class DirectoryProcessor {
 				else {
 					if (! config.isNoRenameOnFail) 
 						dataDir.renameTo(new File(it, "_FAIL_${dataDir.name}"))
+						
+					if (config.stopOnFail) return false
 				}
 				
-				isAllSuccessful = isAllSuccessful && res
+				isStudyUploadSuccessful = isStudyUploadSuccessful && res
 			}
 			
 			// then expression data
@@ -156,9 +164,11 @@ class DirectoryProcessor {
 				else {
 					if (! config.isNoRenameOnFail)
 						dataDir.renameTo(new File(it, "_FAIL_${dataDir.name}"))
+
+					if (config.stopOnFail) return false
 				}
 				
-				isAllSuccessful = isAllSuccessful && res
+				isStudyUploadSuccessful = isStudyUploadSuccessful && res
 			}
 			
 			// then RBM data
@@ -188,9 +198,11 @@ class DirectoryProcessor {
 				else {
 					if (! config.isNoRenameOnFail)
 						dataDir.renameTo(new File(it, "_FAIL_${dataDir.name}"))
+					
+					if (config.stopOnFail) return false
 				}
 				
-				isAllSuccessful = isAllSuccessful && res
+				isStudyUploadSuccessful = isStudyUploadSuccessful && res
 			}
 			
 			// then metadata
@@ -212,20 +224,25 @@ class DirectoryProcessor {
 				else {
 					if (! config.isNoRenameOnFail)
 						dataDir.renameTo(new File(it, "_FAIL_${dataDir.name}"))
+						
+					if (config.stopOnFail) return false
 				}
 				
-				isAllSuccessful = isAllSuccessful && res
+				isStudyUploadSuccessful = isStudyUploadSuccessful && res
 			}
 			
-			if (isAllSuccessful) {
+			if (isStudyUploadSuccessful) {
 				it.renameTo(new File(d, "_DONE_${it.name}"))
 			}
 			else {
 				if (! config.isNoRenameOnFail)
 					it.renameTo(new File(d, "_FAIL_${it.name}"))
 			}
+			
+			isAllSuccessful = isAllSuccessful && isStudyUploadSuccessful
 		}
 		
 		config.logger.log("=== FINISHED PROCESSING ${parentNode} ===")
+		return isAllSuccessful
 	}
 }
