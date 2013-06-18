@@ -109,7 +109,7 @@ class CommandLineTool {
 		config.logger.log("!!! TM_ETL VERSION ${version}")
 		
 		def processor = new DirectoryProcessor(config)
-		if (! processor.process(dir)) {
+		if (! processor.process(dir) && config.stopOnFail) {
 			config.logger.log(LogType.ERROR, "Stop-On-Fail is active, exiting with status 1")
 			System.exit(1)
 		}
