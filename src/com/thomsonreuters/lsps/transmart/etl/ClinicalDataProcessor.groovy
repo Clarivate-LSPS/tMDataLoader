@@ -92,12 +92,29 @@ class ClinicalDataProcessor extends DataProcessor {
 								
 								if (fMappings['_DATA']) {
 									fMappings['_DATA'].each { 
-										k, v ->
+										v ->
 										
 										def out = output.clone()
-										out['data_label'] = fixColumn(k)
-										out['data_value'] = fixColumn( cols[v['COLUMN']] )		
-										out['category_cd'] = fixColumn(v['CATEGORY_CD'])		
+
+										out['data_value'] = fixColumn( cols[v['COLUMN']])
+										
+										if (v['DATA_LABEL_SOURCE'] > 0) {
+											// ok, the actual data label is in the referenced column
+											out['data_label'] = fixColumn( cols[v['DATA_LABEL_SOURCE']] )
+											// now need to modify CATEGORY_CD before proceeding
+											def cat_cd = v['CATEGORY_CD']
+											
+											if (v['DATA_LABEL_SOURCE_TYPE'] == 'A')
+												cat_cd = (cat_cd =~ /^(.+)\+([^\+]+?)$/).replaceFirst('$1+DATALABEL+$2')
+											else
+												cat_cd = cat_cd + '+DATALABEL'									
+											
+											out['category_cd'] = fixColumn(cat_cd)
+										}		
+										else {
+											out['category_cd'] = fixColumn(v['CATEGORY_CD'])		
+											out['data_label'] = fixColumn(v['DATA_LABEL'])
+										}
 										
 										stmt.addBatch(out) 
 									}
@@ -188,28 +205,52 @@ class ClinicalDataProcessor extends DataProcessor {
 						SITE_ID : 0,
 						SUBJ_ID : 0,
 						VISIT_NAME : 0,
-						_DATA : [:]
-							// Label => { CATEGORY_CD => '', COLUNN => 1 } - 1-based column numbers
+						_DATA : []
+							// [ { DATA_LABEL_SOURCE => 1, DATA_LABEL_SOURCE_TYPE => 'A', 
+						    // DATA_LABEL => Label, CATEGORY_CD => '', COLUMN => 1 } ] - 1-based column numbers
 					];
 				}
 				
 				def curMapping = mappings[cols[0]]
 				
 				def dataLabel = cols[3]
-				if (dataLabel != 'OMIT') {
-					if (curMapping.containsKey(dataLabel)) {
-						curMapping[dataLabel] = cols[2].toInteger()
+				if (dataLabel != 'OMIT' && dataLabel != 'DATA_LABEL') {
+					if (dataLabel == '\\') {
+						// the actual data label should be taken from a specified column [4]
+						def dataLabelSource = 0
+						def dataLabelSourceType = ''
+						
+						def m = cols[4] =~ /^(\d+)(A|B){0,1}$/
+						if (m.size() > 0) {
+							dataLabelSource = m[0][1].toInteger()
+							dataLabelSourceType = (m[0][2] in ['A', 'B'])?m[0][2]:'A'	
+						}
+						
+						if ( cols[1] && cols[2].toInteger() > 0 && dataLabelSource > 0) {
+							curMapping['_DATA'].add([
+								CATEGORY_CD : cols[1],
+								COLUMN : cols[2].toInteger(),
+								DATA_LABEL_SOURCE : dataLabelSource,
+								DATA_LABEL_SOURCE_TYPE : dataLabelSourceType
+							])
+						}	
 					}
 					else {
-						if ( cols[1] && cols[2].toInteger() > 0 ) {
-							curMapping['_DATA'][dataLabel] = [
-								CATEGORY_CD : cols[1],
-								COLUMN : cols[2].toInteger()	
-							]
+						if (curMapping.containsKey(dataLabel)) {
+							curMapping[dataLabel] = cols[2].toInteger()
 						}
 						else {
-							config.logger.log(LogType.ERROR, "Category or column number is missing for line ${lineNum}")
-							throw new Exception("Error parsing mapping file")
+							if ( cols[1] && cols[2].toInteger() > 0 ) {
+								curMapping['_DATA'].add([
+									DATA_LABEL : dataLabel,
+									CATEGORY_CD : cols[1],
+									COLUMN : cols[2].toInteger()	
+								])
+							}
+							else {
+								config.logger.log(LogType.ERROR, "Category or column number is missing for line ${lineNum}")
+								throw new Exception("Error parsing mapping file")
+							}
 						}
 					}
 				}

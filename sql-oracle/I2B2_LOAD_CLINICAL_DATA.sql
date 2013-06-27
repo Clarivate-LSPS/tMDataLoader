@@ -1,5 +1,5 @@
 create or replace
-PROCEDURE                   "I2B2_LOAD_CLINICAL_DATA" 
+PROCEDURE                                           "I2B2_LOAD_CLINICAL_DATA" 
 (
   trial_id 			IN	VARCHAR2
  ,top_node			in  varchar2
@@ -109,7 +109,7 @@ AS
 		    and sm.concept_code = m.c_basecode
 			and m.c_visualattributes like 'L%');
 BEGIN
-  
+
 	TrialID := upper(trial_id);
 	secureStudy := upper(secure_study);
 	
@@ -139,6 +139,9 @@ BEGIN
 	if (secureStudy not in ('Y','N') ) then
 		secureStudy := 'Y';
 	end if;
+  
+  -- added by Eugr: enable parallel queries
+  execute immediate 'alter session enable parallel dml';
 	
 	topNode := REGEXP_REPLACE('\' || top_node || '\','(\\){2,}', '\');
 	
@@ -401,8 +404,9 @@ BEGIN
 	commit;
 	
 	--	set visit_name to null if only DATALABEL in category_cd
+  -- EUGR: disabled!!!!!
 	
-	update wrk_clinical_data t
+	/*update wrk_clinical_data t
 	set visit_name=null
 	where t.category_cd like '%DATALABEL%'
 	  and t.category_cd not like '%VISITNAME%';
@@ -410,7 +414,7 @@ BEGIN
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Set visit_name to null when only DATALABE in category_cd',SQL%ROWCOUNT,stepCt,'Done');
 		
-	commit;
+	commit;*/
 
 /*	--	Remove sample_type if found in category_path
 	
@@ -535,7 +539,7 @@ BEGIN
  
 	execute immediate('truncate table tm_wz.wt_trial_nodes');
 	
-	insert into wt_trial_nodes
+	insert /*+ parallel(wt_trial_nodes, 4) */ into wt_trial_nodes
 	(leaf_node
 	,category_cd
 	,visit_name
@@ -544,23 +548,24 @@ BEGIN
 	,data_value
 	,data_type
 	)
-    select DISTINCT 
+    select /*+ parallel(4) */  DISTINCT 
     Case 
 	--	Text data_type (default node)
 	When a.data_type = 'T'
 	     then case when a.category_path like '%DATALABEL%' and a.category_path like '%VISITNAME%'
 		      then regexp_replace(topNode || replace(replace(a.category_path,'DATALABEL',a.data_label),'VISITNAME',a.visit_name) || '\' || a.data_value || '\','(\\){2,}', '\')
-			  when a.category_path like '%DATALABEL%'
-			  then regexp_replace(topNode || replace(a.category_path,'DATALABEL',a.data_label) || '\' || a.data_value || '\','(\\){2,}', '\')
-			  else REGEXP_REPLACE(topNode || a.category_path || 
-                   '\'  || a.data_label || '\' || a.data_value || '\' || a.visit_name || '\',
+			  when a.CATEGORY_PATH like '%DATALABEL%'
+			  then regexp_replace(topNode || replace(a.category_path,'DATALABEL',a.data_label) || '\' || a.data_value || '\' || a.visit_name || '\', '(\\){2,}', '\')
+			  ELSE REGEXP_REPLACE(TOPNODE || A.CATEGORY_PATH || 
+                   '\'  || a.DATA_LABEL || '\' || a.DATA_VALUE || '\' || a.VISIT_NAME || '\',
+--                     '\'  || a.data_label || '\' || a.visit_name || '\' || a.data_value || '\', -- Eugr: uncomment if you want to flip VISIT_NAME and DATA_VALUE
                    '(\\){2,}', '\') 
 			  end
 	--	else is numeric data_type and default_node
 	else case when a.category_path like '%DATALABEL%' and a.category_path like '%VISITNAME%'
 		      then regexp_replace(topNode || replace(replace(a.category_path,'DATALABEL',a.data_label),'VISITNAME',a.visit_name) || '\','(\\){2,}', '\')
-			  when a.category_path like '%DATALABEL%'
-			  then regexp_replace(topNode || replace(a.category_path,'DATALABEL',a.data_label) || '\','(\\){2,}', '\')
+			  when a.CATEGORY_PATH like '%DATALABEL%'
+			  then regexp_replace(topNode || replace(a.category_path,'DATALABEL',a.data_label) || '\' || a.visit_name || '\', '(\\){2,}', '\')
 			  else REGEXP_REPLACE(topNode || a.category_path || 
                    '\'  || a.data_label || '\' || a.visit_name || '\',
                    '(\\){2,}', '\')
@@ -623,7 +628,7 @@ BEGIN
 	
 	--	Delete dropped subjects from patient_dimension if they do not exist in de_subject_sample_mapping
 	
-	delete patient_dimension
+	delete /*+ parallel(patient_dimension, 8) */ patient_dimension
 	where sourcesystem_cd in
 		 (select distinct pd.sourcesystem_cd from patient_dimension pd
 		  where pd.sourcesystem_cd like TrialId || ':%'
@@ -639,9 +644,9 @@ BEGIN
 	
 	--	update patients with changed information
 	
-	update patient_dimension pd
-	set (sex_cd, age_in_years_num, race_cd, update_date) = 
-		(select nvl(t.sex_cd,pd.sex_cd), t.age_in_years_num, nvl(t.race_cd,pd.race_cd), sysdate
+	update /*+ parallel(patient_dimension, 8) */ patient_dimension pd
+	set (SEX_CD, AGE_IN_YEARS_NUM, RACE_CD, UPDATE_DATE) = 
+		(select /*+ parallel(tmp_subject_info, 8) */ nvl(t.sex_cd,pd.sex_cd), t.age_in_years_num, nvl(t.race_cd,pd.race_cd), sysdate
 		 from tmp_subject_info t
 		 where t.usubjid = pd.sourcesystem_cd
 		   and (coalesce(pd.sex_cd,'@') != t.sex_cd or
@@ -649,7 +654,7 @@ BEGIN
 				coalesce(pd.race_cd,'@') != t.race_cd)
 		)
 	where exists
-		 (select 1 from tmp_subject_info x
+		 (select /*+ parallel(tmp_subject_info, 8) */ 1 from tmp_subject_info x
 		  where pd.sourcesystem_cd = x.usubjid
 		    and (coalesce(pd.sex_cd,'@') != x.sex_cd or
 				 pd.age_in_years_num != x.age_in_years_num or
@@ -663,7 +668,7 @@ BEGIN
 
 	--	insert new subjects into patient_dimension
 	
-	insert into patient_dimension
+	insert /*+ parallel(patient_dimension, 8) */ into patient_dimension
     (patient_num,
      sex_cd,
      age_in_years_num,
@@ -673,7 +678,7 @@ BEGIN
      import_date,
      sourcesystem_cd
     )
-    select seq_patient_num.nextval,
+    select /*+ parallel(tmp_subject_info, 8) */ seq_patient_num.nextval,
 		   t.sex_cd,
 		   t.age_in_years_num,
 		   t.race_cd,
@@ -721,7 +726,7 @@ BEGIN
 	commit;
 							
 	
-	insert into concept_dimension
+	insert /*+ parallel(concept_dimension, 8) */ into concept_dimension
     (concept_cd
 	,concept_path
 	,name_char
@@ -731,7 +736,7 @@ BEGIN
 	,sourcesystem_cd
 	,table_name
 	)
-    select concept_id.nextval
+    select /*+ parallel(8) */ concept_id.nextval
 	     ,x.leaf_node
 		 ,x.node_name
 		 ,sysdate
@@ -753,7 +758,7 @@ BEGIN
 	
 	--	update i2b2 to pick up change in name, data_type for leaf nodes
 	
-	update i2b2 b
+	update /*+ parallel(i2b2, 8) */ i2b2 b
 	set (c_name, c_columndatatype, c_metadataxml)=
 		(select t.node_name, t.data_type
 		 ,case when t.data_type = 'T'
@@ -772,7 +777,7 @@ BEGIN
 	cz_write_audit(jobId,databaseName,procedureName,'Updated name and data type in i2b2 if changed',SQL%ROWCOUNT,stepCt,'Done');
     commit;
 			   
-	insert into i2b2
+	insert /*+ parallel(i2b2, 8) */ into I2B2
     (c_hlevel
 	,c_fullname
 	,c_name
@@ -794,7 +799,7 @@ BEGIN
 	,i2b2_id
 	,c_metadataxml
 	)
-    select (length(c.concept_path) - nvl(length(replace(c.concept_path, '\')),0)) / length('\') - 2 + root_level
+    select /*+ parallel(concept_dimension, 8) */  (length(c.concept_path) - nvl(length(replace(c.concept_path, '\')),0)) / length('\') - 2 + root_level
 		  ,c.concept_path
 		  ,c.name_char
 		  ,'LA'
@@ -829,30 +834,30 @@ BEGIN
 
 	--	delete from observation_fact all concept_cds for trial that are clinical data, exclude concept_cds from biomarker data
 	
-	delete from observation_fact f
+	delete /*+ parallel(observation_fact, 4) */ from OBSERVATION_FACT F
 	where f.modifier_cd = TrialId
-	  and f.concept_cd not in
-		 (select distinct concept_code as concept_cd from de_subject_sample_mapping
+	  and F.CONCEPT_CD not in
+		 (select /*+ parallel(de_subject_sample_mapping, 4) */ distinct concept_code as concept_cd from de_subject_sample_mapping
 		  where trial_name = TrialId
 		    and concept_code is not null
 		  union
-		  select distinct platform_cd as concept_cd from de_subject_sample_mapping
+		  select /*+ parallel(de_subject_sample_mapping, 4) */ distinct platform_cd as concept_cd from de_subject_sample_mapping
 		  where trial_name = TrialId
 		    and platform_cd is not null
 		  union
-		  select distinct sample_type_cd as concept_cd from de_subject_sample_mapping
+		  select /*+ parallel(de_subject_sample_mapping, 4) */ distinct sample_type_cd as concept_cd from de_subject_sample_mapping
 		  where trial_name = TrialId
 		    and sample_type_cd is not null
 		  union
-		  select distinct tissue_type_cd as concept_cd from de_subject_sample_mapping
+		  select /*+ parallel(de_subject_sample_mapping, 4) */ distinct tissue_type_cd as concept_cd from de_subject_sample_mapping
 		  where trial_name = TrialId
 		    and tissue_type_cd is not null
 		  union
-		  select distinct timepoint_cd as concept_cd from de_subject_sample_mapping
+		  select /*+ parallel(de_subject_sample_mapping, 4) */ distinct timepoint_cd as concept_cd from de_subject_sample_mapping
 		  where trial_name = TrialId
 		    and timepoint_cd is not null
 		  union
-		  select distinct concept_cd as concept_cd from de_subject_snp_dataset
+		  select /*+ parallel(de_subject_sample_mapping, 4) */ distinct concept_cd as concept_cd from de_subject_snp_dataset
 		  where trial_name = TrialId
 		    and concept_cd is not null);
 		  
@@ -862,7 +867,7 @@ BEGIN
 	
     --Insert into observation_fact
 	
-	insert into observation_fact
+	insert /*+ parallel(observation_fact, 4) */ into OBSERVATION_FACT
 	(patient_num,
      concept_cd,
      modifier_cd,
@@ -876,7 +881,7 @@ BEGIN
      location_cd,
      instance_num
 	)
-	select distinct c.patient_num,
+	select /*+ parallel(wrk_clinical_data, 4) */ distinct c.patient_num,
 		   i.c_basecode,
 		   a.study_id,
 		   a.data_type,
@@ -913,15 +918,15 @@ BEGIN
 
 	--	update c_visualattributes for all nodes in study, done to pick up node that changed from leaf/numeric to folder/text
 	
-	update i2b2 a
-	set c_visualattributes=(
-		with upd as (select p.c_fullname, count(*) as nbr_children 
+	update /*+ parallel(i2b2, 4) */ i2b2 a
+	set C_VISUALATTRIBUTES=(
+		with upd as (select /*+ parallel(4) */ p.c_fullname, count(*) as nbr_children 
 				 from i2b2 p
 					 ,i2b2 c
 				 where p.c_fullname like topNode || '%'
 				   and c.c_fullname like p.c_fullname || '%'
-				 group by p.c_fullname)
-		select case when u.nbr_children = 1 
+				 group by P.C_FULLNAME)
+		select /*+ parallel(4) */ case when u.nbr_children = 1 
 					then 'L' || substr(a.c_visualattributes,2,2)
 	                else 'F' || substr(a.c_visualattributes,2,1) ||
 						 case when u.c_fullname = topNode and highlight_study = 'Y'
@@ -1009,4 +1014,4 @@ BEGIN
 		cz_end_audit (jobID, 'FAIL');
 		rtnCode := 16;
 	
-end; 
+end;
