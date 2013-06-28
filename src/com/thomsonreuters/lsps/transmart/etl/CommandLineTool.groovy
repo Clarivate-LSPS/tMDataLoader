@@ -26,7 +26,7 @@ class CommandLineTool {
 
 	static main(args) {
 		
-		def version = "0.6"
+		def version = "0.61"
 		
 		def cli = new CliBuilder(usage: 'tm_etl [options] [<data_dir>]')
 		cli.with {
@@ -37,6 +37,7 @@ class CommandLineTool {
 			v longOpt: 'version', 'Display version information and exit'
 			t longOpt: 'use-t', 'Do not use Z datatype for T expression data (expert option)'
 			s longOpt: 'stop-on-fail', 'Stop when upload is failed'
+			_ longOpt: 'secure-study', 'Make study securable'
 		}
 		// TODO: implement stop-on-fail mode!
 		def opts = cli.parse(args)
@@ -76,6 +77,14 @@ class CommandLineTool {
 		if (opts?.i) {
 			config.isInteractiveMode = true
 			println ">>> USING INTERACTIVE MODE"
+		}
+		
+		if (opts?.'secure-study') {
+			config.securitySymbol = 'Y'
+			println ">>> STUDY WILL BE SECURABLE"
+		}
+		else {
+			config.securitySymbol = 'N'
 		}
 		
 		if (opts?.t) {

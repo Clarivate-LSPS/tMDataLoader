@@ -76,7 +76,7 @@ class ExpressionDataProcessor extends DataProcessor {
 				sql.call("{call i2b2_load_annotation_deapp()}")
 			}
 			
-			sql.call("{call i2b2_process_mrna_data (?, ?, ?, null, null, 'N', ?, ?)}",
+			sql.call("{call i2b2_process_mrna_data (?, ?, ?, null, null, '"+config.securitySymbol+"', ?, ?)}",
 				[ studyId, studyNode, studyDataType, jobId, Sql.NUMERIC ]) {}
 		}
 		else {

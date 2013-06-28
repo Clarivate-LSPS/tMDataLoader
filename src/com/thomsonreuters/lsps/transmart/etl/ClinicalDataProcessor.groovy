@@ -176,7 +176,7 @@ class ClinicalDataProcessor extends DataProcessor {
 		def studyNode = studyInfo['node']
 		if (studyId && studyNode) {
 			config.logger.log("Study ID=${studyId}; Node=${studyNode}")
-			sql.call("{CALL i2b2_load_clinical_data($studyId,$studyNode,'N','N',$jobId)}")
+			sql.call("{CALL i2b2_load_clinical_data($studyId,$studyNode,'"+config.securitySymbol+"','N',$jobId)}")
 		}
 		else {
 			config.logger.log(LogType.ERROR, "Study ID or Node not defined!")
