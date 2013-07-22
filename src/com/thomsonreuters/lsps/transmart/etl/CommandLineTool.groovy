@@ -26,7 +26,7 @@ class CommandLineTool {
 
 	static main(args) {
 		
-		def version = "0.6"
+		def version = "0.7"
 		
 		def cli = new CliBuilder(usage: 'tm_etl [options] [<data_dir>]')
 		cli.with {
@@ -37,6 +37,7 @@ class CommandLineTool {
 			v longOpt: 'version', 'Display version information and exit'
 			t longOpt: 'use-t', 'Do not use Z datatype for T expression data (expert option)'
 			s longOpt: 'stop-on-fail', 'Stop when upload is failed'
+			_ longOpt: 'alt-clinical-proc', args: 1, argName: 'proc_name', 'Name of alternative clinical stored procedure (expert option)'
 		}
 		// TODO: implement stop-on-fail mode!
 		def opts = cli.parse(args)
@@ -93,6 +94,11 @@ class CommandLineTool {
 		if (! config?.db?.jdbcConnectionString) {
 			println "Database connection is not specified\n"
 			return
+		}
+		
+		if (opts?.'alt-clinical-proc') {
+			config.altClinicalProcName = opts?.'alt-clinical-proc'
+			println ">>> USING ALTERNATIVE CLINICAL PROCEDURE: ${opts?.'alt-clinical-proc'}"
 		}
 		
 		def extra_args = opts.arguments()

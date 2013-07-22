@@ -167,7 +167,7 @@ class ClinicalDataProcessor extends DataProcessor {
 	
 	@Override
 	public String getProcedureName() {
-		return "I2B2_LOAD_CLINICAL_DATA"
+		return config.altClinicalProcName?:"I2B2_LOAD_CLINICAL_DATA"
 	}
 
 	@Override
@@ -176,7 +176,7 @@ class ClinicalDataProcessor extends DataProcessor {
 		def studyNode = studyInfo['node']
 		if (studyId && studyNode) {
 			config.logger.log("Study ID=${studyId}; Node=${studyNode}")
-			sql.call("{CALL i2b2_load_clinical_data($studyId,$studyNode,'N','N',$jobId)}")
+			sql.call("{CALL ${getProcedureName()}($studyId,$studyNode,'N','N',$jobId)}")
 		}
 		else {
 			config.logger.log(LogType.ERROR, "Study ID or Node not defined!")
