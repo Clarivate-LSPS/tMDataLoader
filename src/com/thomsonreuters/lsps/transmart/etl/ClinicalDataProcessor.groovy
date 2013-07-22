@@ -176,7 +176,7 @@ class ClinicalDataProcessor extends DataProcessor {
 		def studyNode = studyInfo['node']
 		if (studyId && studyNode) {
 			config.logger.log("Study ID=${studyId}; Node=${studyNode}")
-			sql.call("{CALL ${getProcedureName()}($studyId,$studyNode,'N','N',$jobId)}")
+			sql.call("{CALL ${getProcedureName()}($studyId,$studyNode,'"+config.securitySymbol+"','N',$jobId)}")
 		}
 		else {
 			config.logger.log(LogType.ERROR, "Study ID or Node not defined!")

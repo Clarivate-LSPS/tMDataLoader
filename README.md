@@ -57,7 +57,11 @@ usage: tm_etl [options] [<data_dir>]
  -h,--help              Show usage information
  -i,--interactive       Interactive (console) mode: progress bar
  -n,--no-rename         Don't rename folders when failed
- -v,--version           Display version information
+ -s,--stop-on-fail      Stop when upload is failed
+    --secure-study      Make study securable
+ -t,--use-t             Do not use Z datatype for T expression data
+                        (expert option)
+ -v,--version           Display version information and exit
  
 By default, the configuration file location is ~/.tm_etl/Config.groovy.
 You can specify the configuration file name using -c option.

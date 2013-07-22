@@ -38,6 +38,7 @@ class CommandLineTool {
 			t longOpt: 'use-t', 'Do not use Z datatype for T expression data (expert option)'
 			s longOpt: 'stop-on-fail', 'Stop when upload is failed'
 			_ longOpt: 'alt-clinical-proc', args: 1, argName: 'proc_name', 'Name of alternative clinical stored procedure (expert option)'
+			_ longOpt: 'secure-study', 'Make study securable'
 		}
 		// TODO: implement stop-on-fail mode!
 		def opts = cli.parse(args)
@@ -77,6 +78,14 @@ class CommandLineTool {
 		if (opts?.i) {
 			config.isInteractiveMode = true
 			println ">>> USING INTERACTIVE MODE"
+		}
+		
+		if (opts?.'secure-study') {
+			config.securitySymbol = 'Y'
+			println ">>> STUDY WILL BE SECURABLE"
+		}
+		else {
+			config.securitySymbol = 'N'
 		}
 		
 		if (opts?.t) {
