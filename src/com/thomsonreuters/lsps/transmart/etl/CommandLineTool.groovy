@@ -26,7 +26,7 @@ class CommandLineTool {
 
 	static main(args) {
 		
-		def version = "0.7"
+		def version = "0.8"
 		
 		def cli = new CliBuilder(usage: 'tm_etl [options] [<data_dir>]')
 		cli.with {
@@ -124,10 +124,16 @@ class CommandLineTool {
 		config.logger.log("!!! TM_ETL VERSION ${version}")
 		
 		def processor = new DirectoryProcessor(config)
+		
+		config.logger.log("==== STARTED ====")
+		config.logger.log("Using directory: ${dir}")
+		
 		if (! processor.process(dir) && config.stopOnFail) {
 			config.logger.log(LogType.ERROR, "Stop-On-Fail is active, exiting with status 1")
 			System.exit(1)
 		}
+		
+		config.logger.log("==== COMPLETED ====")
 	}
 
 }

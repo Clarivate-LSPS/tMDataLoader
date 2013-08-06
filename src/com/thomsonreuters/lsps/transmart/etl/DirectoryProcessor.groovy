@@ -29,31 +29,75 @@ class DirectoryProcessor {
 		config = conf
 	}
 	
-	boolean process(dir) {
-		def d = new File(dir)
+	boolean process(dir, node="") {           // TODO: BROKEN NOW!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+		def d
 		
-		config.logger.log("==== STARTED ====")
-		config.logger.log("Using directory: ${dir}")
+		if (dir instanceof File)
+			d = dir
+		else 
+			d = new File(dir)
 		
-		// looping through top nodes
-		d.eachDirMatch(~/[^\._].+/) {
-			def node = "\\${it.name}"
-			if (!processStudies(it, node) && config.stopOnFail) {
-				return false
+		config.logger.log("Processing directory: ${dir}")
+		
+		try {
+		
+			// looping through top nodes
+			d.eachDirMatch(~/[^\._].+/) {
+				if (!checkIfStudyFolder(it)) { // break the recursion at study level
+					node += "\\${it.name}"
+					if (checkIfHasStudies(it)) {
+						if (!processStudies(it, node) && config.stopOnFail) {
+							throw new Exception("Processing failed")
+						}
+						
+						// just in case there are any nested folders there
+						process(it, node)
+					}
+					else {
+						// nested directory
+						process(it, node)
+					}
+				}
+			}
+			
+			// looping through MetaData nodes (well, only one)
+			d.eachDirMatch(~/(?i)_MetaData/) { 
+				config.logger.log("=== PROCESSING METADATA FOLDER ===")
+				if (!processMetaData(it) && config.stopOnFail) {
+					throw new Exception("Processing failed")
+				}
+				config.logger.log("=== FINISHED PROCESSING METADATA FOLDER ===")
+			}
+			
+			return true
+		}
+		catch (Exception e) {
+			return false
+		}
+	}
+	
+	private boolean checkIfHasStudies(dir) {
+		def res = false
+		// looping through the subfolders, looking for study folders
+		dir.eachDirMatch(~/[^\._].+/) {
+			if (checkIfStudyFolder(it)) {
+				res = true // can't break out of closure easily other than using exception
 			}
 		}
-		
-		// looping through MetaData nodes (well, only one)
-		d.eachDirMatch(~/(?i)_MetaData/) { 
-			config.logger.log("=== PROCESSING ROOT METADATA FOLDER ===")
-			if (!processMetaData(it) && config.stopOnFail) {
-				return false
+	
+		return res
+	}
+	
+	private boolean checkIfStudyFolder(dir) {
+		def res = false
+		// looping through the subfolders, looking for predefined names
+		dir.eachDirMatch(~/[^\._].+/) {
+			if (it.name ==~ /(ClinicalData|ExpressionData|RBMData|MetaData)(ToUpload)*/) {
+				res = true
 			}
-			config.logger.log("=== FINISHED PROCESSING ROOT METADATA FOLDER ===")
 		}
-		
-		config.logger.log("==== COMPLETED ====")
-		return true
+	
+		return res
 	}
 	
 	private boolean processMetaData(dir) {
