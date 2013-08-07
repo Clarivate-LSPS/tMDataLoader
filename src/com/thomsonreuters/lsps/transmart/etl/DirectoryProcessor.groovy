@@ -29,7 +29,7 @@ class DirectoryProcessor {
 		config = conf
 	}
 	
-	boolean process(dir, node="") {           // TODO: BROKEN NOW!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	boolean process(dir, String root="") {           // TODO: BROKEN NOW!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 		def d
 		
 		if (dir instanceof File)
@@ -44,7 +44,8 @@ class DirectoryProcessor {
 			// looping through top nodes
 			d.eachDirMatch(~/[^\._].+/) {
 				if (!checkIfStudyFolder(it)) { // break the recursion at study level
-					node += "\\${it.name}"
+					def node = root + "\\${it.name}"
+
 					if (checkIfHasStudies(it)) {
 						if (!processStudies(it, node) && config.stopOnFail) {
 							throw new Exception("Processing failed")
