@@ -1,5 +1,5 @@
 create or replace
-PROCEDURE                                           "I2B2_LOAD_CLINICAL_DATA" 
+PROCEDURE                                                       "I2B2_LOAD_CLINICAL_DATA" 
 (
   trial_id 			IN	VARCHAR2
  ,top_node			in  varchar2
@@ -98,16 +98,17 @@ AS
 	from i2b2 l
 	where l.c_visualattributes like 'L%'
 	  and l.c_fullname like topNode || '%'
-	  and l.c_fullname not in
+	  --and l.c_fullname not in
+	  and not exists
 		 (select t.leaf_node 
-		  from wt_trial_nodes t
-		  union
+		  from wt_trial_nodes t WHERE t.leaf_node = l.c_fullname
+		  union all
 		  select m.c_fullname
 		  from de_subject_sample_mapping sm
 			  ,i2b2 m
 		  where sm.trial_name = TrialId
 		    and sm.concept_code = m.c_basecode
-			and m.c_visualattributes like 'L%');
+			and m.c_visualattributes like 'L%' AND m.c_fullname = l.c_fullname);
 BEGIN
 
 	TrialID := upper(trial_id);
@@ -164,7 +165,7 @@ BEGIN
 	cz_write_audit(jobId,databaseName,procedureName,'Delete existing data from lz_src_clinical_data',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
 	
-	insert into lz_src_clinical_data
+	insert /*+ APPEND */ into lz_src_clinical_data nologging
 	(study_id
 	,site_id
 	,subject_id
@@ -196,7 +197,7 @@ BEGIN
 	
 	--	insert data from lt_src_clinical_data to wrk_clinical_data
 	
-	insert into wrk_clinical_data
+	insert /*+ APPEND */ into wrk_clinical_data nologging
 	(study_id
 	,site_id
 	,subject_id
@@ -274,12 +275,27 @@ BEGIN
   
 	--	Set data_type, category_path, and usubjid 
   
-	update wrk_clinical_data
+	/*update  wrk_clinical_data
 	set data_type = 'T'
 	   ,category_path = replace(replace(category_cd,'_',' '),'+','\')
 	  -- ,usubjid = TrialID || ':' || site_id || ':' || subject_id;
 	   ,usubjid = REGEXP_REPLACE(TrialID || ':' || site_id || ':' || subject_id,
-                   '(::){1,}', ':'); 
+                   '(::){1,}', ':'); */
+				   
+	--21 July 2013. Performace fix by TR. Split into 2 sub queries
+		
+	update wrk_clinical_data
+	set data_type = 'T'
+	   ,category_path = replace(replace(category_cd,'_',' '),'+','\')
+     ,usubjid = TrialID || ':' || subject_id
+	WHERE site_id IS NULL;
+    
+  update wrk_clinical_data
+	set data_type = 'T'
+	   ,category_path = replace(replace(category_cd,'_',' '),'+','\')
+     ,usubjid = TrialID || ':' || site_id || ':' || subject_id
+  WHERE site_id IS NOT NULL;
+  
 	 
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Set columns in wrk_clinical_data',SQL%ROWCOUNT,stepCt,'Done');
@@ -429,7 +445,7 @@ BEGIN
 */
 	--	comment out may need later
 	
-	--	change any % to Pct and & and + to ' and ' and _ to space in data_label only
+/*	--	change any % to Pct and & and + to ' and ' and _ to space in data_label only
 	
 	update wrk_clinical_data
 	set data_label=replace(replace(replace(replace(data_label,'%',' Pct'),'&',' and '),'+',' and '),'_',' ')
@@ -443,7 +459,18 @@ BEGIN
 	set data_label  = trim(trailing ',' from trim(replace(replace(data_label,'  ', ' '),' ,',','))),
 		data_value  = trim(trailing ',' from trim(replace(replace(data_value,'  ', ' '),' ,',','))),
 --		sample_type = trim(trailing ',' from trim(replace(replace(sample_type,'  ', ' '),' ,',','))),
-		visit_name  = trim(trailing ',' from trim(replace(replace(visit_name,'  ', ' '),' ,',',')));
+		visit_name  = trim(trailing ',' from trim(replace(replace(visit_name,'  ', ' '),' ,',',')));*/
+		
+	 -- July 2013. Performace fix by TR. Merge into one query
+   
+	update /*+ parallel(wrk_clinical_data, 4) */ wrk_clinical_data
+	set data_label  = trim(trailing ',' from trim(replace(replace(/**/  replace(replace(replace(replace(data_label,'%',' Pct'),'&',' and '),'+',' and '),'_',' ') /**/   ,'  ', ' '),' ,',',')))
+		 ,data_value  = trim(trailing ',' from trim(replace(replace(/**/  replace(replace(replace(data_value,'%',' Pct'),'&',' and '),'+',' and ') /**/  ,'  ', ' '),' ,',',')))
+     ,visit_name  = trim(trailing ',' from trim(replace(replace(visit_name,'  ', ' '),' ,',',')))
+     ,category_cd=replace(replace(category_cd,'%',' Pct'),'&',' and ')
+	   ,category_path=replace(replace(category_path,'%',' Pct'),'&',' and ')
+    ;	
+		
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Remove leading, trailing, double spaces',SQL%ROWCOUNT,stepCt,'Done');
 	
@@ -539,7 +566,7 @@ BEGIN
  
 	execute immediate('truncate table tm_wz.wt_trial_nodes');
 	
-	insert /*+ parallel(wt_trial_nodes, 4) */ into wt_trial_nodes
+	insert /*+ APPEND parallel(wt_trial_nodes, 4) */ into wt_trial_nodes nologging
 	(leaf_node
 	,category_cd
 	,visit_name
@@ -548,17 +575,20 @@ BEGIN
 	,data_value
 	,data_type
 	)
-    select /*+ parallel(4) */  DISTINCT 
+    select /*+ parallel(a, 4) */  DISTINCT 
     Case 
 	--	Text data_type (default node)
 	When a.data_type = 'T'
-	     then case when a.category_path like '%DATALABEL%' and a.category_path like '%VISITNAME%'
-		      then regexp_replace(topNode || replace(replace(a.category_path,'DATALABEL',a.data_label),'VISITNAME',a.visit_name) || '\' || a.data_value || '\','(\\){2,}', '\')
-			  when a.CATEGORY_PATH like '%DATALABEL%'
-			  then regexp_replace(topNode || replace(a.category_path,'DATALABEL',a.data_label) || '\' || a.data_value || '\' || a.visit_name || '\', '(\\){2,}', '\')
-			  ELSE REGEXP_REPLACE(TOPNODE || A.CATEGORY_PATH || 
-                   '\'  || a.DATA_LABEL || '\' || a.DATA_VALUE || '\' || a.VISIT_NAME || '\',
---                     '\'  || a.data_label || '\' || a.visit_name || '\' || a.data_value || '\', -- Eugr: uncomment if you want to flip VISIT_NAME and DATA_VALUE
+	     then case 
+		    when a.category_path like '%DATALABEL%' and a.category_path like '%DATAVALUE%' and a.category_path like '%VISITNAME%'
+				then regexp_replace(topNode || replace(replace(replace(a.category_path,'DATALABEL',a.data_label),'VISITNAME',a.visit_name), 'DATAVALUE',a.data_value)  || '\','(\\){2,}', '\')
+		 	when a.category_path like '%DATALABEL%' and a.category_path like '%VISITNAME%'
+				then regexp_replace(topNode || replace(replace(a.category_path,'DATALABEL',a.data_label),'VISITNAME',a.visit_name) || '\' || a.data_value || '\','(\\){2,}', '\')
+			when a.CATEGORY_PATH like '%DATALABEL%'
+				then regexp_replace(topNode || replace(a.category_path,'DATALABEL',a.data_label) || '\' || a.visit_name || '\' || a.data_value || '\', '(\\){2,}', '\') -- Eugr: uncomment to flip
+			ELSE REGEXP_REPLACE(TOPNODE || A.CATEGORY_PATH || 
+--                   '\'  || a.DATA_LABEL || '\' || a.DATA_VALUE || '\' || a.VISIT_NAME || '\',
+                     '\'  || a.data_label || '\' || a.visit_name || '\' || a.data_value || '\', -- Eugr: uncomment if you want to flip VISIT_NAME and DATA_VALUE
                    '(\\){2,}', '\') 
 			  end
 	--	else is numeric data_type and default_node
@@ -712,11 +742,11 @@ BEGIN
 	
 	--	bulk insert leaf nodes
 	
-	update concept_dimension cd
-	set name_char=(select t.node_name from wt_trial_nodes t
+	update /*+ parallel(cd, 4) */ concept_dimension cd
+	set name_char=(select /*+ parallel(t, 4) */ t.node_name from wt_trial_nodes t
 				   where cd.concept_path = t.leaf_node
 				     and cd.name_char != t.node_name)
-	where exists (select 1 from wt_trial_nodes x
+	where exists (select /*+ parallel(x, 4) */ 1 from wt_trial_nodes x
 				  where cd.concept_path = x.leaf_node
 				    and cd.name_char != x.node_name);
 		  
@@ -830,8 +860,19 @@ BEGIN
 		  
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Inserted leaf nodes into I2B2METADATA i2b2',SQL%ROWCOUNT,stepCt,'Done');
-    COMMIT;
-
+    COMMIT;	
+	
+  	i2b2_fill_in_tree(TrialId, topNode, jobID);
+    
+    commit;
+  
+  
+	--21 July 2013. Performace fix by TR. Drop complicated index before data manipulation
+  --execute immediate('DROP INDEX "I2B2DEMODATA"."OB_FACT_PK"');
+  --execute immediate('DROP INDEX "I2B2DEMODATA"."IDX_OB_FACT_1"');
+  --execute immediate('DROP INDEX "I2B2DEMODATA"."IDX_OB_FACT_2"');
+  --execute immediate('DROP INDEX "I2B2DEMODATA"."OF_CTX_BLOB"'); 
+  
 	--	delete from observation_fact all concept_cds for trial that are clinical data, exclude concept_cds from biomarker data
 	
 	delete /*+ parallel(observation_fact, 4) */ from OBSERVATION_FACT F
@@ -866,8 +907,8 @@ BEGIN
     COMMIT;		  
 	
     --Insert into observation_fact
-	
-	insert /*+ parallel(observation_fact, 4) */ into OBSERVATION_FACT
+	--22 July 2013. Performace fix by TR. Set nologging.
+	insert /*+ APPEND */ into observation_fact nologging
 	(patient_num,
      concept_cd,
      modifier_cd,
@@ -909,34 +950,65 @@ BEGIN
 	  and t.leaf_node = i.c_fullname
 	  and not exists		-- don't insert if lower level node exists
 		 (select 1 from wt_trial_nodes x
-		  where x.leaf_node like t.leaf_node || '%_')
+		  --where x.leaf_node like t.leaf_node || '%_'
+		  --Jule 2013. Performance fix by TR. Find if any leaf parent node is current
+		   where (SUBSTR(x.leaf_node, 1, INSTR(x.leaf_node, '\', -2))) = t.leaf_node
+		  
+		  )
 	  and a.data_value is not null;  
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Insert trial into I2B2DEMODATA observation_fact',SQL%ROWCOUNT,stepCt,'Done');
 	
 	commit;
 
-	--	update c_visualattributes for all nodes in study, done to pick up node that changed from leaf/numeric to folder/text
 	
-	update /*+ parallel(i2b2, 4) */ i2b2 a
-	set C_VISUALATTRIBUTES=(
-		with upd as (select /*+ parallel(4) */ p.c_fullname, count(*) as nbr_children 
+	
+	--July 2013. Performance fix by TR. Prepare precompute tree
+	
+	I2B2_CREATE_FULL_TREE(topNode, jobId);
+	
+	
+	stepCt := stepCt + 1;
+	cz_write_audit(jobId,databaseName,procedureName,'Create i2b2 full tree',SQL%ROWCOUNT,stepCt,'Done');
+	commit;
+  
+  	--July 2013. Performance fix by TR.
+   execute immediate('truncate table TM_WZ.I2B2_LOAD_PATH_WITH_COUNT'); 
+   
+   insert into TM_WZ.i2b2_load_path_with_count  
+   select /*+ parallel(4) */ p.c_fullname, count(*) 
 				 from i2b2 p
-					 ,i2b2 c
+					--,i2b2 c
+					,TM_WZ.I2B2_LOAD_TREE_FULL tree
 				 where p.c_fullname like topNode || '%'
-				   and c.c_fullname like p.c_fullname || '%'
-				 group by P.C_FULLNAME)
-		select /*+ parallel(4) */ case when u.nbr_children = 1 
+				   --and c.c_fullname like p.c_fullname || '%'
+					and p.rowid = tree.IDROOT 
+					--and c.rowid = tree.IDCHILD
+				 group by P.C_FULLNAME;
+    
+	commit;
+  execute immediate('analyze table TM_WZ.I2B2_LOAD_PATH_WITH_COUNT compute statistics');
+  execute immediate('analyze table I2B2METADATA.I2B2 compute statistics');
+  
+  	stepCt := stepCt + 1;
+	cz_write_audit(jobId,databaseName,procedureName,'Create i2b2 load path with count',SQL%ROWCOUNT,stepCt,'Done');
+	commit;
+	
+	--	update c_visualattributes for all nodes in study, done to pick up node that changed from leaf/numeric to folder/text
+		--July 2013. Performance fix by TR. join by precompute tree
+	update /*+ parallel(i2b2, 4) */ i2b2 a
+	set C_VISUALATTRIBUTES=( 
+		select case when u.nbr_children = 1 
 					then 'L' || substr(a.c_visualattributes,2,2)
 	                else 'F' || substr(a.c_visualattributes,2,1) ||
 						 case when u.c_fullname = topNode and highlight_study = 'Y'
 							  then 'J' else substr(a.c_visualattributes,3,1) end
 			   end
-		from upd u
+		from TM_WZ.i2b2_load_path_with_count u
 		where a.c_fullname = u.c_fullname)
-	where a.c_fullname in
-		(select x.c_fullname from i2b2 x
-		 where x.c_fullname like topNode || '%');
+	where EXISTS
+		(select 1 from i2b2 x
+		 where x.c_fullname like topNode || '%' AND a.c_fullname = x.c_fullname);
 
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Update c_visualattributes for study',SQL%ROWCOUNT,stepCt,'Done');
@@ -945,7 +1017,7 @@ BEGIN
 	
 	-- final procs
   
-	i2b2_fill_in_tree(TrialId, topNode, jobID);
+--	i2b2_fill_in_tree(TrialId, topNode, jobID);
 	
 	--	set sourcesystem_cd, c_comment to null if any added upper-level nodes
 		
@@ -958,7 +1030,7 @@ BEGIN
 	cz_write_audit(jobId,databaseName,procedureName,'Set sourcesystem_cd to null for added upper-level nodes',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
 	
-	i2b2_create_concept_counts(topNode, jobID);
+	i2b2_create_concept_counts(topNode, jobID, 'N');
 	
 	--	delete each node that is hidden after create concept counts
 	
@@ -976,7 +1048,13 @@ BEGIN
 
 	i2b2_create_security_for_trial(TrialId, secureStudy, jobID);
 	i2b2_load_security_data(jobID);
-	
+ 
+    -- --21 July 2013. Performace fix by TR. re create dropped index
+   --execute immediate('CREATE UNIQUE INDEX "I2B2DEMODATA"."OB_FACT_PK" ON "I2B2DEMODATA"."OBSERVATION_FACT" ("ENCOUNTER_NUM", "PATIENT_NUM", "CONCEPT_CD", "PROVIDER_ID", "START_DATE", "MODIFIER_CD")');
+   --execute immediate('CREATE INDEX "I2B2DEMODATA"."IDX_OB_FACT_1" ON "I2B2DEMODATA"."OBSERVATION_FACT" ( "CONCEPT_CD" )');
+   --execute immediate('CREATE INDEX "I2B2DEMODATA"."IDX_OB_FACT_2" ON "I2B2DEMODATA"."OBSERVATION_FACT" ("CONCEPT_CD", "PATIENT_NUM", "ENCOUNTER_NUM")');
+   --execute immediate('CREATE INDEX "I2B2DEMODATA"."OF_CTX_BLOB" ON "I2B2DEMODATA"."OBSERVATION_FACT"("OBSERVATION_BLOB") INDEXTYPE IS "CTXSYS"."CONTEXT" PARAMETERS (''SYNC (on commit)'')');
+   
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'End i2b2_load_clinical_data',0,stepCt,'Done');
 	

@@ -104,10 +104,13 @@ class ClinicalDataProcessor extends DataProcessor {
 											// now need to modify CATEGORY_CD before proceeding
 											def cat_cd = v['CATEGORY_CD']
 											
-											if (v['DATA_LABEL_SOURCE_TYPE'] == 'A')
-												cat_cd = (cat_cd =~ /^(.+)\+([^\+]+?)$/).replaceFirst('$1+DATALABEL+$2')
-											else
-												cat_cd = cat_cd + '+DATALABEL'									
+											if ( !cat_cd.contains('DATALABEL') ) {
+												// do this only if category_cd doesn't contain DATALABEL yet
+												if (v['DATA_LABEL_SOURCE_TYPE'] == 'A')
+													cat_cd = (cat_cd =~ /^(.+)\+([^\+]+?)$/).replaceFirst('$1+DATALABEL+$2')
+												else
+													cat_cd = cat_cd + '+DATALABEL'	
+											}								
 											
 											out['category_cd'] = fixColumn(cat_cd)
 										}		
