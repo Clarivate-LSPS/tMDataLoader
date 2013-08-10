@@ -585,12 +585,17 @@ BEGIN
 		 	when a.category_path like '%DATALABEL%' and a.category_path like '%VISITNAME%'
 				then regexp_replace(topNode || replace(replace(a.category_path,'DATALABEL',a.data_label),'VISITNAME',a.visit_name) || '\' || a.data_value || '\','(\\){2,}', '\')
 			when a.CATEGORY_PATH like '%DATALABEL%'
-				then regexp_replace(topNode || replace(a.category_path,'DATALABEL',a.data_label) || '\' || a.visit_name || '\' || a.data_value || '\', '(\\){2,}', '\') -- Eugr: uncomment to flip
-			ELSE REGEXP_REPLACE(TOPNODE || A.CATEGORY_PATH || 
---                   '\'  || a.DATA_LABEL || '\' || a.DATA_VALUE || '\' || a.VISIT_NAME || '\',
-                     '\'  || a.data_label || '\' || a.visit_name || '\' || a.data_value || '\', -- Eugr: uncomment if you want to flip VISIT_NAME and DATA_VALUE
-                   '(\\){2,}', '\') 
-			  end
+				then case
+				when a.category_path like '%\VISITNFST' -- TR: support visit first
+					then regexp_replace(topNode || replace(replace(a.category_path,'\VISITNFST', ''), 'DATALABEL',a.data_label) || '\' || a.visit_name || '\' || a.data_value || '\', '(\\){2,}', '\') 
+					else regexp_replace(topNode || replace(a.category_path, 'DATALABEL',a.data_label) || '\' || a.data_value || '\' || a.visit_name || '\', '(\\){2,}', '\')
+				end
+			ELSE case
+			when a.category_path like '%\VISITNFST' -- TR: support visit first
+				then REGEXP_REPLACE(TOPNODE || replace(a.category_path,'\VISITNFST', '') || '\'  || a.data_label || '\' || a.visit_name || '\' || a.data_value || '\', '(\\){2,}', '\')
+				else REGEXP_REPLACE(TOPNODE || a.category_path || '\'  || a.DATA_LABEL || '\' || a.DATA_VALUE || '\' || a.VISIT_NAME || '\', '(\\){2,}', '\')
+			end
+	end
 	--	else is numeric data_type and default_node
 	else case when a.category_path like '%DATALABEL%' and a.category_path like '%VISITNAME%'
 		      then regexp_replace(topNode || replace(replace(a.category_path,'DATALABEL',a.data_label),'VISITNAME',a.visit_name) || '\','(\\){2,}', '\')

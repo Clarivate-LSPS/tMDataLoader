@@ -22,5 +22,13 @@ db.jdbcDriver = 'oracle.jdbc.driver.OracleDriver'
 //		Multiple Sclerosis_Goertsches_GSE24427
 //			ClinicalDataToUpload
 //			ExpressionDataToUpload
+// As of 0.8 and higher, folders can be nested, e.g: \Public Studies\Test\Multiple Sclerosis_Baranzini_GSE13732
 
 dataDir = '/home/transmart/YOUR_ETL_DIRECTORY'
+
+// Do not rename if failed (-n option)
+// isNoRenameOnFail = true
+
+// Override default ETL behavior and put VISIT NAME prior to data value (--visit-name-first option)
+// If you set this, you may still use --data-value-first to override
+// visitNameFirst = true

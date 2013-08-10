@@ -104,6 +104,7 @@ class ClinicalDataProcessor extends DataProcessor {
 											// now need to modify CATEGORY_CD before proceeding
 											def cat_cd = v['CATEGORY_CD']
 											
+											// handling DATALABEL in category_cd
 											if ( !cat_cd.contains('DATALABEL') ) {
 												// do this only if category_cd doesn't contain DATALABEL yet
 												if (v['DATA_LABEL_SOURCE_TYPE'] == 'A')
@@ -111,6 +112,13 @@ class ClinicalDataProcessor extends DataProcessor {
 												else
 													cat_cd = cat_cd + '+DATALABEL'	
 											}								
+											
+											// VISIT_NAME special handling; do it only when VISITNAME is not in category_cd already
+											if ( !cat_cd.contains('VISITNAME') ) {
+												if (config.visitNameFirst) {
+													cat_cd = cat_cd + '+VISITNFST'
+												}
+											}
 											
 											out['category_cd'] = fixColumn(cat_cd)
 										}		

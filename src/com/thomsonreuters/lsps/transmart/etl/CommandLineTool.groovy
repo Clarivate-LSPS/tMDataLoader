@@ -26,7 +26,7 @@ class CommandLineTool {
 
 	static main(args) {
 		
-		def version = "0.8.1"
+		def version = "0.8.2"
 		
 		def cli = new CliBuilder(usage: 'tm_etl [options] [<data_dir>]')
 		cli.with {
@@ -39,6 +39,8 @@ class CommandLineTool {
 			s longOpt: 'stop-on-fail', 'Stop when upload is failed'
 			_ longOpt: 'alt-clinical-proc', args: 1, argName: 'proc_name', 'Name of alternative clinical stored procedure (expert option)'
 			_ longOpt: 'secure-study', 'Make study securable'
+			_ longOpt: 'visit-name-first', 'Put VISIT_NAME before the data value'
+			_ longOpt: 'data-value-first', 'Put VISIT NAME after the data value (default behavior, use to override non-standard config)'
 		}
 		// TODO: implement stop-on-fail mode!
 		def opts = cli.parse(args)
@@ -108,6 +110,24 @@ class CommandLineTool {
 		if (opts?.'alt-clinical-proc') {
 			config.altClinicalProcName = opts?.'alt-clinical-proc'
 			println ">>> USING ALTERNATIVE CLINICAL PROCEDURE: ${opts?.'alt-clinical-proc'}"
+		}
+		
+		if (! config?.containsKey('visitNameFirst')) {
+			config.visitNameFirst = false // default behavior
+		}
+		
+		if (opts?.'visit-name-first') {
+			config.visitNameFirst = true
+			println ">>> OVERRIDING CONFIG: VISIT_NAME first"
+		}
+		
+		if (opts?.'data-value-first') {
+			config.visitNameFirst = false
+			println ">>> OVERRIDING CONFIG: DATA_VALUE first"
+		}
+		
+		if (config?.visitNameFirst) {
+			println '>>> FYI: using VISIT_NAME before DATA_VALUE as default behavior (per config or command line)'
 		}
 		
 		def extra_args = opts.arguments()
