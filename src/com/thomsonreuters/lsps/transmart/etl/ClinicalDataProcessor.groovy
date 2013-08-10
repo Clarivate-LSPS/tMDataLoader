@@ -114,7 +114,7 @@ class ClinicalDataProcessor extends DataProcessor {
 											}								
 											
 											// VISIT_NAME special handling; do it only when VISITNAME is not in category_cd already
-											if ( !cat_cd.contains('VISITNAME') ) {
+											if ( ! ( cat_cd.contains('VISITNAME') || cat_cd.contains('+VISITNFST') ) ) {
 												if (config.visitNameFirst) {
 													cat_cd = cat_cd + '+VISITNFST'
 												}
