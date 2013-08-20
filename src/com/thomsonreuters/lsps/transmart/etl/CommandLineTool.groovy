@@ -26,7 +26,7 @@ class CommandLineTool {
 
 	static main(args) {
 		
-		def version = "0.8.2"
+		def version = "0.8.3"
 		
 		def cli = new CliBuilder(usage: 'tm_etl [options] [<data_dir>]')
 		cli.with {
@@ -51,7 +51,7 @@ class CommandLineTool {
 		}
 		
 		if (opts?.v) {
-			println "Transmart ETL tool, version ${version}\nCopyright (c) 2012, Thomson Reuters"
+			println "Transmart ETL tool, version ${version}\nCopyright (c) 2012-2013, Thomson Reuters"
 			return
 		}
 		

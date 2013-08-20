@@ -598,10 +598,10 @@ BEGIN
 	end
 	--	else is numeric data_type and default_node
 	else case when a.category_path like '%DATALABEL%' and a.category_path like '%VISITNAME%'
-		      then regexp_replace(topNode || replace(replace(a.category_path,'DATALABEL',a.data_label),'VISITNAME',a.visit_name) || '\','(\\){2,}', '\')
+		      then regexp_replace(topNode || replace(replace(replace(a.category_path,'DATALABEL',a.data_label),'VISITNAME',a.visit_name), '\VISITNFST', '') || '\','(\\){2,}', '\')
 			  when a.CATEGORY_PATH like '%DATALABEL%'
-			  then regexp_replace(topNode || replace(a.category_path,'DATALABEL',a.data_label) || '\' || a.visit_name || '\', '(\\){2,}', '\')
-			  else REGEXP_REPLACE(topNode || a.category_path || 
+			  then regexp_replace(topNode || replace(replace(a.category_path,'DATALABEL',a.data_label), '\VISITNFST', '') || '\' || a.visit_name || '\', '(\\){2,}', '\')
+			  else REGEXP_REPLACE(topNode || replace(a.category_path, '\VISITNFST', '') || 
                    '\'  || a.data_label || '\' || a.visit_name || '\',
                    '(\\){2,}', '\')
 			  end

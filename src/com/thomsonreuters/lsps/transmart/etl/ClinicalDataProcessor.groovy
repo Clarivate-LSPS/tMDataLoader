@@ -97,12 +97,12 @@ class ClinicalDataProcessor extends DataProcessor {
 										def out = output.clone()
 
 										out['data_value'] = fixColumn( cols[v['COLUMN']])
+										def cat_cd = v['CATEGORY_CD']
 										
 										if (v['DATA_LABEL_SOURCE'] > 0) {
 											// ok, the actual data label is in the referenced column
 											out['data_label'] = fixColumn( cols[v['DATA_LABEL_SOURCE']] )
 											// now need to modify CATEGORY_CD before proceeding
-											def cat_cd = v['CATEGORY_CD']
 											
 											// handling DATALABEL in category_cd
 											if ( !cat_cd.contains('DATALABEL') ) {
@@ -112,20 +112,20 @@ class ClinicalDataProcessor extends DataProcessor {
 												else
 													cat_cd = cat_cd + '+DATALABEL'	
 											}								
-											
-											// VISIT_NAME special handling; do it only when VISITNAME is not in category_cd already
-											if ( ! ( cat_cd.contains('VISITNAME') || cat_cd.contains('+VISITNFST') ) ) {
-												if (config.visitNameFirst) {
-													cat_cd = cat_cd + '+VISITNFST'
-												}
-											}
-											
-											out['category_cd'] = fixColumn(cat_cd)
+												
 										}		
 										else {
-											out['category_cd'] = fixColumn(v['CATEGORY_CD'])		
 											out['data_label'] = fixColumn(v['DATA_LABEL'])
 										}
+										
+										// VISIT_NAME special handling; do it only when VISITNAME is not in category_cd already
+										if ( ! ( cat_cd.contains('VISITNAME') || cat_cd.contains('+VISITNFST') ) ) {
+											if (config.visitNameFirst) {
+												cat_cd = cat_cd + '+VISITNFST'
+											}
+										}
+										
+										out['category_cd'] = fixColumn(cat_cd)
 										
 										stmt.addBatch(out) 
 									}
