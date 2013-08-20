@@ -20,6 +20,8 @@ PREPARING DATA FOR UPLOAD
 First, you need to put studies you want to upload in the corresponding directory on the machine, that you specified in the configuration file.
 It should have the following structure (below is just an example):
 
+NEW! Starting with version 0.8, nested folders are supported - see below.
+
 	YOUR_ETL_DIRECTORY
 		Public Studies <-- put public studies here
 			Multiple Sclerosis_Baranzini_GSE13732
@@ -31,14 +33,15 @@ It should have the following structure (below is just an example):
 				ExpressionDataToUpload <-- same for this one
 				MetaDataToUpload <-- same for this one
 		Internal Studies <-- put internal studies here
-			MyStudy
-				ClinicalData
-				ExpressionData
-				MetaData
+			MyStudyFolder
+				MyStudy
+					ClinicalData
+					ExpressionData
+					MetaData
 		_MetaData <-- you can put metadata here if it contains metadata for several studies. Each .txt file will be processed.
 			
 Basically, the first level of the directory defines the top category in the Dataset Explorer tree.
-The second level defines the study name that will be used in the tree.
+The last level (before Clinical/Expression folders) defines the study name that will be used in the tree. All folders in between define intermediate folders in the Dataset Explorer tree.
 
 Please, refer to the data format description for further information.
 
@@ -53,15 +56,22 @@ You can run it with "-h" option to get a list of all available options:
 
 $ java -jar tm_etl.jar -h
 usage: tm_etl [options] [<data_dir>]
- -c,--config <config>   Configuration filename
- -h,--help              Show usage information
- -i,--interactive       Interactive (console) mode: progress bar
- -n,--no-rename         Don't rename folders when failed
- -s,--stop-on-fail      Stop when upload is failed
-    --secure-study      Make study securable
- -t,--use-t             Do not use Z datatype for T expression data
-                        (expert option)
- -v,--version           Display version information and exit
+    --alt-clinical-proc <proc_name>   Name of alternative clinical stored
+                                      procedure (expert option)
+ -c,--config <config>                 Configuration filename
+    --data-value-first                Put VISIT NAME after the data value
+                                      (default behavior, use to override
+                                      non-standard config)
+ -h,--help                            Show usage information
+ -i,--interactive                     Interactive (console) mode: progress
+                                      bar
+ -n,--no-rename                       Don't rename folders when failed
+ -s,--stop-on-fail                    Stop when upload is failed
+    --secure-study                    Make study securable
+ -t,--use-t                           Do not use Z datatype for T
+                                      expression data (expert option)
+ -v,--version                         Display version information and exit
+    --visit-name-first                Put VISIT_NAME before the data value
  
 By default, the configuration file location is ~/.tm_etl/Config.groovy.
 You can specify the configuration file name using -c option.
