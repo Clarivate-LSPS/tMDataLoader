@@ -661,7 +661,7 @@ order by c_fullname
 	select min(b.c_fullname) as path
 		  ,be.accession as tag
 		  ,'Trial' as tag_type
-		  ,0 as tags_idx
+		  ,1 as tags_idx
 	from bio_experiment be
 		,i2b2 b
 	where be.accession = b.sourcesystem_cd
@@ -685,7 +685,7 @@ order by c_fullname
 	select distinct min(o.c_fullname) as path
 		  ,decode(x.rec_num,1,c.generic_name,c.brand_name) as tag
 		  ,'Compound' as tag_type
-		  ,1 as tags_idx
+		  ,2 as tags_idx
 	from bio_experiment be
 		,bio_data_compound bc
 		,bio_compound c
@@ -715,7 +715,7 @@ order by c_fullname
 	select distinct min(o.c_fullname) as path
 		   ,c.prefered_name
 		   ,'Disease' as tag_type
-		   ,1 as tags_idx
+		   ,3 as tags_idx
 	from bio_experiment be
 		,bio_data_disease bc
 		,bio_disease c
