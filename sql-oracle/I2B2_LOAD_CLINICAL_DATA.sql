@@ -158,8 +158,9 @@ BEGIN
 
 	--	delete any existing data from lz_src_clinical_data and load new data
 	
-	delete from lz_src_clinical_data
-	where study_id = TrialId;
+	/* delete from lz_src_clinical_data
+	where study_id = TrialId; */
+	execute immediate('truncate table tm_lz.lz_src_clinical_data'); -- by TR
 	
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Delete existing data from lz_src_clinical_data',SQL%ROWCOUNT,stepCt,'Done');
