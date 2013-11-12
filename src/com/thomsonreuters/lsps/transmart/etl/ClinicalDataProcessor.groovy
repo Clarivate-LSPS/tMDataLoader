@@ -58,7 +58,7 @@ class ClinicalDataProcessor extends DataProcessor {
 				
 				sql.withTransaction {
 					sql.withBatch(100, """\
-					INSERT into lt_src_clinical_data 
+					INSERT into tm_lz.lt_src_clinical_data 
 										(STUDY_ID, SITE_ID, SUBJECT_ID, VISIT_NAME, DATA_LABEL, DATA_VALUE, CATEGORY_CD)
 									VALUES (:study_id, :site_id, :subj_id, :visit_name, 
 										:data_label, :data_value, :category_cd)
@@ -149,7 +149,7 @@ class ClinicalDataProcessor extends DataProcessor {
 		}
 		
 		// OK, now we need to retrieve studyID & node
-		def rows = sql.rows("select study_id, count(*) as cnt from lt_src_clinical_data group by study_id")
+		def rows = sql.rows("select study_id, count(*) as cnt from tm_lz.lt_src_clinical_data group by study_id")
 		def rsize = rows.size()
 		
 		if (rsize > 0) {
@@ -187,7 +187,8 @@ class ClinicalDataProcessor extends DataProcessor {
 		def studyNode = studyInfo['node']
 		if (studyId && studyNode) {
 			config.logger.log("Study ID=${studyId}; Node=${studyNode}")
-			sql.call("{CALL ${getProcedureName()}(?,?,?,?,?)}", [ studyId, studyNode, config.securitySymbol, 'N', jobId ])
+			sql.call("{call tm_cz.${getProcedureName()}(?,?,?,?,?)}", [ studyId, studyNode, config.securitySymbol, 'N', jobId ])
+			//sql.rows("SELECT tm_cz.i2b2_load_clinical_data(?,?,?,?,?)", [ studyId, studyNode, config.securitySymbol, 'N', jobId ])
 		}
 		else {
 			config.logger.log(LogType.ERROR, "Study ID or Node not defined!")
