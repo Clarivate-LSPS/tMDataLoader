@@ -73,10 +73,10 @@ class ExpressionDataProcessor extends DataProcessor {
 			config.logger.log("Study ID=${studyId}; Node=${studyNode}; Data Type=${studyDataType}")
 			
 			if (studyInfo['runPlatformLoad']) {
-				sql.call("{call i2b2_load_annotation_deapp()}")
+				sql.call("{call tm_cz.i2b2_load_annotation_deapp()}")
 			}
 			
-			sql.call("{call i2b2_process_mrna_data (?, ?, ?, null, null, '"+config.securitySymbol+"', ?, ?)}",
+			sql.call("{call tm_cz.i2b2_process_mrna_data (?, ?, ?, null, null, '"+config.securitySymbol+"', ?, ?)}",
 				[ studyId, studyNode, studyDataType, jobId, Sql.NUMERIC ]) {}
 		}
 		else {
@@ -101,7 +101,7 @@ class ExpressionDataProcessor extends DataProcessor {
 		
 		sql.withTransaction {
 			sql.withBatch(100, """\
-				INSERT into lt_src_mrna_subj_samp_map (TRIAL_NAME, SITE_ID, 
+				INSERT into tm_lz.lt_src_mrna_subj_samp_map (TRIAL_NAME, SITE_ID, 
 					SUBJECT_ID, SAMPLE_CD, PLATFORM, TISSUE_TYPE, 
 					ATTRIBUTE_1, ATTRIBUTE_2, CATEGORY_CD, SOURCE_CD) 
 				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'STD')
@@ -156,7 +156,7 @@ class ExpressionDataProcessor extends DataProcessor {
 			
 			sql.execute('TRUNCATE TABLE tm_lz.lt_src_deapp_annot')
 			
-			def row = sql.firstRow("SELECT count(*) as cnt FROM annotation_deapp WHERE gpl_id=${platform}")
+			def row = sql.firstRow("SELECT count(*) as cnt FROM tm_cz.annotation_deapp WHERE gpl_id=${platform}")
 			if (! row?.cnt) {
 				// platform is not defined, loading
 				config.logger.log("Loading platform: ${platform}")
@@ -166,7 +166,7 @@ class ExpressionDataProcessor extends DataProcessor {
 				def platformTitle
 				def platformOrganism
 				
-				row = sql.firstRow("select title, organism from de_gpl_info where platform=${platform}")
+				row = sql.firstRow("select title, organism from deapp.de_gpl_info where platform=${platform}")
 				if (!row) {
 					
 					config.logger.log("Fetching platform description from GEO")
@@ -184,7 +184,7 @@ class ExpressionDataProcessor extends DataProcessor {
 					
 					if (platformTitle && platformOrganism) {
 						sql.execute("""\
-							INSERT into de_gpl_info (PLATFORM, TITLE, ORGANISM, ANNOTATION_DATE, MARKER_TYPE) 
+							INSERT into deapp.de_gpl_info (PLATFORM, TITLE, ORGANISM, ANNOTATION_DATE, MARKER_TYPE) 
 							VALUES (?, ?, ?, sysdate, 'Gene Expression')
 						""", [ platform, platformTitle, platformOrganism ])
 					}
@@ -205,7 +205,7 @@ class ExpressionDataProcessor extends DataProcessor {
 				
 				sql.withTransaction {
 					sql.withBatch(500, """\
-						INSERT into lt_src_deapp_annot (GPL_ID,PROBE_ID,GENE_SYMBOL,GENE_ID,ORGANISM) 
+						INSERT into tm_lz.lt_src_deapp_annot (GPL_ID,PROBE_ID,GENE_SYMBOL,GENE_ID,ORGANISM) 
 						VALUES (?, ?, ?, ?, ?)
 				""") {
 						stmt ->
@@ -293,7 +293,7 @@ class ExpressionDataProcessor extends DataProcessor {
 		
 		sql.withTransaction {
 			sql.withBatch(1000, """\
-				INSERT into lt_src_mrna_data (TRIAL_NAME, PROBESET, EXPR_ID, INTENSITY_VALUE) 
+				INSERT into tm_lz.lt_src_mrna_data (TRIAL_NAME, PROBESET, EXPR_ID, INTENSITY_VALUE) 
 				VALUES (?, ?, ?, ?)
 			""") {
 				stmt ->
