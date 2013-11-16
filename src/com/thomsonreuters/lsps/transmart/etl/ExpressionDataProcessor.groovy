@@ -185,7 +185,7 @@ class ExpressionDataProcessor extends DataProcessor {
 					if (platformTitle && platformOrganism) {
 						sql.execute("""\
 							INSERT into deapp.de_gpl_info (PLATFORM, TITLE, ORGANISM, ANNOTATION_DATE, MARKER_TYPE) 
-							VALUES (?, ?, ?, sysdate, 'Gene Expression')
+							VALUES (?, ?, ?, current_timestamp, 'Gene Expression')
 						""", [ platform, platformTitle, platformOrganism ])
 					}
 					else {
