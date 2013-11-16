@@ -49,6 +49,8 @@ abstract class DataProcessor {
 			sql.call('{call tm_cz.cz_start_audit(?,?,?)}', [getProcedureName(), config.db.username, Sql.NUMERIC]) {
 				jobId ->
 				
+				sql.commit() // we need this for PostgreSQL version
+				
 				config.logger.log("Job ID: ${jobId}")
 				
 				def t = Thread.start {
@@ -93,6 +95,8 @@ abstract class DataProcessor {
 					config.logger.log(LogType.ERROR, "Procedure completed with errors!")
 					sql.call("{call tm_cz.cz_end_audit(?,?)}", [jobId, 'FAIL'])
 				}
+				
+				sql.commit() // need this for PostgreSQL version
 			}
 			
 		}
