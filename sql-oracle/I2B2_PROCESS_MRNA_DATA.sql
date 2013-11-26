@@ -906,7 +906,7 @@ BEGIN
 	)
 	select gs.probeset_id
 --		  ,sd.sample_cd
-		  ,avg(md.intensity_value)
+		  ,cast(avg(cast (md.intensity_value as number(30,20))) as number) as aiv -- temporary fix to avoid overflow in some cases, need to address this properly by changing staging tables
 		  ,sd.patient_id
 --		  ,sd.sample_cd
 --		  ,sd.subject_id
