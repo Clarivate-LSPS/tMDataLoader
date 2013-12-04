@@ -1,5 +1,12 @@
-create or replace
-PROCEDURE             "I2B2_MRNA_ZSCORE_CALC" 
+--------------------------------------------------------
+--  File created - Wednesday-November-06-2013   
+--------------------------------------------------------
+--------------------------------------------------------
+--  DDL for Procedure I2B2_MRNA_ZSCORE_CALC
+--------------------------------------------------------
+set define off;
+
+  CREATE OR REPLACE PROCEDURE "TM_CZ"."I2B2_MRNA_ZSCORE_CALC" 
 (
   trial_id VARCHAR2
  ,run_type varchar2 := 'L'
@@ -309,6 +316,16 @@ BEGIN
 */	
 
 
+  /*execute immediate('DROP INDEX DEAPP.IDX_DE_MICROARRAY_DATA_1');
+  execute immediate('DROP INDEX DEAPP.IDX_DE_MICROARRAY_DATA_2');
+  execute immediate('DROP INDEX DEAPP.IDX_DE_MICROARRAY_DATA_3');*/
+  --execute immediate('ALTER INDEX DEAPP.IDX_DE_MICROARRAY_DATA_1 unusable');
+  --execute immediate('ALTER INDEX DEAPP.IDX_DE_MICROARRAY_DATA_2 unusable');
+  --execute immediate('ALTER INDEX DEAPP.IDX_DE_MICROARRAY_DATA_3 unusable');
+  execute immediate('DROP INDEX DEAPP.IDX_DE_MICROARRAY_DATA_1');
+  execute immediate('DROP INDEX DEAPP.IDX_DE_MICROARRAY_DATA_2');
+  execute immediate('DROP INDEX DEAPP.IDX_DE_MICROARRAY_DATA_3');
+
 	insert into de_subject_microarray_data
 	(trial_source
 	,trial_name
@@ -341,6 +358,38 @@ BEGIN
 	cz_write_audit(jobId,databaseName,procedureName,'Insert data for trial in DEAPP de_subject_microarray_data',SQL%ROWCOUNT,stepCt,'Done');
 
   	commit;
+
+  -- restore indexes on de_subject_microarray_data (start)
+  execute immediate('CREATE INDEX "DEAPP"."IDX_DE_MICROARRAY_DATA_1" ON "DEAPP"."DE_SUBJECT_MICROARRAY_DATA" ("TRIAL_NAME", "ASSAY_ID", "PROBESET_ID") parallel nologging');
+  execute immediate('CREATE INDEX "DEAPP"."IDX_DE_MICROARRAY_DATA_2" ON "DEAPP"."DE_SUBJECT_MICROARRAY_DATA" ("ASSAY_ID", "PROBESET_ID") parallel nologging');
+  execute immediate('CREATE INDEX "DEAPP"."IDX_DE_MICROARRAY_DATA_3" ON "DEAPP"."DE_SUBJECT_MICROARRAY_DATA" ("TRIAL_SOURCE")  parallel nologging');
+  --execute immediate('ALTER INDEX DEAPP.IDX_DE_MICROARRAY_DATA_2 rebuild');
+  --execute immediate('ALTER INDEX DEAPP.IDX_DE_MICROARRAY_DATA_3 rebuild');
+
+  /*execute immediate('
+  CREATE INDEX "DEAPP"."IDX_DE_MICROARRAY_DATA_1" ON "DEAPP"."DE_SUBJECT_MICROARRAY_DATA" ("TRIAL_NAME", "ASSAY_ID", "PROBESET_ID") 
+  PCTFREE 10 INITRANS 2 MAXTRANS 255 NOLOGGING COMPUTE STATISTICS NOCOMPRESS
+  STORAGE( INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "DEAPP"
+  ');
+  execute immediate('
+  CREATE INDEX "DEAPP"."IDX_DE_MICROARRAY_DATA_2" ON "DEAPP"."DE_SUBJECT_MICROARRAY_DATA" ("ASSAY_ID", "PROBESET_ID") 
+  PCTFREE 10 INITRANS 2 MAXTRANS 255 NOLOGGING COMPUTE STATISTICS 
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1 BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "DEAPP"
+  ');
+  execute immediate('
+  CREATE INDEX "DEAPP"."IDX_DE_MICROARRAY_DATA_3" ON "DEAPP"."DE_SUBJECT_MICROARRAY_DATA" ("TRIAL_SOURCE") 
+  PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS 
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1 BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "DEAPP"
+  ');*/
+  -- restore indexes on de_subject_microarray_data (end)
+
+    
 
 --	add indexes, if indexes were not dropped, procedure will not try and recreate
 /*
@@ -447,3 +496,5 @@ select d.probeset_id
  where 1=2;
 		   
 */
+
+/
