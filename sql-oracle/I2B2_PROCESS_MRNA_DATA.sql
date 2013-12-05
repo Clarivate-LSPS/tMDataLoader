@@ -1,5 +1,10 @@
-create or replace
-PROCEDURE                                     "I2B2_PROCESS_MRNA_DATA" 
+--------------------------------------------------------
+--  File created - Tuesday-November-05-2013   
+--------------------------------------------------------
+--------------------------------------------------------
+--  DDL for Procedure I2B2_PROCESS_MRNA_DATA
+--------------------------------------------------------
+CREATE OR REPLACE PROCEDURE "TM_CZ"."I2B2_PROCESS_MRNA_DATA" 
 (
   trial_id 		VARCHAR2
  ,top_node		varchar2
@@ -906,7 +911,7 @@ BEGIN
 	)
 	select gs.probeset_id
 --		  ,sd.sample_cd
-		  ,cast(avg(cast (md.intensity_value as number(30,20))) as number) as aiv -- temporary fix to avoid overflow in some cases, need to address this properly by changing staging tables
+		  ,avg(md.intensity_value)
 		  ,sd.patient_id
 --		  ,sd.sample_cd
 --		  ,sd.subject_id

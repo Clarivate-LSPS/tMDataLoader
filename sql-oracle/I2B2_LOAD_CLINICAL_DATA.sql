@@ -1,5 +1,5 @@
 create or replace
-PROCEDURE                                                       "I2B2_LOAD_CLINICAL_DATA" 
+PROCEDURE                                           "I2B2_LOAD_CLINICAL_DATA" 
 (
   trial_id 			IN	VARCHAR2
  ,top_node			in  varchar2
@@ -156,17 +156,23 @@ BEGIN
 		raise invalid_topNode;
 	end if;	
 
+	
+	stepCt := stepCt + 1;
+	cz_write_audit(jobId,databaseName,procedureName,'Validate secure params',SQL%ROWCOUNT,stepCt,'Done');
+	commit;
+	
 	--	delete any existing data from lz_src_clinical_data and load new data
 	
-	/* delete from lz_src_clinical_data
-	where study_id = TrialId; */
-	execute immediate('truncate table tm_lz.lz_src_clinical_data'); -- by TR
+	/*delete from lz_src_clinical_data
+	where study_id = TrialId;*/
+	
+	/*execute immediate('truncate table tm_lz.lz_src_clinical_data');
 	
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Delete existing data from lz_src_clinical_data',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
 	
-	insert /*+ APPEND */ into lz_src_clinical_data nologging
+	insert *//*+ APPEND *//* into lz_src_clinical_data nologging
 	(study_id
 	,site_id
 	,subject_id
@@ -190,14 +196,15 @@ BEGIN
 	from lt_src_clinical_data;
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Insert data into lz_src_clinical_data',SQL%ROWCOUNT,stepCt,'Done');
-	commit;
+	commit;*/
 		
 	--	truncate wrk_clinical_data and load data from external file
 	
 	execute immediate('truncate table tm_wz.wrk_clinical_data');
+	execute immediate('drop index "TM_WZ"."IDX_WRK_CD"');
 	
 	--	insert data from lt_src_clinical_data to wrk_clinical_data
-	
+	-- Optimization: do not insert null data_Value
 	insert /*+ APPEND */ into wrk_clinical_data nologging
 	(study_id
 	,site_id
@@ -207,6 +214,9 @@ BEGIN
 	,data_value
 	,category_cd
 	,ctrl_vocab_code
+  ,category_path
+  ,usubjid
+  ,data_type
 	)
 	select study_id
 		  ,site_id
@@ -216,7 +226,13 @@ BEGIN
 		  ,data_value
 		  ,category_cd
 		  ,ctrl_vocab_code
-	from lt_src_clinical_data;
+      ,replace(replace(category_cd,'_',' '),'+','\')
+      ,(CASE WHEN site_id IS NOT NULL THEN TrialID || ':' || site_id || ':' || subject_id ELSE TrialID || ':' || subject_id END)
+      ,'T'
+	from lt_src_clinical_data
+	WHERE data_value is not null;
+	
+	execute immediate('CREATE INDEX TM_WZ.IDX_WRK_CD ON TM_WZ.WRK_CLINICAL_DATA (DATA_TYPE ASC, DATA_VALUE ASC, VISIT_NAME ASC, DATA_LABEL ASC, CATEGORY_CD ASC, USUBJID ASC)');
 	
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Load lt_src_clinical_data to work table',SQL%ROWCOUNT,stepCt,'Done');
@@ -274,6 +290,9 @@ BEGIN
 		i2b2_add_node(TrialId, topNode, study_name, jobId);
 	end if;
   
+  stepCt := stepCt + 1;
+  cz_write_audit(jobId,databaseName,procedureName,'add top node for study',SQL%ROWCOUNT,stepCt,'Done');
+  commit;
 	--	Set data_type, category_path, and usubjid 
   
 	/*update  wrk_clinical_data
@@ -284,18 +303,19 @@ BEGIN
                    '(::){1,}', ':'); */
 				   
 	--21 July 2013. Performace fix by TR. Split into 2 sub queries
-		
-	update wrk_clinical_data
-	set data_type = 'T'
-	   ,category_path = replace(replace(category_cd,'_',' '),'+','\')
-     ,usubjid = TrialID || ':' || subject_id
-	WHERE site_id IS NULL;
-    
-  update wrk_clinical_data
-	set data_type = 'T'
-	   ,category_path = replace(replace(category_cd,'_',' '),'+','\')
-     ,usubjid = TrialID || ':' || site_id || ':' || subject_id
-  WHERE site_id IS NOT NULL;
+  --moved to insert 
+--	update /*+ parallel(4) */ wrk_clinical_data
+--	set data_type = 'T'
+--	   ,category_path = replace(replace(category_cd,'_',' '),'+','\')
+--     ,usubjid = TrialID || ':' || subject_id
+--	WHERE site_id IS NULL;
+--    commit;
+	
+--  update /*+ parallel(4) */ wrk_clinical_data
+--	set data_type = 'T'
+--	   ,category_path = replace(replace(category_cd,'_',' '),'+','\')
+--     ,usubjid = TrialID || ':' || site_id || ':' || subject_id
+--  WHERE site_id IS NOT NULL;
   
 	 
 	stepCt := stepCt + 1;
@@ -304,9 +324,11 @@ BEGIN
 	commit;
   
 	--	Delete rows where data_value is null
-  
+    -- we simply do not insert data_value null values
 	delete from wrk_clinical_data
 	where data_value is null;
+	
+	
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Delete null data_values in wrk_clinical_data',SQL%ROWCOUNT,stepCt,'Done');
 	
@@ -464,7 +486,7 @@ BEGIN
 		
 	 -- July 2013. Performace fix by TR. Merge into one query
    
-	update /*+ parallel(wrk_clinical_data, 4) */ wrk_clinical_data
+	update /*+ parallel(4) */ wrk_clinical_data
 	set data_label  = trim(trailing ',' from trim(replace(replace(/**/  replace(replace(replace(replace(data_label,'%',' Pct'),'&',' and '),'+',' and '),'_',' ') /**/   ,'  ', ' '),' ,',',')))
 		 ,data_value  = trim(trailing ',' from trim(replace(replace(/**/  replace(replace(replace(data_value,'%',' Pct'),'&',' and '),'+',' and ') /**/  ,'  ', ' '),' ,',',')))
      ,visit_name  = trim(trailing ',' from trim(replace(replace(visit_name,'  ', ' '),' ,',',')))
@@ -874,9 +896,15 @@ BEGIN
   
   
 	--21 July 2013. Performace fix by TR. Drop complicated index before data manipulation
-  --execute immediate('DROP INDEX "I2B2DEMODATA"."OB_FACT_PK"');
-  --execute immediate('DROP INDEX "I2B2DEMODATA"."IDX_OB_FACT_1"');
-  --execute immediate('DROP INDEX "I2B2DEMODATA"."IDX_OB_FACT_2"');
+	execute immediate('DROP INDEX "I2B2DEMODATA"."OB_FACT_PK"');
+    execute immediate('DROP INDEX "I2B2DEMODATA"."IDX_OB_FACT_1"');
+	execute immediate('DROP INDEX "I2B2DEMODATA"."IDX_OB_FACT_2"');
+	execute immediate('DROP INDEX "I2B2DEMODATA"."IDX_OB_FACT_PATIENT_NUMBER"');
+  
+  
+    execute immediate('analyze table tm_wz.wt_trial_nodes compute statistics');
+    execute immediate('analyze table tm_wz.WRK_CLINICAL_DATA compute statistics');
+
   --execute immediate('DROP INDEX "I2B2DEMODATA"."OF_CTX_BLOB"'); 
   
 	--	delete from observation_fact all concept_cds for trial that are clinical data, exclude concept_cds from biomarker data
@@ -962,6 +990,15 @@ BEGIN
 		  
 		  )
 	  and a.data_value is not null;  
+	  
+	  
+	-- Performace fix. re create dropped index
+	execute immediate('CREATE UNIQUE INDEX "I2B2DEMODATA"."OB_FACT_PK" ON "I2B2DEMODATA"."OBSERVATION_FACT" ("ENCOUNTER_NUM", "PATIENT_NUM", "CONCEPT_CD", "PROVIDER_ID", "START_DATE", "MODIFIER_CD")');
+	execute immediate('CREATE INDEX "I2B2DEMODATA"."IDX_OB_FACT_1" ON "I2B2DEMODATA"."OBSERVATION_FACT" ( "CONCEPT_CD" )');
+	execute immediate('CREATE INDEX "I2B2DEMODATA"."IDX_OB_FACT_2" ON "I2B2DEMODATA"."OBSERVATION_FACT" ("CONCEPT_CD", "PATIENT_NUM", "ENCOUNTER_NUM")');
+	execute immediate('CREATE INDEX "I2B2DEMODATA"."IDX_OB_FACT_PATIENT_NUMBER" ON "I2B2DEMODATA"."OBSERVATION_FACT" ("PATIENT_NUM", "CONCEPT_CD")');
+   
+   
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Insert trial into I2B2DEMODATA observation_fact',SQL%ROWCOUNT,stepCt,'Done');
 	
