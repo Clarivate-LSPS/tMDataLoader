@@ -220,7 +220,7 @@ BEGIN
 	end if;
 	
 	select c_hlevel into root_level
-	from i2b2
+	from table_access /* from i2b2 */
 	where c_name = RootNode;
 	
 	-- Get study name from topNode
@@ -911,7 +911,7 @@ BEGIN
 	)
 	select gs.probeset_id
 --		  ,sd.sample_cd
-		  ,avg(md.intensity_value)
+		  ,cast(avg(cast (md.intensity_value as number(30,20))) as number) as aiv -- temporary fix to avoid overflow in some cases, need to address this properly by changing staging tables
 		  ,sd.patient_id
 --		  ,sd.sample_cd
 --		  ,sd.subject_id

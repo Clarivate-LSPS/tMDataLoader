@@ -11,8 +11,39 @@ sample_data folder contains sample public datasets from GEO
 INSTALLING
 ==========
 
-Just copy tm_etl.jar to any directory on the server. It can be on the same machine as Transmart or any other one that has direct access to TM_CZ Oracle schema used by Transmart.
-Then, place an appropriate Config.groovy file in your ~/.tm_etl directory. Please make sure you edit the configuration file before using the tool.
+Just copy tm_etl.jar to any directory on the server. It can be on the same machine as Transmart or any other one that has direct access to TM_CZ database schema used by tranSMART.
+
+Then, edit Config.groovy file and put it in your ~/.tm_etl directory.
+Please make sure you edit the configuration file before using the tool.
+
+For Oracle
+==========
+
+Launch SQLDeveloper and execute the code of each *.sql file in sql-oracle directory, starting with 1_run_first.sql.
+This will apply necessary fixes to the database without breaking compatibility with other tools.
+
+For PostgreSQL
+==============
+
+First of all, you need to apply fixes to the schema and stored procedures, as they are broken in 1.1 release.
+Please, clone transmartApp-DB repository:
+
+	git clone https://github.com/eugene-rakhmatulin/transmartApp-DB.git
+	git checkout post_GPL1.1.0_fixes
+	
+Then apply the fixes to your PostgreSQL database:
+	
+	cd transmartApp-DB/postgresql_wGEO
+	psql -d transmart -f post_1.1.0_update.sql
+	
+If you want "realtime" log updates in ETL tool, you also need:
+
+1) Make sure dblink extension is installed with PostgreSQL (normally comes with standard 'contrib' package)
+2) Edit etl/functions/CZ_WRITE_AUDIT_withdblink.sql and specify login/password if ETL tool is not connecting to DB as a superuser
+3) Apply the fix:
+	
+	psql -d transmart -f etl/functions/CZ_WRITE_AUDIT_withdblink.sql
+	
 
 PREPARING DATA FOR UPLOAD
 =========================
