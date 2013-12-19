@@ -220,7 +220,7 @@ BEGIN
 	end if;
 	
 	select c_hlevel into root_level
-	from i2b2
+	from table_access /* from i2b2 */
 	where c_name = RootNode;
 	
 	-- Get study name from topNode
