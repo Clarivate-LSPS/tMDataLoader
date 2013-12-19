@@ -81,7 +81,7 @@ USING TOOL
 
 To start ETL process, just run the following command:
 
-java -jar tm_etl.jar
+    java -jar tm_etl.jar
 
 You can run it with "-h" option to get a list of all available options:
 
@@ -110,17 +110,18 @@ You can specify the configuration file name using -c option.
 If you don't redirect output to the file, you can find -i option useful - it displays progress for some long operations.
 
 IMPORTANT! If your machine doesn't have a direct connection to the internet and requires http proxy, make sure you specify it when running the tool:
+
     $ java -Dhttp.proxyHost=webproxy.host.com -Dhttp.proxyPort=80 -jar ./tm_etl.jar
 
 Refer to JVM documentation for more information on these options.
 
 After processing is complete, the study folders and subfolders will be renamed according to the following principle:
 
- - If any component (clinical, expression, etc) failed, that particular folder will be marked with <pre>_FAIL_</pre> prefix, e.g. <pre>_FAIL_ClinicalDataToUpload</pre>
+ - If any component (clinical, expression, etc) failed, that particular folder will be marked with `_FAIL_` prefix, e.g. `_FAIL_ClinicalDataToUpload`
  - In addition, the entire study folder will be renamed accordingly
- - In case of success, folders will be prefixed with <pre>_DONE_</pre>
+ - In case of success, folders will be prefixed with `_DONE_`
  
-You can disable any study or study component processing by using <pre>_DISABLED_</pre> prefix for a folder name.
+You can disable any study or study component processing by using `_DISABLED_` prefix for a folder name.
 
 
 
