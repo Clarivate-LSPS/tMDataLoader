@@ -187,7 +187,7 @@ class ClinicalDataProcessor extends DataProcessor {
 		def studyNode = studyInfo['node']
 		if (studyId && studyNode) {
 			config.logger.log("Study ID=${studyId}; Node=${studyNode}")
-			sql.call("{call tm_cz.${getProcedureName()}(?,?,?,?,?)}", [ studyId, studyNode, config.securitySymbol, 'N', jobId ])
+			sql.call("{call " + config.controlSchema + "." + getProcedureName() + "(?,?,?,?,?)}", [ studyId, studyNode, config.securitySymbol, 'N', jobId ])
 			//sql.rows("SELECT tm_cz.i2b2_load_clinical_data(?,?,?,?,?)", [ studyId, studyNode, config.securitySymbol, 'N', jobId ])
 		}
 		else {

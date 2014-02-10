@@ -75,6 +75,9 @@ AS
   duplicate_values	exception;
   invalid_topNode	exception;
   multiple_visit_names	exception;
+
+  INDEX_NOT_EXISTS EXCEPTION;
+  PRAGMA EXCEPTION_INIT(index_not_exists, -1418);
   
   CURSOR addNodes is
   select DISTINCT 
@@ -896,14 +899,17 @@ BEGIN
   
   
 	--21 July 2013. Performace fix by TR. Drop complicated index before data manipulation
-	execute immediate('DROP INDEX "I2B2DEMODATA"."OB_FACT_PK"');
+  begin
+    execute immediate('DROP INDEX "I2B2DEMODATA"."OB_FACT_PK"');
     execute immediate('DROP INDEX "I2B2DEMODATA"."IDX_OB_FACT_1"');
-	execute immediate('DROP INDEX "I2B2DEMODATA"."IDX_OB_FACT_2"');
-	execute immediate('DROP INDEX "I2B2DEMODATA"."IDX_OB_FACT_PATIENT_NUMBER"');
-  
+    execute immediate('DROP INDEX "I2B2DEMODATA"."IDX_OB_FACT_2"');
+    execute immediate('DROP INDEX "I2B2DEMODATA"."IDX_OB_FACT_PATIENT_NUMBER"');
+  exception
+    when index_not_exists then null;
   
     execute immediate('analyze table tm_wz.wt_trial_nodes compute statistics');
     execute immediate('analyze table tm_wz.WRK_CLINICAL_DATA compute statistics');
+  end;
 
   --execute immediate('DROP INDEX "I2B2DEMODATA"."OF_CTX_BLOB"'); 
   

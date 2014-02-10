@@ -288,7 +288,7 @@ class MetaDataProcessor extends DataProcessor {
 
 	@Override
 	public boolean runStoredProcedures(Object jobId, Sql sql, Object studyInfo) {
-		sql.call("{call tm_cz.i2b2_load_study_metadata($jobId)}")
+		sql.call("{call " + config.controlSchema + ".i2b2_load_study_metadata($jobId)}")
 		return true;
 	}
 

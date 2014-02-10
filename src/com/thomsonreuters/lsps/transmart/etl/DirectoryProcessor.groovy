@@ -167,6 +167,7 @@ class DirectoryProcessor {
 				}
 				catch (Exception e) { 
 					config.logger.log(LogType.ERROR, "Exception: ${e}")
+                    e.printStackTrace()
 				}
 				
 				if (res) {
@@ -201,6 +202,7 @@ class DirectoryProcessor {
 				}
 				catch (Exception e) {
 					config.logger.log(LogType.ERROR, "Exception: ${e}")
+                    e.printStackTrace()
 				}
 				
 				if (res) {
@@ -235,6 +237,7 @@ class DirectoryProcessor {
 				}
 				catch (Exception e) {
 					config.logger.log(LogType.ERROR, "Exception: ${e}")
+                    e.printStackTrace()
 				}
 				
 				if (res) {
