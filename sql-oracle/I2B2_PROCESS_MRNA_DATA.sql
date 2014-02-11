@@ -4,7 +4,7 @@
 --------------------------------------------------------
 --  DDL for Procedure I2B2_PROCESS_MRNA_DATA
 --------------------------------------------------------
-CREATE OR REPLACE PROCEDURE "TM_CZ"."I2B2_PROCESS_MRNA_DATA" 
+CREATE OR REPLACE PROCEDURE "I2B2_PROCESS_MRNA_DATA"
 (
   trial_id 		VARCHAR2
  ,top_node		varchar2

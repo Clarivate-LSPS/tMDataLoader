@@ -6,7 +6,7 @@
 --------------------------------------------------------
 set define off;
 
-  CREATE OR REPLACE PROCEDURE "TM_CZ"."I2B2_MRNA_ZSCORE_CALC" 
+  CREATE OR REPLACE PROCEDURE "I2B2_MRNA_ZSCORE_CALC"
 (
   trial_id VARCHAR2
  ,run_type varchar2 := 'L'

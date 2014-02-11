@@ -73,10 +73,10 @@ class ExpressionDataProcessor extends DataProcessor {
 			config.logger.log("Study ID=${studyId}; Node=${studyNode}; Data Type=${studyDataType}")
 			
 			if (studyInfo['runPlatformLoad']) {
-				sql.call("{call tm_cz.i2b2_load_annotation_deapp()}")
+				sql.call("{call " + config.controlSchema + ".i2b2_load_annotation_deapp()}")
 			}
 			
-			sql.call("{call tm_cz.i2b2_process_mrna_data (?, ?, ?, null, null, '"+config.securitySymbol+"', ?, ?)}",
+			sql.call("{call " + config.controlSchema + ".i2b2_process_mrna_data (?, ?, ?, null, null, '"+config.securitySymbol+"', ?, ?)}",
 				[ studyId, studyNode, studyDataType, jobId, Sql.NUMERIC ]) {}
 		}
 		else {
@@ -156,7 +156,7 @@ class ExpressionDataProcessor extends DataProcessor {
 			
 			sql.execute('TRUNCATE TABLE tm_lz.lt_src_deapp_annot')
 			
-			def row = sql.firstRow("SELECT count(*) as cnt FROM tm_cz.annotation_deapp WHERE gpl_id=${platform}")
+			def row = sql.firstRow("SELECT count(*) as cnt FROM " + config.controlSchema + ".annotation_deapp WHERE gpl_id=${platform}")
 			if (! row?.cnt) {
 				// platform is not defined, loading
 				config.logger.log("Loading platform: ${platform}")
