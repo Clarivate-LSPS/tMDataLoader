@@ -1,5 +1,5 @@
 create or replace
-PROCEDURE                                           "I2B2_LOAD_CLINICAL_DATA" 
+PROCEDURE                                                       "I2B2_LOAD_CLINICAL_DATA" 
 (
   trial_id 			IN	VARCHAR2
  ,top_node			in  varchar2
@@ -74,8 +74,7 @@ AS
   
   duplicate_values	exception;
   invalid_topNode	exception;
-  multiple_visit_names	exception;
-
+  MULTIPLE_VISIT_NAMES	EXCEPTION;
   INDEX_NOT_EXISTS EXCEPTION;
   PRAGMA EXCEPTION_INIT(index_not_exists, -1418);
   
@@ -900,13 +899,26 @@ BEGIN
   
 	--21 July 2013. Performace fix by TR. Drop complicated index before data manipulation
   begin
-    execute immediate('DROP INDEX "I2B2DEMODATA"."OB_FACT_PK"');
-    execute immediate('DROP INDEX "I2B2DEMODATA"."IDX_OB_FACT_1"');
-    execute immediate('DROP INDEX "I2B2DEMODATA"."IDX_OB_FACT_2"');
-    execute immediate('DROP INDEX "I2B2DEMODATA"."IDX_OB_FACT_PATIENT_NUMBER"');
-  exception
-    when index_not_exists then null;
-  
+    begin
+      execute immediate('DROP INDEX "I2B2DEMODATA"."OB_FACT_PK"');
+        exception
+          when index_not_exists then null;
+    end;
+    begin
+      execute immediate('DROP INDEX "I2B2DEMODATA"."IDX_OB_FACT_1"');
+        exception
+          when index_not_exists then null;
+    end;
+    begin
+      execute immediate('DROP INDEX "I2B2DEMODATA"."IDX_OB_FACT_2"');
+        exception
+          when index_not_exists then null;
+    end;
+    begin
+      execute immediate('DROP INDEX "I2B2DEMODATA"."IDX_OB_FACT_PATIENT_NUMBER"');
+        exception
+          when index_not_exists then null;
+    end; 
     execute immediate('analyze table tm_wz.wt_trial_nodes compute statistics');
     execute immediate('analyze table tm_wz.WRK_CLINICAL_DATA compute statistics');
   end;
