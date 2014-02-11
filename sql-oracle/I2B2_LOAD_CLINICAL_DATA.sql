@@ -203,7 +203,11 @@ BEGIN
 	--	truncate wrk_clinical_data and load data from external file
 	
 	execute immediate('truncate table tm_wz.wrk_clinical_data');
-	execute immediate('drop index "TM_WZ"."IDX_WRK_CD"');
+	begin
+    execute immediate('drop index "TM_WZ"."IDX_WRK_CD"');
+  exception
+    when index_not_exists then null;
+  end;
 	
 	--	insert data from lt_src_clinical_data to wrk_clinical_data
 	-- Optimization: do not insert null data_Value
