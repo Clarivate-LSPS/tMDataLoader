@@ -20,13 +20,11 @@
 
 package com.thomsonreuters.lsps.transmart.etl
 
-import groovy.util.CliBuilder
-
 class CommandLineTool {
 
 	static main(args) {
 		
-		def version = "0.9.2"
+		def version = "0.9.3"
 		
 		def cli = new CliBuilder(usage: 'tm_etl [options] [<data_dir>]')
 		cli.with {

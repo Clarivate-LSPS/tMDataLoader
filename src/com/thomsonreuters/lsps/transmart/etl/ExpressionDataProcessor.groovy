@@ -19,11 +19,7 @@
  ******************************************************************/
 
 package com.thomsonreuters.lsps.transmart.etl
-
-
 import groovy.sql.Sql
-
-import java.io.File;
 
 class ExpressionDataProcessor extends DataProcessor {
 
@@ -156,7 +152,7 @@ class ExpressionDataProcessor extends DataProcessor {
 			
 			sql.execute('TRUNCATE TABLE tm_lz.lt_src_deapp_annot')
 			
-			def row = sql.firstRow("SELECT count(*) as cnt FROM " + config.controlSchema + ".annotation_deapp WHERE gpl_id=${platform}")
+			def row = sql.firstRow("SELECT count(*) as cnt FROM " + config.controlSchema + ".annotation_deapp WHERE gpl_id=?", [ platform ])
 			if (! row?.cnt) {
 				// platform is not defined, loading
 				config.logger.log("Loading platform: ${platform}")
