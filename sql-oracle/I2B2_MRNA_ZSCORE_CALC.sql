@@ -1,10 +1,3 @@
---------------------------------------------------------
---  File created - Wednesday-November-06-2013   
---------------------------------------------------------
---------------------------------------------------------
---  DDL for Procedure I2B2_MRNA_ZSCORE_CALC
---------------------------------------------------------
-set define off;
 
   CREATE OR REPLACE PROCEDURE "I2B2_MRNA_ZSCORE_CALC"
 (
@@ -211,24 +204,24 @@ BEGIN
 			where trial_name =  TrialID;
 		else
 */
-			insert into wt_subject_microarray_logs 
-			(probeset_id
-			,intensity_value
-			,assay_id
-			,log_intensity
-			,patient_id
-		--	,sample_cd
-		--	,subject_id
-			)
-			select probeset_id
-				  ,intensity_value 
-				  ,assay_id 
-				  ,log(2,intensity_value)
-				  ,patient_id
-		--		  ,sample_cd
-		--		  ,subject_id
-			from wt_subject_mrna_probeset
-			where trial_name = TrialId;
+			insert into wt_subject_microarray_logs
+      (probeset_id
+      ,intensity_value
+      ,assay_id
+      ,log_intensity
+      ,patient_id
+--	,sample_cd
+--	,subject_id
+      )
+    select probeset_id
+      ,intensity_value
+      ,assay_id
+      ,log(2,intensity_value)
+      ,patient_id
+    --		  ,sample_cd
+    --		  ,subject_id
+    from wt_subject_mrna_probeset
+    where trial_name = TrialId;
 --		end if;
 	end if;
 
@@ -496,5 +489,3 @@ select d.probeset_id
  where 1=2;
 		   
 */
-
-/
