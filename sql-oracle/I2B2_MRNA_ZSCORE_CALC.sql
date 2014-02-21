@@ -38,6 +38,9 @@ AS
   invalid_runType exception;
   trial_mismatch exception;
   trial_missing exception;
+
+  INDEX_NOT_EXISTS EXCEPTION;
+  PRAGMA EXCEPTION_INIT(index_not_exists, -1418);
   
 BEGIN
 
@@ -315,9 +318,21 @@ BEGIN
   --execute immediate('ALTER INDEX DEAPP.IDX_DE_MICROARRAY_DATA_1 unusable');
   --execute immediate('ALTER INDEX DEAPP.IDX_DE_MICROARRAY_DATA_2 unusable');
   --execute immediate('ALTER INDEX DEAPP.IDX_DE_MICROARRAY_DATA_3 unusable');
-  execute immediate('DROP INDEX DEAPP.IDX_DE_MICROARRAY_DATA_1');
-  execute immediate('DROP INDEX DEAPP.IDX_DE_MICROARRAY_DATA_2');
-  execute immediate('DROP INDEX DEAPP.IDX_DE_MICROARRAY_DATA_3');
+  begin
+    execute immediate('DROP INDEX DEAPP.IDX_DE_MICROARRAY_DATA_1');
+  exception
+    when index_not_exists then null;
+  end;
+  begin
+    execute immediate('DROP INDEX DEAPP.IDX_DE_MICROARRAY_DATA_2');
+  exception
+    when index_not_exists then null;
+  end;
+  begin
+    execute immediate('DROP INDEX DEAPP.IDX_DE_MICROARRAY_DATA_3');
+  exception
+    when index_not_exists then null;
+  end;
 
 	insert into de_subject_microarray_data
 	(trial_source
