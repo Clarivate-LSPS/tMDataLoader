@@ -33,7 +33,11 @@ abstract class DataProcessor {
 	abstract boolean processFiles(File dir, Sql sql, studyInfo)
 	abstract boolean runStoredProcedures(jobId, Sql sql, studyInfo)
 	abstract String getProcedureName()
-	
+
+    boolean isPostgresConnection() {
+        config.db?.jdbcConnectionString?.startsWith("jdbc:postgresql:")
+    }
+
 	boolean process(File dir, studyInfo) {
 		def res = false
 		
