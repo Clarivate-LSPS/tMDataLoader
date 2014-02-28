@@ -38,6 +38,10 @@ abstract class DataProcessor {
         config.db?.jdbcConnectionString?.startsWith("jdbc:postgresql:")
     }
 
+    boolean isLocalPostgresConnection() {
+        isPostgresConnection() && config.db?.jdbcConnectionString?.matches('jdbc:postgresql:(\\w+)')
+    }
+
 	boolean process(File dir, studyInfo) {
 		def res = false
 		

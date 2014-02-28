@@ -276,7 +276,7 @@ class ExpressionDataProcessor extends DataProcessor {
             }
         }
 
-        if (isPostgresConnection()) {
+        if (isLocalPostgresConnection()) {
             processExpressionFileForPostgres(f, sql, studyInfo)
         } else {
             processExpressionFileForGeneric(f, sql, studyInfo)
