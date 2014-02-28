@@ -319,7 +319,7 @@ class ExpressionDataProcessor extends DataProcessor {
         config.logger.log("Processed ${lineNum} rows")
     }
 
-    private int processEachRow(File f, studyInfo, Closure<List> processRow) {
+    private long processEachRow(File f, studyInfo, Closure<List> processRow) {
         def row = [studyInfo.id as String, null, null, null]
         def lineNum = 0
         def header = []

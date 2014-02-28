@@ -29,154 +29,156 @@ class ClinicalDataProcessor extends DataProcessor {
 		super(conf);
 	}
 
+    private long processEachRow(File f, fMappings, Closure<List> processRow) {
+        def lineNum = 0L
+        f.splitEachLine("\t") {
+            def cols = [''] // to support 0-index properly (we use it for empty data values)
+            cols.addAll(it)
+
+            lineNum++
+            if (lineNum < 2) return; // skipping header
+
+            if (cols[fMappings['STUDY_ID']]) {
+                // the line shouldn't be empty
+
+                if (! cols[fMappings['SUBJ_ID']]) {
+                    throw new Exception("SUBJ_ID are not defined at line ${lineNum}")
+                }
+
+                def output = [
+                        study_id : cols[fMappings['STUDY_ID']],
+                        site_id : cols[fMappings['SITE_ID']],
+                        subj_id : cols[fMappings['SUBJ_ID']],
+                        visit_name : cols[fMappings['VISIT_NAME']],
+                        data_label : '', // DATA_LABEL
+                        data_value : '', // DATA_VALUE
+                        category_cd : '', // CATEGORY_CD
+                        ctrl_vocab_code : ''  // CTRL_VOCAB_CODE - unused
+                ]
+
+                if (fMappings['_DATA']) {
+                    fMappings['_DATA'].each {
+                        v ->
+
+                            def out = output.clone()
+
+                            out['data_value'] = fixColumn( cols[v['COLUMN']])
+                            def cat_cd = v['CATEGORY_CD']
+
+                            if (v['DATA_LABEL_SOURCE'] > 0) {
+                                // ok, the actual data label is in the referenced column
+                                out['data_label'] = fixColumn( cols[v['DATA_LABEL_SOURCE']] )
+                                // now need to modify CATEGORY_CD before proceeding
+
+                                // handling DATALABEL in category_cd
+                                if ( !cat_cd.contains('DATALABEL') ) {
+                                    // do this only if category_cd doesn't contain DATALABEL yet
+                                    if (v['DATA_LABEL_SOURCE_TYPE'] == 'A')
+                                        cat_cd = (cat_cd =~ /^(.+)\+([^\+]+?)$/).replaceFirst('$1+DATALABEL+$2')
+                                    else
+                                        cat_cd = cat_cd + '+DATALABEL'
+                                }
+
+                            }
+                            else {
+                                out['data_label'] = fixColumn(v['DATA_LABEL'])
+                            }
+
+                            // VISIT_NAME special handling; do it only when VISITNAME is not in category_cd already
+                            if ( ! ( cat_cd.contains('VISITNAME') || cat_cd.contains('+VISITNFST') ) ) {
+                                if (config.visitNameFirst) {
+                                    cat_cd = cat_cd + '+VISITNFST'
+                                }
+                            }
+
+                            out['category_cd'] = fixColumn(cat_cd)
+
+                            processRow(out)
+                    }
+                }
+                else {
+                    processRow(output)
+                }
+            }
+        }
+        return lineNum
+    }
+
 	@Override
 	public boolean processFiles(File dir, Sql sql, studyInfo) {
 		// read mapping file first
 		// then parse files that are specified there (to allow multiple files per study)
-		
+
 		sql.execute('TRUNCATE TABLE tm_lz.lt_src_clinical_data')
-		
+
 		dir.eachFileMatch(~/(?i).+_Mapping_File\.txt/) {
 			def mappings = processMappingFile(it)
-			
+
 			if (mappings.size() <= 0) {
 				config.logger.log(LogType.ERROR, "Empty mappings file!")
 				throw new Exception("Empty mapping file")
-			}  
-			
+			}
+
 			mappings.each {
 				fName, fMappings ->
-				
+
 				config.logger.log("Processing ${fName}")
 				def f = new File(dir, fName)
 				if (! f.exists() ) {
 					config.logger.log("File ${fName} doesn't exist!")
-					throw new Exception("File doesn't exist")
+					throw new Exception("File ${fName} doesn't exist")
 				}
-				
+
 				def lineNum = 0
-				
+
 				sql.withTransaction {
 					sql.withBatch(100, """\
-					INSERT into tm_lz.lt_src_clinical_data 
+					INSERT into tm_lz.lt_src_clinical_data
 										(STUDY_ID, SITE_ID, SUBJECT_ID, VISIT_NAME, DATA_LABEL, DATA_VALUE, CATEGORY_CD)
-									VALUES (:study_id, :site_id, :subj_id, :visit_name, 
+									VALUES (:study_id, :site_id, :subj_id, :visit_name,
 										:data_label, :data_value, :category_cd)
 					""") {
 						stmt ->
-					
-						f.splitEachLine("\t") {		
-							def cols = [''] // to support 0-index properly (we use it for empty data values)
-							cols.addAll(it)
-							
-							lineNum++
-							if (lineNum < 2) return; // skipping header
-							
-							if (cols[fMappings['STUDY_ID']]) {
-								// the line shouldn't be empty
-								
-								if (! cols[fMappings['SUBJ_ID']]) {
-									throw new Exception("SUBJ_ID are not defined at line ${lineNum}")
-								}
-							
-								def output = [
-									study_id : cols[fMappings['STUDY_ID']],
-									site_id : cols[fMappings['SITE_ID']],
-									subj_id : cols[fMappings['SUBJ_ID']],
-									visit_name : cols[fMappings['VISIT_NAME']],
-									data_label : '', // DATA_LABEL
-									data_value : '', // DATA_VALUE
-									category_cd : '', // CATEGORY_CD
-									ctrl_vocab_code : ''  // CTRL_VOCAB_CODE - unused
-								]
-								
-								if (fMappings['_DATA']) {
-									fMappings['_DATA'].each { 
-										v ->
-										
-										def out = output.clone()
-
-										out['data_value'] = fixColumn( cols[v['COLUMN']])
-										def cat_cd = v['CATEGORY_CD']
-										
-										if (v['DATA_LABEL_SOURCE'] > 0) {
-											// ok, the actual data label is in the referenced column
-											out['data_label'] = fixColumn( cols[v['DATA_LABEL_SOURCE']] )
-											// now need to modify CATEGORY_CD before proceeding
-											
-											// handling DATALABEL in category_cd
-											if ( !cat_cd.contains('DATALABEL') ) {
-												// do this only if category_cd doesn't contain DATALABEL yet
-												if (v['DATA_LABEL_SOURCE_TYPE'] == 'A')
-													cat_cd = (cat_cd =~ /^(.+)\+([^\+]+?)$/).replaceFirst('$1+DATALABEL+$2')
-												else
-													cat_cd = cat_cd + '+DATALABEL'	
-											}								
-												
-										}		
-										else {
-											out['data_label'] = fixColumn(v['DATA_LABEL'])
-										}
-										
-										// VISIT_NAME special handling; do it only when VISITNAME is not in category_cd already
-										if ( ! ( cat_cd.contains('VISITNAME') || cat_cd.contains('+VISITNFST') ) ) {
-											if (config.visitNameFirst) {
-												cat_cd = cat_cd + '+VISITNFST'
-											}
-										}
-										
-										out['category_cd'] = fixColumn(cat_cd)
-										
-										stmt.addBatch(out) 
-									}
-								}
-								else {
-									stmt.addBatch(output)
-								}
-							
-							}
-							
-						}
-						
-					
+                            lineNum = processEachRow f, fMappings, { stmt.addBatch(it) }
 					}
 				}
-				
+
 				config.logger.log("Processed ${lineNum} rows")
 				sql.commit() // TODO: do we need it here?
 			}
-			
+
 		}
-		
-		// OK, now we need to retrieve studyID & node
-		def rows = sql.rows("select study_id, count(*) as cnt from tm_lz.lt_src_clinical_data group by study_id")
-		def rsize = rows.size()
-		
-		if (rsize > 0) {
-			if (rsize == 1) {
-				def studyId = rows[0].study_id
-				if (studyId) {
-					studyInfo['id'] = studyId 
-				}
-				else {
-					config.logger.log(LogType.ERROR, "Study ID is null!")
-					return false
-				}
-			}
-			else {
-				config.logger.log(LogType.ERROR, "Multiple StudyIDs are detected!")
-				return false
-			}
-		}
-		else {
-			config.logger.log(LogType.ERROR, "Study ID is not specified!")
-			return false
-		}
-		
-		return true;
+
+        return trySetStudyId(sql, studyInfo)
 	}
-	
-	@Override
+
+    private boolean trySetStudyId(Sql sql, studyInfo) {
+// OK, now we need to retrieve studyID & node
+        def rows = sql.rows("select study_id, count(*) as cnt from tm_lz.lt_src_clinical_data group by study_id")
+        def rsize = rows.size()
+
+        if (rsize > 0) {
+            if (rsize == 1) {
+                def studyId = rows[0].study_id
+                if (studyId) {
+                    studyInfo['id'] = studyId
+                } else {
+                    config.logger.log(LogType.ERROR, "Study ID is null!")
+                    return false
+                }
+            } else {
+                config.logger.log(LogType.ERROR, "Multiple StudyIDs are detected!")
+                return false
+            }
+        } else {
+            config.logger.log(LogType.ERROR, "Study ID is not specified!")
+            return false
+        }
+
+        return true;
+    }
+
+    @Override
 	public String getProcedureName() {
 		return config.altClinicalProcName?:"I2B2_LOAD_CLINICAL_DATA"
 	}
