@@ -39,7 +39,7 @@ abstract class DataProcessor {
     }
 
     boolean isLocalPostgresConnection() {
-        isPostgresConnection() && config.db?.jdbcConnectionString?.matches('jdbc:postgresql:(\\w+)')
+        isPostgresConnection() && config.db?.jdbcConnectionString?.matches('^jdbc:postgresql:(?://localhost(?::\\d+)?/)?(\\w+)$')
     }
 
 	boolean process(File dir, studyInfo) {
