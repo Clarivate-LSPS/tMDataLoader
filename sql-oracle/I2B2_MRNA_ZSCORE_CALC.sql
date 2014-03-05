@@ -14,7 +14,7 @@ AS
 	--	JEA@20111116	Remove run_type R (reload) processing
 	--	JEA@20111209	Removed index drop/all
 	--	JEA@20120214	Round all intensity values on insert to de_subject_microarray_data
-	--	JEA@20120314	Custom for Millennium, added trial_source for partitioning, added source_cd parameter 
+	--	JEA@20120314	Custom for Millennium, added trial_source for partitioning, added source_cd parameter
 
   TrialID varchar2(50);
   sourceCD	varchar2(50);
@@ -26,14 +26,14 @@ AS
   pExists	number;
   nbrRecs number;
   logBase number;
-   
+
   --Audit variables
   newJobFlag INTEGER(1);
   databaseName VARCHAR(100);
   procedureName VARCHAR(100);
   jobID number(18,0);
   stepCt number(18,0);
-  
+
   --  exceptions
   invalid_runType exception;
   trial_mismatch exception;
@@ -41,7 +41,9 @@ AS
 
   INDEX_NOT_EXISTS EXCEPTION;
   PRAGMA EXCEPTION_INIT(index_not_exists, -1418);
-  
+  COLUMN_ALREADY_INDEXED EXCEPTION;
+  PRAGMA EXCEPTION_INIT (column_already_indexed, -1408);
+
 BEGIN
 
 	TrialId := trial_id;
@@ -49,7 +51,7 @@ BEGIN
 	dataType := data_type;
 	logBase := log_base;
 	sourceCd := source_cd;
-	  
+
   --Set Audit Parameters
   newJobFlag := 0; -- False (Default)
   jobID := currentJobID;
@@ -64,32 +66,32 @@ BEGIN
     newJobFlag := 1; -- True
     cz_start_audit (procedureName, databaseName, jobID);
   END IF;
-    	
+
   stepCt := 0;
-  
+
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Starting zscore calc for ' || TrialId || ' RunType: ' || runType || ' dataType: ' || dataType,0,stepCt,'Done');
-  
+
 	if runType != 'L' then
 		stepCt := stepCt + 1;
 		cz_write_audit(jobId,databaseName,procedureName,'Invalid runType passed - procedure exiting',SQL%ROWCOUNT,stepCt,'Done');
 		raise invalid_runType;
 	end if;
-  
+
 --	For Load, make sure that the TrialId passed as parameter is the same as the trial in stg_subject_mrna_data
 --	If not, raise exception
 
 	if runType = 'L' then
 		select distinct trial_name into stgTrial
 		from wt_subject_mrna_probeset;
-		
+
 		if stgTrial != TrialId then
 			stepCt := stepCt + 1;
 			cz_write_audit(jobId,databaseName,procedureName,'TrialId not the same as trial in wt_subject_mrna_probeset - procedure exiting',SQL%ROWCOUNT,stepCt,'Done');
 			raise trial_mismatch;
 		end if;
 	end if;
-   
+
 /*	remove Reload processing
 --	For Reload, make sure that the TrialId passed as parameter has data in de_subject_microarray_data
 --	If not, raise exception
@@ -106,38 +108,38 @@ BEGIN
 		end if;
 	end if;
 */
-   
+
 --	truncate tmp tables
 
 	execute immediate('truncate table tm_wz.wt_subject_microarray_logs');
 	execute immediate('truncate table tm_wz.wt_subject_microarray_calcs');
 	execute immediate('truncate table tm_wz.wt_subject_microarray_med');
-	
-	select count(*) 
+
+	select count(*)
 	into idxExists
 	from all_indexes
 	where table_name = 'WT_SUBJECT_MICROARRAY_LOGS'
 	  and index_name = 'WT_SUBJECT_MRNA_LOGS_I1'
 	  and owner = 'TM_WZ';
-		
+
 	if idxExists = 1 then
-		execute immediate('drop index tm_wz.wt_subject_mrna_logs_i1');		
+		execute immediate('drop index tm_wz.wt_subject_mrna_logs_i1');
 	end if;
-	
-	select count(*) 
+
+	select count(*)
 	into idxExists
 	from all_indexes
 	where table_name = 'WT_SUBJECT_MICROARRAY_CALCS'
 	  and index_name = 'WT_SUBJECT_MRNA_CALCS_I1'
 	  and owner = 'TM_WZ';
-		
+
 	if idxExists = 1 then
 		execute immediate('drop index tm_wz.wt_subject_mrna_calcs_i1');
 	end if;
-	
+
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Truncate work tables in TM_WZ',0,stepCt,'Done');
-	
+
 	--	if dataType = L, use intensity_value as log_intensity
 	--	if dataType = R, always use intensity_value
 
@@ -165,7 +167,7 @@ BEGIN
 			where trial_name =  TrialID;
 		else
 */
-			insert into wt_subject_microarray_logs 
+			insert into wt_subject_microarray_logs
 			(probeset_id
 			,intensity_value
 			,assay_id
@@ -175,8 +177,8 @@ BEGIN
 		--	,subject_id
 			)
 			select probeset_id
-				  ,intensity_value  
-				  ,assay_id 
+				  ,intensity_value
+				  ,assay_id
 				  ,intensity_value
 				  ,patient_id
 			--	  ,sample_cd
@@ -187,7 +189,7 @@ BEGIN
 	else
 	/*	remove Reload processing
 		if runType = 'R' then
-			insert into wt_subject_microarray_logs 
+			insert into wt_subject_microarray_logs
 			(probeset_id
 			,intensity_value
 			,assay_id
@@ -197,13 +199,13 @@ BEGIN
 			,subject_id
 			)
 			select probeset_id
-				  ,raw_intensity 
-				  ,assay_id  
+				  ,raw_intensity
+				  ,assay_id
 				  ,log(2,raw_intensity)
 				  ,patient_id
 				  ,sample_id
 				  ,subject_id
-			from de_subject_microarray_data 
+			from de_subject_microarray_data
 			where trial_name =  TrialID;
 		else
 */
@@ -232,11 +234,11 @@ BEGIN
 	cz_write_audit(jobId,databaseName,procedureName,'Loaded data for trial in TM_WZ wt_subject_microarray_logs',SQL%ROWCOUNT,stepCt,'Done');
 
 	commit;
-    
+
 	execute immediate('create index tm_wz.wt_subject_mrna_logs_i1 on tm_wz.wt_subject_microarray_logs (trial_name, probeset_id) nologging');
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Create index on TM_WZ wt_subject_microarray_logs',0,stepCt,'Done');
-		
+
 --	calculate mean_intensity, median_intensity, and stddev_intensity per experiment, probe
 
 	insert into wt_subject_microarray_calcs
@@ -246,13 +248,13 @@ BEGIN
 	,median_intensity
 	,stddev_intensity
 	)
-	select d.trial_name 
+	select d.trial_name
 		  ,d.probeset_id
 		  ,avg(log_intensity)
 		  ,median(log_intensity)
 		  ,stddev(log_intensity)
-	from wt_subject_microarray_logs d 
-	group by d.trial_name 
+	from wt_subject_microarray_logs d
+	group by d.trial_name
 			,d.probeset_id;
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Calculate intensities for trial in TM_WZ wt_subject_microarray_calcs',SQL%ROWCOUNT,stepCt,'Done');
@@ -262,10 +264,10 @@ BEGIN
 	execute immediate('create index tm_wz.wt_subject_mrna_calcs_i1 on tm_wz.wt_subject_microarray_calcs (trial_name, probeset_id) nologging');
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Create index on TM_WZ wt_subject_microarray_calcs',0,stepCt,'Done');
-		
+
 -- calculate zscore
 
-	insert into wt_subject_microarray_med parallel 
+	insert into wt_subject_microarray_med parallel
 	(probeset_id
 	,intensity_value
 	,log_intensity
@@ -279,24 +281,24 @@ BEGIN
 --	,subject_id
 	)
 	select d.probeset_id
-		  ,d.intensity_value 
-		  ,d.log_intensity 
-		  ,d.assay_id  
-		  ,c.mean_intensity 
-		  ,c.stddev_intensity 
-		  ,c.median_intensity 
+		  ,d.intensity_value
+		  ,d.log_intensity
+		  ,d.assay_id
+		  ,c.mean_intensity
+		  ,c.stddev_intensity
+		  ,c.median_intensity
 		  ,CASE WHEN stddev_intensity=0 THEN 0 ELSE (log_intensity - median_intensity ) / stddev_intensity END
 		  ,d.patient_id
 	--	  ,d.sample_cd
 	--	  ,d.subject_id
-    from wt_subject_microarray_logs d 
-		,wt_subject_microarray_calcs c 
+    from wt_subject_microarray_logs d
+		,wt_subject_microarray_calcs c
     where d.probeset_id = c.probeset_id;
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Calculate Z-Score for trial in TM_WZ wt_subject_microarray_med',SQL%ROWCOUNT,stepCt,'Done');
 
     commit;
-  
+
 /*
 	select count(*) into nbrRecs
 	from wt_subject_microarray_med;
@@ -309,7 +311,7 @@ BEGIN
 		stepCt := stepCt + 1;
 		cz_write_audit(jobId,databaseName,procedureName,'Less than 10M records, index drop bypassed',0,stepCt,'Done');
 	end if;
-*/	
+*/
 
 
   /*execute immediate('DROP INDEX DEAPP.IDX_DE_MICROARRAY_DATA_1');
@@ -339,7 +341,7 @@ BEGIN
 	,trial_name
 	,assay_id
 	,probeset_id
-	,raw_intensity 
+	,raw_intensity
 	,log_intensity
 	,zscore
 	,patient_id
@@ -349,9 +351,9 @@ BEGIN
 	select TrialId || ':' || sourceCD
 		  ,TrialId
 	      ,m.assay_id
-	      ,m.probeset_id 
+	      ,m.probeset_id
 		  ,round(case when dataType = 'R' then m.intensity_value
-				when dataType = 'L' 
+				when dataType = 'L'
 				then case when logBase = -1 then null else power(logBase, m.log_intensity) end
 				else null
 				end,4) as raw_intensity
@@ -368,36 +370,48 @@ BEGIN
   	commit;
 
   -- restore indexes on de_subject_microarray_data (start)
-  execute immediate('CREATE INDEX "DEAPP"."IDX_DE_MICROARRAY_DATA_1" ON "DEAPP"."DE_SUBJECT_MICROARRAY_DATA" ("TRIAL_NAME", "ASSAY_ID", "PROBESET_ID") parallel nologging');
-  execute immediate('CREATE INDEX "DEAPP"."IDX_DE_MICROARRAY_DATA_2" ON "DEAPP"."DE_SUBJECT_MICROARRAY_DATA" ("ASSAY_ID", "PROBESET_ID") parallel nologging');
-  execute immediate('CREATE INDEX "DEAPP"."IDX_DE_MICROARRAY_DATA_3" ON "DEAPP"."DE_SUBJECT_MICROARRAY_DATA" ("TRIAL_SOURCE")  parallel nologging');
+  begin
+    execute immediate('CREATE INDEX "DEAPP"."IDX_DE_MICROARRAY_DATA_1" ON "DEAPP"."DE_SUBJECT_MICROARRAY_DATA" ("TRIAL_NAME", "ASSAY_ID", "PROBESET_ID") parallel nologging');
+  exception
+    when column_already_indexed then null;
+  end;
+  begin
+    execute immediate('CREATE INDEX "DEAPP"."IDX_DE_MICROARRAY_DATA_2" ON "DEAPP"."DE_SUBJECT_MICROARRAY_DATA" ("ASSAY_ID", "PROBESET_ID") parallel nologging');
+  exception
+    when column_already_indexed then null;
+  end;
+  begin
+    execute immediate('CREATE INDEX "DEAPP"."IDX_DE_MICROARRAY_DATA_3" ON "DEAPP"."DE_SUBJECT_MICROARRAY_DATA" ("TRIAL_SOURCE")  parallel nologging');
+  exception
+    when column_already_indexed then null;
+  end;
   --execute immediate('ALTER INDEX DEAPP.IDX_DE_MICROARRAY_DATA_2 rebuild');
   --execute immediate('ALTER INDEX DEAPP.IDX_DE_MICROARRAY_DATA_3 rebuild');
 
   /*execute immediate('
-  CREATE INDEX "DEAPP"."IDX_DE_MICROARRAY_DATA_1" ON "DEAPP"."DE_SUBJECT_MICROARRAY_DATA" ("TRIAL_NAME", "ASSAY_ID", "PROBESET_ID") 
+  CREATE INDEX "DEAPP"."IDX_DE_MICROARRAY_DATA_1" ON "DEAPP"."DE_SUBJECT_MICROARRAY_DATA" ("TRIAL_NAME", "ASSAY_ID", "PROBESET_ID")
   PCTFREE 10 INITRANS 2 MAXTRANS 255 NOLOGGING COMPUTE STATISTICS NOCOMPRESS
   STORAGE( INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
   PCTINCREASE 0 BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
   TABLESPACE "DEAPP"
   ');
   execute immediate('
-  CREATE INDEX "DEAPP"."IDX_DE_MICROARRAY_DATA_2" ON "DEAPP"."DE_SUBJECT_MICROARRAY_DATA" ("ASSAY_ID", "PROBESET_ID") 
-  PCTFREE 10 INITRANS 2 MAXTRANS 255 NOLOGGING COMPUTE STATISTICS 
+  CREATE INDEX "DEAPP"."IDX_DE_MICROARRAY_DATA_2" ON "DEAPP"."DE_SUBJECT_MICROARRAY_DATA" ("ASSAY_ID", "PROBESET_ID")
+  PCTFREE 10 INITRANS 2 MAXTRANS 255 NOLOGGING COMPUTE STATISTICS
   STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
   PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1 BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
   TABLESPACE "DEAPP"
   ');
   execute immediate('
-  CREATE INDEX "DEAPP"."IDX_DE_MICROARRAY_DATA_3" ON "DEAPP"."DE_SUBJECT_MICROARRAY_DATA" ("TRIAL_SOURCE") 
-  PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS 
+  CREATE INDEX "DEAPP"."IDX_DE_MICROARRAY_DATA_3" ON "DEAPP"."DE_SUBJECT_MICROARRAY_DATA" ("TRIAL_SOURCE")
+  PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS
   STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
   PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1 BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
   TABLESPACE "DEAPP"
   ');*/
   -- restore indexes on de_subject_microarray_data (end)
 
-    
+
 
 --	add indexes, if indexes were not dropped, procedure will not try and recreate
 /*
@@ -405,16 +419,16 @@ BEGIN
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Add indexes on DEAPP de_subject_microarray_data',0,stepCt,'Done');
 */
-	
+
 --	cleanup tmp_ files
 
-	execute immediate('truncate table tm_wz.wt_subject_microarray_logs');
-	execute immediate('truncate table tm_wz.wt_subject_microarray_calcs');
-	execute immediate('truncate table tm_wz.wt_subject_microarray_med');
+    execute immediate('truncate table tm_wz.wt_subject_microarray_logs');
+	  execute immediate('truncate table tm_wz.wt_subject_microarray_calcs');
+	  execute immediate('truncate table tm_wz.wt_subject_microarray_med');
 
    	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Truncate work tables in TM_WZ',0,stepCt,'Done');
-    
+
     ---Cleanup OVERALL JOB if this proc is being run standalone
   IF newJobFlag = 1
   THEN
@@ -433,7 +447,7 @@ BEGIN
     cz_error_handler (jobID, procedureName);
     --End Proc
     cz_end_audit (jobID, 'FAIL');
-	
+
 END;
 
 
