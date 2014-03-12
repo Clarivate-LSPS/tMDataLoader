@@ -215,7 +215,41 @@ class DirectoryProcessor {
 				
 				isStudyUploadSuccessful = isStudyUploadSuccessful && res
 			}
-			
+
+            // SNP data
+            dataDir = new File(it, 'SNPData')
+            if (! ( dataDir.exists() && dataDir.isDirectory() )) {
+                dataDir = new File(it, 'SNPDataToUpload')
+                if (! (dataDir.exists() && dataDir.isDirectory() )) {
+                    dataDir = null
+                }
+            }
+
+            if (dataDir) {
+                config.logger.log "Processing SNP data"
+                def res = false
+
+                def expProcessor = new SNPDataProcessor(config)
+                try {
+                    res = expProcessor.process(dataDir, studyInfo)
+                }
+                catch (Exception e) {
+                    config.logger.log(LogType.ERROR, "Exception: ${e}")
+                }
+
+                if (res) {
+                    dataDir.renameTo(new File(it, "_DONE_${dataDir.name}"))
+                }
+                else {
+                    if (! config.isNoRenameOnFail)
+                        dataDir.renameTo(new File(it, "_FAIL_${dataDir.name}"))
+
+                    if (config.stopOnFail) return false
+                }
+
+                isStudyUploadSuccessful = isStudyUploadSuccessful && res
+            }
+
 			// then RBM data
 			dataDir = new File(it, 'RBMData')
 			if (! ( dataDir.exists() && dataDir.isDirectory() )) {
