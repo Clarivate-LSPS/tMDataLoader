@@ -1275,6 +1275,59 @@ BEGIN
 	execute sqlText;
     ---Cleanup OVERALL JOB if this proc is being run standalone
 
+  stepCt := stepCt + 1;
+	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Create indices for ' || partitionIndx,0,stepCt,'Done') into rtnCd;
+
+  delete from deapp.de_snp_calls_by_gsm
+  where patient_num in (
+    select omic_patient_id
+    from deapp.de_subject_sample_mapping
+    where trial_name = TrialID
+  );
+
+  get diagnostics rowCt := ROW_COUNT;
+  stepCt := stepCt + 1;
+	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Cleanup de_snp_calls_by_gsm',rowCt,stepCt,'Done') into rtnCd;
+
+  insert into deapp.de_snp_calls_by_gsm
+  (gsm_num, patient_num, snp_name, snp_calls)
+  select sm.sample_cd as gsm_num, sm.omic_patient_id as patient_num, p.probeset as snp_name, null as snp_calls
+  from deapp.de_subject_microarray_data_41 md
+  inner join tm_cz.probeset_deapp p
+  on md.probeset_id = p.probeset_id
+  inner join deapp.de_subject_sample_mapping sm
+  on sm.assay_id = md.assay_id
+  where sm.trial_name = TrialID;
+
+  get diagnostics rowCt := ROW_COUNT;
+  stepCt := stepCt + 1;
+	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Fill de_snp_calls_by_gsm',rowCt,stepCt,'Done') into rtnCd;
+
+  delete from deapp.de_snp_copy_number
+  where patient_num in (
+    select omic_patient_id
+    from deapp.de_subject_sample_mapping
+    where trial_name = TrialID
+  );
+
+  get diagnostics rowCt := ROW_COUNT;
+  stepCt := stepCt + 1;
+	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Cleanup de_snp_copy_number',rowCt,stepCt,'Done') into rtnCd;
+
+  insert into deapp.de_snp_copy_number
+  (patient_num, snp_name, copy_number)
+  select sm.omic_patient_id as patient_num, p.probeset as snp_name, md.raw_intensity as copy_number
+  from deapp.de_subject_microarray_data_41 md
+  inner join tm_cz.probeset_deapp p
+  on md.probeset_id = p.probeset_id
+  inner join deapp.de_subject_sample_mapping sm
+  on sm.assay_id = md.assay_id
+  where sm.trial_name = TrialID;
+
+  get diagnostics rowCt := ROW_COUNT;
+  stepCt := stepCt + 1;
+	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Fill de_snp_copy_number',rowCt,stepCt,'Done') into rtnCd;
+
 	stepCt := stepCt + 1;
 	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'End i2b2_process_snp_data',0,stepCt,'Done') into rtnCd;
 
