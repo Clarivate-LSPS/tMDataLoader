@@ -241,7 +241,8 @@ class SNPDataProcessor extends DataProcessor {
     private void loadPlatform(Sql sql, File platformFile, String platform, studyInfo) {
         sql.execute('TRUNCATE TABLE tm_lz.lt_src_deapp_annot')
 
-        def row = sql.firstRow("SELECT count(*) as cnt FROM " + config.controlSchema + ".annotation_deapp WHERE gpl_id=${platform}")
+        def row = sql.firstRow("SELECT count(*) as cnt FROM " + config.controlSchema + ".annotation_deapp WHERE gpl_id=?",
+                [platform])
         if (!row?.cnt) {
             // platform is not defined, loading
             config.logger.log("Loading platform: ${platform}")
