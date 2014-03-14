@@ -47,19 +47,23 @@ class SNPDataProcessor extends DataProcessor {
         if (platformList.size() > 0) {
             loadPlatforms(dir, sql, platformList, studyInfo)
 
-           /* dir.eachFileMatch(~/(?i).+_Gene_Expression_Data_[RLTZ](_GPL\d+)*\.txt/) {
-                processExpressionFile(it, sql, studyInfo)
-            }*/
+            /* dir.eachFileMatch(~/(?i).+_Gene_Expression_Data_[RLTZ](_GPL\d+)*\.txt/) {
+                 processExpressionFile(it, sql, studyInfo)
+             }*/
 
             // Load data to tmp tables TM_LZ.LT_SNP_CALLS_BY_GSM  and TM_LZ.LT_SNP_COPY_NUMBER
             def callsFileList = studyInfo['callsFileNameList'] as List
             if (callsFileList.size() > 0) {
-                processCallsFile()
+                callsFileList.each { String name ->
+                    processSnpCallsFile(sql, new File(dir as File, name))
+                }
             }
 
             def copyNumberFileList = studyInfo['copyNumberFileList'] as List
             if (copyNumberFileList.size() > 0) {
-                processcopyNumberFile()
+                copyNumberFileList.each { String name ->
+                    processSnpCopyNumberFile(sql, new File(dir as File, name))
+                }
             }
 
         } else {
@@ -67,6 +71,34 @@ class SNPDataProcessor extends DataProcessor {
         }
 
         return true;
+    }
+
+    private void processSnpCallsFile(Sql sql, File f) {
+        config.logger.log(LogType.MESSAGE, "Processing calls for ${f.getName()}")
+        loadFileToTable(sql, f, 'tm_lz.lt_snp_calls_by_gsm', ['GSM_NUM', 'SNP_NAME', 'SNP_CALLS'])
+    }
+
+    private void processSnpCopyNumberFile(Sql sql, File f) {
+        config.logger.log(LogType.MESSAGE, "Processing copy number for ${f.getName()}")
+        loadFileToTable(sql, f, 'tm_lz.lt_snp_copy_number',
+                ['GSM_NUM', 'SNP_NAME', 'CHROM', 'CHROM_POS', 'COPY_NUMBER'])
+    }
+
+    private void loadFileToTable(Sql sql, File f, String table, columns) {
+        String insertCommand = "insert into ${table}(${columns.join(',')}) values (${columns.collect { '?' }.join(',')})"
+        long lineNum = 0
+        sql.withBatch(500, insertCommand) { stmt ->
+            f.splitEachLine('\t') { entry ->
+                lineNum++
+                if (lineNum <= 1) {
+                    return
+                }
+                config.logger.log(LogType.PROGRESS, "[${lineNum}]")
+                stmt.addBatch(entry)
+            }
+        }
+        config.logger.log(LogType.PROGRESS, '')
+        sql.commit()
     }
 
     @Override
@@ -84,10 +116,10 @@ class SNPDataProcessor extends DataProcessor {
             config.logger.log("Study ID=${studyId}; Node=${studyNode}; Data Type=${studyDataType}")
 
             if (studyInfo['runPlatformLoad']) {
-                sql.call("{call tm_cz.i2b2_load_annotation_deapp()}")
+                sql.call("{call " + config.controlSchema + ".i2b2_load_annotation_deapp()}")
             }
 
-            sql.call("{call tm_cz.i2b2_process_snp_data (?, ?, ?, null, null, '" + config.securitySymbol + "', ?, ?)}",
+            sql.call("{call " + config.controlSchema + ".i2b2_process_snp_data (?, ?, ?, null, null, '" + config.securitySymbol + "', ?, ?)}",
                     [studyId, studyNode, studyDataType, jobId, Sql.NUMERIC]) {}
         } else {
             config.logger.log(LogType.ERROR, "Study ID or Node or DataType not defined!")
@@ -127,20 +159,20 @@ class SNPDataProcessor extends DataProcessor {
                             // cols:0:calls_file_name, 1:copy_number_file_name, 2:study_id, 3:site_id, 4:subject_id,
                             // 5:sample_cd, 6:platform, 7:tissuetype, 8:attr1, 9:attr2, 10:category_cd
 
-                            if (!(cols[0] && cols[1])) {
-                                throw new Exception("Incorrect mapping file: calls_file_name or copy_number_file_name is empty")
-                            }
-                            callsFileList <<  cols[0]
-                            copyNumberFileList << cols[1]
-
                             if (cols[2] && lineNum > 1) {
+                                if (!(cols[0] || cols[1])) {
+                                    throw new Exception("Incorrect mapping file: calls_file_name or copy_number_file_name is empty")
+                                }
+
                                 if (!(cols[4] && cols[5] && cols[6] && cols[10]))
                                     throw new Exception("Incorrect mapping file: mandatory columns not defined")
 
+                                callsFileList << cols[0]
+                                copyNumberFileList << cols[1]
                                 platformList << cols[6]
                                 studyIdList << cols[2]
 
-                                stmt.addBatch(cols)
+                                stmt.addBatch(cols[2..-1])
                             }
                     }
             }
@@ -209,7 +241,7 @@ class SNPDataProcessor extends DataProcessor {
     private void loadPlatform(Sql sql, File platformFile, String platform, studyInfo) {
         sql.execute('TRUNCATE TABLE tm_lz.lt_src_deapp_annot')
 
-        def row = sql.firstRow("SELECT count(*) as cnt FROM tm_cz.annotation_deapp WHERE gpl_id=${platform}")
+        def row = sql.firstRow("SELECT count(*) as cnt FROM " + config.controlSchema + ".annotation_deapp WHERE gpl_id=${platform}")
         if (!row?.cnt) {
             // platform is not defined, loading
             config.logger.log("Loading platform: ${platform}")
@@ -326,95 +358,6 @@ class SNPDataProcessor extends DataProcessor {
                             entrez_gene_id: cols[header_mappings['entrez_gene_id']],
                             species: header_mappings.containsKey('species') ? cols[header_mappings['species']] : null
                     ])
-                }
-        }
-        config.logger.log(LogType.PROGRESS, "")
-        return lineNum
-    }
-
-    private void processExpressionFile(File f, Sql sql, studyInfo) {
-        config.logger.log("Processing ${f.name}")
-
-        // retrieve data type
-        def m = f.name =~ /(?i)Gene_Expression_Data_([RLTZ])/
-        if (m[0]) {
-            def dataType = m[0][1]
-            if (studyInfo['datatype']) {
-                if (studyInfo['datatype'] != dataType)
-                    throw new Exception("Multiple data types in one study are not supported")
-            } else {
-                studyInfo['datatype'] = dataType
-            }
-        }
-
-        if (isLocalPostgresConnection()) {
-            processExpressionFileForPostgres(f, sql, studyInfo)
-        } else {
-            processExpressionFileForGeneric(f, sql, studyInfo)
-        }
-    }
-
-    private void processExpressionFileForPostgres(File f, Sql sql, studyInfo) {
-        def tempCsv = File.createTempFile("expressionData", ".csv")
-        def lineNum = 0
-        tempCsv.withPrintWriter {
-            writer ->
-                lineNum = processEachRow f, studyInfo, {
-                    row ->
-                        writer.append(row[0]).append(',').
-                                append(row[1]).append(',').
-                                append(row[2]).append(',').
-                                append(row[3]).append("\n")
-                }
-        }
-        config.logger.log("Loading ${lineNum} rows into database")
-        sql.execute("COPY tm_lz.lt_src_mrna_data FROM '${tempCsv.getCanonicalPath()}' WITH DELIMITER ','".toString())
-        tempCsv.delete()
-        config.logger.log("Processed ${lineNum} rows")
-    }
-
-    private void processExpressionFileForGeneric(File f, Sql sql, studyInfo) {
-        def lineNum = 0
-        sql.withTransaction {
-            sql.withBatch(1000, """\
-				INSERT into tm_lz.lt_src_mrna_data (TRIAL_NAME, PROBESET, EXPR_ID, INTENSITY_VALUE)
-				VALUES (?, ?, ?, ?)
-			""") {
-                stmt ->
-                    lineNum = processEachRow f, studyInfo, { row -> stmt.addBatch(row) }
-            }
-        }
-
-        sql.commit()
-        config.logger.log(LogType.PROGRESS, "")
-        config.logger.log("Processed ${lineNum} rows")
-    }
-
-    private long processEachRow(File f, studyInfo, Closure<List> processRow) {
-        def row = [studyInfo.id as String, null, null, null]
-        def lineNum = 0
-        def header = []
-        f.splitEachLine("\t") {
-            cols ->
-                lineNum++;
-                if (lineNum == 1) {
-                    if (cols[0] != "ID_REF") throw new Exception("Incorrect gene expression file")
-
-                    cols.each {
-                        header << it
-                    }
-                } else {
-                    config.logger.log(LogType.PROGRESS, "[${lineNum}]")
-                    row[1] = cols[0]
-                    cols.eachWithIndex { val, i ->
-                        // skip first column
-                        // rows should have intensity assigned to them, otherwise not interested
-                        if (i > 0 && val) {
-                            row[2] = header[i] as String
-                            row[3] = val
-                            processRow(row)
-                        }
-                    }
                 }
         }
         config.logger.log(LogType.PROGRESS, "")
