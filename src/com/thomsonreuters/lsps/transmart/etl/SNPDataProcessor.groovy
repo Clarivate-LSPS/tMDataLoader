@@ -33,6 +33,9 @@ class SNPDataProcessor extends DataProcessor {
         sql.execute('TRUNCATE TABLE tm_lz.lt_src_mrna_subj_samp_map')
         sql.execute('TRUNCATE TABLE tm_lz.lt_src_mrna_data')
 
+        sql.execute('TRUNCATE TABLE tm_lz.lt_snp_calls_by_gsm')
+        sql.execute('TRUNCATE TABLE tm_lz.lt_snp_copy_number')
+
         def platformList = [] as Set
 
         dir.eachFileMatch(~/(?i).+_Subject_Sample_Mapping_File(_GPL\d+)*\.txt/) {
@@ -44,9 +47,21 @@ class SNPDataProcessor extends DataProcessor {
         if (platformList.size() > 0) {
             loadPlatforms(dir, sql, platformList, studyInfo)
 
-            dir.eachFileMatch(~/(?i).+_Gene_Expression_Data_[RLTZ](_GPL\d+)*\.txt/) {
+           /* dir.eachFileMatch(~/(?i).+_Gene_Expression_Data_[RLTZ](_GPL\d+)*\.txt/) {
                 processExpressionFile(it, sql, studyInfo)
+            }*/
+
+            // Load data to tmp tables TM_LZ.LT_SNP_CALLS_BY_GSM  and TM_LZ.LT_SNP_COPY_NUMBER
+            def callsFileList = studyInfo['callsFileNameList'] as List
+            if (callsFileList.size() > 0) {
+                processCallsFile()
             }
+
+            def copyNumberFileList = studyInfo['copyNumberFileList'] as List
+            if (copyNumberFileList.size() > 0) {
+                processcopyNumberFile()
+            }
+
         } else {
             throw new Exception("No platforms defined")
         }
@@ -89,6 +104,8 @@ class SNPDataProcessor extends DataProcessor {
     private List processMappingFile(File f, Sql sql, studyInfo) {
         def platformList = [] as Set
         def studyIdList = [] as Set
+        def callsFileList = [] as Set
+        def copyNumberFileList = [] as Set
 
         config.logger.log("Mapping file: ${f.name}")
 
@@ -107,13 +124,21 @@ class SNPDataProcessor extends DataProcessor {
                         cols ->
 
                             lineNum++
-                            // cols: 0:study_id, 1:site_id, 2:subject_id, 3:sample_cd, 4:platform, 5:tissuetype, 6:attr1, 7:attr2, 8:category_cd
-                            if (cols[0] && lineNum > 1) {
-                                if (!(cols[2] && cols[3] && cols[4] && cols[8]))
+                            // cols:0:calls_file_name, 1:copy_number_file_name, 2:study_id, 3:site_id, 4:subject_id,
+                            // 5:sample_cd, 6:platform, 7:tissuetype, 8:attr1, 9:attr2, 10:category_cd
+
+                            if (!(cols[0] && cols[1])) {
+                                throw new Exception("Incorrect mapping file: calls_file_name or copy_number_file_name is empty")
+                            }
+                            callsFileList <<  cols[0]
+                            copyNumberFileList << cols[1]
+
+                            if (cols[2] && lineNum > 1) {
+                                if (!(cols[4] && cols[5] && cols[6] && cols[10]))
                                     throw new Exception("Incorrect mapping file: mandatory columns not defined")
 
-                                platformList << cols[4]
-                                studyIdList << cols[0]
+                                platformList << cols[6]
+                                studyIdList << cols[2]
 
                                 stmt.addBatch(cols)
                             }
@@ -139,6 +164,9 @@ class SNPDataProcessor extends DataProcessor {
                 }
             }
         }
+
+        studyInfo['callsFileNameList'] = callsFileList.toList()
+        studyInfo['copyNumberFileList'] = copyNumberFileList.toList()
 
         return platformList
     }
