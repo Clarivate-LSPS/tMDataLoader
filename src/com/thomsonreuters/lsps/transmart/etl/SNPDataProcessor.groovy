@@ -206,10 +206,9 @@ class SNPDataProcessor extends DataProcessor {
 
     private void loadSNPGeneMap(Sql sql, File platformFile, String platform) {
         config.logger.log('Loading SNP Gene Map')
-        sql.execute('create temporary table if not exists tmp_snp_gene_map(snp_name varchar, entrez_gene_id bigint) on commit drop')
-        sql.execute('truncate table tmp_snp_gene_map')
+        sql.execute('truncate table tm_lz.lt_snp_gene_map')
         config.logger.log('Processing platform file')
-        sql.withBatch(500, 'insert into tmp_snp_gene_map (snp_name, entrez_gene_id) values (?, ?)') {
+        sql.withBatch(500, 'insert into tm_lz.lt_snp_gene_map (snp_name, entrez_gene_id) values (?, ?)') {
             st ->
                 eachPlatformEntry(platformFile) {
                     entry ->
@@ -221,7 +220,7 @@ class SNPDataProcessor extends DataProcessor {
             insert into deapp.de_snp_gene_map
             (snp_name, entrez_gene_id)
             select t.snp_name, t.entrez_gene_id
-            from tmp_snp_gene_map t
+            from tm_lz.lt_snp_gene_map t
             left join deapp.de_snp_gene_map gm
             on gm.snp_name = t.snp_name
             where gm.snp_name is null

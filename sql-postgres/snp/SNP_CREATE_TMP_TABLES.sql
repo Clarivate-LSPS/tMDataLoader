@@ -15,3 +15,9 @@ GSM_NUM VARCHAR(10),
   
 )
 TABLESPACE "transmart";
+
+create UNLOGGED table tm_lz.lt_snp_gene_map(
+  snp_name varchar,
+  entrez_gene_id bigint
+)
+TABLESPACE "transmart";
