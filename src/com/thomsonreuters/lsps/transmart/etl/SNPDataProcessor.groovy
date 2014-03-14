@@ -42,7 +42,6 @@ class SNPDataProcessor extends DataProcessor {
             platformList.addAll(processMappingFile(it, sql, studyInfo))
         }
 
-        return true;
         platformList = platformList.toList()
 
         if (platformList.size() > 0) {

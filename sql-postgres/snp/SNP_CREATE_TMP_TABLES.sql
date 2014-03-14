@@ -1,11 +1,11 @@
-CREATE UNLOGGED TABLE "tm_lz"."lt_snp_calls_by_gsm"
+CREATE UNLOGGED TABLE tm_lz.lt_snp_calls_by_gsm
 (	GSM_NUM VARCHAR(10),
 	SNP_NAME VARCHAR(100),
 	SNP_CALLS VARCHAR(4)
 )
 TABLESPACE "transmart" ;
 
-CREATE UNLOGGED TABLE "tm_lz"."lt_snp_copy_number"
+CREATE UNLOGGED TABLE tm_lz.lt_snp_copy_number
 (
 GSM_NUM VARCHAR(10),
 	SNP_NAME VARCHAR(50),
