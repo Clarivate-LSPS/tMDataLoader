@@ -750,7 +750,7 @@ BEGIN
 			  ,a2.concept_cd as timepoint_cd
 			  ,a.attribute_1 as tissue_type
 			  ,a1.concept_cd as tissue_type_cd
-			  ,'MRNA_AFFYMETRIX' as platform
+			  ,'SNP' as platform
 			  ,pn.concept_cd as platform_cd
 			  ,ln.concept_cd || '-' || to_char(b.patient_num) as data_uid
 			  ,a.platform as gpl_id
