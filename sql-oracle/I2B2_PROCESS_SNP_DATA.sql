@@ -1369,6 +1369,7 @@ BEGIN
 
 	commit;
 	stepCt := stepCt + 1;
+	cz_write_audit(jobId,databaseName,procedureName,'Truncated de_snp_calls_by_gsm',0,stepCt,'Done');
 	
 	delete from deapp.de_snp_copy_number
 	where patient_num in (
@@ -1377,13 +1378,10 @@ BEGIN
 	  where trial_name = TrialID
 	);
 
-
 	commit;
 	stepCt := stepCt + 1;
+	cz_write_audit(jobId,databaseName,procedureName,'Truncated de_snp_copy_number',0,stepCt,'Done');
 	
-
-
-		
 	insert into deapp.DE_SNP_CALLS_BY_GSM
 	(gsm_num, snp_name, snp_calls, patient_num) 
 	select ltscbg.gsm_num, ltscbg.snp_name, ltscbg.snp_calls, sm.omic_patient_id from 
@@ -1393,6 +1391,7 @@ BEGIN
 		where sm.trial_name = TrialID;	
 	commit;
 	stepCt := stepCt + 1;
+	cz_write_audit(jobId,databaseName,procedureName,'Inserting into DE_SNP_CALLS_BY_GSM',0,stepCt,'Done');
 
   	insert into deapp.DE_SNP_COPY_NUMBER
 	(snp_name, chrom, chrom_pos, copy_number, patient_num)
@@ -1404,14 +1403,23 @@ BEGIN
 	commit;
 
 	stepCt := stepCt + 1;
+	cz_write_audit(jobId,databaseName,procedureName,'Inserting into de_snp_copy_number',0,stepCt,'Done');
 
 	execute immediate ('truncate table tm_lz.lt_src_mrna_data');
+	commit;
 
+	stepCt := stepCt + 1;
+	cz_write_audit(jobId,databaseName,procedureName,'trancated lt_src_mrna_data',0,stepCt,'Done');
+	
 	insert into tm_lz.lt_src_mrna_data
 	(expr_id, probeset, intensity_value)
 	select gsm_num, snp_name, copy_number
 	from tm_lz.lt_snp_copy_number;
+	commit;
 
+	stepCt := stepCt + 1;
+	cz_write_audit(jobId,databaseName,procedureName,'Inserting into lt_src_mrna_data',0,stepCt,'Done');
+	
 
 	
 
