@@ -20,13 +20,11 @@
 
 package com.thomsonreuters.lsps.transmart.etl
 
-import groovy.util.CliBuilder
-
 class CommandLineTool {
 
 	static main(args) {
 		
-		def version = "0.9.1"
+		def version = "0.9.3"
 		
 		def cli = new CliBuilder(usage: 'tm_etl [options] [<data_dir>]')
 		cli.with {
@@ -38,6 +36,7 @@ class CommandLineTool {
 			t longOpt: 'use-t', 'Do not use Z datatype for T expression data (expert option)'
 			s longOpt: 'stop-on-fail', 'Stop when upload is failed'
 			_ longOpt: 'alt-clinical-proc', args: 1, argName: 'proc_name', 'Name of alternative clinical stored procedure (expert option)'
+            _ longOpt: 'alt-control-schema', args: 1, argName: 'alt_schema', 'Name of alternative control schema (TM_CZ) - expert option'
 			_ longOpt: 'secure-study', 'Make study securable'
 			_ longOpt: 'visit-name-first', 'Put VISIT_NAME before the data value'
 			_ longOpt: 'data-value-first', 'Put VISIT NAME after the data value (default behavior, use to override non-standard config)'
@@ -111,6 +110,17 @@ class CommandLineTool {
 			config.altClinicalProcName = opts?.'alt-clinical-proc'
 			println ">>> USING ALTERNATIVE CLINICAL PROCEDURE: ${opts?.'alt-clinical-proc'}"
 		}
+
+        if (opts?.'alt-control-schema') {
+            config.controlSchema = opts?.'alt-control-schema'
+        }
+
+        if (config.controlSchema) {
+            println ">>> USING ALTERNATIVE CONTROL SCHEMA: ${config.controlSchema}"
+        }
+        else {
+            config.controlSchema = 'tm_cz'
+        }
 		
 		if (! config?.containsKey('visitNameFirst')) {
 			config.visitNameFirst = false // default behavior
