@@ -42,6 +42,7 @@ class SNPDataProcessor extends DataProcessor {
             platformList.addAll(processMappingFile(it, sql, studyInfo))
         }
 
+        return true;
         platformList = platformList.toList()
 
         if (platformList.size() > 0) {
@@ -197,6 +198,7 @@ class SNPDataProcessor extends DataProcessor {
             }
         }
 
+        studyInfo['datatype'] = 'L'
         studyInfo['callsFileNameList'] = callsFileList.toList()
         studyInfo['copyNumberFileList'] = copyNumberFileList.toList()
 
