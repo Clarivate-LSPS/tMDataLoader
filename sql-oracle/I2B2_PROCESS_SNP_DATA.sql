@@ -1405,7 +1405,7 @@ BEGIN
 
 	stepCt := stepCt + 1;
 
-	execute immediate ('truncate table tm_lz.lt_src_mrna_data;');
+	execute immediate ('truncate table tm_lz.lt_src_mrna_data');
 
 	insert into tm_lz.lt_src_mrna_data
 	(expr_id, probeset, intensity_value)
