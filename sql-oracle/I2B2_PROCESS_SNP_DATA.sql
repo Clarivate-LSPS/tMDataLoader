@@ -1395,7 +1395,7 @@ BEGIN
 
   	insert into deapp.DE_SNP_COPY_NUMBER
 	(snp_name, chrom, chrom_pos, copy_number, patient_num)
-	select lscn.snp_name, lscn.chrom, lscn.chrom_pos, lscn.copy_number, sm.omic_patient_id as patient_num from
+	select lscn.snp_name, lscn.chrom, lscn.chrom_pos, power(2, lscn.copy_number) as copy_number, sm.omic_patient_id as patient_num from
 		tm_lz.LT_SNP_COPY_NUMBER lscn
 		inner join deapp.de_subject_sample_mapping sm
 		on sm.sample_cd = lscn.gsm_num
