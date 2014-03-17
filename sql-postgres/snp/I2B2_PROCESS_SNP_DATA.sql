@@ -1102,7 +1102,7 @@ BEGIN
 
   insert into deapp.de_snp_copy_number
   (patient_num, snp_name, chrom, chrom_pos, copy_number)
-  select sm.omic_patient_id as patient_num, tmp.snp_name as snp_name, tmp.chrom, tmp.chrom_pos, tmp.copy_number
+  select sm.omic_patient_id as patient_num, tmp.snp_name as snp_name, tmp.chrom, tmp.chrom_pos, power(2::double precision, tmp.copy_number::double precision)
   from tm_lz.lt_snp_copy_number tmp
   inner join deapp.de_subject_sample_mapping sm
   on sm.sample_cd = tmp.gsm_num
