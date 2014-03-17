@@ -81,10 +81,12 @@ class SNPDataProcessor extends DataProcessor {
     private void processSnpCopyNumberFile(Sql sql, File f) {
         config.logger.log(LogType.MESSAGE, "Processing copy number for ${f.getName()}")
         loadFileToTable(sql, f, 'tm_lz.lt_snp_copy_number',
-                ['GSM_NUM', 'SNP_NAME', 'CHROM', 'CHROM_POS', 'COPY_NUMBER'])
+                ['GSM_NUM', 'SNP_NAME', 'CHROM', 'CHROM_POS', 'COPY_NUMBER']) {
+            [it[0], it[1], it[2], it[3], it[4] as double]
+        }
     }
 
-    private void loadFileToTable(Sql sql, File f, String table, columns) {
+    private void loadFileToTable(Sql sql, File f, String table, columns, Closure prepareEntry = Closure.IDENTITY) {
         String insertCommand = "insert into ${table}(${columns.join(',')}) values (${columns.collect { '?' }.join(',')})"
         long lineNum = 0
         sql.withBatch(500, insertCommand) { stmt ->
@@ -94,7 +96,7 @@ class SNPDataProcessor extends DataProcessor {
                     return
                 }
                 config.logger.log(LogType.PROGRESS, "[${lineNum}]")
-                stmt.addBatch(entry)
+                stmt.addBatch(prepareEntry(entry))
             }
         }
         config.logger.log(LogType.PROGRESS, '')
