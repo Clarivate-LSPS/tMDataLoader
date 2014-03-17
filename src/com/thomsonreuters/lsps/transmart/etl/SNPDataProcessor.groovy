@@ -167,8 +167,12 @@ class SNPDataProcessor extends DataProcessor {
                                 if (!(cols[4] && cols[5] && cols[6] && cols[10]))
                                     throw new Exception("Incorrect mapping file: mandatory columns not defined")
 
-                                callsFileList << cols[0]
-                                copyNumberFileList << cols[1]
+                                if (cols[0]) {
+                                    callsFileList << cols[0]
+                                }
+                                if (cols[1]) {
+                                    copyNumberFileList << cols[1]
+                                }
                                 platformList << cols[6]
                                 studyIdList << cols[2]
 
