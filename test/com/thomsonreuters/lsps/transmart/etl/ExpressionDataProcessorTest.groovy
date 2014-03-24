@@ -11,10 +11,12 @@ class ExpressionDataProcessorTest extends GroovyTestCase {
                         username: 'postgres',
                         password: 'postgres',
                         jdbcDriver: 'org.postgresql.Driver'
-                ]
+                ],
+                controlSchema: 'tm_cz',
+                securitySymbol: 'N'
         ])
         processor.process(
-                new File("/home/transmart/data/Public Studies/Big_Test_GSE666/ExpressionDataToUpload"),
-                [:])
+                new File("Public Studies/TestSample_GSE0/ExpressionDataToUpload"),
+                [name: 'TestSample', node: 'Public Studies\\TestSample'])
     }
 }
