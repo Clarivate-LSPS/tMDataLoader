@@ -699,35 +699,6 @@ BEGIN
 	stepCt := stepCt + 1;
 	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Update tm_wz.wt_mrna_nodes with newly created concept_cds',rowCt,stepCt,'Done') into rtnCd;
 
-	--	delete any site/subject/samples that are not in lt_src_mrna_data for the trial on a reload
-
-	if partExists > 0 then
-	begin
-	delete from deapp.de_subject_sample_mapping sm
-	where sm.trial_name = trial_id
-	  and sm.source_cd = sourceCd
-	  and sm.platform = 'MRNA_AFFYMETRIX'
-	 and not exists
-		 (select 1 from tm_lz.lt_src_mrna_subj_samp_map x
-		  where coalesce(sm.site_id,'@') = coalesce(x.site_id,'@')
-		    and sm.subject_id = x.subject_id
-			and sm.sample_cd = x.sample_cd
-			and sm.source_cd = coalesce(x.source_cd,'STD'));
-	get diagnostics rowCt := ROW_COUNT;
-	exception
-	when others then
-		errorNumber := SQLSTATE;
-		errorMessage := SQLERRM;
-		--Handle errors.
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
-		--End Proc
-		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
-		return -16;
-		end;
-	end if;
-	stepCt := stepCt + 1;
-	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Delete dropped site/subject/sample from de_subject_sample_mapping',rowCt,stepCt,'Done') into rtnCd;
-
 	--Update or insert DE_SUBJECT_SAMPLE_MAPPING from wt_subject_mrna_data
 
 	--PATIENT_ID      = PATIENT_ID (SAME AS ID ON THE PATIENT_DIMENSION)
@@ -1146,9 +1117,17 @@ BEGIN
 		execute sqlText;
 		stepCt := stepCt + 1;
 		select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Drop indexes on ' || partitionName,1,stepCt,'Done') into rtnCd;
-		sqlText := 'truncate table ' || partitionName;
-		raise notice 'sqlText= %', sqlText;
-		execute sqlText;
+
+		if partExists = 0 then
+		  sqlText := 'truncate table ' || partitionName;
+		else
+		  sqlText := 'delete from ' || partitionName || ' where assay_id in (' ||
+		   'select sm.assay_id from deapp.de_subject_sample_mapping sm, tm_lz.lt_src_mrna_subj_samp_map tsm'
+		   || ' where sm.trial_name = ''' || TrialID || ''' and sm.source_cd = '''|| sourceCD || ''''
+		   || ' and coalesce(sm.site_id, '''') = coalesce(tsm.site_id, '''') and sm.subject_id = tsm.subject_id and sm.sample_cd = tsm.sample_cd)';
+		end if;
+    raise notice 'sqlText= %', sqlText;
+    execute sqlText;
 		stepCt := stepCt + 1;
 		select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Truncate ' || partitionName,1,stepCt,'Done') into rtnCd;
 	end if;
