@@ -58,19 +58,19 @@ class ExpressionDataProcessorTest extends GroovyTestCase {
     void testItLoadsData() {
         processor.process(
                 new File("Public Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
-                [name: studyName, node: "Public Studies\\${studyName}".toString()])
+                [name: studyName, node: "Test Studies\\${studyName}".toString()])
         assertThatSampleIsPresent('GSM1000000719', ['1007_s_at': 6.624529839])
     }
 
     void testItMergeSamples() {
         processor.process(
                 new File("Public Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
-                [name: studyName, node: "Public Studies\\${studyName}".toString()])
+                [name: studyName, node: "Test Studies\\${studyName}".toString()])
         assertThatSampleIsPresent('GSM1000000719', ['1007_s_at': 6.624529839])
         assertThatSampleIsPresent('GSM1000000722', ['1007_s_at': 6.374219894])
         processor.process(
                 new File("Additional Samples/${studyName}_${studyId}/ExpressionDataToUpload"),
-                [name: studyName, node: "Public Studies\\${studyName}".toString()])
+                [name: studyName, node: "Test Studies\\${studyName}".toString()])
         assertThatSampleIsPresent('GSM2000000719', ['1007_s_at': 6.624529839])
         assertThatSampleIsPresent('GSM1000000719', ['1007_s_at': 6.624529839])
         assertThatSampleIsPresent('GSM1000000722', ['1007_s_at': 5.374219894])
