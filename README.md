@@ -119,6 +119,7 @@ IMPORTANT! If your machine doesn't have a direct connection to the internet and 
 Refer to JVM documentation for more information on these options.
 
 IMPORTANT! If you are using Oracle db you should download driver (http://www.oracle.com/technetwork/database/enterprise-edition/jdbc-10201-088211.html) and add it to class path to executable tm_etl.jar:
+
     java -classpath "[path_to_driver]ojdbc14.jar" -jar tm_etl.jar [options]
 
 After processing is complete, the study folders and subfolders will be renamed according to the following principle:
