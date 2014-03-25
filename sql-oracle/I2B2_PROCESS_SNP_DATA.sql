@@ -470,6 +470,7 @@ BEGIN
 				and dssm.subject_id = dssm.subject_id
 				and dssm.gpl_id = ltssm.platform
 				and dssm.subject_id = ltssm.subject_id
+				and dssm.sample_cd  = ltssm.sample_cd
 			where 
 				dssm.trial_name = TrialId
 				and nvl(dssm.source_cd,'STD') = sourceCd
@@ -522,6 +523,7 @@ BEGIN
       and dssm.subject_id = dssm.subject_id
       and dssm.gpl_id     = ltssm.platform
       and dssm.subject_id = ltssm.subject_id
+      and dssm.sample_cd  = ltssm.sample_cd
     where 
       dssm.trial_name = TrialID
       and nvl(dssm.source_cd,'STD') = sourceCd
