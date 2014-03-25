@@ -458,17 +458,23 @@ BEGIN
 
 	if pExists = 0 then
 		--	dataset is not partitioned so must delete
-
-
-
-
-
 		delete from de_subject_microarray_data
-		where trial_source = TrialId || ':' || sourceCd;
-
-
-
-
+		where trial_source = TrialId || ':' || sourceCd 
+		and assay_id in (
+			select dssm.assay_id from 
+				TM_LZ.lt_src_mrna_subj_samp_map ltssm
+				left join
+				deapp.de_subject_sample_mapping dssm
+				on 
+				dssm.trial_name = ltssm.trial_name 
+				and dssm.subject_id = dssm.subject_id
+				and dssm.gpl_id = ltssm.platform
+				and dssm.subject_id = ltssm.subject_id
+			where 
+				dssm.trial_name = TrialId
+				and nvl(dssm.source_cd,'STD') = sourceCd
+				and dssm.platform = 'SNP'
+		);
 
 		stepCt := stepCt + 1;
 		cz_write_audit(jobId,databaseName,procedureName,'Delete data from observation_fact',SQL%ROWCOUNT,stepCt,'Done');
@@ -505,12 +511,23 @@ BEGIN
 	end if;
 
 	--	Cleanup any existing data in de_subject_sample_mapping.  
-
-	delete from DE_SUBJECT_SAMPLE_MAPPING 
-	where trial_name = TrialID 
-	  and nvl(source_cd,'STD') = sourceCd
-	  and platform = 'SNP'; --Making sure only mRNA data is deleted
-
+  delete from de_subject_sample_mapping where
+  assay_id in (
+    select dssm.assay_id from 
+      TM_LZ.lt_src_mrna_subj_samp_map ltssm
+      left join
+      deapp.de_subject_sample_mapping dssm
+      on 
+      dssm.trial_name     = ltssm.trial_name 
+      and dssm.subject_id = dssm.subject_id
+      and dssm.gpl_id     = ltssm.platform
+      and dssm.subject_id = ltssm.subject_id
+    where 
+      dssm.trial_name = TrialID
+      and nvl(dssm.source_cd,'STD') = sourceCd
+      and dssm.platform = 'SNP'
+  );
+  
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Delete trial from DEAPP de_subject_sample_mapping',SQL%ROWCOUNT,stepCt,'Done');
 
