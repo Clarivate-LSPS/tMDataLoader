@@ -309,39 +309,35 @@ BEGIN
 	cz_write_audit(jobId,databaseName,procedureName,'Delete data from observation_fact',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
 
+	
+	--	dataset is not partitioned so must delete
+	delete from de_subject_microarray_data
+	where trial_source = TrialId || ':' || sourceCd 
+	and assay_id in (
+		select dssm.assay_id from 
+			TM_LZ.lt_src_mrna_subj_samp_map ltssm
+			left join
+			deapp.de_subject_sample_mapping dssm
+			on 
+			dssm.trial_name = ltssm.trial_name 
+			and dssm.gpl_id = ltssm.platform
+			and dssm.subject_id = ltssm.subject_id
+			and dssm.sample_cd  = ltssm.sample_cd
+		where 
+			dssm.trial_name = TrialId
+			and nvl(dssm.source_cd,'STD') = sourceCd
+	);
+	
+	stepCt := stepCt + 1;
+	cz_write_audit(jobId,databaseName,procedureName,'Delete data from observation_fact',SQL%ROWCOUNT,stepCt,'Done');
+	commit;
+
 	select count(*) into pExists
 	from all_tables
 	where table_name = 'DE_SUBJECT_MICROARRAY_DATA'
 	  and partitioned = 'YES';
 	  
-	if pExists = 0 then
-		--	dataset is not partitioned so must delete
-		
-		/*delete from de_subject_microarray_data
-		where trial_source = TrialId || ':' || sourceCd;*/
-		
-		delete from de_subject_microarray_data
-		where trial_source = TrialId || ':' || sourceCd 
-		and assay_id in (
-			select dssm.assay_id from 
-				TM_LZ.lt_src_mrna_subj_samp_map ltssm
-				left join
-				deapp.de_subject_sample_mapping dssm
-				on 
-				dssm.trial_name = ltssm.trial_name 
-				and dssm.subject_id = dssm.subject_id
-				and dssm.gpl_id = ltssm.platform
-				and dssm.subject_id = ltssm.subject_id
-				and dssm.sample_cd  = ltssm.sample_cd
-			where 
-				dssm.trial_name = TrialId
-				and nvl(dssm.source_cd,'STD') = sourceCd
-		);
-		
-		stepCt := stepCt + 1;
-		cz_write_audit(jobId,databaseName,procedureName,'Delete data from observation_fact',SQL%ROWCOUNT,stepCt,'Done');
-		commit;
-	else
+	if pExists <> 0 then
 		--	Create partition in de_subject_microarray_data if it doesn't exist else truncate partition
 			
 		select count(*)
@@ -360,11 +356,6 @@ BEGIN
 			stepCt := stepCt + 1;
 			cz_write_audit(jobId,databaseName,procedureName,'Adding partition to de_subject_microarray_data',0,stepCt,'Done');
 				
-		else
-			sqlText := 'alter table deapp.de_subject_microarray_data truncate partition "' || TrialID || ':' || sourceCd || '"';
-			execute immediate(sqlText);
-			stepCt := stepCt + 1;
-			cz_write_audit(jobId,databaseName,procedureName,'Truncating partition in de_subject_microarray_data',0,stepCt,'Done');
 		end if;
 		
 	end if;
@@ -384,7 +375,6 @@ BEGIN
 		  deapp.de_subject_sample_mapping dssm
 		  on 
 		  dssm.trial_name     = ltssm.trial_name 
-		  and dssm.subject_id = dssm.subject_id
 		  and dssm.gpl_id     = ltssm.platform
 		  and dssm.subject_id = ltssm.subject_id
 		  and dssm.sample_cd  = ltssm.sample_cd

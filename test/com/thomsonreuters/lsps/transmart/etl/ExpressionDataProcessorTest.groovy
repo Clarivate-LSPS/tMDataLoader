@@ -12,10 +12,10 @@ import static org.junit.Assert.assertThat
  */
 class ExpressionDataProcessorTest extends GroovyTestCase {
     def connectionSettings = [
-            jdbcConnectionString: 'jdbc:postgresql:transmart',
-            username            : 'postgres',
-            password            : 'postgres',
-            jdbcDriver          : 'org.postgresql.Driver'
+            jdbcConnectionString: 'jdbc:oracle:thin:@localhost:1521:ORCL',
+            username            : 'tm_cz',
+            password            : 'tm_cz',
+            jdbcDriver          : 'oracle.jdbc.OracleDriver'
     ]
 
     private Sql _sql
@@ -44,7 +44,10 @@ class ExpressionDataProcessorTest extends GroovyTestCase {
         def sample = sql.firstRow('select * from deapp.de_subject_sample_mapping where trial_name = ? and sample_cd = ?',
                 studyId, sampleId)
         assertThat(sample, notNullValue())
-        String suffix = sample.partition_id ? "_${sample.partition_id}" : ''
+        String suffix = '';
+        if (sample.hasProperty("partition_id")){
+            suffix = sample.partition_id ? "_${sample.partition_id}" : ''
+        }
         sampleData.each { probe_id, value ->
             def rows = sql.rows("select d.raw_intensity from deapp.de_subject_microarray_data${suffix} d " +
                     "inner join deapp.de_mrna_annotation a on d.probeset_id = a.probeset_id " +
@@ -57,19 +60,19 @@ class ExpressionDataProcessorTest extends GroovyTestCase {
 
     void testItLoadsData() {
         processor.process(
-                new File("Public Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
+                new File("fixtures/Public Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
         assertThatSampleIsPresent('GSM1000000719', ['1007_s_at': 6.624529839])
     }
 
     void testItMergeSamples() {
         processor.process(
-                new File("Public Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
+                new File("fixtures/Public Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
         assertThatSampleIsPresent('GSM1000000719', ['1007_s_at': 6.624529839])
         assertThatSampleIsPresent('GSM1000000722', ['1007_s_at': 6.374219894])
         processor.process(
-                new File("Additional Samples/${studyName}_${studyId}/ExpressionDataToUpload"),
+                new File("fixtures/Additional Samples/${studyName}_${studyId}/ExpressionDataToUpload"),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
         assertThatSampleIsPresent('GSM2000000719', ['1007_s_at': 6.624529839])
         assertThatSampleIsPresent('GSM1000000719', ['1007_s_at': 6.624529839])
