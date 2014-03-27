@@ -106,6 +106,7 @@ AS
   tText			varchar2(1000);
   gplTitle		varchar2(1000);
   pExists		number;
+  dataParitioned number;
   partTbl   	number;
   partExists 	number;
   sampleCt		number;
@@ -444,19 +445,19 @@ BEGIN
 	cz_write_audit(jobId,databaseName,procedureName,'Delete data from observation_fact',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
 
+  select count(*) into dataParitioned
+    from all_tables
+    where table_name = 'DE_SUBJECT_MICROARRAY_DATA'
+    and partitioned = 'YES';
 
-	select count(*) into pExists
-	from all_tables
-	where table_name = 'DE_SUBJECT_MICROARRAY_DATA'
-	  and partitioned = 'YES';
+  select count(*)
+		into pExists
+		from all_tab_partitions
+		where table_name = 'DE_SUBJECT_MICROARRAY_DATA'
+		and partition_name = TrialId || ':' || sourceCd;
 
 
-
-
-
-
-
-	if pExists = 0 then
+	if dataParitioned = 0 or pExists <> 0  then
 		--	dataset is not partitioned so must delete
 		delete from de_subject_microarray_data
 		where trial_source = TrialId || ':' || sourceCd 
@@ -478,36 +479,19 @@ BEGIN
 		);
 
 		stepCt := stepCt + 1;
-		cz_write_audit(jobId,databaseName,procedureName,'Delete data from observation_fact',SQL%ROWCOUNT,stepCt,'Done');
-		commit;
-	else
-		--	Create partition in de_subject_microarray_data if it doesn't exist else truncate partition
+    cz_write_audit(jobId,databaseName,procedureName,'Delete data from de_subject_microarray_data',SQL%ROWCOUNT,stepCt,'Done');
+    commit;
 
+  end if;
 
-		select count(*)
-			into pExists
-			from all_tab_partitions
-			where table_name = 'DE_SUBJECT_MICROARRAY_DATA'
-			  and partition_name = TrialId || ':' || sourceCd;
-
-
-		if pExists = 0 then
-
-
+  if dataParitioned <> 0 and pExists = 0 then
+		  --	Create partition in de_subject_microarray_data if it doesn't exist else truncate partition
 			--	needed to add partition to de_subject_microarray_data
-
 			sqlText := 'alter table deapp.de_subject_microarray_data add PARTITION "' || TrialID || ':' || sourceCd || '"  VALUES (' || '''' || TrialID || ':' || sourceCd || '''' || ') ' ||
 						   'NOLOGGING COMPRESS ';
 			execute immediate(sqlText);
 			stepCt := stepCt + 1;
 			cz_write_audit(jobId,databaseName,procedureName,'Adding partition to de_subject_microarray_data',0,stepCt,'Done');
-
-		else
-			sqlText := 'alter table deapp.de_subject_microarray_data truncate partition "' || TrialID || ':' || sourceCd || '"';
-			execute immediate(sqlText);
-			stepCt := stepCt + 1;
-			cz_write_audit(jobId,databaseName,procedureName,'Truncating partition in de_subject_microarray_data',0,stepCt,'Done');
-		end if;
 
 	end if;
 
