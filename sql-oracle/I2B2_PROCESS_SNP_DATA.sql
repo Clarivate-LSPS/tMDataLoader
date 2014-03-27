@@ -502,8 +502,7 @@ BEGIN
       left join
       deapp.de_subject_sample_mapping dssm
       on 
-      dssm.trial_name     = ltssm.trial_name 
-      and dssm.subject_id = dssm.subject_id
+      dssm.trial_name     = ltssm.trial_name
       and dssm.gpl_id     = ltssm.platform
       and dssm.subject_id = ltssm.subject_id
       and dssm.sample_cd  = ltssm.sample_cd
