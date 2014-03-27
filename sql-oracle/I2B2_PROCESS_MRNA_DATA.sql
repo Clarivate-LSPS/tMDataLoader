@@ -340,11 +340,12 @@ BEGIN
         dssm.trial_name = TrialId
         and nvl(dssm.source_cd,'STD') = sourceCd
     );
-  end if;
 
-	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Delete data from de_subject_microarray_data',SQL%ROWCOUNT,stepCt,'Done');
-	commit;
+    stepCt := stepCt + 1;
+    cz_write_audit(jobId,databaseName,procedureName,'Delete data from de_subject_microarray_data',SQL%ROWCOUNT,stepCt,'Done');
+    commit;
+
+  end if;
 
 	if dataParitioned <> 0 and pExists = 0 then
 		  --	Create partition in de_subject_microarray_data if it doesn't exist else truncate partition
