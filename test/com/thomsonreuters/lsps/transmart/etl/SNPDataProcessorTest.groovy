@@ -50,12 +50,12 @@ class SNPDataProcessorTest extends GroovyTestCase {
             suffix = sample.partition_id ? "_${sample.partition_id}" : ''
         }
         sampleData.each { probe_id, value ->
-            def rows = sql.rows("select d.raw_intensity from deapp.de_subject_microarray_data${suffix} d " +
+            def rows = sql.rows("select d.log_intensity from deapp.de_subject_microarray_data${suffix} d " +
                     "inner join deapp.de_mrna_annotation a on d.probeset_id = a.probeset_id " +
                     "where a.gpl_id = ? and d.assay_id = ? and a.probe_id = ?",
                     platformId, sample.assay_id, probe_id)
             assertThat(rows?.size(), equalTo(1))
-            assertEquals(rows[0].raw_intensity as double, value as double, 0.001)
+            assertEquals(rows[0].log_intensity as double, value as double, 0.001)
         }
     }
 
