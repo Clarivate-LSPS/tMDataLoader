@@ -59,16 +59,19 @@ NEW! Starting with version 0.8, nested folders are supported - see below.
 				ClinicalData
 				ExpressionData
 				MetaData
+				SNPData
 			Multiple Sclerosis_Goertsches_GSE24427
 				ClinicalDataToUpload <-- both ClinicalData and ClinicalDataToUpload are fine
 				ExpressionDataToUpload <-- same for this one
 				MetaDataToUpload <-- same for this one
+				SNPDataToUpload
 		Internal Studies <-- put internal studies here
 			MyStudyFolder
 				MyStudy
 					ClinicalData
 					ExpressionData
 					MetaData
+					SNPData
 		_MetaData <-- you can put metadata here if it contains metadata for several studies. Each .txt file will be processed.
 			
 Basically, the first level of the directory defines the top category in the Dataset Explorer tree.
@@ -115,6 +118,10 @@ IMPORTANT! If your machine doesn't have a direct connection to the internet and 
 
 Refer to JVM documentation for more information on these options.
 
+IMPORTANT! If you are using Oracle db you should download driver (http://www.oracle.com/technetwork/database/enterprise-edition/jdbc-10201-088211.html) and add it to class path to executable tm_etl.jar:
+
+    java -classpath "[path_to_driver]ojdbc14.jar" -jar tm_etl.jar [options]
+
 After processing is complete, the study folders and subfolders will be renamed according to the following principle:
 
  - If any component (clinical, expression, etc) failed, that particular folder will be marked with `_FAIL_` prefix, e.g. `_FAIL_ClinicalDataToUpload`
@@ -122,6 +129,9 @@ After processing is complete, the study folders and subfolders will be renamed a
  - In case of success, folders will be prefixed with `_DONE_`
  
 You can disable any study or study component processing by using `_DISABLED_` prefix for a folder name.
+
+NB! If you want to add Expression or SNP data to downloaded study you should only load new data to existing study.
+Loader does not clear all data in study before adding new one, it merges previously loaded data with new samples to avoid duplicates and loss of information.
 
 
 
