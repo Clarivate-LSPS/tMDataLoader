@@ -10,26 +10,12 @@ import static org.junit.Assert.assertThat
 /**
  * Created by bondarev on 2/24/14.
  */
-class ExpressionDataProcessorTest extends GroovyTestCase {
-    def connectionSettings = [
-            jdbcConnectionString: 'jdbc:oracle:thin:@localhost:1521:ORCL',
-            username            : 'tm_cz',
-            password            : 'tm_cz',
-            jdbcDriver          : 'oracle.jdbc.OracleDriver'
-    ]
-
-    private Sql _sql
+class ExpressionDataProcessorTest extends DataProcessorTestCase {
     private ExpressionDataProcessor _processor
 
     String studyName = 'TestSample'
     String studyId = 'GSE0'
     String platformId = 'GPL96'
-
-    Sql getSql() {
-        return _sql ?: (_sql = Sql.newInstance(connectionSettings.jdbcConnectionString,
-                connectionSettings.password, connectionSettings.username,
-                connectionSettings.jdbcDriver))
-    }
 
     ExpressionDataProcessor getProcessor() {
         _processor ?: (_processor = new ExpressionDataProcessor([

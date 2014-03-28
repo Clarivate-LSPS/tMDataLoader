@@ -52,7 +52,7 @@ class SNPDataProcessorTest extends DataProcessorTestCase {
         processor.process(
                 new File("fixtures/Public Studies/${studyName}_${studyId}/SNPDataToUpload"),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
-        assertThatSampleIsPresent('GSM887898', ['SNP_A-4265338': 0.528913])
+        assertThatSampleIsPresent('GSM887898', ['SNP_A-4265338': 0.628913])
         assertThatSampleIsPresent('GSM887900', ['CN_497981': 0.057206])
         processor.process(
                 new File("fixtures/Additional Samples/${studyName}_${studyId}/SNPDataToUpload"),

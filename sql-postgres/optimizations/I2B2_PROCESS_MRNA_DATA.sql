@@ -1118,14 +1118,10 @@ BEGIN
 		stepCt := stepCt + 1;
 		select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Drop indexes on ' || partitionName,1,stepCt,'Done') into rtnCd;
 
-		if partExists = 0 then
-		  sqlText := 'truncate table ' || partitionName;
-		else
-		  sqlText := 'delete from ' || partitionName || ' where assay_id in (' ||
-		   'select sm.assay_id from deapp.de_subject_sample_mapping sm, tm_lz.lt_src_mrna_subj_samp_map tsm'
-		   || ' where sm.trial_name = ''' || TrialID || ''' and sm.source_cd = '''|| sourceCD || ''''
-		   || ' and coalesce(sm.site_id, '''') = coalesce(tsm.site_id, '''') and sm.subject_id = tsm.subject_id and sm.sample_cd = tsm.sample_cd)';
-		end if;
+    sqlText := 'delete from ' || partitionName || ' where assay_id in (' ||
+     'select sm.assay_id from deapp.de_subject_sample_mapping sm, tm_lz.lt_src_mrna_subj_samp_map tsm'
+     || ' where sm.trial_name = ''' || TrialID || ''' and sm.source_cd = '''|| sourceCD || ''''
+     || ' and coalesce(sm.site_id, '''') = coalesce(tsm.site_id, '''') and sm.subject_id = tsm.subject_id and sm.sample_cd = tsm.sample_cd)';
     raise notice 'sqlText= %', sqlText;
     execute sqlText;
 		stepCt := stepCt + 1;
