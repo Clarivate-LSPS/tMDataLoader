@@ -1,5 +1,6 @@
 package com.thomsonreuters.lsps.transmart.etl
 
+import com.thomsonreuters.lsps.transmart.files.GplFile
 import groovy.sql.Sql
 
 /**
@@ -24,8 +25,8 @@ class PlatformLoader {
             config.logger.log("Loading platform: ${platform}")
             if (!platformFile.exists()) throw new Exception("Platform file not found: ${platformFile.name}")
 
-            def platformTitle
-            def platformOrganism
+            def platformTitle = null
+            def platformOrganism = null
 
             row = sql.firstRow("select title, organism from deapp.de_gpl_info where platform=${platform}")
             if (!row) {
@@ -34,14 +35,22 @@ class PlatformLoader {
                 def txt = "http://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=${platform}".toURL().getText()
 
                 def m = txt =~ /Title\<\/td\>\s*?\<td.*?\>(?:\[.+?\]\s*)*(.+?)\<\/td\>/
-                if (m[0]) {
+                if (m.size() > 0) {
                     platformTitle = m[0][1]
                 }
 
                 m = txt =~ /Organism\<\/td\>\s*?\<td.*?\>\<a.+?\>(.+?)\<\/a\>/
-                if (m[0]) {
+                if (m.size() > 0) {
                     platformOrganism = m[0][1]
                 }
+
+                GplFile gplFile = new GplFile(platformFile)
+                if (!platformTitle) {
+                    platformTitle = gplFile.metaInfo.PLATFORM_TITLE
+                }
+                if (!platformOrganism) {
+                    platformOrganism = gplFile.metaInfo.PLATFORM_SPECIES ?: 'Homo Sapiens'
+                }                
 
                 if (platformTitle && platformOrganism) {
                     sql.execute("""\
@@ -84,7 +93,9 @@ class PlatformLoader {
 
             if (isEmpty) throw new Exception("Platform file doesn't contain any EntrezGene IDs")
 
-            sql.commit()
+            if (!sql.connection.autoCommit) {
+                sql.commit()
+            }
             config.logger.log("Finished loading platform ${platform}, processed ${lineNum} rows")
 
             studyInfo['runPlatformLoad'] = true

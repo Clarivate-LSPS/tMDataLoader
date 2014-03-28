@@ -11,6 +11,7 @@ class CsvLikeFile {
     File file
     protected String lineComment
     private List<String> header
+    private List<String> headComments
     private final Pattern separator = Pattern.compile('\t')
 
     CsvLikeFile(File file, String lineComment) {
@@ -23,6 +24,17 @@ class CsvLikeFile {
             String line;
             while ((line = reader.readLine()).startsWith(lineComment));
             line.split('\t', -1)
+        })
+    }
+
+    String[] getHeadComments() {
+        headComments ?: (headComments = file.withReader { reader ->
+            String line
+            List<String> headComments = []
+            while ((line = reader.readLine()).startsWith(lineComment)) {
+                headComments << line.substring(lineComment.length()).trim()
+            }
+            headComments
         })
     }
 

@@ -7,7 +7,7 @@ import static org.junit.Assert.assertThat
 /**
  * Created by bondarev on 2/24/14.
  */
-class SNPDataProcessorTest extends DataProcessorTestCase {
+class SNPDataProcessorTest extends ConfigAwareTestCase {
     private SNPDataProcessor _processor
 
     String studyName = 'Q4_SNP'
@@ -15,12 +15,7 @@ class SNPDataProcessorTest extends DataProcessorTestCase {
     String platformId = 'GPL15315'
 
     SNPDataProcessor getProcessor() {
-        _processor ?: (_processor = new SNPDataProcessor([
-                logger        : new Logger([isInteractiveMode: true]),
-                db            : connectionSettings,
-                controlSchema : 'tm_cz',
-                securitySymbol: 'N'
-        ]))
+        _processor ?: (_processor = new SNPDataProcessor(config))
     }
 
     void assertThatSampleIsPresent(String sampleId, sampleData) {
@@ -45,7 +40,7 @@ class SNPDataProcessorTest extends DataProcessorTestCase {
         processor.process(
                 new File("fixtures/Public Studies/${studyName}_${studyId}/SNPDataToUpload"),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
-        assertThatSampleIsPresent('GSM887898', ['SNP_A-4265338': 0.528913])
+        assertThatSampleIsPresent('GSM887898', ['SNP_A-4265338': 0.628913])
     }
 
     void testItMergeSamples() {
