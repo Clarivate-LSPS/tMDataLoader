@@ -24,7 +24,7 @@ class CommandLineTool {
 
 	static main(args) {
 		
-		def version = "0.9.3"
+		def version = "0.9.4"
 		
 		def cli = new CliBuilder(usage: 'tm_etl [options] [<data_dir>]')
 		cli.with {
