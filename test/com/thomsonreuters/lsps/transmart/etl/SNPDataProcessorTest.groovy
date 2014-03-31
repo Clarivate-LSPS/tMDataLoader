@@ -1,44 +1,21 @@
 package com.thomsonreuters.lsps.transmart.etl
 
-import groovy.sql.Sql
-
 import static org.hamcrest.CoreMatchers.equalTo
 import static org.hamcrest.CoreMatchers.notNullValue
-import static org.junit.Assert.assertEquals
-import static org.junit.Assert.assertThat
 import static org.junit.Assert.assertThat
 
 /**
  * Created by bondarev on 2/24/14.
  */
-class SNPDataProcessorTest extends GroovyTestCase {
-    def connectionSettings = [
-            jdbcConnectionString: 'jdbc:oracle:thin:@localhost:1521:ORCL',
-            username            : 'tm_cz',
-            password            : 'tm_cz',
-            jdbcDriver          : 'oracle.jdbc.OracleDriver'
-    ]
-
-    private Sql _sql
-    private com.thomsonreuters.lsps.transmart.etl.SNPDataProcessor _processor
+class SNPDataProcessorTest extends ConfigAwareTestCase {
+    private SNPDataProcessor _processor
 
     String studyName = 'Q4_SNP'
     String studyId = 'GSE36138'
     String platformId = 'GPL15315'
 
-    Sql getSql() {
-        return _sql ?: (_sql = Sql.newInstance(connectionSettings.jdbcConnectionString,
-                connectionSettings.password, connectionSettings.username,
-                connectionSettings.jdbcDriver))
-    }
-
     SNPDataProcessor getProcessor() {
-        _processor ?: (_processor = new SNPDataProcessor([
-                logger        : new Logger([isInteractiveMode: true]),
-                db            : connectionSettings,
-                controlSchema : 'tm_cz',
-                securitySymbol: 'N'
-        ]))
+        _processor ?: (_processor = new SNPDataProcessor(config))
     }
 
     void assertThatSampleIsPresent(String sampleId, sampleData) {
@@ -63,14 +40,14 @@ class SNPDataProcessorTest extends GroovyTestCase {
         processor.process(
                 new File("fixtures/Public Studies/${studyName}_${studyId}/SNPDataToUpload"),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
-        assertThatSampleIsPresent('GSM887898', ['SNP_A-4265338': 0.528913])
+        assertThatSampleIsPresent('GSM887898', ['SNP_A-4265338': 0.628913])
     }
 
     void testItMergeSamples() {
         processor.process(
                 new File("fixtures/Public Studies/${studyName}_${studyId}/SNPDataToUpload"),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
-        assertThatSampleIsPresent('GSM887898', ['SNP_A-4265338': 0.528913])
+        assertThatSampleIsPresent('GSM887898', ['SNP_A-4265338': 0.628913])
         assertThatSampleIsPresent('GSM887900', ['CN_497981': 0.057206])
         processor.process(
                 new File("fixtures/Additional Samples/${studyName}_${studyId}/SNPDataToUpload"),
