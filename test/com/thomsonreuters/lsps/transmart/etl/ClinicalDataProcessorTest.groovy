@@ -43,6 +43,14 @@ class ClinicalDataProcessorTest extends ConfigAwareTestCase {
         assertTrue(query[0].patient_count == 9)
     }
 
+    void assertThatNewNodeIsAdded(conceptPathForAdded, attrName) {
+        def query = sql.rows('select c_name from i2b2 where C_FULLNAME=?', conceptPathForAdded)
+        assertEquals(query[0].c_name, attrName)
+
+        query = sql.rows('select * from concept_dimension where CONCEPT_PATH=?', conceptPathForAdded)
+        assertThat(query?.size(), equalTo(1))
+    }
+
     void testItLoadsData() {
         processor.process(
                 new File("fixtures/Public Studies/${studyName}_${studyId}/ClinicalDataToUpload"),
@@ -72,6 +80,10 @@ class ClinicalDataProcessorTest extends ConfigAwareTestCase {
         attrName = "T790M TEST"
         cFullname = conceptPathForPatient + attrName + "\\"
         assertThatSampleIsPresent(conceptPath, cFullname, attrName, conceptPathForPatient, subjId)
+
+        String conceptPathForAdded = conceptPath + 'Biomarker Data\\Mutations\\APC (Entrez ID: 324)\\'
+        attrName = "APC (Entrez ID: 324)"
+        assertThatNewNodeIsAdded(conceptPathForAdded,attrName)
     }
 
 }
