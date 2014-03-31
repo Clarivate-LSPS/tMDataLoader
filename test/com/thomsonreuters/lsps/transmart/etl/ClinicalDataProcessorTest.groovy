@@ -1,20 +1,89 @@
 package com.thomsonreuters.lsps.transmart.etl
+
+import groovy.sql.Sql
+
+import static org.hamcrest.CoreMatchers.equalTo
+import static org.hamcrest.CoreMatchers.notNullValue
+import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertThat
+import static org.junit.Assert.assertThat
+import static org.junit.Assert.assertTrue
+
 /**
  * Created by bondarev on 2/24/14.
  */
-class ClinicalDataProcessorTest extends GroovyTestCase {
-    void testProcessFiles() {
-        def processor = new ClinicalDataProcessor([
+class ClinicalDataProcessorTest extends ConfigAwareTestCase {
+    private com.thomsonreuters.lsps.transmart.etl.ClinicalDataProcessor _processor
+
+    String studyName = 'ClinicalSample'
+    String studyId = 'CCLE_TEST'
+    String platformId = 'GPL570'
+
+    ClinicalDataProcessor getProcessor() {
+        _processor ?: (_processor = new ClinicalDataProcessor([
                 logger: new Logger([isInteractiveMode: true]),
-                db: [
-                        jdbcConnectionString: 'jdbc:postgresql:transmart',
-                        username: 'postgres',
-                        password: 'postgres',
-                        jdbcDriver: 'org.postgresql.Driver'
-                ]
-        ])
-        processor.process(
-                new File("/home/transmart/data/Public Studies/Big_Test_GSE666/ClinicalDataToUpload"),
-                [:])
+                db: connectionSettings,
+                controlSchema: 'tm_cz',
+                securitySymbol: 'N'
+        ]))
     }
+
+    void assertThatSampleIsPresent(String conceptPath, String cFullname, String attrName, String conceptPathForPatient, String subjId) {
+        def query = sql.rows('select * from patient_trial where patient_num in ' +
+                '(select patient_num from patient_dimension where SOURCESYSTEM_CD=?)', studyId +':' + subjId)
+        assertThat(query?.size(), equalTo(1))
+
+        query = sql.rows('select * from concept_dimension where CONCEPT_PATH=?', conceptPath)
+        assertThat(query?.size(), equalTo(1))
+
+        query = sql.rows('select c_name from i2b2 where C_FULLNAME=?', cFullname)
+        assertEquals(query[0].c_name, attrName)
+
+        query = sql.rows('select patient_count from concept_counts where CONCEPT_PATH=?', conceptPathForPatient);
+        assertTrue(query[0].patient_count == 9)
+    }
+
+    void assertThatNewNodeIsAdded(conceptPathForAdded, attrName) {
+        def query = sql.rows('select c_name from i2b2 where C_FULLNAME=?', conceptPathForAdded)
+        assertEquals(query[0].c_name, attrName)
+
+        query = sql.rows('select * from concept_dimension where CONCEPT_PATH=?', conceptPathForAdded)
+        assertThat(query?.size(), equalTo(1))
+    }
+
+    void testItLoadsData() {
+        processor.process(
+                new File("fixtures/Public Studies/${studyName}_${studyId}/ClinicalDataToUpload"),
+                [name: studyName, node: "Test Studies\\${studyName}".toString()])
+        String conceptPath = "\\Test Studies\\ClinicalSample\\"
+        String conceptPathForPatient = conceptPath + "Biomarker Data\\Mutations\\EGFR (Entrez ID: 1956)\\AA mutation\\"
+        String attrName = "T790M"
+        String cFullname = conceptPathForPatient + attrName + "\\"
+        String subjId = "HCC2935"
+        assertThatSampleIsPresent(conceptPath, cFullname, attrName, conceptPathForPatient, subjId)
+    }
+
+    void testItMergesData() {
+        processor.process(
+                new File("fixtures/Public Studies/${studyName}_${studyId}/ClinicalDataToUpload"),
+                [name: studyName, node: "Test Studies\\${studyName}".toString()])
+        String conceptPath = "\\Test Studies\\ClinicalSample\\"
+        String conceptPathForPatient = conceptPath + "Biomarker Data\\Mutations\\EGFR (Entrez ID: 1956)\\AA mutation\\"
+        String attrName = "T790M"
+        String cFullname = conceptPathForPatient + attrName + "\\"
+        String subjId = "HCC2935"
+        assertThatSampleIsPresent(conceptPath, cFullname, attrName, conceptPathForPatient, subjId)
+
+        processor.process(
+                new File("fixtures/Additional Samples/${studyName}_${studyId}/ClinicalDataToUpload"),
+                [name: studyName, node: "Test Studies\\${studyName}".toString()])
+        attrName = "T790M TEST"
+        cFullname = conceptPathForPatient + attrName + "\\"
+        assertThatSampleIsPresent(conceptPath, cFullname, attrName, conceptPathForPatient, subjId)
+
+        String conceptPathForAdded = conceptPath + 'Biomarker Data\\Mutations\\APC (Entrez ID: 324)\\'
+        attrName = "APC (Entrez ID: 324)"
+        assertThatNewNodeIsAdded(conceptPathForAdded,attrName)
+    }
+
 }

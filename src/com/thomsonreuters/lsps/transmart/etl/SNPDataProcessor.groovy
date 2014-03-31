@@ -210,16 +210,14 @@ class SNPDataProcessor extends DataProcessor {
         return platformList
     }
 
-    private void loadSNPGeneMap(Sql sql, File platformFile, String platform) {
+    private void loadSNPGeneMap(Sql sql, File platformFile) {
         config.logger.log('Loading SNP Gene Map')
         sql.execute('truncate table tm_lz.lt_snp_gene_map')
         config.logger.log('Processing platform file')
-        sql.withBatch(500, 'insert into tm_lz.lt_snp_gene_map (snp_name, entrez_gene_id) values (?, ?)') {
-            st ->
-                eachPlatformEntry(platformFile) {
-                    entry ->
-                        st.addBatch([entry.probeset_id, entry.entrez_gene_id as long])
-                }
+        sql.withBatch(500, 'insert into tm_lz.lt_snp_gene_map (snp_name, entrez_gene_id) values (?, ?)') { st ->
+            PlatformProcessor.eachPlatformEntry(platformFile, config.logger) { entry ->
+                st.addBatch([entry.probeset_id, entry.entrez_gene_id as long])
+            }
         }
         config.logger.log('Updating SNP Gene Map in database')
         sql.execute("""
@@ -236,138 +234,10 @@ class SNPDataProcessor extends DataProcessor {
     }
 
     private void loadPlatforms(File dir, Sql sql, List platformList, studyInfo) {
-        platformList.each {
-            String platform ->
-                File platformFile = new File(dir, "${platform}.txt")
-                loadSNPGeneMap(sql, platformFile, platform)
-                loadPlatform(sql, platformFile, platform, studyInfo)
+        platformList.each { String platform ->
+            File platformFile = new File(dir, "${platform}.txt")
+            loadSNPGeneMap(sql, platformFile)
+            new PlatformLoader(sql, config).doLoad(platformFile, platform, studyInfo)
         }
-    }
-
-    private void loadPlatform(Sql sql, File platformFile, String platform, studyInfo) {
-        sql.execute('TRUNCATE TABLE tm_lz.lt_src_deapp_annot')
-
-        def row = sql.firstRow("SELECT count(*) as cnt FROM " + config.controlSchema + ".annotation_deapp WHERE gpl_id=?",
-                [platform])
-        if (!row?.cnt) {
-            // platform is not defined, loading
-            config.logger.log("Loading platform: ${platform}")
-            if (!platformFile.exists()) throw new Exception("Platform file not found: ${platformFile.name}")
-
-            def platformTitle
-            def platformOrganism
-
-            row = sql.firstRow("select title, organism from deapp.de_gpl_info where platform=${platform}")
-            if (!row) {
-
-                config.logger.log("Fetching platform description from GEO")
-                def txt = "http://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=${platform}".toURL().getText()
-
-                def m = txt =~ /Title\<\/td\>\s*?\<td.*?\>(?:\[.+?\]\s*)*(.+?)\<\/td\>/
-                if (m[0]) {
-                    platformTitle = m[0][1]
-                }
-
-                m = txt =~ /Organism\<\/td\>\s*?\<td.*?\>\<a.+?\>(.+?)\<\/a\>/
-                if (m[0]) {
-                    platformOrganism = m[0][1]
-                }
-
-                if (platformTitle && platformOrganism) {
-                    sql.execute("""\
-							INSERT into deapp.de_gpl_info (PLATFORM, TITLE, ORGANISM, ANNOTATION_DATE, MARKER_TYPE)
-							VALUES (?, ?, ?, current_timestamp, 'Gene Expression')
-						""", [platform, platformTitle, platformOrganism])
-                } else {
-                    throw new Exception("Cannot fetch platform title & organism for ${platform}")
-                }
-            } else {
-                platformTitle = row.title
-                platformOrganism = row.organism
-            }
-
-            config.logger.log("Platform: ${platformTitle} (${platformOrganism})")
-
-            def lineNum = 0
-            def isEmpty = true
-
-            sql.withTransaction {
-                sql.withBatch(500, """\
-						INSERT into tm_lz.lt_src_deapp_annot (GPL_ID,PROBE_ID,GENE_SYMBOL,GENE_ID,ORGANISM)
-						VALUES (?, ?, ?, ?, ?)
-				""") {
-                    stmt ->
-                        lineNum = eachPlatformEntry(platformFile) {
-                            entry ->
-                                // line with data
-                                isEmpty = false
-                                stmt.addBatch([
-                                        platform,
-                                        entry.probeset_id,
-                                        entry.gene_symbol,
-                                        entry.entrez_gene_id,
-                                        entry.species ?: platformOrganism
-                                ])
-                        }
-                }
-            }
-
-            if (isEmpty) throw new Exception("Platform file doesn't contain any EntrezGene IDs")
-
-            sql.commit()
-            config.logger.log("Finished loading platform ${platform}, processed ${lineNum} rows")
-
-            studyInfo['runPlatformLoad'] = true
-        }
-    }
-
-    private long eachPlatformEntry(File platformFile, Closure processEntry) {
-        long lineNum = 0
-        def header_mappings = [:]
-        platformFile.splitEachLine("\t") {
-            cols ->
-                lineNum++
-
-                if (!cols[0] || cols[0] ==~ /\s*?#.+/) return // skip empty or comment lines
-
-                if (!header_mappings) {
-                    // first line is the header if header mappings are not defined yet
-                    cols.eachWithIndex {
-                        val, idx ->
-
-                            if (val ==~ /(?i)(ENTREZ[\s_]*)*GENE([\s_]*ID)*/) header_mappings['entrez_gene_id'] = idx
-                            if (val ==~ /(?i)(GENE[\s_]*)*SYMBOL/) header_mappings['gene_symbol'] = idx
-                            if (val ==~ /(?i)SPECIES([\s_]*SCIENTIFIC)([\s_]*NAME)/) header_mappings['species'] = idx
-                    }
-
-                    if (!header_mappings['species']) {
-                        // OK, trying to get species from the description
-                        config.logger.log(LogType.WARNING, "Species not found in the platform file, using description")
-                    }
-
-                    if (header_mappings['entrez_gene_id']
-                            && header_mappings['gene_symbol']
-                    ) {
-
-                        config.logger.log(LogType.DEBUG, "ENTREZ, SYMBOL, SPECIES => " +
-                                "${cols[header_mappings['entrez_gene_id']]}, " +
-                                "${cols[header_mappings['gene_symbol']]}, " +
-                                "${header_mappings.containsKey('species') ? cols[header_mappings['species']] : '(Not specified)'}")
-
-                    } else {
-                        throw new Exception("Incorrect platform file header")
-                    }
-                } else if (cols[header_mappings['entrez_gene_id']] ==~ /\d+/) {
-                    config.logger.log(LogType.PROGRESS, "[${lineNum}]")
-                    processEntry([
-                            probeset_id: cols[0],
-                            gene_symbol: cols[header_mappings['gene_symbol']],
-                            entrez_gene_id: cols[header_mappings['entrez_gene_id']],
-                            species: header_mappings.containsKey('species') ? cols[header_mappings['species']] : null
-                    ])
-                }
-        }
-        config.logger.log(LogType.PROGRESS, "")
-        return lineNum
     }
 }
