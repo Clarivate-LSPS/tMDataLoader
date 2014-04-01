@@ -1,15 +1,12 @@
-package com.thomsonreuters.lsps.transmart.etl;
+package com.thomsonreuters.lsps.transmart.etl
 
-import groovy.sql.Sql;
-import groovy.util.GroovyTestCase
+import groovy.sql.Sql
 import org.junit.Assume
-import org.junit.Ignore;
 
 /**
  * Created by bondarev on 3/28/14.
  */
-@Ignore
-public class ConfigAwareTestCase extends GroovyTestCase {
+public abstract class ConfigAwareTestCase extends GroovyTestCase {
     def connectionSettings
 
     @Override

@@ -1,3 +1,6 @@
+#PLATFORM_ID: TST_SNP
+#PLATFORM_TITLE: Test SNP Platform
+#SPECIES: Homo Sapiens
 ID	GB_ACC	SPOT_ID	Species Scientific Name	Annotation Date	Sequence Type	Sequence Source	Target Description	Representative Public ID	Gene Title	Gene Symbol	ENTREZ_GENE_ID	RefSeq Transcript ID	Gene Ontology Biological Process	Gene Ontology Cellular Component	Gene Ontology Molecular Function
 AFFX-SNP_10037636			Homo sapiens												
 AFFX-SNP_12159798			Homo sapiens												
