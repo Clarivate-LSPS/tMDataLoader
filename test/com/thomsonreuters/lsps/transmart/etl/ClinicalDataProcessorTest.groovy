@@ -7,19 +7,14 @@ import static org.junit.Assert.assertThat
  * Created by bondarev on 2/24/14.
  */
 class ClinicalDataProcessorTest extends ConfigAwareTestCase {
-    private com.thomsonreuters.lsps.transmart.etl.ClinicalDataProcessor _processor
+    private ClinicalDataProcessor _processor
 
     String studyName = 'ClinicalSample'
     String studyId = 'CCLE_TEST'
     String platformId = 'GPL570'
 
     ClinicalDataProcessor getProcessor() {
-        _processor ?: (_processor = new ClinicalDataProcessor([
-                logger: new Logger([isInteractiveMode: true]),
-                db: connectionSettings,
-                controlSchema: 'tm_cz',
-                securitySymbol: 'N'
-        ]))
+        _processor ?: (_processor = new ClinicalDataProcessor(config))
     }
 
     void assertThatSampleIsPresent(String conceptPath, String cFullname, String attrName, String conceptPathForPatient, String subjId) {
