@@ -20,6 +20,8 @@
 
 package com.thomsonreuters.lsps.transmart.etl
 
+import com.thomsonreuters.lsps.transmart.tools.ProcessLocker
+
 class CommandLineTool {
 
 	static main(args) {
@@ -40,6 +42,7 @@ class CommandLineTool {
 			_ longOpt: 'secure-study', 'Make study securable'
 			_ longOpt: 'visit-name-first', 'Put VISIT_NAME before the data value'
 			_ longOpt: 'data-value-first', 'Put VISIT NAME after the data value (default behavior, use to override non-standard config)'
+            _ longOpt: 'force-start', 'Force TM Data Loader start (even if another instance is already running)'
 		}
 		// TODO: implement stop-on-fail mode!
 		def opts = cli.parse(args)
@@ -53,6 +56,12 @@ class CommandLineTool {
 			println "Transmart ETL tool, version ${version}\nCopyright (c) 2012-2013, Thomson Reuters"
 			return
 		}
+
+        if (!ProcessLocker.get('tMDataLoader').tryLock()) {
+            println 'Another TM Data Loader instance is already running'
+            System.exit(-1)
+            return
+        }
 		
 		// read configuration file first
 		def config
