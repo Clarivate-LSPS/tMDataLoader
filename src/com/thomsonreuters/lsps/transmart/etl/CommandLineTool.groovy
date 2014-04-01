@@ -20,6 +20,8 @@
 
 package com.thomsonreuters.lsps.transmart.etl
 
+import groovy.sql.Sql
+import com.thomsonreuters.lsps.transmart.etl.DataOperationProcessor
 import com.thomsonreuters.lsps.transmart.tools.ProcessLocker
 
 class CommandLineTool {
@@ -42,6 +44,8 @@ class CommandLineTool {
 			_ longOpt: 'secure-study', 'Make study securable'
 			_ longOpt: 'visit-name-first', 'Put VISIT_NAME before the data value'
 			_ longOpt: 'data-value-first', 'Put VISIT NAME after the data value (default behavior, use to override non-standard config)'
+            _ longOpt: 'delete-study-by-id', args: 1, argName: 'delete_id', 'Delete study by id'
+            _ longOpt: 'delete-study-by-path ', args: 1, argName: 'delete_path', 'Delete study by path'
             _ longOpt: 'force-start', 'Force TM Data Loader start (even if another instance is already running)'
 		}
 		// TODO: implement stop-on-fail mode!
@@ -148,6 +152,20 @@ class CommandLineTool {
 		if (config?.visitNameFirst) {
 			println '>>> FYI: using VISIT_NAME before DATA_VALUE as default behavior (per config or command line)'
 		}
+
+        if (opts?.'delete-study-by-id'){
+            config.deleteStudyById = true;
+            config.deleteStudyByIdValue = opts?.'delete-study-by-id';
+            config.mdOperation = true;
+            println ">>> DELETE DATA BY ID ${opts?.'delete-study-by-id'}"
+        }
+
+        if (opts?.'delete-study-by-path'){
+            config.deleteStudyById = true;
+            config.deleteStudyByPathValue = opts?.'delete-study-by-path';
+            config.mdOperation = true;
+            println ">>> DELETE DATA BY PATH ${opts?.'delete-study-by-path'}"
+        }
 		
 		def extra_args = opts.arguments()
 		def dir = extra_args[0]?:config?.dataDir
@@ -161,18 +179,32 @@ class CommandLineTool {
 		config.logger = new Logger(config)
 		
 		config.logger.log("!!! TM_ETL VERSION ${version}")
-		
-		def processor = new DirectoryProcessor(config)
-		
-		config.logger.log("==== STARTED ====")
-		config.logger.log("Using directory: ${dir}")
-		
-		if (! processor.process(dir) && config.stopOnFail) {
-			config.logger.log(LogType.ERROR, "Stop-On-Fail is active, exiting with status 1")
-			System.exit(1)
-		}
-		
-		config.logger.log("==== COMPLETED ====")
+
+        if (config.mdOperation){
+            def processor = new OperationProcessor(config);
+            config.logger.log("==== STARTED ====")
+
+            if (! processor.process() && config.stopOnFail) {
+                config.logger.log(LogType.ERROR, "Stop-On-Fail is active, exiting with status 1")
+                System.exit(1)
+            }
+
+            config.logger.log("==== COMPLETED ====")
+        }
+        else
+        {
+            def processor = new DirectoryProcessor(config)
+
+            config.logger.log("==== STARTED ====")
+            config.logger.log("Using directory: ${dir}")
+
+            if (! processor.process(dir) && config.stopOnFail) {
+                config.logger.log(LogType.ERROR, "Stop-On-Fail is active, exiting with status 1")
+                System.exit(1)
+            }
+
+            config.logger.log("==== COMPLETED ====")
+        }
 	}
 
 }
