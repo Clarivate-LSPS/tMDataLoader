@@ -12,7 +12,7 @@ class ExpressionDataProcessorTest extends ConfigAwareTestCase {
 
     String studyName = 'TestSample'
     String studyId = 'GSE0'
-    String platformId = 'GPL96'
+    String platformId = 'GEX_TST'
 
     ExpressionDataProcessor getProcessor() {
         _processor ?: (_processor = new ExpressionDataProcessor(config))
@@ -40,20 +40,20 @@ class ExpressionDataProcessorTest extends ConfigAwareTestCase {
         processor.process(
                 new File("fixtures/Public Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
-        assertThatSampleIsPresent('GSM1000000719', ['1007_s_at': 6.624529839])
+        assertThatSampleIsPresent('TST1000000719', ['1007_s_at': 6.624529839])
     }
 
     void testItMergeSamples() {
         processor.process(
                 new File("fixtures/Public Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
-        assertThatSampleIsPresent('GSM1000000719', ['1007_s_at': 6.624529839])
-        assertThatSampleIsPresent('GSM1000000722', ['1007_s_at': 6.374219894])
+        assertThatSampleIsPresent('TST1000000719', ['1007_s_at': 6.624529839])
+        assertThatSampleIsPresent('TST1000000722', ['1007_s_at': 6.374219894])
         processor.process(
                 new File("fixtures/Additional Samples/${studyName}_${studyId}/ExpressionDataToUpload"),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
-        assertThatSampleIsPresent('GSM2000000719', ['1007_s_at': 6.624529839])
-        assertThatSampleIsPresent('GSM1000000719', ['1007_s_at': 6.624529839])
-        assertThatSampleIsPresent('GSM1000000722', ['1007_s_at': 5.374219894])
+        assertThatSampleIsPresent('TST2000000719', ['1007_s_at': 6.624529839])
+        assertThatSampleIsPresent('TST1000000719', ['1007_s_at': 6.624529839])
+        assertThatSampleIsPresent('TST1000000722', ['1007_s_at': 5.374219894])
     }
 }
