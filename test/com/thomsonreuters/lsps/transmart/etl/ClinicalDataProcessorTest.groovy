@@ -11,16 +11,15 @@ class ClinicalDataProcessorTest extends ConfigAwareTestCase {
     private ClinicalDataProcessor _processor
 
     String studyName = 'ClinicalSample'
-    String studyId = 'CCLE_TEST'
-    String platformId = 'GPL570'
+    String studyId = 'GSE0'
 
     ClinicalDataProcessor getProcessor() {
         _processor ?: (_processor = new ClinicalDataProcessor(config))
     }
 
     void testItLoadsData() {
-        String conceptPath = "\\Test Studies\\ClinicalSample\\"
-        String conceptPathForPatient = conceptPath + "Biomarker Data\\Mutations\\EGFR (Entrez ID: 1956)\\AA mutation\\"
+        String conceptPath = "\\Test Studies\\${studyName}\\"
+        String conceptPathForPatient = conceptPath + "Biomarker Data\\Mutations\\TST001 (Entrez ID: 1956)\\AA mutation\\"
 
         processor.process(
                 new File("fixtures/Public Studies/${studyName}_${studyId}/ClinicalDataToUpload"),
@@ -32,8 +31,8 @@ class ClinicalDataProcessorTest extends ConfigAwareTestCase {
     }
 
     void testItMergesData() {
-        String conceptPath = "\\Test Studies\\ClinicalSample\\"
-        String conceptPathForPatient = conceptPath + "Biomarker Data\\Mutations\\EGFR (Entrez ID: 1956)\\AA mutation\\"
+        String conceptPath = "\\Test Studies\\${studyName}\\"
+        String conceptPathForPatient = conceptPath + "Biomarker Data\\Mutations\\TST001 (Entrez ID: 1956)\\AA mutation\\"
         String subjId = 'HCC2935'
 
         processor.process(
@@ -52,7 +51,7 @@ class ClinicalDataProcessorTest extends ConfigAwareTestCase {
         assertThat(sql, hasNode(conceptPathForPatient).withPatientCount(9))
         assertThat(sql, hasNode(conceptPathForPatient + 'T790M TEST\\'))
 
-        assertThat(sql, hasNode($/${conceptPath}Biomarker Data\Mutations\APC (Entrez ID: 324)\/$))
+        assertThat(sql, hasNode($/${conceptPath}Biomarker Data\Mutations\TST002 (Entrez ID: 324)\/$))
     }
 
 }
