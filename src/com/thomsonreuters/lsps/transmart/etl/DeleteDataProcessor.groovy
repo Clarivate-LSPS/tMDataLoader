@@ -1,6 +1,5 @@
 package com.thomsonreuters.lsps.transmart.etl
 
-import java.io.File
 import groovy.sql.Sql
 
 class DeleteDataProcessor extends DataOperationProcessor {
@@ -25,7 +24,7 @@ class DeleteDataProcessor extends DataOperationProcessor {
             sql.call("{call " + config.controlSchema + "." + getProcedureName() + "(?,?,?)}", [ trialId, path, jobId ])
             //sql.rows("SELECT tm_cz.i2b2_load_clinical_data(?,?,?,?,?)", [ studyId, studyNode, config.securitySymbol, 'N', jobId ])
         } else {
-            config.logger.log(com.thomsonreuters.lsps.transmart.etl.LogType.ERROR, "Study ID or Node not defined!")
+            config.logger.log(LogType.ERROR, "Study ID or Node not defined!")
             return false;
         }
 

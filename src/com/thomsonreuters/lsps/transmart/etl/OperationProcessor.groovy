@@ -1,7 +1,5 @@
 package com.thomsonreuters.lsps.transmart.etl
 
-import com.thomsonreuters.lsps.transmart.etl.DeleteDataProcessor
-
 class OperationProcessor {
 
     def config
