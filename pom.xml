@@ -63,21 +63,6 @@
     </dependencies>
 
     <build>
-        <!--<resources>-->
-        <!--<resource>-->
-        <!--<directory>src</directory>-->
-        <!--<includes>-->
-        <!--<include>META-INF</include>-->
-        <!--</includes>-->
-        <!--</resource>-->
-        <!--</resources>-->
-        <testSourceDirectory>test</testSourceDirectory>
-        <testResources>
-            <testResource>
-                <directory>fixtures</directory>
-            </testResource>
-        </testResources>
-
         <plugins>
             <plugin>
                 <groupId>org.codehaus.gmaven</groupId>
@@ -92,33 +77,8 @@
                         <id>groovy-compile</id>
                         <goals>
                             <goal>compile</goal>
-                        </goals>
-                        <configuration>
-                            <sources>
-                                <fileset>
-                                    <directory>${pom.basedir}/src</directory>
-                                    <includes>
-                                        <include>**/*.groovy</include>
-                                    </includes>
-                                </fileset>
-                            </sources>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>groovy-test-compile</id>
-                        <goals>
                             <goal>testCompile</goal>
                         </goals>
-                        <configuration>
-                            <sources>
-                                <fileset>
-                                    <directory>${pom.basedir}/test</directory>
-                                    <includes>
-                                        <include>**/*.groovy</include>
-                                    </includes>
-                                </fileset>
-                            </sources>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>

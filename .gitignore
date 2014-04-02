@@ -1,5 +1,6 @@
 /out
-/test/TestConfig.groovy
+/src/test/resources/TestConfig.groovy
 /.idea
 /target
 *.iml
+

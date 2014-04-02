@@ -11,10 +11,10 @@ public abstract class ConfigAwareTestCase extends GroovyTestCase {
 
     @Override
     void setUp() {
-        File testConfig = new File('test/TestConfig.groovy')
-        Assume.assumeTrue("No database config was found. Please, copy test/TestConfig.groovy.sample " +
-                "to test/TestConfig.groovy and set-up your database connection", testConfig.exists())
-        connectionSettings = new ConfigSlurper().parse(testConfig.toURI().toURL()).db
+        URL testConfigUrl = getClass().classLoader.getResource('TestConfig.groovy')
+        Assume.assumeTrue("No database config was found. Please, copy src/test/resources/TestConfig.groovy.sample " +
+                "to src/test/resources/TestConfig.groovy and set-up your database connection", !testConfigUrl.is(null))
+        connectionSettings = new ConfigSlurper().parse(testConfigUrl).db
     }
     private Sql _sql
 

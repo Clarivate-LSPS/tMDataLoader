@@ -4,6 +4,7 @@ PROCEDURE "I2B2_DELETE_ALL_DATA"
   trial_id VARCHAR2 := null
  ,path_string varchar2 :=null
  ,currentJobID NUMBER := null
+ ,removeTop VARCHAR2 := 'N'
 )
 AS
 
@@ -19,6 +20,8 @@ AS
   newJobFlag INTEGER(1);
   trialCount INTEGER(1);
   pathCount INTEGER(1);
+  countNodeUnderTop INTEGER(8);
+  topNode	VARCHAR(500 BYTE);
   databaseName VARCHAR(100);
   procedureName VARCHAR(100);
   jobID number(18,0);
@@ -72,8 +75,16 @@ BEGIN
     pathString := path_string;
   end if;
   
+  if (removeTop = 'N')
+  then
+    select parent_concept_path into topNode
+    from I2B2DEMODATA.concept_counts 
+    where 
+    concept_path = pathString;
+  end if;
+  
   stepCt := 0;
-	
+  
   --Set Audit Parameters
   newJobFlag := 0; -- False (Default)
   jobID := currentJobID;
@@ -92,11 +103,15 @@ BEGIN
   if pathString != ''  or pathString != '%'
   then 
 	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Starting i2b2_backout_trial',0,stepCt,'Done');
-
+	cz_write_audit(jobId,databaseName,procedureName,'Starting I2B2_DELETE_ALL_DATA',0,stepCt,'Done');
+	
 	--	delete all i2b2 nodes
 	
 	i2b2_delete_all_nodes(pathString,jobId);
+  
+  --	delete any table_access data
+  delete from table_access 
+  where c_fullname like pathString || '%';
 	
 	--	delete any i2b2_tag data
 	
@@ -107,7 +122,8 @@ BEGIN
 	commit;
 	
 	--	delete clinical data
-	if (trialId is not NUll) then
+	if (trialId is not NUll) 
+	then
 		delete from lz_src_clinical_data
 		where study_id = trialId;
 		stepCt := stepCt + 1;
@@ -129,7 +145,7 @@ BEGIN
 		commit;	
 		
 		
-		delete from de_subject_microarray_data
+		delete from deapp.de_subject_microarray_data
 		where trial_source = trialId || ':' || sourceCd
 		and assay_id in (
 		  select dssm.assay_id from
@@ -149,7 +165,7 @@ BEGIN
 		cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from deapp de_subject_microarray_data',SQL%ROWCOUNT,stepCt,'Done');
 		commit;	
 		
-		delete from de_subject_sample_mapping where
+		delete from deapp.de_subject_sample_mapping where
 		  assay_id in (
 			select dssm.assay_id from
 			  TM_LZ.lt_src_mrna_subj_samp_map ltssm
@@ -189,6 +205,22 @@ BEGIN
 		commit;
 	end if;
 	
+	/*Check and delete top node, if remove node is last*/
+  if (removeTop = 'N') 
+  then
+    select count(*) into countNodeUnderTop
+    from I2B2DEMODATA.concept_counts 
+    where parent_concept_path = (
+      select parent_concept_path 
+      from I2B2DEMODATA.concept_counts 
+      where 
+      concept_path = pathString);
+    
+    if (countNodeUnderTop = 0) 
+    then
+      tm_cz.i2b2_delete_all_data(null, topNode, null, 'Y');
+    end if;
+  end if;    
 
   end if;
   
