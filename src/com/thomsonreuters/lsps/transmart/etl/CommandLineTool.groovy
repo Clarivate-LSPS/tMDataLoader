@@ -39,6 +39,7 @@ class CommandLineTool {
             v longOpt: 'version', 'Display version information and exit'
             t longOpt: 'use-t', 'Do not use Z datatype for T expression data (expert option)'
             s longOpt: 'stop-on-fail', 'Stop when upload is failed'
+            m longOpt: 'move-study', args:2, valueSeparator:' ', argName:'old_path@new_path', 'Move study'
             _ longOpt: 'alt-clinical-proc', args: 1, argName: 'proc_name', 'Name of alternative clinical stored procedure (expert option)'
             _ longOpt: 'alt-control-schema', args: 1, argName: 'alt_schema', 'Name of alternative control schema (TM_CZ) - expert option'
             _ longOpt: 'secure-study', 'Make study securable'
@@ -162,6 +163,14 @@ class CommandLineTool {
             config.deleteStudyByPathValue = opts?.'delete-study-by-path';
             config.mdOperation = true;
             println ">>> DELETE DATA BY PATH ${opts?.'delete-study-by-path'}"
+        }
+
+        if (opts?.'move-study') {
+            config.moveStudy = true;
+            config.moveStudyOldPath = opts.ms[0]
+            config.moveStudyNewPath = opts.ms[1];
+            config.mdOperation = true;
+            println ">>> MOVE STUDY from ${opts.ms[0]} to ${opts.ms[1]}"
         }
 
         def extra_args = opts.arguments()

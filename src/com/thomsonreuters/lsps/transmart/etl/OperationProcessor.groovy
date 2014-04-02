@@ -15,6 +15,10 @@ class OperationProcessor {
         if ((config?.deleteStudyById)||(config?.deleteStudyByPath)){
             dataOperationProcessor = new DeleteDataProcessor(config)
         }
+        else if (config?.moveStudy) {
+            dataOperationProcessor = new MoveStudyProcessor(config)
+        }
+
         try {
             def data = dataOperationProcessor.processData()
             res = dataOperationProcessor.process(data);
