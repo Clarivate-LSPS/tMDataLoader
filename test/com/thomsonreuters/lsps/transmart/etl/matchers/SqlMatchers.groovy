@@ -11,4 +11,8 @@ class SqlMatchers {
     public static HasPatient hasPatient(String subjectId) {
         return new HasPatient(subjectId)
     }
+
+    public static HasSample hasSample(String studyId, String sampleId) {
+        return new HasSample(studyId, sampleId)
+    }
 }
