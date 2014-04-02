@@ -10,7 +10,9 @@ abstract class DataOperationProcessor {
     }
 
     abstract boolean runStoredProcedures(jobId, Sql sql, data)
+
     abstract String getProcedureName()
+
     abstract def processData()
 
     boolean isPostgresConnection() {
@@ -21,11 +23,11 @@ abstract class DataOperationProcessor {
         isPostgresConnection() && config.db?.jdbcConnectionString?.matches('^jdbc:postgresql:(?://localhost(?::\\d+)?/)?(\\w+)$')
     }
 
-    boolean process(data){
+    boolean process(data) {
         def res = false
 
         config.logger.log("Connecting to database server")
-        def sql = Sql.newInstance( config.db.jdbcConnectionString, config.db.username, config.db.password, config.db.jdbcDriver )
+        def sql = Sql.newInstance(config.db.jdbcConnectionString, config.db.username, config.db.password, config.db.jdbcDriver)
         sql.connection.autoCommit = false
 
         if (processData()) {
@@ -49,7 +51,7 @@ abstract class DataOperationProcessor {
                     def lastSeqId = 0
 
                     // opening control connection for the main thread
-                    def ctrlSql = Sql.newInstance( config.db.jdbcConnectionString, config.db.username, config.db.password, config.db.jdbcDriver )
+                    def ctrlSql = Sql.newInstance(config.db.jdbcConnectionString, config.db.username, config.db.password, config.db.jdbcDriver)
 
                     while (true) {
                         // fetch last log message
@@ -60,7 +62,7 @@ abstract class DataOperationProcessor {
                                 lastSeqId = row.seq_id
                         }
 
-                        if (! t.isAlive() ) break
+                        if (!t.isAlive()) break
 
                         Thread.sleep(2000)
                     }
@@ -77,8 +79,7 @@ abstract class DataOperationProcessor {
                     if (res) {
                         config.logger.log("Procedure completed successfully")
                         sql.call("{call " + config.controlSchema + ".cz_end_audit(?,?)}", [jobId, 'SUCCESS'])
-                    }
-                    else {
+                    } else {
                         config.logger.log(LogType.ERROR, "Procedure completed with errors!")
                         sql.call("{call " + config.controlSchema + ".cz_end_audit(?,?)}", [jobId, 'FAIL'])
                     }
