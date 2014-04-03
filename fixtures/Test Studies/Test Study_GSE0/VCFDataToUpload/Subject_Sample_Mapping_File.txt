@@ -1,0 +1,3 @@
+SUBJECT_ID  SAMPLE_CD
+Subject_0   VCF_TST001
+Subject_1   VCF_TST002
