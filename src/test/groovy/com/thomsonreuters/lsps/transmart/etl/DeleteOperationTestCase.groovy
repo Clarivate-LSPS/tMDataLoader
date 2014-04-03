@@ -43,6 +43,17 @@ class DeleteOperationTestCase extends ConfigAwareTestCase {
             assertThat(sample, IsNull.notNullValue())
 
     }
+
+    void assertThatTopNodeDelete(String pathTopNode){
+        def i2b2Count = sql.firstRow('select count(*) from i2b2 where c_fullname = ?', pathTopNode)
+        assertEquals(i2b2Count[0] as Integer, 0)
+
+        def i2b2SecureCount = sql.firstRow('select count(*) from i2b2_secure where c_fullname = ?', pathTopNode)
+        assertEquals(i2b2SecureCount[0] as Integer, 0)
+
+        def tableAccessCount = sql.firstRow('select count(*) from table_access where c_fullname = ?', pathTopNode)
+        assertEquals(tableAccessCount[0] as Integer, 0)
+    }
     /**
      * Remove data by Id and don't understand full path to study.
      * If system exist study with trialId equals GSE0 test is down
@@ -98,5 +109,16 @@ class DeleteOperationTestCase extends ConfigAwareTestCase {
         assertThatDataDeleted(testData, true);
     }
 
+    void testIdDeleteTopNode(){
+        processorLoad.process(
+                new File("fixtures/Public Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
+                [name: studyName, node: "Test Studies\\${studyName}".toString()])
+        assertThat(sql, hasSample(studyId, 'TST1000000719'))
+        def inpData = ['id'  : studyId,
+                'path': "\\Test Studies\\${studyName}\\"];
+        processorDelete.process(inpData);
+
+        assertThatTopNodeDelete("\\Test Studies\\")
+    }
 
 }

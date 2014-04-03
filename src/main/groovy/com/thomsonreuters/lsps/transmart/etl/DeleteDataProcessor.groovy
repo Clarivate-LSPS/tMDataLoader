@@ -18,8 +18,8 @@ class DeleteDataProcessor extends DataOperationProcessor {
 
     @Override
     public boolean runStoredProcedures(jobId, Sql sql, data) {
-        def trialId = data['id'].toString()
-        def path = data['path'].toString()
+        def trialId = ((data['id']!=null)?data['id'].toString():null)
+        def path    = ((data['path']!=null)?data['path'].toString():null)
         if (trialId || path) {
             sql.call("{call " + config.controlSchema + "." + getProcedureName() + "(?,?,?)}", [trialId, path, jobId])
             //sql.rows("SELECT tm_cz.i2b2_load_clinical_data(?,?,?,?,?)", [ studyId, studyNode, config.securitySymbol, 'N', jobId ])
