@@ -11,7 +11,7 @@ import static org.junit.Assert.assertThat
 class SNPDataProcessorTest extends ConfigAwareTestCase {
     private SNPDataProcessor _processor
 
-    String studyName = 'Q4_SNP'
+    String studyName = 'Test Study'
     String studyId = 'GSE0'
     String platformId = 'TST_SNP'
 
@@ -47,7 +47,7 @@ class SNPDataProcessorTest extends ConfigAwareTestCase {
     void testItLoadsData() {
         sql.withTransaction {
             processor.process(
-                    new File("fixtures/Public Studies/${studyName}_${studyId}/SNPDataToUpload"),
+                    new File("fixtures/Test Studies/${studyName}_${studyId}/SNPDataToUpload"),
                     [name: studyName, node: "Test Studies\\${studyName}".toString()])
             assertThatSampleIsPresent('TST001', ['SNP_A-4265338': 0.628913])
             sql.rollback()
@@ -56,14 +56,14 @@ class SNPDataProcessorTest extends ConfigAwareTestCase {
 
     void testItMergeSamples() {
         processor.process(
-                new File("fixtures/Public Studies/${studyName}_${studyId}/SNPDataToUpload"),
+                new File("fixtures/Test Studies/${studyName}_${studyId}/SNPDataToUpload"),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
         assertThatSampleIsPresent('TST001', ['SNP_A-4265338': 0.628913])
         assertThatSampleIsPresent('TST002', ['CN_497981': 0.057206])
         assertThat(sql, hasNode($/\Test Studies\${studyName}\SNP\Test SNP Platform\Unknown\/$).withPatientCount(3))
 
         processor.process(
-                new File("fixtures/Additional Samples/${studyName}_${studyId}/SNPDataToUpload"),
+                new File("fixtures/Additional Test Studies/${studyName}_${studyId}/SNPDataToUpload"),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
         assertThatSampleIsPresent('TST001', ['SNP_A-4265338': 0.528913])
         assertThatSampleIsPresent('TST002', ['CN_497981': 0.057206])

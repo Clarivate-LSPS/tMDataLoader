@@ -10,7 +10,7 @@ import static org.junit.Assert.assertThat
 class ExpressionDataProcessorTest extends ConfigAwareTestCase {
     private ExpressionDataProcessor _processor
 
-    String studyName = 'TestSample'
+    String studyName = 'Test Study'
     String studyId = 'GSE0'
     String platformId = 'GEX_TST'
 
@@ -38,19 +38,19 @@ class ExpressionDataProcessorTest extends ConfigAwareTestCase {
 
     void testItLoadsData() {
         processor.process(
-                new File("fixtures/Public Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
+                new File("fixtures/Test Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
         assertThatSampleIsPresent('TST1000000719', ['1007_s_at': 6.624529839])
     }
 
     void testItMergeSamples() {
         processor.process(
-                new File("fixtures/Public Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
+                new File("fixtures/Test Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
         assertThatSampleIsPresent('TST1000000719', ['1007_s_at': 6.624529839])
         assertThatSampleIsPresent('TST1000000722', ['1007_s_at': 6.374219894])
         processor.process(
-                new File("fixtures/Additional Samples/${studyName}_${studyId}/ExpressionDataToUpload"),
+                new File("fixtures/Additional Test Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
         assertThatSampleIsPresent('TST2000000719', ['1007_s_at': 6.624529839])
         assertThatSampleIsPresent('TST1000000719', ['1007_s_at': 6.624529839])

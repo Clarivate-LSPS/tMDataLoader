@@ -24,6 +24,10 @@ public abstract class ConfigAwareTestCase extends GroovyTestCase {
                 connectionSettings.jdbcDriver))
     }
 
+    Sql getDb() {
+        return sql
+    }
+
     def getConfig() {
         [
                 logger        : new Logger([isInteractiveMode: true]),
