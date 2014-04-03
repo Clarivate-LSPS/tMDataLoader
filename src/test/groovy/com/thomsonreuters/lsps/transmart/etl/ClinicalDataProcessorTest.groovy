@@ -1,5 +1,7 @@
 package com.thomsonreuters.lsps.transmart.etl
 
+import static com.thomsonreuters.lsps.transmart.Fixtures.getAdditionalStudiesDir
+import static com.thomsonreuters.lsps.transmart.Fixtures.studyDir
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasNode
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasPatient
 import static org.junit.Assert.assertThat
@@ -22,7 +24,7 @@ class ClinicalDataProcessorTest extends ConfigAwareTestCase {
         String conceptPathForPatient = conceptPath + "Biomarker Data\\Mutations\\TST001 (Entrez ID: 1956)\\AA mutation\\"
 
         processor.process(
-                new File("fixtures/Test Studies/${studyName}_${studyId}/ClinicalDataToUpload"),
+                new File(studyDir(studyName, studyId), "ClinicalDataToUpload"),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
 
         assertThat(sql, hasPatient('HCC2935').inTrial(studyId))
@@ -36,7 +38,7 @@ class ClinicalDataProcessorTest extends ConfigAwareTestCase {
         String subjId = 'HCC2935'
 
         processor.process(
-                new File("fixtures/Test Studies/${studyName}_${studyId}/ClinicalDataToUpload"),
+                new File(studyDir(studyName, studyId), "ClinicalDataToUpload"),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
 
         assertThat(sql, hasPatient(subjId).inTrial(studyId))
@@ -44,7 +46,7 @@ class ClinicalDataProcessorTest extends ConfigAwareTestCase {
         assertThat(sql, hasNode(conceptPathForPatient + 'T790M\\'))
 
         processor.process(
-                new File("fixtures/Additional Test Studies/${studyName}_${studyId}/ClinicalDataToUpload"),
+                new File(studyDir(studyName, studyId, additionalStudiesDir), "ClinicalDataToUpload"),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
 
         assertThat(sql, hasPatient(subjId).inTrial(studyId))
