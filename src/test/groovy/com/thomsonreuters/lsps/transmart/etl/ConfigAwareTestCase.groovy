@@ -16,16 +16,16 @@ public abstract class ConfigAwareTestCase extends GroovyTestCase {
                 "to src/test/resources/TestConfig.groovy and set-up your database connection", !testConfigUrl.is(null))
         connectionSettings = new ConfigSlurper().parse(testConfigUrl).db
     }
-    private Sql _sql
+    private Sql _db
 
     Sql getSql() {
-        return _sql ?: (_sql = Sql.newInstance(connectionSettings.jdbcConnectionString,
-                connectionSettings.password, connectionSettings.username,
-                connectionSettings.jdbcDriver))
+        return db
     }
 
     Sql getDb() {
-        return sql
+        return _db ?: (_db = Sql.newInstance(connectionSettings.jdbcConnectionString,
+                connectionSettings.password, connectionSettings.username,
+                connectionSettings.jdbcDriver))
     }
 
     def getConfig() {
