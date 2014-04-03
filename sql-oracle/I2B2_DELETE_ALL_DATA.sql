@@ -103,7 +103,7 @@ BEGIN
   if pathString != ''  or pathString != '%'
   then 
 	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Starting I2B2_DELETE_ALL_DATA',0,stepCt,'Done');
+	cz_write_audit(jobId,databaseName,procedureName,'Starting I2B2_DELETE_ALL_DATA '||topNode,0,stepCt,'Done');
 	
 	--	delete all i2b2 nodes
 	
@@ -210,11 +210,10 @@ BEGIN
   then
     select count(*) into countNodeUnderTop
     from I2B2DEMODATA.concept_counts 
-    where parent_concept_path = (
-      select parent_concept_path 
-      from I2B2DEMODATA.concept_counts 
-      where 
-      concept_path = pathString);
+    where parent_concept_path = topNode;
+    
+    stepCt := stepCt + 1;
+		cz_write_audit(jobId,databaseName,procedureName,'Check need removed top node '||countNodeUnderTop,SQL%ROWCOUNT,stepCt,'Done');
     
     if (countNodeUnderTop = 0) 
     then
