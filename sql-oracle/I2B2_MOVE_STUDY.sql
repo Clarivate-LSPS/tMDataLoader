@@ -86,7 +86,7 @@ where c_fullname=new_root_node;
 
 if rowsExists=0 then
       -- create new root in table_access,
-      insert into table_access
+      insert into i2b2metadata.table_access
         select new_root_node_name as c_table_cd
           ,'i2b2' as c_table_name
           ,'N' as protected_access
@@ -112,7 +112,7 @@ if rowsExists=0 then
           ,null as valuetype_cd
         from dual
         where not exists
-        (select 1 from table_access x
+        (select 1 from i2b2metadata.table_access x
             where x.c_table_cd = new_root_node);
 
       stepCt := stepCt + 1;
@@ -297,7 +297,7 @@ update concept_dimension
 set CONCEPT_PATH = replace(concept_path, old_path, new_path)
 where concept_path like old_path || '%';
 stepCt := stepCt + 1;
-cz_write_audit(jobId,databaseName,procedureName,'Rename paths in concept_counts in concept_dimension',SQL%ROWCOUNT,stepCt,'Done');
+cz_write_audit(jobId,databaseName,procedureName,'Rename paths in concept_dimension',SQL%ROWCOUNT,stepCt,'Done');
 commit;
 
 
