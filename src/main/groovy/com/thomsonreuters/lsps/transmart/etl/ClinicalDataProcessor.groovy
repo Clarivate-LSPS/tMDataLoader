@@ -132,7 +132,7 @@ class ClinicalDataProcessor extends DataProcessor {
             throw new Exception("File ${f.getName()} doesn't exist")
         }
 
-        if (isLocalPostgresConnection()) {
+        if (database?.isLocalPostgresConnection()) {
             processFileForLocalPostgres(sql, f, fMappings)
         } else {
             processFileForGenericDatabase(sql, f, fMappings)
