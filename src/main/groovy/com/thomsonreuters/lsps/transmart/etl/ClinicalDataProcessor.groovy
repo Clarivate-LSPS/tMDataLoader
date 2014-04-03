@@ -83,6 +83,8 @@ class ClinicalDataProcessor extends DataProcessor {
                                 out['data_label'] = fixColumn(v['DATA_LABEL'])
                             }
 
+                            cat_cd = fixColumn(cat_cd)
+
                             // VISIT_NAME special handling; do it only when VISITNAME is not in category_cd already
                             if (!(cat_cd.contains('VISITNAME') || cat_cd.contains('+VISITNFST'))) {
                                 if (config.visitNameFirst) {
@@ -90,7 +92,7 @@ class ClinicalDataProcessor extends DataProcessor {
                                 }
                             }
 
-                            out['category_cd'] = fixColumn(cat_cd)
+                            out['category_cd'] = cat_cd
 
                             processRow(out)
                     }
