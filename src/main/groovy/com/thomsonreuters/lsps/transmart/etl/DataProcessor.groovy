@@ -23,7 +23,6 @@ package com.thomsonreuters.lsps.transmart.etl
 import groovy.sql.Sql
 
 abstract class DataProcessor {
-
 	def config
 	
 	DataProcessor(conf) {
@@ -42,10 +41,14 @@ abstract class DataProcessor {
         isPostgresConnection() && config.db?.jdbcConnectionString?.matches('^jdbc:postgresql:(?://localhost(?::\\d+)?/)?(\\w+)$')
     }
 
+    Logger getLogger() {
+        return config.logger
+    }
+
 	boolean process(File dir, studyInfo) {
 		def res = false
 		
-		config.logger.log("Connecting to database server")
+		logger.log("Connecting to database server")
 		def sql = Sql.newInstance( config.db.jdbcConnectionString, config.db.username, config.db.password, config.db.jdbcDriver )
         try {
             sql.connection.autoCommit = false
@@ -60,10 +63,10 @@ abstract class DataProcessor {
 
                         sql.commit() // we need this for PostgreSQL version
 
-                        config.logger.log("Job ID: ${jobId}")
+                        logger.log("Job ID: ${jobId}")
 
                         def t = Thread.start {
-                            config.logger.log("Run procedures: ${getProcedureName()}")
+                            logger.log("Run procedures: ${getProcedureName()}")
                             res = runStoredProcedures(jobId, sql, studyInfo)
                             sql.commit() // we need it for postgreSQL version
                         }
@@ -78,7 +81,7 @@ abstract class DataProcessor {
                             ctrlSql.eachRow("SELECT * FROM " + config.controlSchema + ".cz_job_audit WHERE job_id=${jobId} and seq_id>${lastSeqId} order by seq_id") {
                                 row ->
 
-                                    config.logger.log(LogType.DEBUG, "-- ${row.step_desc} [${row.step_status} / ${row.records_manipulated} recs / ${row.time_elapsed_secs}s]")
+                                    logger.log(LogType.DEBUG, "-- ${row.step_desc} [${row.step_status} / ${row.records_manipulated} recs / ${row.time_elapsed_secs}s]")
                                     lastSeqId = row.seq_id
                             }
 
@@ -92,15 +95,15 @@ abstract class DataProcessor {
 
                         // figuring out if there are any errors in the error log
                         sql.eachRow("SELECT * FROM " + config.controlSchema + ".cz_job_error where job_id=${jobId} order by seq_id") {
-                            config.logger.log(LogType.ERROR, "${it.error_message} / ${it.error_stack} / ${it.error_backtrace}")
+                            logger.log(LogType.ERROR, "${it.error_message} / ${it.error_stack} / ${it.error_backtrace}")
                             res = false
                         }
 
                         if (res) {
-                            config.logger.log("Procedure completed successfully")
+                            logger.log("Procedure completed successfully")
                             sql.call("{call " + config.controlSchema + ".cz_end_audit(?,?)}", [jobId, 'SUCCESS'])
                         } else {
-                            config.logger.log(LogType.ERROR, "Procedure completed with errors!")
+                            logger.log(LogType.ERROR, "Procedure completed with errors!")
                             sql.call("{call " + config.controlSchema + ".cz_end_audit(?,?)}", [jobId, 'FAIL'])
                         }
 
