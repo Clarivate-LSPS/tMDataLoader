@@ -1,5 +1,4 @@
-create or replace 
-PROCEDURE         "I2B2_DELETE_ALL_NODES" 
+create or replace PROCEDURE                     "I2B2_DELETE_ALL_NODES" 
 (
   path VARCHAR2
  ,currentJobID NUMBER := null
@@ -12,6 +11,8 @@ AS
   procedureName VARCHAR(100);
   jobID number(18,0);
   stepCt number(18,0);
+  INDEX_NOT_EXISTS EXCEPTION;
+  PRAGMA EXCEPTION_INIT(index_not_exists, -1418);
 
 Begin
 
@@ -40,9 +41,21 @@ Begin
   
   
     -- WA optimization 2013_08_14  
-    execute immediate('ALTER INDEX i2b2demodata.IDX_OB_FACT_1 unusable');
-	execute immediate('ALTER INDEX i2b2demodata.IDX_OB_FACT_2 unusable');
-	execute immediate('ALTER INDEX i2b2demodata.IDX_OB_FACT_4 unusable');
+    begin
+      execute immediate('ALTER INDEX i2b2demodata.IDX_OB_FACT_1 unusable');
+        exception
+          when index_not_exists then null;
+    end;
+    begin
+      execute immediate('ALTER INDEX i2b2demodata.IDX_OB_FACT_2 unusable');
+        exception
+          when index_not_exists then null;
+    end;
+    begin  
+      execute immediate('ALTER INDEX i2b2demodata.IDX_OB_FACT_4 unusable');
+        exception
+          when index_not_exists then null;
+    end;
     -- WA optimization 2013_08_14  
   
   
@@ -77,11 +90,23 @@ Begin
     COMMIT;
   END IF;
   
-    -- WA optimization 2013_08_14    
+  -- WA optimization 2013_08_14    
+  begin
     execute immediate('ALTER INDEX i2b2demodata.IDX_OB_FACT_1 rebuild');
-	execute immediate('ALTER INDEX i2b2demodata.IDX_OB_FACT_2 rebuild');
-	execute immediate('ALTER INDEX i2b2demodata.IDX_OB_FACT_4 rebuild');
-    -- WA optimization 2013_08_14  
+      exception
+        when index_not_exists then null;
+  end;
+  begin
+    execute immediate('ALTER INDEX i2b2demodata.IDX_OB_FACT_2 rebuild');
+      exception
+        when index_not_exists then null;
+  end;
+  begin
+    execute immediate('ALTER INDEX i2b2demodata.IDX_OB_FACT_4 rebuild');
+      exception
+        when index_not_exists then null;
+  end;
+  -- WA optimization 2013_08_14  
   
   
   --i2b2_secure
@@ -104,4 +129,3 @@ Begin
   
   
 END;
- 
