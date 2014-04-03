@@ -1,5 +1,7 @@
 package com.thomsonreuters.lsps.transmart.etl
 
+import static com.thomsonreuters.lsps.transmart.Fixtures.getAdditionalStudiesDir
+import static com.thomsonreuters.lsps.transmart.Fixtures.studyDir
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasNode
 import static org.hamcrest.CoreMatchers.equalTo
 import static org.hamcrest.CoreMatchers.notNullValue
@@ -45,25 +47,19 @@ class SNPDataProcessorTest extends ConfigAwareTestCase {
     }
 
     void testItLoadsData() {
-        sql.withTransaction {
-            processor.process(
-                    new File("fixtures/Test Studies/${studyName}_${studyId}/SNPDataToUpload"),
-                    [name: studyName, node: "Test Studies\\${studyName}".toString()])
-            assertThatSampleIsPresent('TST001', ['SNP_A-4265338': 0.628913])
-            sql.rollback()
-        }
+        processor.process(new File(studyDir(studyName, studyId), "SNPDataToUpload"),
+                [name: studyName, node: "Test Studies\\${studyName}".toString()])
+        assertThatSampleIsPresent('TST001', ['SNP_A-4265338': 0.628913])
     }
 
     void testItMergeSamples() {
-        processor.process(
-                new File("fixtures/Test Studies/${studyName}_${studyId}/SNPDataToUpload"),
+        processor.process(new File(studyDir(studyName, studyId), "SNPDataToUpload"),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
         assertThatSampleIsPresent('TST001', ['SNP_A-4265338': 0.628913])
         assertThatSampleIsPresent('TST002', ['CN_497981': 0.057206])
         assertThat(sql, hasNode($/\Test Studies\${studyName}\SNP\Test SNP Platform\Unknown\/$).withPatientCount(3))
 
-        processor.process(
-                new File("fixtures/Additional Test Studies/${studyName}_${studyId}/SNPDataToUpload"),
+        processor.process(new File(studyDir(studyName, studyId, additionalStudiesDir), "SNPDataToUpload"),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
         assertThatSampleIsPresent('TST001', ['SNP_A-4265338': 0.528913])
         assertThatSampleIsPresent('TST002', ['CN_497981': 0.057206])
