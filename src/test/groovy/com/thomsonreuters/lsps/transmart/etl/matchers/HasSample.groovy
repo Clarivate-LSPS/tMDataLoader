@@ -30,6 +30,6 @@ class HasSample extends BaseMatcher<Sql> {
 
     @Override
     void describeMismatch(Object item, Description description) {
-        description.appendText("sample ").appendValue("${studyId}:${sampleId}").appendText("was not found")
+        description.appendText("sample ").appendValue("${studyId}:${sampleId}").appendText(" was not found")
     }
 }
