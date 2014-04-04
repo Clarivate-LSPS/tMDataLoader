@@ -1,5 +1,7 @@
 package com.thomsonreuters.lsps.transmart.etl
 
+import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasNode
+import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasPatient
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasSample
 import static org.junit.Assert.assertThat
 
@@ -24,6 +26,13 @@ class I2B2LoadSamplesTest extends ConfigAwareTestCase {
             ]
     ]
 
+    @Override
+    void setUp() {
+        super.setUp()
+        // reload procedure
+        runScript('I2B2_LOAD_SAMPLES.sql')
+    }
+
     void testItLoadSamples() {
         db.execute('delete from tm_lz.lt_src_mrna_subj_samp_map')
         db.withBatch(
@@ -38,12 +47,12 @@ class I2B2LoadSamplesTest extends ConfigAwareTestCase {
         }
         insertIfNotExists('deapp.de_gpl_info', [platform: platform, title: 'Loader Test Platform',
                                                 organism: 'Homo Sapiens', marker_type: 'Gene Expression'])
-
-        runScript('I2B2_LOAD_SAMPLES.sql')
         withAudit('testItLoadSamples') { jobId ->
             callProcedure("${config.controlSchema}.i2b2_load_samples",
-                    trialId, 'Test Studies', 'LDR', 'STD', 'N', jobId)
+                    trialId, 'Test Studies\\Loader Test', 'LDR', 'STD', 'N', jobId)
         }
         assertThat(db, hasSample(trialId, 'LDR_TST_SMP_001'))
+        assertThat(db, hasPatient('LDR_TST_SUBJ_001').inTrial(trialId))
+        assertThat(db, hasNode('\\Test Studies\\Loader Test\\LDR\\Loader Test Platform\\').withPatientCount(1))
     }
 }
