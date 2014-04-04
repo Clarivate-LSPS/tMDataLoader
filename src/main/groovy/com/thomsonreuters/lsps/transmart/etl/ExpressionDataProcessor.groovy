@@ -166,7 +166,7 @@ class ExpressionDataProcessor extends DataProcessor {
             }
         }
 
-        if (database?.databaseType == DatabaseType.PostgreSQL && database?.local) {
+        if (database?.databaseType == DatabaseType.Postgres && database?.local) {
             processExpressionFileForPostgres(f, sql, studyInfo)
         } else {
             processExpressionFileForGeneric(f, sql, studyInfo)

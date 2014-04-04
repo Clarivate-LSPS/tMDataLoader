@@ -24,7 +24,7 @@ class Database {
     Process runScript(File script) {
         Process runner
         switch (databaseType) {
-            case DatabaseType.PostgreSQL:
+            case DatabaseType.Postgres:
                 runner = Runtime.runtime.exec("psql -h ${host} -U ${config.username} -f ${script.absolutePath} -d ${database}",
                         ["PGPASSWORD=${config.password}"] as String[])
                 break
@@ -65,7 +65,7 @@ class Database {
     private void parsePostgresJdbcConnectionString() {
         def match = config.jdbcConnectionString =~ /^jdbc:postgresql:(?:\/\/(\w+)(?::(\d+))?\/)?(\w+)(?:\?.*)?$/
         if (match) {
-            databaseType = DatabaseType.PostgreSQL
+            databaseType = DatabaseType.Postgres
             host = match[0][1] ?: 'localhost'
             port = match[0][2]?.asType(Integer.class) ?: 5432
             database = match[0][3]
@@ -77,6 +77,6 @@ class Database {
     }
 
     boolean isPostgresConnection() {
-        databaseType == DatabaseType.PostgreSQL
+        databaseType == DatabaseType.Postgres
     }
 }

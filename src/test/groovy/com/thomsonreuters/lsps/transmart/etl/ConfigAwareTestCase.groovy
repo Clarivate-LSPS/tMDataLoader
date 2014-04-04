@@ -1,5 +1,6 @@
 package com.thomsonreuters.lsps.transmart.etl
 
+import com.thomsonreuters.lsps.transmart.cfg.Database
 import groovy.sql.Sql
 import org.junit.Assume
 
@@ -20,6 +21,10 @@ public abstract class ConfigAwareTestCase extends GroovyTestCase {
 
     Sql getSql() {
         return db
+    }
+
+    Database getDatabase() {
+        Database(connectionSettings)
     }
 
     Sql getDb() {

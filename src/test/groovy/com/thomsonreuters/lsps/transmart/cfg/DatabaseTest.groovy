@@ -29,13 +29,13 @@ class DatabaseTest extends ConfigAwareTestCase {
 
     void testLocalPostgresConnection() {
         def db = new Database([jdbcConnectionString: 'jdbc:postgresql:transmart'])
-        assertThat(db.databaseType, equalTo(DatabaseType.PostgreSQL))
+        assertThat(db.databaseType, equalTo(DatabaseType.Postgres))
         assertThat(db.isLocal(), equalTo(true))
     }
 
     void testRemotePostgresConnection() {
         def db = new Database([jdbcConnectionString: 'jdbc:postgresql://server/transmart'])
-        assertThat(db.databaseType, equalTo(DatabaseType.PostgreSQL))
+        assertThat(db.databaseType, equalTo(DatabaseType.Postgres))
         assertThat(db.isLocal(), equalTo(false))
     }
 

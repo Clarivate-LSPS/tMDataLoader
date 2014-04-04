@@ -6,5 +6,5 @@ package com.thomsonreuters.lsps.transmart.cfg
 public enum DatabaseType {
     Unknown,
     Oracle,
-    PostgreSQL
+    Postgres
 }
