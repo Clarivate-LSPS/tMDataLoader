@@ -25,26 +25,26 @@ class DatabaseTest extends GroovyTestCase {
 
     void testLocalPostgresConnection() {
         def db = new Database([jdbcConnectionString: 'jdbc:postgresql:transmart'])
-        assertThat(db.isPostgresConnection(), equalTo(true))
-        assertThat(db.isLocalPostgresConnection(), equalTo(true))
+        assertThat(db.databaseType, equalTo(DatabaseType.PostgreSQL))
+        assertThat(db.isLocal(), equalTo(true))
     }
 
     void testRemotePostgresConnection() {
         def db = new Database([jdbcConnectionString: 'jdbc:postgresql://server/transmart'])
-        assertThat(db.isPostgresConnection(), equalTo(true))
-        assertThat(db.isLocalPostgresConnection(), equalTo(false))
+        assertThat(db.databaseType, equalTo(DatabaseType.PostgreSQL))
+        assertThat(db.isLocal(), equalTo(false))
     }
 
     void testLocalOracleConnection() {
         def db = new Database([jdbcConnectionString: 'jdbc:oracle:thin:@:orcl'])
-        assertThat(db.isPostgresConnection(), equalTo(false))
-        assertThat(db.isLocalPostgresConnection(), equalTo(false))
+        assertThat(db.databaseType, equalTo(DatabaseType.Oracle))
+        assertThat(db.isLocal(), equalTo(true))
     }
 
     void testRemoteOracleConnection() {
         def db = new Database([jdbcConnectionString: 'jdbc:oracle:thin:@server:orcl'])
-        assertThat(db.isPostgresConnection(), equalTo(false))
-        assertThat(db.isLocalPostgresConnection(), equalTo(false))
+        assertThat(db.databaseType, equalTo(DatabaseType.Oracle))
+        assertThat(db.isLocal(), equalTo(false))
     }
 
     void testItParsesPostgresJdbcConnectionString() {

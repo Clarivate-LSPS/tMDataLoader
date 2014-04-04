@@ -20,6 +20,7 @@
 
 package com.thomsonreuters.lsps.transmart.etl
 
+import com.thomsonreuters.lsps.transmart.cfg.DatabaseType
 import groovy.sql.Sql
 
 class ClinicalDataProcessor extends DataProcessor {
@@ -132,7 +133,7 @@ class ClinicalDataProcessor extends DataProcessor {
             throw new Exception("File ${f.getName()} doesn't exist")
         }
 
-        if (database?.isLocalPostgresConnection()) {
+        if (database?.databaseType == DatabaseType.PostgreSQL && database?.local) {
             processFileForLocalPostgres(sql, f, fMappings)
         } else {
             processFileForGenericDatabase(sql, f, fMappings)

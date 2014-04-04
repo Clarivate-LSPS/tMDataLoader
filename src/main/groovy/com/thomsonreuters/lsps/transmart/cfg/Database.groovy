@@ -7,6 +7,7 @@ import groovy.sql.Sql
  */
 class Database {
     def config
+    DatabaseType databaseType = DatabaseType.Unknown
     String database
     String host
     int port = -1
@@ -22,7 +23,7 @@ class Database {
 
     private final def parseJdbcConnectionString() {
         if (config.jdbcConnectionString) {
-            if (isPostgresConnection()) {
+            if (config.jdbcConnectionString.startsWith('jdbc:postgresql:')) {
                 parsePostgresJdbcConnectionString()
             } else {
                 parseOracleJdbcConnectionString()
@@ -34,6 +35,7 @@ class Database {
         def match = config.jdbcConnectionString =~ /^jdbc:oracle:thin:@(\w+)?(?::(\d+))?:(\w+)$/ ?:
                 config.jdbcConnectionString =~ /^jdbc:oracle:thin:@\/\/(\w+)?(?::(\d+))?\/(\w+)$/
         if (match.size()) {
+            databaseType = DatabaseType.Oracle
             host = match[0][1] ?: 'localhost'
             port = match[0][2]?.asType(Integer.class) ?: 1521
             database = match[0][3]
@@ -43,21 +45,18 @@ class Database {
     private void parsePostgresJdbcConnectionString() {
         def match = config.jdbcConnectionString =~ /^jdbc:postgresql:(?:\/\/(\w+)(?::(\d+))?\/)?(\w+)(?:\?.*)?$/
         if (match) {
+            databaseType = DatabaseType.PostgreSQL
             host = match[0][1] ?: 'localhost'
             port = match[0][2]?.asType(Integer.class) ?: 5432
             database = match[0][3]
         }
     }
 
+    boolean isLocal() {
+        host == 'localhost' || host == '127.0.0.1'
+    }
+
     boolean isPostgresConnection() {
-        config.jdbcConnectionString?.startsWith("jdbc:postgresql:")
-    }
-
-    boolean isOracleConnection() {
-        config.jdbcConnectionString?.startsWith("jdbc:oracle:thin:")
-    }
-
-    boolean isLocalPostgresConnection() {
-        isPostgresConnection() && host == 'localhost'
+        databaseType == DatabaseType.PostgreSQL
     }
 }

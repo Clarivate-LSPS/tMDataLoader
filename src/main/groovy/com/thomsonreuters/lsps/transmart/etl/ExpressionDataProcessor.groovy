@@ -20,6 +20,7 @@
 
 package com.thomsonreuters.lsps.transmart.etl
 
+import com.thomsonreuters.lsps.transmart.cfg.DatabaseType
 import groovy.sql.Sql
 
 class ExpressionDataProcessor extends DataProcessor {
@@ -165,7 +166,7 @@ class ExpressionDataProcessor extends DataProcessor {
             }
         }
 
-        if (database?.isLocalPostgresConnection()) {
+        if (database?.databaseType == DatabaseType.PostgreSQL && database?.local) {
             processExpressionFileForPostgres(f, sql, studyInfo)
         } else {
             processExpressionFileForGeneric(f, sql, studyInfo)
