@@ -1,13 +1,17 @@
 package com.thomsonreuters.lsps.transmart.cfg
 
+import com.thomsonreuters.lsps.transmart.etl.ConfigAwareTestCase
+import groovy.sql.Sql
+
 import static org.hamcrest.CoreMatchers.equalTo
+import static org.hamcrest.CoreMatchers.notNullValue
 import static org.hamcrest.CoreMatchers.nullValue
 import static org.junit.Assert.assertThat
 
 /**
  * Created by bondarev on 4/3/14.
  */
-class DatabaseTest extends GroovyTestCase {
+class DatabaseTest extends ConfigAwareTestCase {
     private void assertParse(String jdbcConnectionString, Map info) {
         def db = new Database([jdbcConnectionString: jdbcConnectionString])
         if (info.host.is(null)) {
@@ -64,5 +68,24 @@ class DatabaseTest extends GroovyTestCase {
         assertParse('jdbc:oracle:thin:@//server/orcl', [host: 'server', port: 1521, database: 'orcl'])
         assertParse('jdbc:oracle:thin:@//:1522/orcl', [host: 'localhost', port: 1522, database: 'orcl'])
         assertParse('jdbc:oracle:thin:@//server:1522/orcl', [host: 'server', port: 1522, database: 'orcl'])
+    }
+
+    void testItRunScript() {
+        File sampleScript = File.createTempFile('sample', '.sql')
+        sampleScript.deleteOnExit()
+        def db = new Database(config.db)
+        db.withSql { Sql sql->
+            sql.execute('delete from tm_lz.lt_src_mrna_subj_samp_map where trial_name = ?', 'TEST SCRIPT LOAD')
+        }
+        sampleScript.write('insert into tm_lz.lt_src_mrna_subj_samp_map (trial_name) values (\'TEST SCRIPT LOAD\');\n')
+        if (db.databaseType == DatabaseType.Oracle) {
+            sampleScript.append('exit;')
+        }
+        println db.runScript(sampleScript).errorStream.text
+        db.withSql { Sql sql->
+            def result = sql.firstRow('select * from tm_lz.lt_src_mrna_subj_samp_map where trial_name = ?',
+                    'TEST SCRIPT LOAD')
+            assertThat(result, notNullValue())
+        }
     }
 }
