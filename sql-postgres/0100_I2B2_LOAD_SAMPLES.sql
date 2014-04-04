@@ -49,22 +49,12 @@ Declare
 	sourceCd		varchar(50);
 	secureStudy		varchar(1);
 
-	dataType		varchar(10);
-	sqlText			varchar(1000);
 	tText			varchar(1000);
-	gplTitle		varchar(1000);
 	pExists			numeric;
-	partTbl   		numeric;
 	partExists 		numeric;
-	sampleCt		numeric;
-	idxExists 		numeric;
-	logBase			numeric;
 	pCount			integer;
 	sCount			integer;
-	tablespaceName	varchar(200);
-	partitioniD		numeric(18,0);
-	partitionName	varchar(100);
-	partitionIndx	varchar(100);
+	partitionId		numeric(18,0);
 
 	--	cursor to add leaf nodes, cursor is used here because there are few nodes to be added
 
@@ -357,9 +347,6 @@ BEGIN
 		  and coalesce(sm.source_cd,'STD') = sourceCd
 		  and sm.platform = platform_type;
 	end if;
-
-	partitionName := 'deapp.de_subject_microarray_data_' || partitionId::text;
-	partitionIndx := 'de_subject_microarray_data_' || partitionId::text;
 
 	--	truncate tmp node table
 
