@@ -9,6 +9,7 @@ import org.junit.Assume
  */
 public abstract class ConfigAwareTestCase extends GroovyTestCase {
     def connectionSettings
+    Database database
 
     @Override
     void setUp() {
@@ -19,12 +20,25 @@ public abstract class ConfigAwareTestCase extends GroovyTestCase {
     }
     private Sql _db
 
+    File getDbScriptsDir() {
+        return new File("sql-${getDatabase().databaseType.toString().toLowerCase()}")
+    }
+
+    void runScript(String scriptName) {
+        File sqlFile = dbScriptsDir.listFiles().find { it.name.endsWith(scriptName) }
+        def p = database.runScript(sqlFile)
+        String errors = p.err.text
+        if (errors) {
+            println(errors)
+        }
+    }
+
     Sql getSql() {
         return db
     }
 
     Database getDatabase() {
-        Database(connectionSettings)
+        database ?: (database = new Database(connectionSettings))
     }
 
     Sql getDb() {
@@ -40,5 +54,39 @@ public abstract class ConfigAwareTestCase extends GroovyTestCase {
                 controlSchema : 'tm_cz',
                 securitySymbol: 'N'
         ]
+    }
+
+    void callProcedure(String procedureName, Object... params) {
+        db.call("{call ${procedureName}(${(['?'] * params.size()).join(',')})}", params)
+    }
+
+    void insertIfNotExists(String tableName, Map data) {
+        def columns = data.keySet()
+        def values = columns.collect { data[it] }
+        if (!db.firstRow("select * from ${tableName} where ${columns.collect { "${it}=?" }.join(' and ')}", values)) {
+            db.executeInsert("insert into ${tableName}(${columns.join(', ')}) values (${(['?'] * columns.size()).join(',')})", values)
+        }
+    }
+
+    void withAudit(String jobName, Closure block) {
+        database.withSql { Sql sql ->
+            def jobId = -1
+            sql.call('{call ' + config.controlSchema + '.cz_start_audit(?,?,?)}',
+                    [jobName, connectionSettings.username, Sql.NUMERIC]) { jobId = it }
+            block.call(jobId)
+            def succeed = true
+            sql.eachRow("SELECT * FROM " + config.controlSchema + ".cz_job_audit where job_id=${jobId} order by seq_id") { row ->
+                println "-- ${row.step_desc} [${row.step_status} / ${row.records_manipulated} recs / ${row.time_elapsed_secs}s]"
+            }
+            sql.eachRow("SELECT * FROM " + config.controlSchema + ".cz_job_error where job_id=${jobId} order by seq_id") {
+                println "${it.error_message} / ${it.error_stack} / ${it.error_backtrace}"
+                succeed = false
+            }
+            if (succeed) {
+                sql.call("{call " + config.controlSchema + ".cz_end_audit(?,?)}", [jobId, 'SUCCESS'])
+            } else {
+                sql.call("{call " + config.controlSchema + ".cz_end_audit(?,?)}", [jobId, 'FAIL'])
+            }
+        }
     }
 }

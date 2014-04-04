@@ -29,7 +29,7 @@ abstract class DataProcessor {
 
     DataProcessor(conf) {
         config = conf
-        database = config.db && new Database(config.db)
+        database = config.db ?: new Database(config.db)
     }
 
     abstract boolean processFiles(File dir, Sql sql, studyInfo)
