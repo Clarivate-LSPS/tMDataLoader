@@ -54,7 +54,7 @@ class ExpressionDataProcessorTest extends ConfigAwareTestCase {
         assertThat(db, hasSample(studyId, 'TST1000000719'))
         assertThat(db, hasPatient('996RMS').inTrial(studyId))
         assertThat(db, hasNode("\\Test Studies\\${studyName}\\Biomarker Data\\Test GEX Platform\\Blood\\").
-                withPatientCount(28))
+                withPatientCount(29))
         assertThatSampleIsPresent('TST1000000719', ['1007_s_at': 6.624529839])
     }
 
