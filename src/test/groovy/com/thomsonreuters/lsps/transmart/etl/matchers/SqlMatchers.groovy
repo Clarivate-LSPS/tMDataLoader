@@ -12,7 +12,7 @@ class SqlMatchers {
         return new HasPatient(subjectId)
     }
 
-    public static HasSample hasSample(String studyId, String sampleId) {
-        return new HasSample(studyId, sampleId)
+    public static HasSample hasSample(Map<String, Object> props = [:], String studyId, String sampleId) {
+        return new HasSample(props, studyId, sampleId)
     }
 }
