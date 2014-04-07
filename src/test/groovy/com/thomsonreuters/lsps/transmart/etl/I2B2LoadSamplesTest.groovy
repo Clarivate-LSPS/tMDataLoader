@@ -34,17 +34,10 @@ class I2B2LoadSamplesTest extends ConfigAwareTestCase {
     }
 
     void testItLoadSamples() {
-        db.execute('delete from tm_lz.lt_src_mrna_subj_samp_map')
-        db.withBatch(
-                """
-                INSERT into tm_lz.lt_src_mrna_subj_samp_map
-                (TRIAL_NAME, SITE_ID, SUBJECT_ID, SAMPLE_CD, PLATFORM, TISSUE_TYPE,
-                 ATTRIBUTE_1, ATTRIBUTE_2, CATEGORY_CD, SOURCE_CD)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'STD')
-                """
-        ) { batch ->
-            samples.each { batch.addBatch(it) }
-        }
+        def sampleLoader = new SamplesLoader(trialId)
+        sampleLoader.addSample('LDR+PLATFORM+TISSUETYPE', 'LDR_TST_SUBJ_001', 'LDR_TST_SMP_001', platform)
+        sampleLoader.loadSamples(db)
+
         insertIfNotExists('deapp.de_gpl_info', [platform: platform, title: 'Loader Test Platform',
                                                 organism: 'Homo Sapiens', marker_type: 'Gene Expression'])
         withAudit('testItLoadSamples') { jobId ->
