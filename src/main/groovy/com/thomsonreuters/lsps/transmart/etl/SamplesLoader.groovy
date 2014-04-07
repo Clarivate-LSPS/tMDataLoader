@@ -16,7 +16,7 @@ class SamplesLoader {
 
     void addSample(Map<String, Object> attrs = [:],
                    String categoryCd, String subjectId, String sampleCd, String platform) {
-        samples << [trialId, attrs.siteId ?: '', subjectId, sampleCd, platform,
+        samples << [trialId, attrs.siteId ?: '', subjectId, sampleCd, platform ?: '',
                     attrs.tissueType ?: 'Unknown', attrs.attr1 ?: '', attrs.attr2 ?: '',
                     categoryCd, attrs.sourceCd ?: 'STD']
     }

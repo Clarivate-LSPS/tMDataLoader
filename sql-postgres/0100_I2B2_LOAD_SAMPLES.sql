@@ -157,7 +157,7 @@ BEGIN
 
 	select count(*) into pCount
 	from tm_lz.lt_src_mrna_subj_samp_map sm
-	where not exists
+	where coalesce(sm.platform, '') <> '' and not exists
 		 (select 1 from deapp.de_gpl_info gi
 		  where sm.platform = gi.platform
 		    and gi.marker_type = 'Gene Expression'
@@ -274,12 +274,9 @@ BEGIN
 				 null as race_cd,
 				 regexp_replace(TrialID || ':' || coalesce(s.site_id,'') || ':' || s.subject_id,'(::){1,}', ':', 'g') as sourcesystem_cd
 		 from tm_lz.lt_src_mrna_subj_samp_map s
-		     ,deapp.de_gpl_info g
 		 where s.subject_id is not null
 		   and s.trial_name = TrialID
 		   and s.source_cd = sourceCD
-		   and s.platform = g.platform
-		   and upper(g.marker_type) = 'GENE EXPRESSION'
 		   and not exists
 			  (select 1 from i2b2demodata.patient_dimension x
 			   where x.sourcesystem_cd =
@@ -369,16 +366,14 @@ BEGIN
 	select distinct a.category_cd
 				   ,coalesce(a.platform,'GPL570')
 				   ,coalesce(a.tissue_type,'Unspecified Tissue Type')
-	               ,a.attribute_1
+	         ,a.attribute_1
 				   ,a.attribute_2
 				   ,g.title
     from tm_lz.lt_src_mrna_subj_samp_map a
-	    ,deapp.de_gpl_info g
+    left join deapp.de_gpl_info g
+    on a.platform = g.platform and upper(g.marker_type) = 'GENE EXPRESSION'
 	where a.trial_name = TrialID
-	  and coalesce(a.platform,'GPL570') = g.platform
-	  and a.source_cd = sourceCD
-	  and a.platform = g.platform
-	  and upper(g.marker_type) = 'GENE EXPRESSION';
+	  and a.source_cd = sourceCD;
 	get diagnostics rowCt := ROW_COUNT;
 	exception
 	when others then
@@ -406,7 +401,7 @@ BEGIN
 	,node_type
 	)
 	select distinct topNode || regexp_replace(replace(replace(replace(replace(replace(replace(
-	       category_cd,'PLATFORM',title),'ATTR1',coalesce(attribute_1,'')),'ATTR2',coalesce(attribute_2,'')),'TISSUETYPE',coalesce(tissue_type,'')),'+','\'),'_',' ') || '\','(\\){2,}', '\', 'g')
+	       category_cd,'PLATFORM',coalesce(title,'')),'ATTR1',coalesce(attribute_1,'')),'ATTR2',coalesce(attribute_2,'')),'TISSUETYPE',coalesce(tissue_type,'')),'+','\'),'_',' ') || '\','(\\){2,}', '\', 'g')
 		  ,category_cd
 		  ,platform as platform
 		  ,tissue_type
@@ -442,7 +437,7 @@ BEGIN
 	,node_type
 	)
 	select distinct topNode || regexp_replace(replace(replace(replace(replace(replace(replace(
-	       substr(category_cd,1,tm_cz.instr(category_cd,'PLATFORM')+8),'PLATFORM',title),'ATTR1',coalesce(attribute_1,'')),'ATTR2',coalesce(attribute_2,'')),'TISSUETYPE',coalesce(tissue_type,'')),'+','\'),'_',' ') || '\',
+	       substr(category_cd,1,tm_cz.instr(category_cd,'PLATFORM')+8),'PLATFORM',coalesce(title,'')),'ATTR1',coalesce(attribute_1,'')),'ATTR2',coalesce(attribute_2,'')),'TISSUETYPE',coalesce(tissue_type,'')),'+','\'),'_',' ') || '\',
 		   '(\\){2,}', '\', 'g')
 		  ,substr(category_cd,1,tm_cz.instr(category_cd,'PLATFORM')+8)
 		  ,platform as platform
@@ -478,7 +473,7 @@ BEGIN
 	,node_type
 	)
 	select distinct topNode || regexp_replace(replace(replace(replace(replace(replace(replace(
-	       substr(category_cd,1,tm_cz.instr(category_cd,'ATTR1')+5),'PLATFORM',title),'ATTR1',coalesce(attribute_1,'')),'ATTR2',coalesce(attribute_2,'')),'TISSUETYPE',coalesce(tissue_type,'')),'+','\'),'_',' ') || '\',
+	       substr(category_cd,1,tm_cz.instr(category_cd,'ATTR1')+5),'PLATFORM',coalesce(title,'')),'ATTR1',coalesce(attribute_1,'')),'ATTR2',coalesce(attribute_2,'')),'TISSUETYPE',coalesce(tissue_type,'')),'+','\'),'_',' ') || '\',
 		   '(\\){2,}', '\', 'g')
 		  ,substr(category_cd,1,tm_cz.instr(category_cd,'ATTR1')+5)
 		  ,case when tm_cz.instr(substr(category_cd,1,tm_cz.instr(category_cd,'ATTR1')+5),'PLATFORM') > 1 then platform else '' end as platform
@@ -516,7 +511,7 @@ BEGIN
 	,node_type
 	)
 	select distinct topNode || regexp_replace(replace(replace(replace(replace(replace(replace(
-	       substr(category_cd,1,tm_cz.instr(category_cd,'ATTR2')+5),'PLATFORM',title),'ATTR1',coalesce(attribute_1,'')),'ATTR2',coalesce(attribute_2,'')),'TISSUETYPE',coalesce(tissue_type,'')),'+','\'),'_',' ') || '\',
+	       substr(category_cd,1,tm_cz.instr(category_cd,'ATTR2')+5),'PLATFORM',coalesce(title,'')),'ATTR1',coalesce(attribute_1,'')),'ATTR2',coalesce(attribute_2,'')),'TISSUETYPE',coalesce(tissue_type,'')),'+','\'),'_',' ') || '\',
 		   '(\\){2,}', '\', 'g')
 		  ,substr(category_cd,1,tm_cz.instr(category_cd,'ATTR2')+5)
 		  ,case when tm_cz.instr(substr(category_cd,1,tm_cz.instr(category_cd,'ATTR2')+5),'PLATFORM') > 1 then platform else '' end as platform
@@ -554,7 +549,7 @@ BEGIN
 	,node_type
 	)
 	select distinct topNode || regexp_replace(replace(replace(replace(replace(replace(replace(
-	       substr(category_cd,1,tm_cz.instr(category_cd,'TISSUETYPE')+10),'PLATFORM',title),'ATTR1',coalesce(attribute_1,'')),'ATTR2',coalesce(attribute_2,'')),'TISSUETYPE',coalesce(tissue_type,'')),'+','\'),'_',' ') || '\',
+	       substr(category_cd,1,tm_cz.instr(category_cd,'TISSUETYPE')+10),'PLATFORM',coalesce(title,'')),'ATTR1',coalesce(attribute_1,'')),'ATTR2',coalesce(attribute_2,'')),'TISSUETYPE',coalesce(tissue_type,'')),'+','\'),'_',' ') || '\',
 		   '(\\){2,}', '\', 'g')
 		  ,substr(category_cd,1,tm_cz.instr(category_cd,'TISSUETYPE')+10)
 		  ,case when tm_cz.instr(substr(category_cd,1,tm_cz.instr(category_cd,'TISSUETYPE')+10),'PLATFORM') > 1 then platform else '' end as platform
