@@ -1,6 +1,7 @@
 package com.thomsonreuters.lsps.transmart.etl
 
 import com.thomsonreuters.lsps.transmart.sql.Database
+import com.thomsonreuters.lsps.transmart.sql.SqlMethods
 import groovy.sql.Sql
 import org.junit.Assume
 
@@ -57,7 +58,7 @@ public abstract class ConfigAwareTestCase extends GroovyTestCase {
     }
 
     void callProcedure(String procedureName, Object... params) {
-        db.call("{call ${procedureName}(${(['?'] * params.size()).join(',')})}", params)
+        SqlMethods.callProcedure(db, procedureName, params)
     }
 
     void insertIfNotExists(String tableName, Map data) {
