@@ -1,4 +1,4 @@
-package com.thomsonreuters.lsps.transmart.cfg
+package com.thomsonreuters.lsps.transmart.sql
 
 import groovy.sql.Sql
 

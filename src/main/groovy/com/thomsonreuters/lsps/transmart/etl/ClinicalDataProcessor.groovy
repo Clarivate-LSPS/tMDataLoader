@@ -20,7 +20,7 @@
 
 package com.thomsonreuters.lsps.transmart.etl
 
-import com.thomsonreuters.lsps.transmart.cfg.DatabaseType
+import com.thomsonreuters.lsps.transmart.sql.DatabaseType
 import groovy.sql.Sql
 
 class ClinicalDataProcessor extends DataProcessor {

@@ -20,7 +20,7 @@
 
 package com.thomsonreuters.lsps.transmart.etl
 
-import com.thomsonreuters.lsps.transmart.cfg.Database
+import com.thomsonreuters.lsps.transmart.sql.Database
 import groovy.sql.Sql
 
 abstract class DataProcessor {

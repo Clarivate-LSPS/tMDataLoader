@@ -1,4 +1,4 @@
-package com.thomsonreuters.lsps.transmart.cfg
+package com.thomsonreuters.lsps.transmart.sql
 
 import com.thomsonreuters.lsps.transmart.etl.ConfigAwareTestCase
 import groovy.sql.Sql
