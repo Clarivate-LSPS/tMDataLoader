@@ -43,6 +43,16 @@ abstract class DataProcessor {
         return config.logger
     }
 
+    def printAudit(Sql ctrlSql, jobId, lastSeqId) {
+        ctrlSql.eachRow("SELECT * FROM " + config.controlSchema + ".cz_job_audit WHERE job_id=${jobId} and seq_id>${lastSeqId} order by seq_id") {
+            row ->
+
+                logger.log(LogType.DEBUG, "-- ${row.step_desc} [${row.step_status} / ${row.records_manipulated} recs / ${row.time_elapsed_secs}s]")
+                lastSeqId = row.seq_id
+        }
+        return lastSeqId
+    }
+
     boolean process(File dir, studyInfo) {
         def res = false
 
@@ -74,14 +84,7 @@ abstract class DataProcessor {
                         def ctrlSql = Sql.newInstance(config.db.jdbcConnectionString, config.db.username, config.db.password, config.db.jdbcDriver)
 
                         while (true) {
-                            // fetch last log message
-                            ctrlSql.eachRow("SELECT * FROM " + config.controlSchema + ".cz_job_audit WHERE job_id=${jobId} and seq_id>${lastSeqId} order by seq_id") {
-                                row ->
-
-                                    logger.log(LogType.DEBUG, "-- ${row.step_desc} [${row.step_status} / ${row.records_manipulated} recs / ${row.time_elapsed_secs}s]")
-                                    lastSeqId = row.seq_id
-                            }
-
+                            lastSeqId = printAudit(ctrlSql, jobId, lastSeqId)
                             if (!t.isAlive()) break
 
                             Thread.sleep(2000)
@@ -89,6 +92,7 @@ abstract class DataProcessor {
 
                         // closing control connection - don't need it anymore
                         ctrlSql.close()
+                        printAudit(sql, jobId, lastSeqId)
 
                         // figuring out if there are any errors in the error log
                         sql.eachRow("SELECT * FROM " + config.controlSchema + ".cz_job_error where job_id=${jobId} order by seq_id") {
