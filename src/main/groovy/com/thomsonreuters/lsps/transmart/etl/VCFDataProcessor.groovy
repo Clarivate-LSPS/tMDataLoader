@@ -50,7 +50,7 @@ class VCFDataProcessor extends DataProcessor {
     def processFile(File inputFile, SamplesLoader samplesLoader, studyInfo) {
         def vcfFile = new VcfFile(inputFile)
         def sampleMapping = studyInfo.sampleMapping
-        vcfFile.samples.each { sample->
+        vcfFile.samples.each { sample ->
             samplesLoader.addSample("VCF+${inputFile.name.replaceFirst(/\.\w+$/, '')}", sampleMapping[sample] as String, sample, '')
         }
     }
@@ -61,8 +61,8 @@ class VCFDataProcessor extends DataProcessor {
         def studyNode = studyInfo['node']
         if (studyId && studyNode) {
             use(SqlMethods) {
-                sql.callProcedure("${config.controlSchema}.i2b2_load_samples",
-                        studyId, studyNode, 'VCF', 'STD', config.securitySymbol, jobId)
+                sql.callProcedure("${config.controlSchema}.i2b2_process_vcf_data",
+                        studyId, studyNode, 'STD', config.securitySymbol, jobId)
             }
             return true
         } else {
