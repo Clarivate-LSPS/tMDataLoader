@@ -7,6 +7,12 @@ import groovy.sql.Sql
  */
 class SqlMethods {
     static void callProcedure(Sql sql, String procedureName, Object... params) {
-        sql.call("{call ${procedureName}(${(['?'] * params.size()).join(',')})}", params)
+        sql.call("{call ${procedureName}(${(['?'] * params.size()).join(',')})}", params.collect {
+            if (it instanceof GString) {
+                it as String
+            } else {
+                it
+            }
+        })
     }
 }
