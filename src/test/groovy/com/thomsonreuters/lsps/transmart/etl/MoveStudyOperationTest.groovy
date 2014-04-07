@@ -56,16 +56,64 @@ class MoveStudyOperationTest extends ConfigAwareTestCase {
         removeStudy(newPath)
     }
 
+    void testMoveStudyWithCreatingNewLevel() {
+        def newPath = "\\Test Studies\\Test Study\\New Level\\"
+        def input = ['old_path': oldPath,
+                'new_path': newPath];
+        moveStudyProcessor.process(input)
+
+        assertNewLevelIsAdded(newPath)
+        removeStudy(newPath)
+    }
+
+    void testMoveStudyWithDeletingNewLevel() {
+        def newPath = "\\Test Studies\\Test Study\\New Level\\"
+        def input = ['old_path': oldPath,
+                'new_path': newPath];
+        moveStudyProcessor.process(input)
+
+        def newPathShort = "\\Test Studies\\Test Study\\"
+        input = ['old_path': newPath,
+                'new_path': newPathShort];
+        moveStudyProcessor.process(input)
+
+        assertNewLevelWasDeleted(newPath)
+        removeStudy(newPathShort)
+    }
+
+
     def assertRootNodeExisting(String newPath) {
         def newRootNode = '\\' + newPath.split('\\\\')[1] + "\\"
         def oldRootNode = '\\' + oldPath.split('\\\\')[1] + "\\"
 
         def tablesToAttr = ['i2b2metadata.table_access': 'c_fullname', 'i2b2metadata.i2b2': 'c_fullname',
-                'i2b2metadata.i2b2_secure': 'c_fullname', 'i2b2demodata.concept_counts': 'parent_concept_path']
-        // TODO Add checking of 'i2b2demodata.concept_dimension': 'concept_path'
+                'i2b2metadata.i2b2_secure': 'c_fullname', 'i2b2demodata.concept_counts': 'parent_concept_path',
+                'i2b2demodata.concept_dimension': 'concept_path']
+
 
         checkPaths(tablesToAttr, 'New root node was not added to ', newRootNode, 1);
         checkPaths(tablesToAttr, 'Old root node was not updated in ', oldRootNode, 0);
+    }
+
+    def assertNewLevelIsAdded(String newPath) {
+        def secondLevelNode = '\\' + newPath.split('\\\\')[1] + "\\" + newPath.split('\\\\')[2] + "\\"
+
+        def tablesToAttr = ['i2b2metadata.i2b2': 'c_fullname', 'i2b2metadata.i2b2_secure': 'c_fullname',
+                'i2b2demodata.concept_counts': 'concept_path',
+                'i2b2demodata.concept_dimension': 'concept_path']
+
+        checkPaths(tablesToAttr, 'Second level node was not found in ', secondLevelNode, 1);
+
+    }
+
+    def assertNewLevelWasDeleted(String newPath) {
+
+        def tablesToAttr = ['i2b2metadata.i2b2': 'c_fullname', 'i2b2metadata.i2b2_secure': 'c_fullname',
+                'i2b2demodata.concept_counts': 'concept_path',
+                'i2b2demodata.concept_dimension': 'concept_path']
+
+        checkPaths(tablesToAttr, 'Old level node was found in ', newPath, 0);
+
     }
 
     private void assertPathsExisting(String newPath) {
