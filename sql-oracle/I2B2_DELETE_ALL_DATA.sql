@@ -75,13 +75,11 @@ BEGIN
     pathString := path_string;
   end if;
   
-  if (removeTop = 'N')
-  then
-    select parent_concept_path into topNode
+  select parent_concept_path into topNode
     from I2B2DEMODATA.concept_counts 
     where 
     concept_path = pathString;
-  end if;
+
   
   stepCt := 0;
   
@@ -206,20 +204,18 @@ BEGIN
 	end if;
 	
 	/*Check and delete top node, if remove node is last*/
-  if (removeTop = 'N') 
-  then
-    select count(*) into countNodeUnderTop
+  select count(*) into countNodeUnderTop
     from I2B2DEMODATA.concept_counts 
     where parent_concept_path = topNode;
     
     stepCt := stepCt + 1;
-		cz_write_audit(jobId,databaseName,procedureName,'Check need removed top node '||countNodeUnderTop,SQL%ROWCOUNT,stepCt,'Done');
+		cz_write_audit(jobId,databaseName,procedureName,'Check need removed top node '||topNode,SQL%ROWCOUNT,stepCt,'Done');
     
     if (countNodeUnderTop = 0) 
     then
-      tm_cz.i2b2_delete_all_data(null, topNode, null, 'Y');
+      tm_cz.i2b2_delete_all_data(null, topNode, jobID);
     end if;
-  end if;    
+
 
   end if;
   
