@@ -1,5 +1,5 @@
 CREATE OR REPLACE
-PROCEDURE "I2B2_MOVE_STUDY"
+PROCEDURE "TM_CZ"."I2B2_MOVE_STUDY"
   (old_path_in  VARCHAR2,
    new_path_in  VARCHAR2,
    currentJobID NUMBER := null
