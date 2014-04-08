@@ -39,19 +39,35 @@ class VCFDataProcessor extends DataProcessor {
             return false
         }
         loadMappingFile(mappingFile, studyInfo)
+        loadMetadata(sql, studyInfo)
         def samplesLoader = new SamplesLoader(studyInfo.id)
         dir.eachFileMatch(FileType.FILES, ~/(?i).*\.vcf$/) {
-            processFile(it, samplesLoader, studyInfo)
+            processFile(it, sql, samplesLoader, studyInfo)
         }
         samplesLoader.loadSamples(sql)
         return true
     }
 
-    def processFile(File inputFile, SamplesLoader samplesLoader, studyInfo) {
+    def loadMetadata(Sql sql, studyInfo) {
+        use(SqlMethods) {
+            logger.log(LogType.DEBUG, 'Loading study information into deapp.de_variant_dataset')
+            sql.insertRecord('deapp.de_variant_dataset',
+                    dataset_id: studyInfo.id, etl_id: 'tMDataLoader', genome: 'hg19',
+                    etl_date: Calendar.getInstance())
+        }
+    }
+
+    def processFile(File inputFile, Sql sql, SamplesLoader samplesLoader, studyInfo) {
         def vcfFile = new VcfFile(inputFile)
         def sampleMapping = studyInfo.sampleMapping
-        vcfFile.samples.each { sample ->
-            samplesLoader.addSample("VCF+${inputFile.name.replaceFirst(/\.\w+$/, '')}", sampleMapping[sample] as String, sample, '')
+        String trialId = studyInfo.id
+        logger.log(LogType.MESSAGE, "Processing file ${inputFile.getName()}")
+        SqlMethods.insertRecords(sql, 'deapp.de_variant_subject_idx', ['dataset_id', 'subject_id', 'position']) { st ->
+            vcfFile.samples.eachWithIndex { sample, idx ->
+                logger.log(LogType.DEBUG, 'Loading samples')
+                st.addBatch([trialId, sample, idx + 1])
+                samplesLoader.addSample("VCF+${inputFile.name.replaceFirst(/\.\w+$/, '')}", sampleMapping[sample] as String, sample, '')
+            }
         }
     }
 
