@@ -54,6 +54,7 @@ class VCFDataProcessor extends DataProcessor {
             sql.insertRecord('deapp.de_variant_dataset',
                     dataset_id: studyInfo.id, etl_id: 'tMDataLoader', genome: 'hg19',
                     etl_date: Calendar.getInstance())
+            sql.commit()
         }
     }
 
@@ -62,11 +63,56 @@ class VCFDataProcessor extends DataProcessor {
         def sampleMapping = studyInfo.sampleMapping
         String trialId = studyInfo.id
         logger.log(LogType.MESSAGE, "Processing file ${inputFile.getName()}")
-        SqlMethods.insertRecords(sql, 'deapp.de_variant_subject_idx', ['dataset_id', 'subject_id', 'position']) { st ->
-            vcfFile.samples.eachWithIndex { sample, idx ->
-                logger.log(LogType.DEBUG, 'Loading samples')
-                st.addBatch([trialId, sample, idx + 1])
-                samplesLoader.addSample("VCF+${inputFile.name.replaceFirst(/\.\w+$/, '')}", sampleMapping[sample] as String, sample, '')
+        use(SqlMethods) {
+            DataLoader.start(database, 'deapp.de_variant_subject_idx', ['dataset_id', 'subject_id', 'position']) { st ->
+                vcfFile.samples.eachWithIndex { sample, idx ->
+                    logger.log(LogType.DEBUG, 'Loading samples')
+                    st.addBatch([trialId, sample, idx + 1])
+                    samplesLoader.addSample("VCF+${inputFile.name.replaceFirst(/\.\w+$/, '')}", sampleMapping[sample] as String, sample, '')
+                }
+            }
+
+            DataLoader.start(database, 'deapp.de_variant_subject_summary',
+                    ['dataset_id', 'subject_id', 'rs_id', 'chr', 'pos',
+                     'variant', 'variant_format', 'variant_type',
+                     'reference', 'allele1', 'allele2']) { st ->
+                vcfFile.eachEntry { VcfFile.Entry entry ->
+                    CharSequence variantType = entry.reference.size() == 1 &&
+                            entry.alternatives.size() == 1 && entry.alternatives[0].size() == 1 ? 'SNV' : 'DIV'
+                    entry.samplesData.entrySet().each { sampleEntry ->
+                        VcfFile.SampleData sampleData = sampleEntry.value
+                        CharSequence variant = ''
+                        CharSequence variantFormat = ''
+                        Integer allele1 = sampleData.allele1 != '.' ? sampleData.allele1 as int : null
+                        Integer allele2 = sampleData.allele2 != '.' ? sampleData.allele2 as int : null
+                        boolean reference = false
+                        if (sampleData.allele1 == '0') {
+                            variant += entry.reference
+                            variantFormat += 'R'
+                        } else {
+                            if (!allele1.is(null)) {
+                                variant += entry.alternatives[allele1 - 1]
+                                variantFormat += 'V'
+                            }
+                        }
+                        variant += sampleData.alleleSeparator
+                        variantFormat += sampleData.alleleSeparator
+                        if (sampleData.allele2 == '0') {
+                            variant += entry.reference
+                            variantFormat += 'R'
+                        } else {
+                            if (!allele2.is(null)) {
+                                variant += entry.alternatives[allele2 - 1]
+                                variantFormat += 'V'
+                            }
+                        }
+                        reference = (allele1.is(null) || allele1 == 0) && (allele2.is(null) || allele2 == 0)
+                        st.addBatch([trialId, sampleEntry.key, entry.probesetId, entry.chromosome, entry.chromosomePosition,
+                                     variant, variantFormat, variantType,
+                                     reference, allele1, allele2
+                        ])
+                    }
+                }
             }
         }
     }

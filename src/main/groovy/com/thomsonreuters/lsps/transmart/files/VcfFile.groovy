@@ -5,24 +5,34 @@ package com.thomsonreuters.lsps.transmart.files
  */
 @Mixin(MetaInfoHeader)
 class VcfFile extends CsvLikeFile {
-    private Entry currentEntry = new Entry();
-    private String[] _samples;
+    private Entry currentEntry = new Entry()
+    private String[] _samples
+    private int formatColumnIndex
+    private int firstSampleIndex
 
     VcfFile(File file) {
         super(file, '##')
     }
 
-    static class Entry {
+    static class SampleData {
+        String allele1
+        String allele2
+        String alleleSeparator
+    }
+
+    class Entry {
         private String[] data
-        private Map calls
+        private Map samplesData
+        private String[] alternatives
 
         void setData(data) {
             this.data = data
-            this.calls = null
+            this.samplesData = null
+            this.alternatives = (~/,/).split(data[4])
         }
 
-        int getChromosome() {
-            data[0] as int
+        CharSequence getChromosome() {
+            data[0]
         }
 
         long getChromosomePosition() {
@@ -33,21 +43,49 @@ class VcfFile extends CsvLikeFile {
             data[2]
         }
 
-        private Map buildCalls() {
-            return [:]
+        String getReference() {
+            data[3]
         }
 
-        Map getCalls() {
-            calls ?: (calls = buildCalls())
+        String[] getAlternatives() {
+            alternatives
+        }
+
+        private Map buildSamplesData() {
+            Map samplesData = [:]
+            int gtIndex = data[formatColumnIndex].split(':').toList().indexOf('GT')
+            VcfFile.this.samples.eachWithIndex { sample, idx ->
+                CharSequence[] parts = data[firstSampleIndex + idx].split(':')
+                SampleData sampleData = new SampleData()
+                if (gtIndex != -1) {
+                    def matches = parts[gtIndex] =~ /(.+)([\/|])(.+)/
+                    if (matches) {
+                        sampleData.allele1 = matches[0][1]
+                        sampleData.alleleSeparator = matches[0][2]
+                        sampleData.allele2 = matches[0][3]
+                    }
+                }
+                samplesData[sample] = sampleData
+            }
+            samplesData
+        }
+
+        Map getSamplesData() {
+            samplesData ?: (samplesData = buildSamplesData())
         }
     }
 
+    @Override
+    protected void prepare() {
+        super.prepare()
+        formatColumnIndex = header.findIndexOf('FORMAT'.&equals)
+        if (formatColumnIndex == -1) throw new UnsupportedOperationException("Column FORMAT was not found in VCF file")
+        firstSampleIndex = formatColumnIndex + 1
+        _samples = header[firstSampleIndex..-1]
+    }
+
     String[] getSamples() {
-        if (!_samples) {
-            int formatColumnIndex = header.findIndexOf('FORMAT'.&equals)
-            if (formatColumnIndex == -1) throw new UnsupportedOperationException("Column FORMAT was not found in VCF file")
-            _samples = header[formatColumnIndex + 1..-1]
-        }
+        prepareIfRequired()
         return _samples
     }
 

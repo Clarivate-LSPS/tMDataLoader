@@ -13,6 +13,7 @@ class CsvLikeFile {
     private List<String> header
     private List<String> headComments
     private final Pattern separator = Pattern.compile('\t')
+    private boolean prepared
 
     CsvLikeFile(File file, String lineComment) {
         this.file = file
@@ -42,7 +43,18 @@ class CsvLikeFile {
         separator.split(line, -1)
     }
 
+    protected final void prepareIfRequired() {
+        if (!prepared) {
+            prepare()
+            prepared = true
+        }
+    }
+
+    protected void prepare() {
+    }
+
     def <T> T eachEntry(Closure<T> processEntry) {
+        prepareIfRequired()
         boolean headerSkipped = false
         file.eachLine { line ->
             if (line.isEmpty() || line.startsWith(lineComment)) {
