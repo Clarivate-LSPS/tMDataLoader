@@ -30,4 +30,11 @@ class SqlMethods {
         firstRow("select * from ${tableName} where ${columns.collect { "${it}=?" }.join(' and ')}",
                 columns.collect { prepareValue(attrs[it]) })
     }
+
+    def insertRecord(Map<CharSequence, Object> attrs, CharSequence tableName) {
+        def columns = attrs.keySet()
+        def values = columns.collect { column -> prepareValue(attrs[column]) }
+        executeInsert("insert into ${tableName}(${columns.join(',')}) values (${(['?'] * columns.size()).join(',')})",
+                values)
+    }
 }
