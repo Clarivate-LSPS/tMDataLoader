@@ -25,16 +25,25 @@ class SqlMethods {
         call("{call ${procedureName}(${(['?'] * params.size()).join(',')})}", params.collect { prepareValue(it) })
     }
 
+    private static String buildInsertCommand(CharSequence tableName, Collection<CharSequence> columns) {
+        "insert into ${tableName}(${columns.join(',')}) values (${(['?'] * columns.size()).join(',')})"
+    }
+
     GroovyRowResult findRecord(Map<CharSequence, Object> attrs, CharSequence tableName) {
         def columns = attrs.keySet()
         firstRow("select * from ${tableName} where ${columns.collect { "${it}=?" }.join(' and ')}",
                 columns.collect { prepareValue(attrs[it]) })
     }
 
+    def insertRecords(CharSequence tableName, List<CharSequence> columns, Closure block) {
+        withBatch(buildInsertCommand(tableName, columns.toList())) { st->
+            block.call(st)
+        }
+    }
+
     def insertRecord(Map<CharSequence, Object> attrs, CharSequence tableName) {
         def columns = attrs.keySet()
         def values = columns.collect { column -> prepareValue(attrs[column]) }
-        executeInsert("insert into ${tableName}(${columns.join(',')}) values (${(['?'] * columns.size()).join(',')})",
-                values)
+        executeInsert(buildInsertCommand(tableName, columns), values)
     }
 }
