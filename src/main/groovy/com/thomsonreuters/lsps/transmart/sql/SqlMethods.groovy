@@ -3,12 +3,17 @@ package com.thomsonreuters.lsps.transmart.sql
 import groovy.sql.GroovyRowResult
 import groovy.sql.Sql
 
+import java.sql.Types
+
 /**
  * Created by bondarev on 4/7/14.
  */
 @Category(Sql)
 class SqlMethods {
     private static Object prepareValue(Object value) {
+        if (value.is(null)) {
+            return Types.NULL
+        }
         switch (value.class) {
             case GString:
                 return value as String
@@ -30,13 +35,21 @@ class SqlMethods {
     }
 
     GroovyRowResult findRecord(Map<CharSequence, Object> attrs, CharSequence tableName) {
-        def columns = attrs.keySet()
-        firstRow("select * from ${tableName} where ${columns.collect { "${it}=?" }.join(' and ')}",
-                columns.collect { prepareValue(attrs[it]) })
+        List<String> conditions = []
+        List<Object> values = []
+        attrs.entrySet().each {
+            if (!it.value.is(null)) {
+                conditions << "${it.key}=?"
+                values << prepareValue(it.value)
+            } else {
+                conditions << "${it.key} is null"
+            }
+        }
+        firstRow("select * from ${tableName} where ${conditions.join(' and ')}", values)
     }
 
     def insertRecords(CharSequence tableName, Collection<CharSequence> columns, Closure block) {
-        withBatch(buildInsertCommand(tableName, columns)) { st->
+        withBatch(buildInsertCommand(tableName, columns)) { st ->
             block.call(st)
         }
     }
