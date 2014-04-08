@@ -87,20 +87,10 @@ class SNPDataProcessor extends DataProcessor {
     }
 
     private void loadFileToTable(Sql sql, File f, String table, columns, Closure prepareEntry = Closure.IDENTITY) {
-        String insertCommand = "insert into ${table}(${columns.join(',')}) values (${columns.collect { '?' }.join(',')})"
-        long lineNum = 0
-        sql.withBatch(500, insertCommand) { stmt ->
-            f.splitEachLine('\t') { entry ->
-                lineNum++
-                if (lineNum <= 1) {
-                    return
-                }
-                config.logger.log(LogType.PROGRESS, "[${lineNum}]")
-                stmt.addBatch(prepareEntry(entry))
-            }
+        new CsvFileLoader(sql, table, columns).with { loader->
+            loader.logger = config.logger
+            loader.loadFile(f, prepareEntry)
         }
-        config.logger.log(LogType.PROGRESS, '')
-        sql.commit()
     }
 
     @Override
