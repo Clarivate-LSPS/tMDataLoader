@@ -35,8 +35,8 @@ class SqlMethods {
                 columns.collect { prepareValue(attrs[it]) })
     }
 
-    def insertRecords(CharSequence tableName, List<CharSequence> columns, Closure block) {
-        withBatch(buildInsertCommand(tableName, columns.toList())) { st->
+    def insertRecords(CharSequence tableName, Collection<CharSequence> columns, Closure block) {
+        withBatch(buildInsertCommand(tableName, columns)) { st->
             block.call(st)
         }
     }
