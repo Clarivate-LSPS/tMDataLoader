@@ -31,10 +31,10 @@ class DeleteOperationTestCase extends ConfigAwareTestCase {
         _processorLoadClinical ?: (_processorLoadClinical = new ClinicalDataProcessor(config))
     }
 
-    String studyName = 'TestSample'
+    String studyName = 'Test Study'
     String studyId = 'GSE0'
-    String studyNameSNP = 'Q4_SNP'
-    String studyNameClinical = 'ClinicalSample'
+    String studyNameSNP = 'Test Study'
+    String studyNameClinical = 'Test Study'
 
     void assertThatDataDeleted(inpData, boolean isDelete) {
         String fullName = inpData['path'].toString();
@@ -73,7 +73,7 @@ class DeleteOperationTestCase extends ConfigAwareTestCase {
      */
     void testItDeleteDataById() {
         processorLoad.process(
-                new File("fixtures/Public Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
+                new File("fixtures/Test Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
         assertThat(sql, hasSample(studyId, 'TST1000000719'))
         def inpData = ['id'  : studyId,
@@ -91,7 +91,7 @@ class DeleteOperationTestCase extends ConfigAwareTestCase {
      */
     void testItDeleteDataByName() {
         processorLoad.process(
-                new File("fixtures/Public Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
+                new File("fixtures/Test Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
         assertThat(sql, hasSample(studyId, 'TST1000000719'))
         def inpData = ['id'  : null,
@@ -109,7 +109,7 @@ class DeleteOperationTestCase extends ConfigAwareTestCase {
      */
     void testItDeleteDataByIdAndName() {
         processorLoad.process(
-                new File("fixtures/Public Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
+                new File("fixtures/Test Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
         assertThat(sql, hasSample(studyId, 'TST1000000719'))
         def inpData = ['id'  : studyId,
@@ -124,7 +124,7 @@ class DeleteOperationTestCase extends ConfigAwareTestCase {
 
     void testIdDeleteTopNode(){
         processorLoad.process(
-                new File("fixtures/Public Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
+                new File("fixtures/Test Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
         assertThat(sql, hasSample(studyId, 'TST1000000719'))
         def inpData = ['id'  : studyId,
@@ -136,10 +136,10 @@ class DeleteOperationTestCase extends ConfigAwareTestCase {
 
     void testIdNotDeleteTopNode(){
         processorLoad.process(
-                new File("fixtures/Public Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
+                new File("fixtures/Test Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
                 [name: studyName, node: "Test Studies\\${studyName}_1".toString()])
         processorLoad.process(
-                new File("fixtures/Public Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
+                new File("fixtures/Test Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
                 [name: studyName, node: "Test Studies\\${studyName}_2".toString()])
         assertThat(sql, hasSample(studyId, 'TST1000000719'))
         def inpData = ['id'  : studyId,
@@ -157,22 +157,22 @@ class DeleteOperationTestCase extends ConfigAwareTestCase {
 
     void testItDeleteSNPData(){
         processorLoadSNP.process(
-                new File("fixtures/Public Studies/${studyNameSNP}_${studyId}/SNPDataToUpload"),
-                [name: studyName, node: "Test Studies_1\\${studyNameSNP}".toString()])
+                new File("fixtures/Test Studies/${studyNameSNP}_${studyId}/SNPDataToUpload"),
+                [name: studyName, node: "\\Test Studies\\${studyNameSNP}".toString()])
         def inpData = ['id'  : studyId,
-                'path': "\\Test Studies_1\\${studyNameSNP}\\SNP\\"];
+                'path': "\\Test Studies\\${studyNameSNP}\\SNP\\"];
         processorDelete.process(inpData);
 
 
-        assertThatTopNodeDelete("\\Test Studies_1\\", true);
+        assertThatTopNodeDelete("\\Test Studies\\Test Studies_1\\", true);
     }
 
     void testItDeleteSubNode(){
         processorLoad.process(
-                new File("fixtures/Public Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
+                new File("fixtures/Test Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
         processorLoadSNP.process(
-                new File("fixtures/Public Studies/${studyNameSNP}_${studyId}/SNPDataToUpload"),
+                new File("fixtures/Test Studies/${studyNameSNP}_${studyId}/SNPDataToUpload"),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
 
         def inpData = ['id'  : studyId,
@@ -187,8 +187,8 @@ class DeleteOperationTestCase extends ConfigAwareTestCase {
         String conceptPathForPatient = conceptPath + "Biomarker Data\\Mutations\\TST001 (Entrez ID: 1956)\\AA mutation\\"
 
         processorLoadClinical.process(
-                new File("fixtures/Public Studies/${studyNameClinical}_${studyId}/ClinicalDataToUpload"),
-                [name: studyNameClinical, node: "Test Studies\\${studyNameClinical}".toString()])
+                new File("fixtures/Test Studies/${studyNameClinical}_${studyId}/ClinicalDataToUpload"),
+                [name: studyNameClinical, node: "\\Test Studies\\${studyNameClinical}\\".toString()])
 
         def inpData = ['id'  : null,
                 'path': "\\Test Studies\\${studyNameClinical}\\"];
@@ -202,7 +202,7 @@ class DeleteOperationTestCase extends ConfigAwareTestCase {
         String conceptPathForPatient = conceptPath + "Biomarker Data\\Mutations\\TST001 (Entrez ID: 1956)\\AA mutation\\"
 
         processorLoadClinical.process(
-                new File("fixtures/Public Studies/${studyNameClinical}_${studyId}/ClinicalDataToUpload"),
+                new File("fixtures/Test Studies/${studyNameClinical}_${studyId}/ClinicalDataToUpload"),
                 [name: studyNameClinical, node: "Test Studies\\${studyNameClinical}".toString()])
 
         def inpData = ['id'  : null,
