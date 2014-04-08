@@ -71,6 +71,15 @@ BEGIN
 	  return res;
 	end if;
 
+	update deapp.de_variant_subject_summary v
+	set assay_id = sm.assay_id
+	from deapp.de_subject_sample_mapping sm
+	where sm.trial_name = TrialID and sm.sample_cd = v.subject_id;
+
+  get diagnostics rowCt := ROW_COUNT;
+	stepCt := stepCt + 1;
+	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Associate deapp.de_subject_sample_mapping with deapp.de_variant_subject_summary',rowCt,stepCt,'Done') into rtnCd;
+
 	stepCt := stepCt + 1;
 	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'End i2b2_process_vcf_data',0,stepCt,'Done') into rtnCd;
 

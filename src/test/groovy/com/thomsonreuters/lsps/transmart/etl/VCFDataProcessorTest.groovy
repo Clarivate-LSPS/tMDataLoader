@@ -1,11 +1,13 @@
 package com.thomsonreuters.lsps.transmart.etl
 
 import com.thomsonreuters.lsps.transmart.Fixtures
+import com.thomsonreuters.lsps.transmart.sql.SqlMethods
 
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasNode
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasPatient
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasRecord
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasSample
+import static org.hamcrest.CoreMatchers.equalTo
 import static org.junit.Assert.assertThat
 
 /**
@@ -42,6 +44,16 @@ class VCFDataProcessorTest extends ConfigAwareTestCase {
         cal
     }
 
+    void assertSampleAssociated(CharSequence sampleId, CharSequence probesetId) {
+        use(SqlMethods) {
+            def variant = db.findRecord('deapp.de_variant_subject_summary',
+                    dataset_id: studyId, subject_id: sampleId, rs_id: probesetId)
+            def sample = db.findRecord('deapp.de_subject_sample_mapping',
+                    trial_name: studyId, sample_cd: sampleId)
+            assertThat(variant.assay_id, equalTo(sample.assay_id))
+        }
+    }
+
     void testItLoadsVCFFileWithSNVData() {
         assertTrue(dataProcessor.process(Fixtures.vcfData, [name: studyName, node: $/Test Studies\${studyName}/$]))
         assertThat(db, hasSample(studyId, 'VCF_TST001', platform: 'VCF'))
@@ -59,6 +71,7 @@ class VCFDataProcessorTest extends ConfigAwareTestCase {
         //FIXME: samples for '/' & no separator
         //FIXME: check for allele eq to .
         //FIXME: check for multiple alternatives
+        //FIXME: check for missing GT format
         assertThat(db, hasRecord('deapp.de_variant_subject_summary', dataset_id: studyId, subject_id: 'VCF_TST001',
                 chr: '22', pos: 16050408, rs_id: 'rs149201999', variant_type: 'SNV',
                 reference: true, variant: 'T|T', variant_format: 'R|R', allele1: 0, allele2: 0))
@@ -71,5 +84,9 @@ class VCFDataProcessorTest extends ConfigAwareTestCase {
         assertThat(db, hasRecord('deapp.de_variant_subject_summary', dataset_id: studyId, subject_id: 'VCF_TST002',
                 chr: '22', pos: 16050612, rs_id: 'rs146752890', variant_type: 'SNV',
                 reference: true, variant: '/C', variant_format: '/R', allele1: null, allele2: 0))
+        assertSampleAssociated('VCF_TST001', 'rs149201999')
+        assertSampleAssociated('VCF_TST001', 'rs146752890')
+        assertSampleAssociated('VCF_TST002', 'rs149201999')
+        assertSampleAssociated('VCF_TST002', 'rs146752890')
     }
 }
