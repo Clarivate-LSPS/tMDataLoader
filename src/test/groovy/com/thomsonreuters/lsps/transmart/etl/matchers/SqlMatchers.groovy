@@ -15,4 +15,8 @@ class SqlMatchers {
     public static HasSample hasSample(Map<String, Object> props = [:], String studyId, String sampleId) {
         return new HasSample(props, studyId, sampleId)
     }
+
+    public static HasRecord hasRecord(Map<CharSequence, Object> attrs = [:], CharSequence tableName) {
+        return new HasRecord(attrs, tableName)
+    }
 }
