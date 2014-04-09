@@ -15,7 +15,7 @@ class DataLoader {
     DataLoader(Database database, CharSequence tableName, Collection<CharSequence> columnNames) {
         this.database = database
         this.tableName = tableName
-        this.columnNames = columnNames
+        this.columnNames = columnNames.collect { "\"${it}\"" }
     }
 
     static def start(Database database, CharSequence tableName, Collection<CharSequence> columnNames, Closure block) {
