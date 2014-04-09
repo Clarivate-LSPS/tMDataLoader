@@ -1,0 +1,67 @@
+#PLATFORM_ID: TST_SNP
+#PLATFORM_TITLE: Test SNP Platform
+#SPECIES: Homo Sapiens
+ID	GB_ACC	SPOT_ID	Species Scientific Name	Annotation Date	Sequence Type	Sequence Source	Target Description	Representative Public ID	Gene Title	Gene Symbol	ENTREZ_GENE_ID	RefSeq Transcript ID	Gene Ontology Biological Process	Gene Ontology Cellular Component	Gene Ontology Molecular Function
+AFFX-SNP_10037636			Homo sapiens												
+AFFX-SNP_12159798			Homo sapiens												
+CN_473963	ENST00000492842		Homo sapiens						---	---	---				
+CN_473964	ENST00000492842		Homo sapiens						---	---	---				
+CN_473965	ENST00000492842		Homo sapiens						---	---	---				
+CN_473981	ENST00000492842		Homo sapiens						---	---	---				
+SNP_A-4265338	ENST00000359162		Homo sapiens						estrogen-related receptor gamma	ESRRG	2104				
+SNP_A-1984209	ENST00000359162		Homo sapiens						estrogen-related receptor gamma	ESRRG	2104				
+SNP_A-1984210	ENST00000359162		Homo sapiens						estrogen-related receptor gamma	ESRRG	2104				
+SNP_A-8509054	ENST00000359162		Homo sapiens						estrogen-related receptor gamma	ESRRG	2104				
+SNP_A-1984211	ENST00000359162		Homo sapiens						estrogen-related receptor gamma	ESRRG	2104				
+CN_470485	ENST00000359162		Homo sapiens						estrogen-related receptor gamma	ESRRG	2104				
+SNP_A-1984212	ENST00000359162		Homo sapiens						estrogen-related receptor gamma	ESRRG	2104	
+SNP_A-4265340	ENST00000359162		Homo sapiens						estrogen-related receptor gamma	ESRRG	2104				
+SNP_A-4265341	ENST00000359162		Homo sapiens						estrogen-related receptor gamma	ESRRG	2104				
+SNP_A-8388051	ENST00000359162		Homo sapiens						estrogen-related receptor gamma	ESRRG	2104				
+CN_858692	ENST00000417922		Homo sapiens						long intergenic non-protein coding RNA 607	LINC00607	646324				
+SNP_A-8697933	ENST00000359162		Homo sapiens						estrogen-related receptor gamma	ESRRG	2104				
+SNP_A-8352140	ENST00000359162		Homo sapiens						estrogen-related receptor gamma	ESRRG	2104	
+CN_470486	ENST00000359162		Homo sapiens						estrogen-related receptor gamma	ESRRG	2104				
+SNP_A-4303051	ENST00000417922		Homo sapiens						long intergenic non-protein coding RNA 607	LINC00607	646324				
+CN_470487	ENST00000359162		Homo sapiens						estrogen-related receptor gamma	ESRRG	2104	
+SNP_A-2212412	ENST00000359162		Homo sapiens						estrogen-related receptor gamma	ESRRG	2104				
+SNP_A-2176913	ENST00000359162		Homo sapiens						estrogen-related receptor gamma	ESRRG	2104				
+CN_473963	ENST00000492842		Homo sapiens						---	---	---				
+CN_473964	ENST00000492842		Homo sapiens						---	---	---				
+CN_473965	ENST00000492842		Homo sapiens						---	---	---				
+SNP_A-4265338	ENST00000359162		Homo sapiens						estrogen-related receptor gamma	ESRRG	2104				
+SNP_A-1984209	ENST00000359162		Homo sapiens						estrogen-related receptor gamma	ESRRG	2104				
+SNP_A-1984210	ENST00000359162		Homo sapiens						estrogen-related receptor gamma	ESRRG	2104				
+SNP_A-8509054	ENST00000359162		Homo sapiens						estrogen-related receptor gamma	ESRRG	2104				
+SNP_A-1984211	ENST00000359162		Homo sapiens						estrogen-related receptor gamma	ESRRG	2104				
+CN_470485	ENST00000359162		Homo sapiens						estrogen-related receptor gamma	ESRRG	2104				
+SNP_A-1984212	ENST00000359162		Homo sapiens						estrogen-related receptor gamma	ESRRG	2104				
+CN_858687	ENST00000417922		Homo sapiens						long intergenic non-protein coding RNA 607	LINC00607	646324				
+CN_858688	ENST00000417922		Homo sapiens						long intergenic non-protein coding RNA 607	LINC00607	646324				
+SNP_A-4265340	ENST00000359162		Homo sapiens						estrogen-related receptor gamma	ESRRG	2104				
+SNP_A-4265341	ENST00000359162		Homo sapiens						estrogen-related receptor gamma	ESRRG	2104				
+SNP_A-8388051	ENST00000359162		Homo sapiens						estrogen-related receptor gamma	ESRRG	2104				
+CN_858692	ENST00000417922		Homo sapiens						long intergenic non-protein coding RNA 607	LINC00607	646324				
+SNP_A-8697933	ENST00000359162		Homo sapiens						estrogen-related receptor gamma	ESRRG	2104				
+SNP_A-8352140	ENST00000359162		Homo sapiens						estrogen-related receptor gamma	ESRRG	2104				
+CN_470486	ENST00000359162		Homo sapiens						estrogen-related receptor gamma	ESRRG	2104				
+SNP_A-4303051	ENST00000417922		Homo sapiens						long intergenic non-protein coding RNA 607	LINC00607	646324				
+CN_470487	ENST00000359162		Homo sapiens						estrogen-related receptor gamma	ESRRG	2104				
+SNP_A-2212412	ENST00000359162		Homo sapiens						estrogen-related receptor gamma	ESRRG	2104				
+CN_473982	ENST00000492842		Homo sapiens						---	---	---				
+CN_497981	ENST00000335137		Homo sapiens						olfactory receptor, family 4, subfamily F, member 5	OR4F5	79501				
+CN_502615	ENST00000335137		Homo sapiens						olfactory receptor, family 4, subfamily F, member 5	OR4F5	79501				
+CN_502613	ENST00000335137		Homo sapiens						olfactory receptor, family 4, subfamily F, member 5	OR4F5	79501				
+CN_502614	ENST00000335137		Homo sapiens						olfactory receptor, family 4, subfamily F, member 5	OR4F5	79501				
+CN_502616	ENST00000335137		Homo sapiens						olfactory receptor, family 4, subfamily F, member 5	OR4F5	79501				
+CN_502843	ENST00000466430		Homo sapiens						Transcribed locus	---	---				
+CN_466171	ENST00000442116		Homo sapiens						Homo sapiens, clone IMAGE:4778855	---	---				
+CN_468414	ENST00000442116		Homo sapiens						Homo sapiens, clone IMAGE:4778855	---	---				
+CN_468412	ENST00000442116		Homo sapiens						Homo sapiens, clone IMAGE:4778855	---	---				
+CN_468413	ENST00000442116		Homo sapiens						Homo sapiens, clone IMAGE:4778855	---	---				
+CN_470565	ENST00000442116		Homo sapiens						Homo sapiens, clone IMAGE:4778855	---	---				
+CN_468424	ENST00000448958		Homo sapiens						Homo sapiens, clone IMAGE:4778855	---	---		
+CN_468425	ENST00000448958		Homo sapiens						Homo sapiens, clone IMAGE:4778855	---	---		
+CN_460512	ENST00000455207		Homo sapiens						uncharacterized LOC100287894	LOC100287894	100287894				
+CN_460513	ENST00000455207		Homo sapiens						uncharacterized LOC100287894	LOC100287894	100287894			
+

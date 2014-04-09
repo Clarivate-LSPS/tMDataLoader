@@ -1,27 +1,20 @@
-package com.thomsonreuters.lsps.transmart.etl;
+package com.thomsonreuters.lsps.transmart.etl
 
-import groovy.sql.Sql;
-import groovy.util.GroovyTestCase
-import org.junit.Ignore;
+import groovy.sql.Sql
+import org.junit.Assume
 
 /**
  * Created by bondarev on 3/28/14.
  */
-@Ignore
-public class ConfigAwareTestCase extends GroovyTestCase {
-    def connectionSettings = [
-            jdbcConnectionString: 'jdbc:oracle:thin:@localhost:1521:ORCL',
-            username            : 'tm_cz',
-            password            : 'tm_cz',
-            jdbcDriver          : 'oracle.jdbc.OracleDriver'
-    ]
+public abstract class ConfigAwareTestCase extends GroovyTestCase {
+    def connectionSettings
 
     @Override
     void setUp() {
         File testConfig = new File('test/TestConfig.groovy')
-        if (testConfig.exists()) {
-            connectionSettings = new ConfigSlurper().parse(testConfig.toURI().toURL()).db
-        }
+        Assume.assumeTrue("No database config was found. Please, copy test/TestConfig.groovy.sample " +
+                "to test/TestConfig.groovy and set-up your database connection", testConfig.exists())
+        connectionSettings = new ConfigSlurper().parse(testConfig.toURI().toURL()).db
     }
     private Sql _sql
 

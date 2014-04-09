@@ -96,6 +96,9 @@ You can run it with "-h" option to get a list of all available options:
         --data-value-first                Put VISIT NAME after the data value
                                           (default behavior, use to override
                                           non-standard config)
+        --force-start                     Force TM Data Loader start (even
+                                          if another instance is already
+                                          running)
      -h,--help                            Show usage information
      -i,--interactive                     Interactive (console) mode: progress
                                           bar
