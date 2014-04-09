@@ -99,5 +99,17 @@ class VCFDataProcessorTest extends ConfigAwareTestCase {
         // verify deapp.de_variant_population_info
         assertThat(db, hasRecord('deapp.de_variant_population_info', dataset_id: studyId,
                 info_name: 'LDAF', description: 'MLE Allele Frequency Accounting for LD', type: 'Float', number: 1))
+        // verify deapp.de_variant_population_data
+        //TODO: check for Flag info field type
+        //TODO: check for non-existent field
+        assertThat(db, hasRecord('deapp.de_variant_population_data', dataset_id: studyId,
+                chr: '22', pos:  16050408, info_name: 'LDAF', info_index: 0,
+                integer_value: null, float_value: 0.0649, text_value: null))
+        assertThat(db, hasRecord('deapp.de_variant_population_data', dataset_id: studyId,
+                chr: '22', pos:  16050408, info_name: 'AN', info_index: 0,
+                integer_value: 2184, float_value: null, text_value: null))
+        assertThat(db, hasRecord('deapp.de_variant_population_data', dataset_id: studyId,
+                chr: '22', pos:  16050408, info_name: 'VT', info_index: 0,
+                integer_value: null, float_value: null, text_value: 'SNP'))
     }
 }

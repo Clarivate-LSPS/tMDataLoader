@@ -74,24 +74,57 @@ class VCFDataProcessor extends DataProcessor {
 
             logger.log(LogType.DEBUG, 'Loading population info')
             DataLoader.start(database, 'deapp.de_variant_population_info',
-                    ['dataset_id', 'info_name', 'description', 'type', 'number']) { populationInfo->
+                    ['dataset_id', 'info_name', 'description', 'type', 'number']) { populationInfo ->
                 vcfFile.infoFields.values().each {
                     populationInfo.addBatch([trialId, it.id, it.description, it.type, it.number])
                 }
             }
 
-            logger.log(LogType.DEBUG, 'Loading subject summary & detail')
+            logger.log(LogType.DEBUG, 'Loading subject summary, subject detail & population data')
             DataLoader.start(database, 'deapp.de_variant_subject_detail',
                     ['dataset_id', 'rs_id', 'chr', 'pos', 'ref', 'alt', 'qual',
                      'filter', 'info', 'format', 'variant_value']) { subjectDetail ->
                 DataLoader.start(database, 'deapp.de_variant_subject_summary',
                         ['dataset_id', 'subject_id', 'rs_id', 'chr', 'pos', 'variant', 'variant_format', 'variant_type',
                          'reference', 'allele1', 'allele2']) { subjectSummary ->
-                    vcfFile.eachEntry { VcfFile.Entry entry ->
-                        writeVariantSubjectDetailRecord(trialId, subjectDetail, entry)
-                        writeVariantSubjectSummaryRecords(trialId, subjectSummary, entry)
+                    DataLoader.start(database, 'deapp.de_variant_population_data',
+                            ['dataset_id', 'chr', 'pos', 'info_name', 'info_index',
+                             'integer_value', 'float_value', 'text_value']) { populationData ->
+                        vcfFile.eachEntry { VcfFile.Entry entry ->
+                            writeVariantSubjectDetailRecord(trialId, subjectDetail, entry)
+                            writeVariantSubjectSummaryRecords(trialId, subjectSummary, entry)
+                            writeVariantPopulationDataRecord(trialId, populationData, entry)
+                        }
                     }
                 }
+            }
+        }
+    }
+
+    private void writeVariantPopulationDataRecord(String trialId, st, VcfFile.Entry entry) {
+        entry.infoData.entrySet().each {
+            VcfFile.InfoField infoField = it.key
+            Object[] values = it.value
+            String type = infoField.type.toLowerCase()
+            Integer intValue
+            Float floatValue
+            String textValue
+            values.eachWithIndex { value, int idx ->
+                switch (type) {
+                    case 'integer':
+                    case 'flag':
+                        intValue = value as int
+                        break
+                    case 'float':
+                        floatValue = value as float
+                        break
+                    case 'character':
+                    case 'string':
+                        textValue = value as String
+                        break
+                }
+                st.addBatch([trialId, entry.chromosome, entry.chromosomePosition, infoField.id,
+                             idx, intValue, floatValue, textValue])
             }
         }
     }

@@ -30,6 +30,7 @@ class VcfFile extends CsvLikeFile {
     class Entry {
         private String[] data
         private Map samplesData
+        private Map<InfoField, Object[]> infoData
         private String[] alternatives
 
         void setData(data) {
@@ -82,6 +83,14 @@ class VcfFile extends CsvLikeFile {
             alternatives
         }
 
+        Map<CharSequence, SampleData> getSamplesData() {
+            samplesData ?: (samplesData = buildSamplesData())
+        }
+
+        Map<InfoField, Object> getInfoData() {
+            infoData ?: (infoData = buildInfoData())
+        }
+
         private Map<CharSequence, SampleData> buildSamplesData() {
             Map<CharSequence, SampleData> samplesData = [:]
             int gtIndex = formatString.split(':').toList().indexOf('GT')
@@ -101,8 +110,11 @@ class VcfFile extends CsvLikeFile {
             samplesData
         }
 
-        Map<CharSequence, SampleData> getSamplesData() {
-            samplesData ?: (samplesData = buildSamplesData())
+        private Map<InfoField, Object[]> buildInfoData() {
+            infoString.split(';').collectEntries {
+                def parts = it.split('=')
+                [infoFields[parts[0]], parts[1].split(',')]
+            }
         }
     }
 
