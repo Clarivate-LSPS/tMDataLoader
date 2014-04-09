@@ -64,7 +64,7 @@ class VCFDataProcessor extends DataProcessor {
         String trialId = studyInfo.id
         logger.log(LogType.MESSAGE, "Processing file ${inputFile.getName()}")
         use(SqlMethods) {
-            DataLoader.start(database, 'deapp.de_variant_subject_idx', ['dataset_id', 'subject_id', 'position']) { st ->
+            DataLoader.start(database, 'deapp.de_variant_subject_idx', ['DATASET_ID', 'SUBJECT_ID', 'POSITION']) { st ->
                 vcfFile.samples.eachWithIndex { sample, idx ->
                     logger.log(LogType.DEBUG, 'Loading samples')
                     st.addBatch([trialId, sample, idx + 1])
@@ -74,7 +74,7 @@ class VCFDataProcessor extends DataProcessor {
 
             logger.log(LogType.DEBUG, 'Loading population info')
             DataLoader.start(database, 'deapp.de_variant_population_info',
-                    ['dataset_id', 'info_name', 'description', 'type', 'number']) { populationInfo ->
+                    ['DATASET_ID', 'INFO_NAME', 'DESCRIPTION', 'type', 'number']) { populationInfo ->
                 vcfFile.infoFields.values().each {
                     populationInfo.addBatch([trialId, it.id, it.description, it.type, it.number])
                 }
@@ -82,14 +82,14 @@ class VCFDataProcessor extends DataProcessor {
 
             logger.log(LogType.DEBUG, 'Loading subject summary, subject detail & population data')
             DataLoader.start(database, 'deapp.de_variant_subject_detail',
-                    ['dataset_id', 'rs_id', 'chr', 'pos', 'ref', 'alt', 'qual',
-                     'filter', 'info', 'format', 'variant_value']) { subjectDetail ->
+                    ['DATASET_ID', 'RS_ID', 'CHR', 'POS', 'REF', 'ALT', 'QUAL',
+                     'FILTER', 'INFO', 'FORMAT', 'VARIANT_VALUE']) { subjectDetail ->
                 DataLoader.start(database, 'deapp.de_variant_subject_summary',
-                        ['dataset_id', 'subject_id', 'rs_id', 'chr', 'pos', 'variant', 'variant_format', 'variant_type',
-                         'reference', 'allele1', 'allele2']) { subjectSummary ->
+                        ['DATASET_ID', 'SUBJECT_ID', 'RS_ID', 'CHR', 'POS', 'VARIANT', 'VARIANT_FORMAT', 'VARIANT_TYPE',
+                         'REFERENCE', 'ALLELE1', 'ALLELE2']) { subjectSummary ->
                     DataLoader.start(database, 'deapp.de_variant_population_data',
-                            ['dataset_id', 'chr', 'pos', 'info_name', 'info_index',
-                             'integer_value', 'float_value', 'text_value']) { populationData ->
+                            ['DATASET_ID', 'CHR', 'POS', 'INFO_NAME', 'INFO_INDEX',
+                             'INTEGER_VALUE', 'FLOAT_VALUE', 'TEXT_VALUE']) { populationData ->
                         vcfFile.eachEntry { VcfFile.Entry entry ->
                             writeVariantSubjectDetailRecord(trialId, subjectDetail, entry)
                             writeVariantSubjectSummaryRecords(trialId, subjectSummary, entry)
