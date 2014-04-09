@@ -228,7 +228,7 @@ BEGIN
 	,title
 	)
 	select distinct a.category_cd
-				   ,nvl(a.platform,'GPL570')
+				   ,nvl(a.platform,'')
 				   ,nvl(a.tissue_type,'Unspecified Tissue Type')
 	               ,a.attribute_1
 				   ,a.attribute_2
@@ -482,7 +482,7 @@ BEGIN
 			  ,'VCF' as platform
 			  ,pn.concept_cd as platform_cd
 			  ,ln.concept_cd || '-' || to_char(b.patient_num) as data_uid
-			  ,a.platform as gpl_id
+			  ,nvl(a.platform,'') as gpl_id
 			  ,coalesce(sid.patient_num,b.patient_num) as sample_id
 			  ,a.sample_cd
 			  ,nvl(a.category_cd,'Biomarker_Data+Gene_Expression+PLATFORM+TISSUETYPE+ATTR1+ATTR2') as category_cd
