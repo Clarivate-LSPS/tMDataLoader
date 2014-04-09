@@ -7,7 +7,6 @@ package com.thomsonreuters.lsps.transmart.files
 class VcfFile extends CsvLikeFile {
     private Entry currentEntry = new Entry()
     private String[] _samples
-    private int formatColumnIndex
     private int firstSampleIndex
 
     VcfFile(File file) {
@@ -28,7 +27,7 @@ class VcfFile extends CsvLikeFile {
         void setData(data) {
             this.data = data
             this.samplesData = null
-            this.alternatives = (~/,/).split(data[4])
+            this.alternatives = (~/,/).split(alternativesString)
         }
 
         CharSequence getChromosome() {
@@ -47,13 +46,37 @@ class VcfFile extends CsvLikeFile {
             data[3]
         }
 
+        String getAlternativesString() {
+            data[4]
+        }
+
+        String getQual() {
+            data[5]
+        }
+
+        String getFilter() {
+            data[6]
+        }
+
+        String getInfoString() {
+            data[7]
+        }
+
+        String getFormatString() {
+            data[8]
+        }
+
+        String[] getSampleValues() {
+            data[firstSampleIndex..-1]
+        }
+
         String[] getAlternatives() {
             alternatives
         }
 
-        private Map buildSamplesData() {
-            Map samplesData = [:]
-            int gtIndex = data[formatColumnIndex].split(':').toList().indexOf('GT')
+        private Map<CharSequence, SampleData> buildSamplesData() {
+            Map<CharSequence, SampleData> samplesData = [:]
+            int gtIndex = formatString.split(':').toList().indexOf('GT')
             VcfFile.this.samples.eachWithIndex { sample, idx ->
                 CharSequence[] parts = data[firstSampleIndex + idx].split(':')
                 SampleData sampleData = new SampleData()
@@ -70,7 +93,7 @@ class VcfFile extends CsvLikeFile {
             samplesData
         }
 
-        Map getSamplesData() {
+        Map<CharSequence, SampleData> getSamplesData() {
             samplesData ?: (samplesData = buildSamplesData())
         }
     }
@@ -78,7 +101,7 @@ class VcfFile extends CsvLikeFile {
     @Override
     protected void prepare() {
         super.prepare()
-        formatColumnIndex = header.findIndexOf('FORMAT'.&equals)
+        int formatColumnIndex = header.findIndexOf('FORMAT'.&equals)
         if (formatColumnIndex == -1) throw new UnsupportedOperationException("Column FORMAT was not found in VCF file")
         firstSampleIndex = formatColumnIndex + 1
         _samples = header[firstSampleIndex..-1]

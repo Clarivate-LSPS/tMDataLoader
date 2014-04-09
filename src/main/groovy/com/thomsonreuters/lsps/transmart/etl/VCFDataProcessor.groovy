@@ -72,49 +72,64 @@ class VCFDataProcessor extends DataProcessor {
                 }
             }
 
-            DataLoader.start(database, 'deapp.de_variant_subject_summary',
-                    ['dataset_id', 'subject_id', 'rs_id', 'chr', 'pos',
-                     'variant', 'variant_format', 'variant_type',
-                     'reference', 'allele1', 'allele2']) { st ->
-                vcfFile.eachEntry { VcfFile.Entry entry ->
-                    CharSequence variantType = entry.reference.size() == 1 &&
-                            entry.alternatives.size() == 1 && entry.alternatives[0].size() == 1 ? 'SNV' : 'DIV'
-                    entry.samplesData.entrySet().each { sampleEntry ->
-                        VcfFile.SampleData sampleData = sampleEntry.value
-                        CharSequence variant = ''
-                        CharSequence variantFormat = ''
-                        Integer allele1 = sampleData.allele1 != '.' ? sampleData.allele1 as int : null
-                        Integer allele2 = sampleData.allele2 != '.' ? sampleData.allele2 as int : null
-                        boolean reference = false
-                        if (sampleData.allele1 == '0') {
-                            variant += entry.reference
-                            variantFormat += 'R'
-                        } else {
-                            if (!allele1.is(null)) {
-                                variant += entry.alternatives[allele1 - 1]
-                                variantFormat += 'V'
-                            }
-                        }
-                        variant += sampleData.alleleSeparator
-                        variantFormat += sampleData.alleleSeparator
-                        if (sampleData.allele2 == '0') {
-                            variant += entry.reference
-                            variantFormat += 'R'
-                        } else {
-                            if (!allele2.is(null)) {
-                                variant += entry.alternatives[allele2 - 1]
-                                variantFormat += 'V'
-                            }
-                        }
-                        reference = (allele1.is(null) || allele1 == 0) && (allele2.is(null) || allele2 == 0)
-                        st.addBatch([trialId, sampleEntry.key, entry.probesetId, entry.chromosome, entry.chromosomePosition,
-                                     variant, variantFormat, variantType,
-                                     reference, allele1, allele2
-                        ])
+            DataLoader.start(database, 'deapp.de_variant_subject_detail',
+                    ['dataset_id', 'rs_id', 'chr', 'pos', 'ref', 'alt', 'qual',
+                     'filter', 'info', 'format', 'variant_value']) { subjectDetail ->
+                DataLoader.start(database, 'deapp.de_variant_subject_summary',
+                        ['dataset_id', 'subject_id', 'rs_id', 'chr', 'pos', 'variant', 'variant_format', 'variant_type',
+                         'reference', 'allele1', 'allele2']) { subjectSummary ->
+                    vcfFile.eachEntry { VcfFile.Entry entry ->
+                        writeVariantSubjectDetailRecord(trialId, subjectDetail, entry)
+                        writeVariantSubjectSummaryRecords(trialId, subjectSummary, entry)
                     }
                 }
             }
         }
+    }
+
+    private void writeVariantSubjectSummaryRecords(String trialId, st, VcfFile.Entry entry) {
+        CharSequence variantType = entry.reference.size() == 1 &&
+                entry.alternatives.size() == 1 && entry.alternatives[0].size() == 1 ? 'SNV' : 'DIV'
+        entry.samplesData.entrySet().each { sampleEntry ->
+            VcfFile.SampleData sampleData = sampleEntry.value
+            CharSequence variant = ''
+            CharSequence variantFormat = ''
+            Integer allele1 = sampleData.allele1 != '.' ? sampleData.allele1 as int : null
+            Integer allele2 = sampleData.allele2 != '.' ? sampleData.allele2 as int : null
+            if (sampleData.allele1 == '0') {
+                variant += entry.reference
+                variantFormat += 'R'
+            } else {
+                if (!allele1.is(null)) {
+                    variant += entry.alternatives[allele1 - 1]
+                    variantFormat += 'V'
+                }
+            }
+            variant += sampleData.alleleSeparator
+            variantFormat += sampleData.alleleSeparator
+            if (sampleData.allele2 == '0') {
+                variant += entry.reference
+                variantFormat += 'R'
+            } else {
+                if (!allele2.is(null)) {
+                    variant += entry.alternatives[allele2 - 1]
+                    variantFormat += 'V'
+                }
+            }
+            boolean reference = (allele1.is(null) || allele1 == 0) && (allele2.is(null) || allele2 == 0)
+            st.addBatch([trialId, sampleEntry.key, entry.probesetId, entry.chromosome, entry.chromosomePosition,
+                         variant, variantFormat, variantType,
+                         reference, allele1, allele2
+            ])
+        }
+    }
+
+    private def writeVariantSubjectDetailRecord(CharSequence trialId, def st, VcfFile.Entry entry) {
+        st.addBatch([
+                trialId, entry.probesetId, entry.chromosome, entry.chromosomePosition, entry.reference,
+                entry.alternatives.join(','), entry.qual, entry.filter, entry.infoString, entry.formatString,
+                entry.sampleValues.join('\t')
+        ])
     }
 
     @Override
