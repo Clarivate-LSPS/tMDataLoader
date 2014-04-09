@@ -25,6 +25,7 @@ class VCFDataProcessorTest extends ConfigAwareTestCase {
         sql.execute('delete from i2b2demodata.observation_fact where modifier_cd = ?', studyId)
         sql.execute('delete from deapp.de_subject_sample_mapping where trial_name = ?', studyId)
         sql.execute('delete from deapp.de_variant_subject_summary where dataset_id = ?', studyId)
+        sql.execute('delete from deapp.de_variant_subject_detail where dataset_id = ?', studyId)
         sql.execute('delete from deapp.de_variant_subject_idx where dataset_id = ?', studyId)
         sql.execute('delete from deapp.de_variant_dataset where dataset_id = ?', studyId)
     }
@@ -68,10 +69,10 @@ class VCFDataProcessorTest extends ConfigAwareTestCase {
         assertThat(db, hasRecord('deapp.de_variant_subject_idx', dataset_id: studyId, subject_id: 'VCF_TST001', position: 1))
         assertThat(db, hasRecord('deapp.de_variant_subject_idx', dataset_id: studyId, subject_id: 'VCF_TST002', position: 2))
         // verify deapp.de_variant_subject_summary
-        //FIXME: samples for '/' & no separator
-        //FIXME: check for allele eq to .
-        //FIXME: check for multiple alternatives
-        //FIXME: check for missing GT format
+        //TODO: samples for '/' & no separator
+        //TODO: check for allele eq to .
+        //TODO: check for multiple alternatives
+        //TODO: check for missing GT format
         assertThat(db, hasRecord('deapp.de_variant_subject_summary', dataset_id: studyId, subject_id: 'VCF_TST001',
                 chr: '22', pos: 16050408, rs_id: 'rs149201999', variant_type: 'SNV',
                 reference: true, variant: 'T|T', variant_format: 'R|R', allele1: 0, allele2: 0))
