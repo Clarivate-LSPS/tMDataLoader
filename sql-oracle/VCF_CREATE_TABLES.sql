@@ -1,0 +1,371 @@
+--------------------------------------------------------
+--  File created - Thursday-April-11-2013   
+--------------------------------------------------------
+--------------------------------------------------------
+--  DDL for Table DE_VARIANT_DATASET
+--------------------------------------------------------
+
+  CREATE TABLE "DEAPP"."DE_VARIANT_DATASET" 
+   (	"DATASET_ID" VARCHAR2(50 BYTE), 
+	"DATASOURCE_ID" VARCHAR2(200 BYTE), 
+	"ETL_ID" VARCHAR2(20 BYTE), 
+	"ETL_DATE" DATE, 
+	"GENOME" VARCHAR2(50 BYTE), 
+	"METADATA_COMMENT" CLOB, 
+	"VARIANT_DATASET_TYPE" VARCHAR2(50 BYTE)
+   ) PCTFREE 10 PCTUSED 40 INITRANS 1 MAXTRANS 255 NOCOMPRESS LOGGING
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1 BUFFER_POOL DEFAULT)
+  TABLESPACE "DEAPP" 
+ LOB ("METADATA_COMMENT") STORE AS BASICFILE (
+  TABLESPACE "DEAPP" ENABLE STORAGE IN ROW CHUNK 8192
+  NOCACHE LOGGING 
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1 BUFFER_POOL DEFAULT)) ;
+--------------------------------------------------------
+--  DDL for Table DE_VARIANT_SUBJECT_DETAIL
+--------------------------------------------------------
+CREATE SEQUENCE deapp.DE_VARIANT_SUBJECT_DETAIL_seq
+      START WITH 1
+      INCREMENT BY 1
+      NOMINVALUE
+      NOMAXVALUE
+      CACHE 2;
+
+  CREATE TABLE "DEAPP"."DE_VARIANT_SUBJECT_DETAIL" 
+   (	"VARIANT_SUBJECT_DETAIL_ID" NUMBER(9,0), 
+	"DATASET_ID" VARCHAR2(50 BYTE), 
+	"CHR" VARCHAR2(50 BYTE), 
+	"POS" NUMBER(20,0), 
+	"RS_ID" VARCHAR2(50 BYTE), 
+	"REF" VARCHAR2(100 BYTE), 
+	"ALT" VARCHAR2(100 BYTE), 
+	"QUAL" VARCHAR2(100 BYTE), 
+	"FILTER" VARCHAR2(50 BYTE), 
+	"INFO" VARCHAR2(2000 BYTE), 
+	"FORMAT" VARCHAR2(50 BYTE), 
+	"VARIANT_VALUE" CLOB
+   ) PCTFREE 10 PCTUSED 40 INITRANS 1 MAXTRANS 255 NOCOMPRESS LOGGING
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1 BUFFER_POOL DEFAULT)
+  TABLESPACE "DEAPP" 
+ LOB ("VARIANT_VALUE") STORE AS BASICFILE (
+  TABLESPACE "DEAPP" ENABLE STORAGE IN ROW CHUNK 8192
+  NOCACHE LOGGING 
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1 BUFFER_POOL DEFAULT)) 
+  CACHE ;
+
+CREATE OR REPLACE TRIGGER deapp.DE_VAR_SUB_DETAIL_incr 
+	BEFORE INSERT ON deapp.DE_VARIANT_SUBJECT_DETAIL
+	FOR EACH ROW
+
+	BEGIN
+	  SELECT deapp.DE_VARIANT_SUBJECT_DETAIL_seq.NEXTVAL
+	  INTO   :new.VARIANT_SUBJECT_DETAIL_ID 
+	  FROM   dual;
+	END;
+--------------------------------------------------------
+--  DDL for Table DE_VARIANT_SUBJECT_IDX
+--------------------------------------------------------
+CREATE SEQUENCE deapp.DE_VARIANT_SUBJECT_IDX_seq
+      START WITH 1
+      INCREMENT BY 1
+      NOMINVALUE
+      NOMAXVALUE
+      CACHE 2;
+
+  CREATE TABLE "DEAPP"."DE_VARIANT_SUBJECT_IDX" 
+   (	"DATASET_ID" VARCHAR2(50 BYTE), 
+	"SUBJECT_ID" VARCHAR2(50 BYTE), 
+	"POSITION" NUMBER(10,0), 
+	"VARIANT_SUBJECT_IDX_ID" NUMBER(18,0)
+   ) PCTFREE 10 PCTUSED 40 INITRANS 1 MAXTRANS 255 NOCOMPRESS LOGGING
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1 BUFFER_POOL DEFAULT)
+  TABLESPACE "DEAPP" ;
+
+CREATE OR REPLACE TRIGGER deapp.de_var_sub_idx_incr 
+	BEFORE INSERT ON deapp.DE_VARIANT_SUBJECT_IDX
+	FOR EACH ROW
+
+	BEGIN
+	  SELECT deapp.de_variant_population_info_seq.NEXTVAL
+	  INTO   :new.VARIANT_SUBJECT_IDX_ID 
+	  FROM   dual;
+	END;
+--------------------------------------------------------
+--  DDL for Table DE_VARIANT_SUBJECT_SUMMARY
+--------------------------------------------------------
+CREATE SEQUENCE deapp.de_variant_subject_summary_seq
+      START WITH 1
+      INCREMENT BY 1
+      NOMINVALUE
+      NOMAXVALUE
+      CACHE 2;
+
+  CREATE TABLE "DEAPP"."DE_VARIANT_SUBJECT_SUMMARY" 
+   (	"VARIANT_SUBJECT_SUMMARY_ID" NUMBER(9,0), 
+	"CHR" VARCHAR2(50 BYTE), 
+	"POS" NUMBER(20,0), 
+	"DATASET_ID" VARCHAR2(50 BYTE), 
+	"SUBJECT_ID" VARCHAR2(50 BYTE), 
+	"RS_ID" VARCHAR2(50 BYTE), 
+	"VARIANT" VARCHAR2(100 BYTE), 
+	"VARIANT_FORMAT" VARCHAR2(100 BYTE), 
+	"VARIANT_TYPE" VARCHAR2(100 BYTE),
+	"REFERENCE" VARCHAR2(100),
+        "ALLELE1" integer,
+        "ALLELE2" integer,
+        "ASSAY_ID" NUMBER(10,0)
+   ) PCTFREE 10 PCTUSED 40 INITRANS 1 MAXTRANS 255 NOCOMPRESS LOGGING
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1 BUFFER_POOL DEFAULT)
+  TABLESPACE "DEAPP" ;
+CREATE OR REPLACE TRIGGER deapp.de_var_sub_summary_incr 
+	BEFORE INSERT ON  "DEAPP"."DE_VARIANT_SUBJECT_SUMMARY" 
+	FOR EACH ROW
+
+	BEGIN
+	  SELECT deapp.de_variant_subject_summary_seq.NEXTVAL
+	  INTO   :new.VARIANT_SUBJECT_SUMMARY_ID
+	  FROM   dual;
+	END;
+--------------------------------------------------------
+--  DDL for Index SYS_C0035476
+--------------------------------------------------------
+
+  CREATE UNIQUE INDEX "DEAPP"."SYS_C0035476" ON "DEAPP"."DE_VARIANT_DATASET" ("DATASET_ID") 
+  PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS 
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1 BUFFER_POOL DEFAULT)
+  TABLESPACE "DEAPP" ;
+--------------------------------------------------------
+--  DDL for Index DE_VARIANT_SUB_DT_IDX1
+--------------------------------------------------------
+
+  CREATE INDEX "DEAPP"."DE_VARIANT_SUB_DT_IDX1" ON "DEAPP"."DE_VARIANT_SUBJECT_DETAIL" ("DATASET_ID", "RS_ID") 
+  PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS 
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1 BUFFER_POOL DEFAULT)
+  TABLESPACE "USERS" ;
+--------------------------------------------------------
+--  DDL for Index DE_VARIANT_SUB_DETAIL_IDX2
+--------------------------------------------------------
+
+  CREATE INDEX "DEAPP"."DE_VARIANT_SUB_DETAIL_IDX2" ON "DEAPP"."DE_VARIANT_SUBJECT_DETAIL" ("DATASET_ID", "CHR") 
+  PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS 
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1 BUFFER_POOL DEFAULT)
+  TABLESPACE "USERS" ;
+--------------------------------------------------------
+--  DDL for Index SYS_C0035487
+--------------------------------------------------------
+
+  CREATE UNIQUE INDEX "DEAPP"."SYS_C0035487" ON "DEAPP"."DE_VARIANT_SUBJECT_DETAIL" ("VARIANT_SUBJECT_DETAIL_ID") 
+  PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS 
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1 BUFFER_POOL DEFAULT)
+  TABLESPACE "DEAPP" ;
+--------------------------------------------------------
+--  DDL for Index VARIANT_SUBJECT_DETAIL_UK
+--------------------------------------------------------
+
+  CREATE UNIQUE INDEX "DEAPP"."VARIANT_SUBJECT_DETAIL_UK" ON "DEAPP"."DE_VARIANT_SUBJECT_DETAIL" ("DATASET_ID", "CHR", "POS", "RS_ID") 
+  PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS 
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1 BUFFER_POOL DEFAULT)
+  TABLESPACE "DEAPP" ;
+--------------------------------------------------------
+--  DDL for Index VARIANT_SUBJECT_IDX_UK
+--------------------------------------------------------
+
+  CREATE UNIQUE INDEX "DEAPP"."VARIANT_SUBJECT_IDX_UK" ON "DEAPP"."DE_VARIANT_SUBJECT_IDX" ("DATASET_ID", "SUBJECT_ID", "POSITION") 
+  PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS 
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1 BUFFER_POOL DEFAULT)
+  TABLESPACE "DEAPP" ;
+--------------------------------------------------------
+--  DDL for Index SYS_C0035492
+--------------------------------------------------------
+
+  CREATE UNIQUE INDEX "DEAPP"."SYS_C0035492" ON "DEAPP"."DE_VARIANT_SUBJECT_SUMMARY" ("VARIANT_SUBJECT_SUMMARY_ID") 
+  PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS 
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1 BUFFER_POOL DEFAULT)
+  TABLESPACE "DEAPP" ;
+--------------------------------------------------------
+--  DDL for Index VARIANT_SUBJECT_SUMMARY_UK
+--------------------------------------------------------
+
+  CREATE UNIQUE INDEX "DEAPP"."VARIANT_SUBJECT_SUMMARY_UK" ON "DEAPP"."DE_VARIANT_SUBJECT_SUMMARY" ("DATASET_ID", "CHR", "POS", "RS_ID", "SUBJECT_ID") 
+  PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS 
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1 BUFFER_POOL DEFAULT)
+  TABLESPACE "DEAPP" ;
+--------------------------------------------------------
+--  Constraints for Table DE_VARIANT_DATASET
+--------------------------------------------------------
+
+  ALTER TABLE "DEAPP"."DE_VARIANT_DATASET" MODIFY ("GENOME" NOT NULL ENABLE);
+ 
+  ALTER TABLE "DEAPP"."DE_VARIANT_DATASET" ADD PRIMARY KEY ("DATASET_ID")
+  USING INDEX PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS 
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1 BUFFER_POOL DEFAULT)
+  TABLESPACE "DEAPP"  ENABLE;
+--------------------------------------------------------
+--  Constraints for Table DE_VARIANT_SUBJECT_DETAIL
+--------------------------------------------------------
+
+  ALTER TABLE "DEAPP"."DE_VARIANT_SUBJECT_DETAIL" ADD PRIMARY KEY ("VARIANT_SUBJECT_DETAIL_ID")
+  USING INDEX PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS 
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1 BUFFER_POOL DEFAULT)
+  TABLESPACE "DEAPP"  ENABLE;
+ 
+  ALTER TABLE "DEAPP"."DE_VARIANT_SUBJECT_DETAIL" ADD CONSTRAINT "VARIANT_SUBJECT_DETAIL_UK" UNIQUE ("DATASET_ID", "CHR", "POS", "RS_ID")
+  USING INDEX PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS 
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1 BUFFER_POOL DEFAULT)
+  TABLESPACE "DEAPP"  ENABLE;
+--------------------------------------------------------
+--  Constraints for Table DE_VARIANT_SUBJECT_IDX
+--------------------------------------------------------
+
+  ALTER TABLE "DEAPP"."DE_VARIANT_SUBJECT_IDX" ADD CONSTRAINT "VARIANT_SUBJECT_IDX_UK" UNIQUE ("DATASET_ID", "SUBJECT_ID", "POSITION")
+  USING INDEX PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS 
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1 BUFFER_POOL DEFAULT)
+  TABLESPACE "DEAPP"  ENABLE;
+--------------------------------------------------------
+--  Constraints for Table DE_VARIANT_SUBJECT_SUMMARY
+--------------------------------------------------------
+
+  ALTER TABLE "DEAPP"."DE_VARIANT_SUBJECT_SUMMARY" MODIFY ("DATASET_ID" NOT NULL ENABLE);
+ 
+  ALTER TABLE "DEAPP"."DE_VARIANT_SUBJECT_SUMMARY" MODIFY ("SUBJECT_ID" NOT NULL ENABLE);
+ 
+  ALTER TABLE "DEAPP"."DE_VARIANT_SUBJECT_SUMMARY" ADD PRIMARY KEY ("VARIANT_SUBJECT_SUMMARY_ID")
+  USING INDEX PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS 
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1 BUFFER_POOL DEFAULT)
+  TABLESPACE "DEAPP"  ENABLE;
+ 
+  ALTER TABLE "DEAPP"."DE_VARIANT_SUBJECT_SUMMARY" ADD CONSTRAINT "VARIANT_SUBJECT_SUMMARY_UK" UNIQUE ("DATASET_ID", "CHR", "POS", "RS_ID", "SUBJECT_ID")
+  USING INDEX PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS 
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1 BUFFER_POOL DEFAULT)
+  TABLESPACE "DEAPP"  ENABLE;
+--------------------------------------------------------
+--  Ref Constraints for Table DE_VARIANT_SUBJECT_DETAIL
+--------------------------------------------------------
+
+  ALTER TABLE "DEAPP"."DE_VARIANT_SUBJECT_DETAIL" ADD CONSTRAINT "VARIANT_SUBJECT_DETAIL_FK" FOREIGN KEY ("DATASET_ID")
+	  REFERENCES "DEAPP"."DE_VARIANT_DATASET" ("DATASET_ID") ENABLE;
+--------------------------------------------------------
+--  Ref Constraints for Table DE_VARIANT_SUBJECT_IDX
+--------------------------------------------------------
+
+  ALTER TABLE "DEAPP"."DE_VARIANT_SUBJECT_IDX" ADD CONSTRAINT "VARIANT_SUBJECT_IDX_FK" FOREIGN KEY ("DATASET_ID")
+	  REFERENCES "DEAPP"."DE_VARIANT_DATASET" ("DATASET_ID") ENABLE;
+--------------------------------------------------------
+--  Ref Constraints for Table DE_VARIANT_SUBJECT_SUMMARY
+--------------------------------------------------------
+
+  ALTER TABLE "DEAPP"."DE_VARIANT_SUBJECT_SUMMARY" ADD CONSTRAINT "VARIANT_SUBJECT_SUMMARY_FK" FOREIGN KEY ("DATASET_ID")
+	  REFERENCES "DEAPP"."DE_VARIANT_DATASET" ("DATASET_ID") ENABLE;
+
+CREATE SEQUENCE deapp.de_variant_population_data_seq
+      START WITH 1
+      INCREMENT BY 1
+      NOMINVALUE
+      NOMAXVALUE
+      CACHE 2;
+
+  --
+  -- Name: deapp.de_variant_population_data; Type: TABLE; Schema: deapp; Owner: -
+  --
+  CREATE TABLE deapp.de_variant_population_data (
+      variant_population_data_id NUMBER(10,0),
+      dataset_id varchar2(50),
+      chr varchar2(50),
+      pos  NUMBER(10,0),
+      info_name varchar2(100),
+      info_index integer DEFAULT 0,
+      integer_value NUMBER(10,0),
+      float_value double precision,
+      text_value CLOB
+  );
+
+
+CREATE OR REPLACE TRIGGER deapp.de_var_pop_data_incr 
+BEFORE INSERT ON deapp.de_variant_population_data 
+FOR EACH ROW
+
+BEGIN
+  SELECT deapp.de_variant_population_data_seq.NEXTVAL
+  INTO   :new.variant_population_data_id
+  FROM   dual;
+END;
+--
+  -- Name: deapp.de_variant_population_data_id_idx; Type: CONSTRAINT; Schema: deapp; Owner: -
+  --
+  ALTER TABLE deapp.de_variant_population_data
+      ADD CONSTRAINT de_var_pop_data_id_idx PRIMARY KEY (variant_population_data_id);
+
+  --
+  -- Name: de_variant_population_data_default_idx; Type: INDEX; Schema: deapp; Owner: -
+  --
+  CREATE INDEX de_var_pop_data_default_idx ON deapp.de_variant_population_data(dataset_id, chr, pos, info_name);
+
+  --
+  -- Name: de_variant_population_data_fk; Type: FK CONSTRAINT; Schema: deapp; Owner: -
+  --
+  ALTER TABLE deapp.de_variant_population_data
+      ADD CONSTRAINT de_variant_population_data_fk FOREIGN KEY (dataset_id) REFERENCES deapp.de_variant_dataset(dataset_id);
+--
+  -- Name: deapp.de_variant_population_info_seq; Type: SEQUENCE; Schema: deapp; Owner: -
+  --
+  CREATE SEQUENCE deapp.de_variant_population_info_seq
+      START WITH 1
+      INCREMENT BY 1
+      NOMINVALUE
+      NOMAXVALUE
+      CACHE 2;
+
+  --
+  -- Name: deapp.de_variant_population_info; Type: TABLE; Schema: deapp; Owner: -
+  --
+  CREATE TABLE deapp.de_variant_population_info (
+      variant_population_info_id number(10,0),
+      dataset_id varchar2(50),
+      info_name varchar2(100),
+      description clob,
+      "type" varchar2(30),
+      "number" varchar2(10)
+  );
+
+	CREATE OR REPLACE TRIGGER deapp.de_var_pop_info_incr 
+	BEFORE INSERT ON deapp.de_variant_population_info
+	FOR EACH ROW
+
+	BEGIN
+	  SELECT deapp.de_variant_population_info_seq.NEXTVAL
+	  INTO   :new.variant_population_info_id 
+	  FROM   dual;
+	END;
+
+  ALTER TABLE deapp.de_variant_population_info
+      ADD CONSTRAINT de_var_pop_info_id_idx PRIMARY KEY (variant_population_info_id);
+
+  --
+  -- Name: variant_population_info_dataset_name; Type: INDEX; Schema: deapp; Owner: -
+  --
+  CREATE INDEX variant_pop_info_dataset_name ON deapp.de_variant_population_info(dataset_id, info_name);
+
+  --
+  -- Name: de_variant_population_info_fk; Type: FK CONSTRAINT; Schema: deapp; Owner: -
+  --
+  ALTER TABLE deapp.de_variant_population_info
+      ADD CONSTRAINT de_variant_population_info_fk FOREIGN KEY (dataset_id) REFERENCES deapp.de_variant_dataset(dataset_id);
