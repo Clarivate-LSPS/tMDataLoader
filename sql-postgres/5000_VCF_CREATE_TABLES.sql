@@ -38,10 +38,10 @@ IF NOT EXISTS (select 1 from pg_tables where schemaname = 'deapp' and tablename=
   -- Name: de_variant_subject_idx; Type: TABLE; Schema: deapp; Owner: -
   --
   CREATE TABLE IF NOT EXISTS deapp.de_variant_subject_idx (
-      dataset_id character varying(50) DEFAULT nextval('deapp.de_variant_subject_idx_seq'::regclass),
+      dataset_id character varying(50),
       subject_id character varying(50),
       "position" bigint,
-      variant_subject_idx_id bigint
+      variant_subject_idx_id bigint DEFAULT nextval('deapp.de_variant_subject_idx_seq'::regclass)
   )
   TABLESPACE "transmart";
 
