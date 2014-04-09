@@ -80,10 +80,10 @@ class VCFDataProcessor extends DataProcessor {
         logger.log(LogType.MESSAGE, "Processing file ${inputFile.getName()}")
         use(SqlMethods) {
             DataLoader.start(database, 'deapp.de_variant_subject_idx', ['DATASET_ID', 'SUBJECT_ID', 'POSITION']) { st ->
+                logger.log(LogType.DEBUG, "Loading samples: ${vcfFile.samples.size()}")
                 vcfFile.samples.eachWithIndex { sample, idx ->
-                    logger.log(LogType.DEBUG, 'Loading samples')
                     st.addBatch([trialId, sample, idx + 1])
-                    samplesLoader.addSample("VCF+${inputFile.name.replaceFirst(/\.\w+$/, '')}", sampleMapping[sample] as String, sample, '')
+                    samplesLoader.addSample("VCF+${inputFile.name.replaceFirst(/\.\w+$/, '').replaceAll(/\./, '_')}", sampleMapping[sample] as String, sample, '')
                 }
             }
 
@@ -96,6 +96,7 @@ class VCFDataProcessor extends DataProcessor {
             }
 
             logger.log(LogType.DEBUG, 'Loading subject summary, subject detail & population data')
+            int lineNumber = 0
             DataLoader.start(database, 'deapp.de_variant_subject_detail',
                     ['DATASET_ID', 'RS_ID', 'CHR', 'POS', 'REF', 'ALT', 'QUAL',
                      'FILTER', 'INFO', 'FORMAT', 'VARIANT_VALUE']) { subjectDetail ->
@@ -106,6 +107,8 @@ class VCFDataProcessor extends DataProcessor {
                             ['DATASET_ID', 'CHR', 'POS', 'INFO_NAME', 'INFO_INDEX',
                              'INTEGER_VALUE', 'FLOAT_VALUE', 'TEXT_VALUE']) { populationData ->
                         vcfFile.eachEntry { VcfFile.Entry entry ->
+                            lineNumber++
+                            logger.log(LogType.PROGRESS, "[${lineNumber}]")
                             writeVariantSubjectDetailRecord(trialId, subjectDetail, entry)
                             writeVariantSubjectSummaryRecords(trialId, subjectSummary, entry)
                             writeVariantPopulationDataRecord(trialId, populationData, entry)
@@ -113,6 +116,7 @@ class VCFDataProcessor extends DataProcessor {
                     }
                 }
             }
+            logger.log(LogType.PROGRESS, '')
         }
     }
 
