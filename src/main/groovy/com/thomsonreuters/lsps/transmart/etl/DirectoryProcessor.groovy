@@ -20,8 +20,6 @@
 
 package com.thomsonreuters.lsps.transmart.etl
 
-import static groovy.io.FileType.*
-
 class DirectoryProcessor {
     def config
 
@@ -92,7 +90,7 @@ class DirectoryProcessor {
         def res = false
         // looping through the subfolders, looking for predefined names
         dir.eachDirMatch(~/[^\._].+/) {
-            if (it.name ==~ /(ClinicalData|ExpressionData|S(?:NP|np)Data|RBMData|MetaData)(ToUpload)*/) {
+            if (it.name ==~ /(ClinicalData|ExpressionData|S(?:NP|np)Data|V(?:CF|cf)Data|RBMData|MetaData)(ToUpload)*/) {
                 res = true
             }
         }
@@ -128,6 +126,38 @@ class DirectoryProcessor {
         }
 
         return isAllSuccessful
+    }
+
+    private boolean processDataDirectory(File parentDir, String dataType, Class<? extends DataProcessor> processorClass, studyInfo) {
+        def dirNames = ["${dataType}Data", "${dataType}DataToUpload",
+                        "${dataType.toLowerCase().capitalize()}DataToUpload"]
+        def dataDir = dirNames.collect { String dirName -> new File(parentDir, dirName) }.
+                find { File f -> f.exists() && f.isDirectory() }
+        if (dataDir) {
+            config.logger.log "Processing ${dataType} data"
+            def res = false
+
+            def dataProcessor = processorClass.newInstance(config)
+            try {
+                res = dataProcessor.process(dataDir, studyInfo)
+            }
+            catch (Exception e) {
+                config.logger.log(LogType.ERROR, "Exception: ${e}")
+                e.printStackTrace();
+            }
+
+            if (res) {
+                dataDir.renameTo(new File(parentDir, "_DONE_${dataDir.name}"))
+            } else {
+                if (!config.isNoRenameOnFail)
+                    dataDir.renameTo(new File(parentDir, "_FAIL_${dataDir.name}"))
+
+                if (config.stopOnFail) return false
+            }
+            return res
+        } else {
+            return true
+        }
     }
 
     private boolean processStudies(d, String parentNode) {
@@ -242,6 +272,10 @@ class DirectoryProcessor {
                 }
 
                 isStudyUploadSuccessful = isStudyUploadSuccessful && res
+            }
+
+            if (!processDataDirectory(it, 'VCF', VCFDataProcessor, studyInfo)) {
+                isStudyUploadSuccessful = false
             }
 
             // then RBM data
