@@ -7,6 +7,7 @@ package com.thomsonreuters.lsps.transmart.files
 class VcfFile extends CsvLikeFile {
     private Entry currentEntry = new Entry()
     private String[] _samples
+    private Map<CharSequence, InfoField> infoFields
     private int firstSampleIndex
 
     VcfFile(File file) {
@@ -17,6 +18,13 @@ class VcfFile extends CsvLikeFile {
         String allele1
         String allele2
         String alleleSeparator
+    }
+
+    static class InfoField {
+        String id
+        String description
+        String type
+        String number
     }
 
     class Entry {
@@ -105,11 +113,28 @@ class VcfFile extends CsvLikeFile {
         if (formatColumnIndex == -1) throw new UnsupportedOperationException("Column FORMAT was not found in VCF file")
         firstSampleIndex = formatColumnIndex + 1
         _samples = header[firstSampleIndex..-1]
+        infoFields = buildInfoFields()
     }
 
     String[] getSamples() {
         prepareIfRequired()
         return _samples
+    }
+
+    Map<CharSequence, InfoField> getInfoFields() {
+        prepareIfRequired()
+        infoFields
+    }
+
+    private Map<CharSequence, InfoField> buildInfoFields() {
+        headComments.findAll { it.startsWith('INFO=') }.collectEntries { headComment ->
+            String fieldDescription = (headComment =~ /^INFO=<(.*)>$/)[0][1]
+            def initFields = [:]
+            fieldDescription.eachMatch(/,?(\w+)=('[^']*'|"[^"]*"|[^,]*)/) {
+                initFields[it[1].toLowerCase()] = it[2].charAt(0) == '\'' || it[2].charAt(0) == '\"' ? it[2][1..-2] : it[2]
+            }
+            [initFields.id, new InfoField(initFields)]
+        }
     }
 
     @Override

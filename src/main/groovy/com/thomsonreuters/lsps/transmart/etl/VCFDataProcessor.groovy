@@ -72,6 +72,15 @@ class VCFDataProcessor extends DataProcessor {
                 }
             }
 
+            logger.log(LogType.DEBUG, 'Loading population info')
+            DataLoader.start(database, 'deapp.de_variant_population_info',
+                    ['dataset_id', 'info_name', 'description', 'type', 'number']) { populationInfo->
+                vcfFile.infoFields.values().each {
+                    populationInfo.addBatch([trialId, it.id, it.description, it.type, it.number])
+                }
+            }
+
+            logger.log(LogType.DEBUG, 'Loading subject summary & detail')
             DataLoader.start(database, 'deapp.de_variant_subject_detail',
                     ['dataset_id', 'rs_id', 'chr', 'pos', 'ref', 'alt', 'qual',
                      'filter', 'info', 'format', 'variant_value']) { subjectDetail ->
