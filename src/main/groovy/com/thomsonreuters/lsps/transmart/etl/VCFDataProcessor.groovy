@@ -31,6 +31,16 @@ class VCFDataProcessor extends DataProcessor {
         studyInfo.sampleMapping = sampleMapping
     }
 
+    private void cleanup(Sql sql, String studyId) {
+        sql.execute('delete from deapp.de_variant_population_data where dataset_id = ?', studyId)
+        sql.execute('delete from deapp.de_variant_population_info where dataset_id = ?', studyId)
+        sql.execute('delete from deapp.de_variant_subject_summary where dataset_id = ?', studyId)
+        sql.execute('delete from deapp.de_variant_subject_detail where dataset_id = ?', studyId)
+        sql.execute('delete from deapp.de_variant_subject_idx where dataset_id = ?', studyId)
+        sql.execute('delete from deapp.de_variant_dataset where dataset_id = ?', studyId)
+        sql.commit()
+    }
+
     @Override
     boolean processFiles(File dir, Sql sql, studyInfo) {
         File mappingFile = new File(dir, 'Subject_Sample_Mapping_File.txt')
@@ -39,8 +49,13 @@ class VCFDataProcessor extends DataProcessor {
             return false
         }
         loadMappingFile(mappingFile, studyInfo)
+
+        String studyId = studyInfo.id as String
+        cleanup(sql, studyId)
+
         loadMetadata(sql, studyInfo)
-        def samplesLoader = new SamplesLoader(studyInfo.id)
+
+        def samplesLoader = new SamplesLoader(studyId)
         dir.eachFileMatch(FileType.FILES, ~/(?i).*\.vcf$/) {
             processFile(it, sql, samplesLoader, studyInfo)
         }

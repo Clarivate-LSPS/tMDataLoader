@@ -24,12 +24,6 @@ class VCFDataProcessorTest extends ConfigAwareTestCase {
         runScript('I2B2_PROCESS_VCF_DATA.sql')
         sql.execute('delete from i2b2demodata.observation_fact where modifier_cd = ?', studyId)
         sql.execute('delete from deapp.de_subject_sample_mapping where trial_name = ?', studyId)
-        sql.execute('delete from deapp.de_variant_population_data where dataset_id = ?', studyId)
-        sql.execute('delete from deapp.de_variant_population_info where dataset_id = ?', studyId)
-        sql.execute('delete from deapp.de_variant_subject_summary where dataset_id = ?', studyId)
-        sql.execute('delete from deapp.de_variant_subject_detail where dataset_id = ?', studyId)
-        sql.execute('delete from deapp.de_variant_subject_idx where dataset_id = ?', studyId)
-        sql.execute('delete from deapp.de_variant_dataset where dataset_id = ?', studyId)
     }
 
     private VCFDataProcessor _dataProcessor
