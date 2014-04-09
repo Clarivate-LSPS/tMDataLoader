@@ -81,7 +81,7 @@ BEGIN
 	IF(jobID IS NULL or jobID < 1)
 	THEN
 		newJobFlag := 1; -- True
-		tm_cz.cz_start_audit (procedureName, databaseName) into jobID;
+		tm_cz.cz_start_audit (procedureName, databaseName, jobID);
 	END IF;
 
 	stepCt := 0;
@@ -170,7 +170,7 @@ BEGIN
 
 	-- Get root_node from topNode
 
-	tm_cz.parse_nth_value(topNode, 2, '\') into RootNode;
+	select tm_cz.parse_nth_value(topNode, 2, '\') into RootNode from dual;
 
 	select count(*) into pExists
 	from i2b2metadata.i2b2
@@ -186,7 +186,7 @@ BEGIN
 
 	-- Get study name from topNode
 
-	tm_cz.parse_nth_value(topNode, topLevel, '\') into study_name;
+	select tm_cz.parse_nth_value(topNode, topLevel, '\') into study_name from dual;
 
 	--	Add any upper level nodes as needed
 
@@ -275,7 +275,7 @@ BEGIN
 	  and sm.partition_id is not null;
 
 	if partExists = 0 then
-		select nextval('deapp.seq_mrna_partition_id') into partitionId;
+		select nextval('deapp.seq_mrna_partition_id') into partitionId from dual;
 	else
 		select distinct partition_id into partitionId
 		from deapp.de_subject_sample_mapping sm
