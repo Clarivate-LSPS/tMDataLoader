@@ -1,6 +1,7 @@
 package com.thomsonreuters.lsps.transmart.etl
 
 import com.thomsonreuters.lsps.transmart.sql.Database
+import com.thomsonreuters.lsps.transmart.sql.DatabaseType
 import com.thomsonreuters.lsps.transmart.sql.SqlMethods
 import groovy.sql.Sql
 
@@ -24,6 +25,10 @@ class DataLoader {
 
     def withBatch(Closure block) {
         database.withSql { Sql sql->
+            //FIXME: find better solution
+            if (database.databaseType == DatabaseType.Postgres) {
+                columnNames = columnNames*.toLowerCase()
+            }
             SqlMethods.insertRecords(sql, tableName, columnNames, block)
         }
     }
