@@ -216,7 +216,8 @@ IF NOT EXISTS (select 1 from pg_tables where schemaname = 'deapp' and tablename=
       integer_value bigint,
       float_value double precision,
       text_value character varying(5000)
-  );
+  )
+  TABLESPACE "transmart";
 
   --
   -- Name: deapp.de_variant_population_data_id_idx; Type: CONSTRAINT; Schema: deapp; Owner: -
@@ -257,7 +258,8 @@ IF NOT EXISTS (select 1 from pg_tables where schemaname = 'deapp' and tablename=
       description text,
       type character varying(30),
       number character varying(10)
-  );
+  )
+  TABLESPACE "transmart";
 
   --
   -- Name: de_variant_population_info_id_idx; Type: CONSTRAINT; Schema: deapp; Owner: -
