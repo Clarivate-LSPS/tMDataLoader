@@ -665,6 +665,41 @@ BEGIN
     i2b2_create_concept_counts(topNode ,jobID );
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Create concept counts',0,stepCt,'Done');
+
+	insert into de_subject_snp_dataset
+	(
+    CONCEPT_CD,
+    DATASET_NAME,
+    PAIRED_DATASET_ID,
+    PATIENT_GENDER,
+    PATIENT_NUM,
+    PLATFORM_NAME,
+    SAMPLE_TYPE,
+    SUBJECT_ID,
+    TIMEPOINT,
+    TRIAL_NAME
+	)
+	select
+    a.concept_code, --concept_cd
+    null,           --DATASET_NAME
+    null,           -- PAIRED_DATASET_ID
+    null,              --PATIENT_GENDER,
+    a.patient_id,              --PATIENT_NUM,
+    'VCF',              --PLATFORM_NAME,
+    a.sample_type,              --SAMPLE_TYPE,
+    a.subject_id,              --SUBJECT_ID,
+    a.timepoint,              --TIMEPOINT,
+    a.trial_name             --TRIAL_NAME,
+	from
+	  de_subject_sample_mapping a
+	where
+    a.trial_name = TrialId and
+    a.source_cd = sourceCd;
+
+    stepCt := stepCt + 1;
+
+	cz_write_audit(jobId,databaseName,procedureName,'Insert into de_subject_snp_dataset',SQL%ROWCOUNT,stepCt,'Done');
+    commit;
 	--	delete each node that is hidden
 /* FOR r_delNodes in delNodes Loop
     --	deletes hidden nodes for a trial one at a time
