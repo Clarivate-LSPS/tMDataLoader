@@ -681,7 +681,7 @@ BEGIN
 	)
 	select
     a.concept_code, --concept_cd
-    null,           --DATASET_NAME
+    trialId,           --DATASET_NAME
     null,           -- PAIRED_DATASET_ID
     null,              --PATIENT_GENDER,
     a.patient_id,              --PATIENT_NUM,
@@ -698,7 +698,62 @@ BEGIN
 
     stepCt := stepCt + 1;
 
-	cz_write_audit(jobId,databaseName,procedureName,'Insert into de_subject_snp_dataset',SQL%ROWCOUNT,stepCt,'Done');
+	  cz_write_audit(jobId,databaseName,procedureName,'Insert into de_subject_snp_dataset',SQL%ROWCOUNT,stepCt,'Done');
+    commit;
+
+    insert into deapp.de_snp_info (name, chrom, chrom_pos)
+    select  rs_id, chr, pos
+    from deapp.de_variant_subject_detail
+    where dataset_id = trialId;
+
+    stepCt := stepCt + 1;
+    cz_write_audit(jobId,databaseName,procedureName,'Insert into de_snp_info',SQL%ROWCOUNT,stepCt,'Done');
+    commit;
+
+    insert into de_snp_data_by_patient (
+      CHROM,
+      DATA_BY_PATIENT_CHR,
+      PATIENT_NUM,
+      PED_BY_PATIENT_CHR,
+      SNP_DATASET_ID,
+      TRIAL_NAME
+    )
+    SELECT
+      b.chr,
+      1,
+      patient_id,
+      1,
+      c.SUBJECT_SNP_DATASET_ID,
+      c.TRIAL_NAME
+    from
+           deapp.de_subject_sample_mapping a,
+           deapp.de_variant_subject_summary b,
+           deapp.de_subject_snp_dataset c
+    where
+      a.assay_id = b.assay_id
+      and a.patient_id = c.patient_num;
+
+    stepCt := stepCt + 1;
+    cz_write_audit(jobId,databaseName,procedureName,'Insert into de_snp_data_by_patient',SQL%ROWCOUNT,stepCt,'Done');
+    commit;
+
+   INSERT INTO
+     DEAPP.DE_SNP_PROBE_SORTED_DEF(PLATFORM_NAME, NUM_PROBE, CHROM, PROBE_DEF, SNP_ID_DEF)
+   SELECT
+      'VCF' AS PLATFOMR_NAME,
+      1 AS NUM_PROBE,
+      s.CHROM AS CHROM,
+      s.SNP_INFO_ID || '\t' || s.CHROM || '\t' || s.CHROM_POS AS PROBE_DEF,
+      s.SNP_INFO_ID || '\t' || s.CHROM || '\t' || s.CHROM_POS AS SNP_ID_DEF
+     FROM
+      DEAPP.DE_SNP_INFO s ,
+    deapp.de_variant_subject_detail a
+     WHERE
+      s.NAME = a.rs_id and
+      a.dataset_id = TrialId;
+
+    stepCt := stepCt + 1;
+    cz_write_audit(jobId,databaseName,procedureName,'Insert into DE_SNP_PROBE_SORTED_DEF',SQL%ROWCOUNT,stepCt,'Done');
     commit;
 	--	delete each node that is hidden
 /* FOR r_delNodes in delNodes Loop
