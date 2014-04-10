@@ -369,3 +369,6 @@ END;
   --
   ALTER TABLE deapp.de_variant_population_info
       ADD CONSTRAINT de_variant_population_info_fk FOREIGN KEY (dataset_id) REFERENCES deapp.de_variant_dataset(dataset_id);
+
+/
+exit;
