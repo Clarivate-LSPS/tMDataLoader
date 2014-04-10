@@ -23,18 +23,21 @@ package com.thomsonreuters.lsps.transmart.etl
 class DirectoryProcessor {
     def config
 
+    static Map dataProcessors = [
+            Clinical  : ClinicalDataProcessor,
+            Expression: ExpressionDataProcessor,
+            SNP       : SNPDataProcessor,
+            VCF       : VCFDataProcessor,
+            RBM       : RBMDataProcessor,
+            Meta      : MetaDataProcessor
+    ]
+
     DirectoryProcessor(conf) {
         config = conf
     }
 
     boolean process(dir, String root = "") {           // TODO: BROKEN NOW!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        def d
-
-        if (dir instanceof File)
-            d = dir
-        else
-            d = new File(dir)
-
+        def d = dir as File
         config.logger.log("Processing directory: ${dir}")
 
         try {
@@ -69,7 +72,7 @@ class DirectoryProcessor {
 
             return true
         }
-        catch (Exception e) {
+        catch (Exception ignored) {
             return false
         }
     }
@@ -90,7 +93,7 @@ class DirectoryProcessor {
         def res = false
         // looping through the subfolders, looking for predefined names
         dir.eachDirMatch(~/[^\._].+/) {
-            if (it.name ==~ /(ClinicalData|ExpressionData|S(?:NP|np)Data|V(?:CF|cf)Data|RBMData|MetaData)(ToUpload)*/) {
+            if (it.name ==~ /^(?i)(${dataProcessors.keySet().join('|')})Data(ToUpload)?$/) {
                 res = true
             }
         }
@@ -109,7 +112,7 @@ class DirectoryProcessor {
             def res = false
 
             try {
-                res = metadataProcessor.process(it, {})
+                res = metadataProcessor.process(it, [:])
             }
             catch (Exception e) {
                 config.logger.log(LogType.ERROR, "Exception: ${e}")
@@ -176,165 +179,11 @@ class DirectoryProcessor {
 
             def isStudyUploadSuccessful = true
 
-            // looking for clinical data first
-            def dataDir = new File(it, 'ClinicalData')
-            if (!(dataDir.exists() && dataDir.isDirectory())) {
-                dataDir = new File(it, 'ClinicalDataToUpload')
-                if (!(dataDir.exists() && dataDir.isDirectory())) {
-                    dataDir = null
+            //process following data types
+            dataProcessors.each { entry ->
+                if (!processDataDirectory(it, entry.key, entry.value, studyInfo)) {
+                    isStudyUploadSuccessful = false
                 }
-            }
-
-            if (dataDir) {
-                config.logger.log "Processing clinical data"
-                def res = false
-
-                def clinicalProcessor = new ClinicalDataProcessor(config)
-                try {
-                    res = clinicalProcessor.process(dataDir, studyInfo)
-                }
-                catch (Exception e) {
-                    config.logger.log(LogType.ERROR, "Exception: ${e}")
-                    e.printStackTrace()
-                }
-
-                if (res) {
-                    dataDir.renameTo(new File(it, "_DONE_${dataDir.name}"))
-                } else {
-                    if (!config.isNoRenameOnFail)
-                        dataDir.renameTo(new File(it, "_FAIL_${dataDir.name}"))
-
-                    if (config.stopOnFail) return false
-                }
-
-                isStudyUploadSuccessful = isStudyUploadSuccessful && res
-            }
-
-            // then expression data
-            dataDir = new File(it, 'ExpressionData')
-            if (!(dataDir.exists() && dataDir.isDirectory())) {
-                dataDir = new File(it, 'ExpressionDataToUpload')
-                if (!(dataDir.exists() && dataDir.isDirectory())) {
-                    dataDir = null
-                }
-            }
-
-            if (dataDir) {
-                config.logger.log "Processing expression data"
-                def res = false
-
-                def expProcessor = new ExpressionDataProcessor(config)
-                try {
-                    res = expProcessor.process(dataDir, studyInfo)
-                }
-                catch (Exception e) {
-                    config.logger.log(LogType.ERROR, "Exception: ${e}")
-                    e.printStackTrace()
-                }
-
-                if (res) {
-                    dataDir.renameTo(new File(it, "_DONE_${dataDir.name}"))
-                } else {
-                    if (!config.isNoRenameOnFail)
-                        dataDir.renameTo(new File(it, "_FAIL_${dataDir.name}"))
-
-                    if (config.stopOnFail) return false
-                }
-
-                isStudyUploadSuccessful = isStudyUploadSuccessful && res
-            }
-
-            // SNP data
-            dataDir = ['SNPData', 'SNPDataToUpload', 'SnpDataToUpload'].
-                    collect { String dirName -> new File(it as File, dirName) }.
-                    find { File f -> f.exists() && f.isDirectory() }
-
-            if (dataDir) {
-                config.logger.log "Processing SNP data"
-                def res = false
-
-                def expProcessor = new SNPDataProcessor(config)
-                try {
-                    res = expProcessor.process(dataDir, studyInfo)
-                }
-                catch (Exception e) {
-                    config.logger.log(LogType.ERROR, "Exception: ${e}")
-                    e.printStackTrace();
-                }
-
-                if (res) {
-                    dataDir.renameTo(new File(it, "_DONE_${dataDir.name}"))
-                } else {
-                    if (!config.isNoRenameOnFail)
-                        dataDir.renameTo(new File(it, "_FAIL_${dataDir.name}"))
-
-                    if (config.stopOnFail) return false
-                }
-
-                isStudyUploadSuccessful = isStudyUploadSuccessful && res
-            }
-
-            if (!processDataDirectory(it, 'VCF', VCFDataProcessor, studyInfo)) {
-                isStudyUploadSuccessful = false
-            }
-
-            // then RBM data
-            dataDir = new File(it, 'RBMData')
-            if (!(dataDir.exists() && dataDir.isDirectory())) {
-                dataDir = new File(it, 'RBMDataToUpload')
-                if (!(dataDir.exists() && dataDir.isDirectory())) {
-                    dataDir = null
-                }
-            }
-
-            if (dataDir) {
-                config.logger.log "Processing RBM data"
-                def res = false
-
-                def rbmProcessor = new RBMDataProcessor(config)
-                try {
-                    res = rbmProcessor.process(dataDir, studyInfo)
-                }
-                catch (Exception e) {
-                    config.logger.log(LogType.ERROR, "Exception: ${e}")
-                    e.printStackTrace()
-                }
-
-                if (res) {
-                    dataDir.renameTo(new File(it, "_DONE_${dataDir.name}"))
-                } else {
-                    if (!config.isNoRenameOnFail)
-                        dataDir.renameTo(new File(it, "_FAIL_${dataDir.name}"))
-
-                    if (config.stopOnFail) return false
-                }
-
-                isStudyUploadSuccessful = isStudyUploadSuccessful && res
-            }
-
-            // then metadata
-            dataDir = new File(it, 'MetaData')
-            if (!(dataDir.exists() && dataDir.isDirectory())) {
-                dataDir = new File(it, 'MetaDataToUpload')
-                if (!(dataDir.exists() && dataDir.isDirectory())) {
-                    dataDir = null
-                }
-            }
-
-            if (dataDir) {
-                config.logger.log "Processing study metadata"
-                def res = processMetaData(dataDir)
-
-                if (res) {
-                    dataDir.renameTo(new File(it, "_DONE_${dataDir.name}"))
-                } else {
-                    if (!config.isNoRenameOnFail)
-                        dataDir.renameTo(new File(it, "_FAIL_${dataDir.name}"))
-
-                    if (config.stopOnFail) return false
-                }
-
-                isStudyUploadSuccessful = isStudyUploadSuccessful && res
             }
 
             if (isStudyUploadSuccessful) {
