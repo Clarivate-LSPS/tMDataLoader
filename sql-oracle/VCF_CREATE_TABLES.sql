@@ -65,6 +65,7 @@ CREATE OR REPLACE TRIGGER deapp.DE_VAR_SUB_DETAIL_incr
 	  INTO   :new.VARIANT_SUBJECT_DETAIL_ID 
 	  FROM   dual;
 	END;
+	/
 --------------------------------------------------------
 --  DDL for Table DE_VARIANT_SUBJECT_IDX
 --------------------------------------------------------
@@ -94,6 +95,7 @@ CREATE OR REPLACE TRIGGER deapp.de_var_sub_idx_incr
 	  INTO   :new.VARIANT_SUBJECT_IDX_ID 
 	  FROM   dual;
 	END;
+	/
 --------------------------------------------------------
 --  DDL for Table DE_VARIANT_SUBJECT_SUMMARY
 --------------------------------------------------------
@@ -131,6 +133,7 @@ CREATE OR REPLACE TRIGGER deapp.de_var_sub_summary_incr
 	  INTO   :new.VARIANT_SUBJECT_SUMMARY_ID
 	  FROM   dual;
 	END;
+	/
 --------------------------------------------------------
 --  DDL for Index SYS_C0035476
 --------------------------------------------------------
@@ -308,6 +311,7 @@ BEGIN
   INTO   :new.variant_population_data_id
   FROM   dual;
 END;
+/
 --
   -- Name: deapp.de_variant_population_data_id_idx; Type: CONSTRAINT; Schema: deapp; Owner: -
   --
@@ -355,6 +359,7 @@ END;
 	  INTO   :new.variant_population_info_id 
 	  FROM   dual;
 	END;
+	/
 
   ALTER TABLE deapp.de_variant_population_info
       ADD CONSTRAINT de_var_pop_info_id_idx PRIMARY KEY (variant_population_info_id);
