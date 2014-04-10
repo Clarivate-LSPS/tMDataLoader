@@ -1,6 +1,8 @@
--- Function: tm_cz.i2b2_process_vcf_data(varchar2, varchar2, varchar2, varchar2, numeric)
--- DROP FUNCTION tm_cz.i2b2_process_vcf_data(varchar2, varchar2, varchar2, varchar2, numeric);
-CREATE OR REPLACE PROCEDURE tm_cz.i2b2_process_vcf_data
+-- Function: "TM_CZ"."I2B2_PROCESS_VCF_DATA"
+--DROP PROCEDURE "TM_CZ"."I2B2_PROCESS_VCF_DATA";
+--/
+
+CREATE OR REPLACE PROCEDURE "TM_CZ"."I2B2_PROCESS_VCF_DATA"
 ( trial_id 		varchar2
  ,top_node		varchar2
  ,source_cd		varchar2 := 'STD'		--	default source_cd = 'STD'
