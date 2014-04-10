@@ -51,7 +51,7 @@ class HasRecord extends BaseMatcher<Sql> {
         if (record) {
             description.appendText("differs by: ")
             description.appendValueList("(", ", ", ")",
-                    valueAttrs.findAll { it.value != record[it.key] }.
+                    valueAttrs.findAll { it.value != normalizeValue(record[it.key]) }.
                             collect { "${it.key}=${normalizeValue(record[it.key])}" })
         } else {
             description.appendText("no record ").appendValue(keyAttrs).

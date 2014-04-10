@@ -3,10 +3,7 @@ package com.thomsonreuters.lsps.transmart.etl
 import com.thomsonreuters.lsps.transmart.Fixtures
 import com.thomsonreuters.lsps.transmart.sql.SqlMethods
 
-import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasNode
-import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasPatient
-import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasRecord
-import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasSample
+import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.*
 import static org.hamcrest.CoreMatchers.equalTo
 import static org.junit.Assert.assertThat
 
@@ -86,24 +83,26 @@ class VCFDataProcessorTest extends ConfigAwareTestCase {
         assertSampleAssociated('VCF_TST002', 'rs149201999')
         assertSampleAssociated('VCF_TST002', 'rs146752890')
         // verify deapp.de_variant_subject_detail
-        assertThat(db, hasRecord('deapp.de_variant_subject_detail', [dataset_id: studyId,
-                chr: '22', pos: 16050408, rs_id: 'rs149201999'], [ref: 'T', alt: 'C', qual: '100', filter: 'PASS',
+        assertThat(db, hasRecord('deapp.de_variant_subject_detail',
+                [dataset_id: studyId, chr: '22', pos: 16050408, rs_id: 'rs149201999'],
+                [ref: 'T', alt: 'C', qual: '100', filter: 'PASS',
                 info: 'LDAF=0.0649;RSQ=0.8652;AN=2184;ERATE=0.0046;VT=SNP;AA=.;AVGPOST=0.9799;THETA=0.0149;SNPSOURCE=LOWCOV;AC=134;AF=0.06;ASN_AF=0.04;AMR_AF=0.05;AFR_AF=0.10;EUR_AF=0.06',
                 format: 'GT:DS:GL', variant_value: '0|0:0.050:-0.03,-1.17,-5.00\t0|1:0.900:-0.71,-0.09,-5.00']))
         // verify deapp.de_variant_population_info
-        assertThat(db, hasRecord('deapp.de_variant_population_info', dataset_id: studyId,
-                info_name: 'LDAF', description: 'MLE Allele Frequency Accounting for LD', type: 'Float', number: 1))
+        assertThat(db, hasRecord('deapp.de_variant_population_info',
+                [dataset_id: studyId, info_name: 'LDAF'],
+                [description: 'MLE Allele Frequency Accounting for LD', type: 'Float', number: '1']))
         // verify deapp.de_variant_population_data
         //TODO: check for Flag info field type
         //TODO: check for non-existent field
-        assertThat(db, hasRecord('deapp.de_variant_population_data', dataset_id: studyId,
-                chr: '22', pos:  16050408, info_name: 'LDAF', info_index: 0,
-                integer_value: null, float_value: 0.0649, text_value: null))
-        assertThat(db, hasRecord('deapp.de_variant_population_data', dataset_id: studyId,
-                chr: '22', pos:  16050408, info_name: 'AN', info_index: 0,
-                integer_value: 2184, float_value: null, text_value: null))
-        assertThat(db, hasRecord('deapp.de_variant_population_data', dataset_id: studyId,
-                chr: '22', pos:  16050408, info_name: 'VT', info_index: 0,
-                integer_value: null, float_value: null, text_value: 'SNP'))
+        assertThat(db, hasRecord('deapp.de_variant_population_data',
+                [dataset_id: studyId, chr: '22', pos:  16050408, info_name: 'LDAF', info_index: 0],
+                [integer_value: null, float_value: 0.0649, text_value: null]))
+        assertThat(db, hasRecord('deapp.de_variant_population_data',
+                [dataset_id: studyId, chr: '22', pos:  16050408, info_name: 'AN', info_index: 0],
+                [integer_value: 2184, float_value: null, text_value: null]))
+        assertThat(db, hasRecord('deapp.de_variant_population_data',
+                [dataset_id: studyId, chr: '22', pos:  16050408, info_name: 'VT', info_index: 0],
+                [integer_value: null, float_value: null, text_value: 'SNP']))
     }
 }
