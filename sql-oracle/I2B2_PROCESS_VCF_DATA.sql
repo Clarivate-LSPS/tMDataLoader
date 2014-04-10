@@ -3,9 +3,9 @@
 CREATE OR REPLACE PROCEDURE tm_cz.i2b2_process_vcf_data
 ( trial_id 		varchar2
  ,top_node		varchar2
- ,source_cd		varchar2 default 'STD'		--	default source_cd = 'STD'
- ,secure_study	varchar2	default 'N'		--	security setting if new patients added to patient_dimension
- ,currentJobID 	number default -1
+ ,source_cd		varchar2 := 'STD'		--	default source_cd = 'STD'
+ ,secure_study	varchar2	:= 'N'		--	security setting if new patients added to patient_dimension
+ ,currentJobID 	number := null
 ) as
 	--Audit variables
   
@@ -82,7 +82,7 @@ BEGIN
   END IF;
 	stepCt := 0;
 	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Starting i2b2_process_mrna_data',0,stepCt,'Done');
+	cz_write_audit(jobId,databaseName,procedureName,'Starting i2b2_process_vcf_data  '||trial_id|| ' '||top_node||' '||source_cd||' '||secure_study,0,stepCt,'Done');
 
 	--	check if all subject_sample map records have a tissue_type, If not, abort run
 	select count(*) into pCount
@@ -102,12 +102,14 @@ BEGIN
 	end if;
 	-- Get root_node from topNode
 	select parse_nth_value(topNode, 2, '\') into RootNode from dual;
+
 	select count(*) into pExists
 	from table_access
 	where c_name = rootNode;
 	if pExists = 0 then
 		i2b2_add_root_node(rootNode, jobId);
 	end if;
+
 	select c_hlevel into root_level
 	from table_access /* from i2b2 */
 	where c_name = RootNode;
@@ -148,7 +150,7 @@ BEGIN
 	from (select distinct 'Unknown' as sex_cd,
 				 0 as age_in_years_num,
 				 null as race_cd,
-				 regexp_replace(TrialID || ':' || s.site_id || ':' || s.subject_id,'(::){1,}', ':') as sourcesystem_cd
+				 regexp_replace(TrialID || ':' || nvl(s.site_id,'') || ':' || s.subject_id,'(::){1,}', ':') as sourcesystem_cd
 		 from lt_src_mrna_subj_samp_map s
 		     
 		 where s.subject_id is not null
@@ -157,7 +159,7 @@ BEGIN
 		   and not exists
 			  (select 1 from patient_dimension x
 			   where x.sourcesystem_cd =
-				 regexp_replace(TrialID || ':' || s.site_id || ':' || s.subject_id,'(::){1,}', ':'))
+				 regexp_replace(TrialID || ':' || nvl(s.site_id,'') || ':' || s.subject_id,'(::){1,}', ':'))
 		) x;
 	pCount := SQL%ROWCOUNT;
 	stepCt := stepCt + 1;
@@ -178,23 +180,8 @@ BEGIN
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Delete data from observation_fact',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
-	select count(*) into dataParitioned
-    from all_tables
-    where table_name = 'DE_SUBJECT_MICROARRAY_DATA'
-    and partitioned = 'YES';
-  select count(*)
-		into pExists
-		from all_tab_partitions
-		where table_name = 'DE_SUBJECT_MICROARRAY_DATA'
-		and partition_name = TrialId || ':' || sourceCd;
-	--	dataset is not partitioned so must delete
 
 	--	Cleanup any existing data in de_subject_sample_mapping.
-	/*delete from DE_SUBJECT_SAMPLE_MAPPING
-	where trial_name = TrialID
-	  and nvl(source_cd,'STD') = sourceCd
-	  and platform = 'MRNA_AFFYMETRIX'; --Making sure only mRNA data is deleted
-		  */
 	delete from de_subject_sample_mapping where
 	  assay_id in (
 		select dssm.assay_id from
@@ -219,6 +206,7 @@ BEGIN
 --	load temp table with leaf node path, use temp table with distinct sample_type, ATTR2, platform, and title   this was faster than doing subselect
 --	from wt_subject_mrna_data
 	execute immediate('truncate table tm_wz.wt_mrna_node_values');
+
 	insert into wt_mrna_node_values
 	(category_cd
 	,platform
@@ -228,28 +216,29 @@ BEGIN
 	,title
 	)
 	select distinct a.category_cd
-				   ,nvl(a.platform,'')
+				   ,nvl(a.platform,'VCF')
 				   ,nvl(a.tissue_type,'Unspecified Tissue Type')
 	               ,a.attribute_1
 				   ,a.attribute_2
-				   ,g.title
+				   ,nvl(g.title,'')
     from lt_src_mrna_subj_samp_map a
 	    left join 
 	de_gpl_info g
-	on a.platform = g.platform and upper(g.marker_type) = 'GENE EXPRESSION'
+	on nvl(a.platform,'') = nvl(g.platform,'') --and upper(g.marker_type) = 'GENE EXPRESSION'
 	where a.trial_name = TrialID
 	  and a.source_cd = sourceCD;
 
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Insert node values into DEAPP wt_mrna_node_values',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
+
 	insert into wt_mrna_nodes
 	(leaf_node
 	,category_cd
 	,platform
 	,tissue_type
 	,attribute_1
-    ,attribute_2
+  ,attribute_2
 	,node_type
 	)
 	select distinct topNode || regexp_replace(replace(replace(replace(replace(replace(replace(
@@ -265,6 +254,7 @@ BEGIN
 	cz_write_audit(jobId,databaseName,procedureName,'Create leaf nodes in DEAPP tmp_mrna_nodes',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
 	--	insert for platform node so platform concept can be populated
+
 	insert into wt_mrna_nodes
 	(leaf_node
 	,category_cd
@@ -288,6 +278,7 @@ BEGIN
 	cz_write_audit(jobId,databaseName,procedureName,'Create platform nodes in wt_mrna_nodes',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
 	--	insert for ATTR1 node so ATTR1 concept can be populated in tissue_type_cd
+
 	insert into wt_mrna_nodes
 	(leaf_node
 	,category_cd
@@ -339,6 +330,7 @@ BEGIN
 	cz_write_audit(jobId,databaseName,procedureName,'Create ATTR2 nodes in wt_mrna_nodes',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
 	--	insert for tissue_type node so sample_type_cd can be populated
+
 	insert into wt_mrna_nodes
 	(leaf_node
 	,category_cd
@@ -362,6 +354,7 @@ BEGIN
     stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Create ATTR2 nodes in wt_mrna_nodes',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
+
 	update wt_mrna_nodes
 	set node_name=parse_nth_value(leaf_node,length(leaf_node)-length(replace(leaf_node,'\',null)),'\');
     stepCt := stepCt + 1;
@@ -377,6 +370,7 @@ BEGIN
 		i2b2_fill_in_tree(TrialId, r_addNodes.leaf_node, jobID);
 	END LOOP;
 	--	set sourcesystem_cd, c_comment to null if any added upper-level nodes
+
 	update i2b2 b
 	set sourcesystem_cd=null,c_comment=null
 	where b.sourcesystem_cd = TrialId
@@ -385,6 +379,7 @@ BEGIN
 	cz_write_audit(jobId,databaseName,procedureName,'Set sourcesystem_cd to null for added upper level nodes',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
 --	update concept_cd for nodes, this is done to make the next insert easier
+
 	update wt_mrna_nodes t
 	set concept_cd=(select c.concept_cd from concept_dimension c
 	                where c.concept_path = t.leaf_node
@@ -445,7 +440,7 @@ BEGIN
 	,omic_patient_id
     )
 	select t.patient_id
-		  ,t.site_id
+		  ,nvl(t.site_id,'')
 		  ,t.subject_id
 		  ,t.subject_type
 		  ,t.concept_code
@@ -468,7 +463,7 @@ BEGIN
 		  ,t.omic_source_study
 		  ,t.omic_patient_id
 	from (select distinct b.patient_num as patient_id
-			  ,a.site_id
+			  ,nvl(a.site_id,'') as site_id
 			  ,a.subject_id
 			  ,null as subject_type
 			  ,ln.concept_cd as concept_code
@@ -482,25 +477,25 @@ BEGIN
 			  ,'VCF' as platform
 			  ,pn.concept_cd as platform_cd
 			  ,ln.concept_cd || '-' || to_char(b.patient_num) as data_uid
-			  ,nvl(a.platform,'') as gpl_id
+			  ,nvl(a.platform,'VCF') as gpl_id
 			  ,coalesce(sid.patient_num,b.patient_num) as sample_id
 			  ,a.sample_cd
 			  ,nvl(a.category_cd,'Biomarker_Data+Gene_Expression+PLATFORM+TISSUETYPE+ATTR1+ATTR2') as category_cd
 			  ,a.source_cd
 			  ,TrialId as omic_source_study
 			  ,b.patient_num as omic_patient_id
-		from lt_src_mrna_subj_samp_map a
+		from tm_lz.lt_src_mrna_subj_samp_map a
 		--Joining to Pat_dim to ensure the ID's match. If not I2B2 won't work.
 		inner join patient_dimension b
-		  on regexp_replace(TrialID || ':' || a.site_id || ':' || a.subject_id,'(::){1,}', ':') = b.sourcesystem_cd
+		  on regexp_replace(TrialID || ':' || nvl(a.site_id,'') || ':' || a.subject_id,'(::){1,}', ':') = b.sourcesystem_cd
 		inner join wt_mrna_nodes ln
-			on a.platform = ln.platform
+			on nvl(a.platform,'VCF') = ln.platform
 			and a.tissue_type = ln.tissue_type
 			and nvl(a.attribute_1,'@') = nvl(ln.attribute_1,'@')
 			and nvl(a.attribute_2,'@') = nvl(ln.attribute_2,'@')
 			and ln.node_type = 'LEAF'
 		inner join wt_mrna_nodes pn
-			on a.platform = pn.platform
+			on nvl(a.platform,'VCF') = pn.platform
 			and case when instr(substr(a.category_cd,1,instr(a.category_cd,'PLATFORM')+8),'TISSUETYPE') > 1 then a.tissue_type else '@' end = nvl(pn.tissue_type,'@')
 			and case when instr(substr(a.category_cd,1,instr(a.category_cd,'PLATFORM')+8),'ATTR1') > 1 then a.attribute_1 else '@' end = nvl(pn.attribute_1,'@')
 			and case when instr(substr(a.category_cd,1,instr(a.category_cd,'PLATFORM')+8),'ATTR2') > 1 then a.attribute_2 else '@' end = nvl(pn.attribute_2,'@')
@@ -524,13 +519,13 @@ BEGIN
 			and case when instr(substr(a.category_cd,1,instr(a.category_cd,'ATTR2')+5),'ATTR1') > 1 then a.attribute_1 else '@' end = nvl(a2.attribute_1,'@')
 			and a2.node_type = 'ATTR2'
 		left outer join patient_dimension sid
-			on  regexp_replace(TrialId || ':S:' || a.site_id || ':' || a.subject_id || ':' || a.sample_cd,
+			on  regexp_replace(TrialId || ':S:' || nvl(a.site_id,'') || ':' || a.subject_id || ':' || a.sample_cd,
 							  '(::){1,}', ':') = sid.sourcesystem_cd
 		where a.trial_name = TrialID
-		  and a.source_cd = sourceCD
+		  and nvl(a.source_cd,'STD') = sourceCD
 		  and  ln.concept_cd is not null) t;
 	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Insert trial into DEAPP de_subject_sample_mapping',SQL%ROWCOUNT,stepCt,'Done');
+	cz_write_audit(jobId,databaseName,procedureName,'Insert trial into DEAPP de_subject_sample_mapping '||TrialID||' '||sourceCD,SQL%ROWCOUNT,stepCt,'Done');
   commit;
 --	recreate de_subject_sample_mapping indexes
 	--execute immediate('create index de_subject_smpl_mpng_idx1 on de_subject_sample_mapping(timepoint, patient_id, trial_name) parallel nologging');
@@ -634,6 +629,14 @@ BEGIN
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Update c_columndatatype and c_metadataxml for numeric data types in I2B2METADATA i2b2',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
+
+  update deapp.de_variant_subject_summary v
+	set assay_id = (select sm.assay_id
+	from deapp.de_subject_sample_mapping sm
+	where sm.trial_name = TrialID and sm.sample_cd = v.subject_id);
+	commit;
+	stepCt := stepCt + 1;
+	tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Associate deapp.de_subject_sample_mapping with deapp.de_variant_subject_summary',SQL%ROWCOUNT,stepCt,'Done');
 /*
 	--UPDATE VISUAL ATTRIBUTES for Leaf Active (Default is folder)
 	update i2b2 a
@@ -661,7 +664,7 @@ BEGIN
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Create concept counts',0,stepCt,'Done');
 	--	delete each node that is hidden
-	 FOR r_delNodes in delNodes Loop
+/* FOR r_delNodes in delNodes Loop
     --	deletes hidden nodes for a trial one at a time
 		i2b2_delete_1_node(r_delNodes.c_fullname);
 		stepCt := stepCt + 1;
@@ -673,10 +676,9 @@ BEGIN
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Load security data',0,stepCt,'Done');
 --	tag data with probeset_id from reference.probeset_deapp
-	execute immediate ('truncate table tm_wz.wt_subject_mrna_probeset');
+	execute immediate ('truncate table tm_wz.wt_subject_mrna_probeset');    */
 	--	note: assay_id represents a unique subject/site/sample
 
-	--	insert into de_subject_microarray_data when dataType is T (transformed)
 
 	IF newJobFlag = 1
 	THEN
