@@ -16,7 +16,11 @@ class SqlMatchers {
         return new HasSample(props, studyId, sampleId)
     }
 
-    public static HasRecord hasRecord(Map<CharSequence, Object> attrs = [:], CharSequence tableName) {
-        return new HasRecord(attrs, tableName)
+    public static HasRecord hasRecord(Map<CharSequence, Object> keyAttrs = [:], CharSequence tableName) {
+        return new HasRecord(tableName, keyAttrs, [:])
+    }
+
+    public static HasRecord hasRecord(CharSequence tableName, Map<CharSequence, Object> keyAttrs, Map<CharSequence, Object> valueAttrs) {
+        return new HasRecord(tableName, keyAttrs, valueAttrs)
     }
 }
