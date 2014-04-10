@@ -636,9 +636,10 @@ BEGIN
 	set assay_id = (select sm.assay_id
 	from deapp.de_subject_sample_mapping sm
 	where sm.trial_name = TrialID and sm.sample_cd = v.subject_id);
-	commit;
+
 	stepCt := stepCt + 1;
 	tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Associate deapp.de_subject_sample_mapping with deapp.de_variant_subject_summary',SQL%ROWCOUNT,stepCt,'Done');
+  commit;
 /*
 	--UPDATE VISUAL ATTRIBUTES for Leaf Active (Default is folder)
 	update i2b2 a
