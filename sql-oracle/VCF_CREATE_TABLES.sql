@@ -290,15 +290,15 @@ CREATE SEQUENCE deapp.de_variant_population_data_seq
   -- Name: deapp.de_variant_population_data; Type: TABLE; Schema: deapp; Owner: -
   --
   CREATE TABLE deapp.de_variant_population_data (
-      variant_population_data_id NUMBER(10,0),
-      dataset_id varchar2(50),
-      chr varchar2(50),
-      pos  NUMBER(10,0),
-      info_name varchar2(100),
-      info_index integer DEFAULT 0,
-      integer_value NUMBER(10,0),
-      float_value double precision,
-      text_value CLOB
+      VARIANT_POPULATION_DATA_ID NUMBER(10,0),
+      DATASET_ID varchar2(50),
+      CHR varchar2(50),
+      POS  NUMBER(10,0),
+      INFO_NAME varchar2(100),
+      INFO_INDEX integer DEFAULT 0,
+      INTEGER_VALUE NUMBER(10,0),
+      FLOAT_VALUE double precision,
+      TEXT_VALUE CLOB
   );
 
 
@@ -342,12 +342,12 @@ END;
   -- Name: deapp.de_variant_population_info; Type: TABLE; Schema: deapp; Owner: -
   --
   CREATE TABLE deapp.de_variant_population_info (
-      variant_population_info_id number(10,0),
-      dataset_id varchar2(50),
-      info_name varchar2(100),
-      description clob,
-      "type" varchar2(30),
-      "number" varchar2(10)
+      "VARIANT_POPULATION_INFO_ID" number(10,0),
+      "DATASET_ID" varchar2(50),
+      "INFO_NAME" varchar2(100),
+      "DESCRIPTION" clob,
+      "TYPE" varchar2(30),
+      "NUMBER" varchar2(10)
   );
 
 	CREATE OR REPLACE TRIGGER deapp.de_var_pop_info_incr 
