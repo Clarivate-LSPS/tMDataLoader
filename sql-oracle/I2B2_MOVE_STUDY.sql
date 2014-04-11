@@ -41,7 +41,7 @@ AS
   paths_tab               paths_tab_type := paths_tab_type();
 
     old_study_missed EXCEPTION;
-    new_study_exists EXCEPTION;
+    empty_paths EXCEPTION;
     duplicated_paths EXCEPTION;
 
   BEGIN
@@ -77,8 +77,28 @@ AS
 
 -- check first and last /
 
-    old_path := old_path_in;
-    new_path := new_path_in;
+    old_path := trim(old_path_in);
+    new_path := trim(new_path_in);
+
+    IF old_path = '' or new_path=''
+    THEN
+      RAISE empty_paths;
+    END IF;
+
+    IF old_path = new_path
+    THEN
+      RAISE duplicated_paths;
+    END IF;
+    -- check old root node exists
+    SELECT
+      count(*)
+    INTO rowsExists
+    FROM i2b2metadata.i2b2
+    WHERE c_fullname = old_path;
+    IF rowsExists = 0
+    THEN
+      RAISE old_study_missed;
+    END IF;
 
     SELECT
       SUBSTR(old_path, 1, 1)
@@ -125,32 +145,7 @@ AS
     new_path_last_node_name := REGEXP_REPLACE(new_path, '(.*)\\((\w|\s)*)\\', '\2');
 -- ClinicalSample
 
-    IF old_path = new_path
-    THEN
-      RAISE duplicated_paths;
-    END IF;
--- check old root node exists
-    SELECT
-      count(*)
-    INTO rowsExists
-    FROM i2b2metadata.i2b2
-    WHERE c_fullname = old_path;
---1
-    IF rowsExists = 0
-    THEN
-      RAISE old_study_missed;
-    END IF;
 
-/*SELECT
-  count(*)
-INTO rowsExists
-FROM i2b2metadata.i2b2
-WHERE c_fullname = new_path;
---0
-IF rowsExists <> 0
-THEN
-  RAISE new_study_exists;
-END IF; */
 
 -- if 1
 -- check new root node exists
@@ -336,6 +331,7 @@ END IF; */
                              FROM i2b2demodata.concept_dimension
                              WHERE concept_path = old_root_node)
       WHERE concept_path = new_root_node;
+      COMMIT;
 
     END IF;
 
@@ -360,6 +356,8 @@ END IF; */
       WHERE c_fullname = old_root_node;
       DELETE FROM i2b2metadata.table_access
       WHERE c_fullname = old_root_node;
+      DELETE FROM i2b2demodata.concept_dimension
+      WHERE concept_path = old_root_node;
 
       stepCt := stepCt + 1;
       cz_write_audit(jobId, databaseName, procedureName, 'Remove old root node from i2b2, i2b2_secure, table_access',
@@ -547,15 +545,6 @@ END IF; */
     WHERE concept_path LIKE old_path || '%';
     stepCt := stepCt + 1;
     cz_write_audit(jobId, databaseName, procedureName, 'Rename paths in concept_counts', SQL%ROWCOUNT, stepCt, 'Done');
-    COMMIT;
-
---rename paths in concept_dimension
-    UPDATE concept_dimension
-    SET CONCEPT_PATH = replace(concept_path, old_path, new_path)
-    WHERE concept_path LIKE old_path || '%';
-    stepCt := stepCt + 1;
-    cz_write_audit(jobId, databaseName, procedureName, 'Rename paths in concept_dimension', SQL%ROWCOUNT, stepCt,
-                   'Done');
     COMMIT;
 
 -- check new level need to be added
@@ -837,12 +826,12 @@ END IF; */
     cz_end_audit(jobId, 'FAIL');
     DBMS_OUTPUT.PUT_LINE('old_study_missed');
 
-    WHEN new_study_exists THEN
-    cz_write_audit(jobId, databasename, procedurename, 'Selected path to move already exists in db', 1, stepCt,
+    WHEN empty_paths THEN
+    cz_write_audit(jobId, databasename, procedurename, 'New or old path is empty. Please check input parameters', 1, stepCt,
                    'ERROR');
     cz_error_handler(jobid, procedurename);
     cz_end_audit(jobId, 'FAIL');
-    DBMS_OUTPUT.PUT_LINE('new_study_exists');
+    DBMS_OUTPUT.PUT_LINE('empty_paths');
 
     WHEN duplicated_paths THEN
     cz_write_audit(jobId, databasename, procedurename, 'Please select different old and new paths', 1, stepCt, 'ERROR');
