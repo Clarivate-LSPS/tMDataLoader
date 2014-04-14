@@ -20,8 +20,6 @@
 
 package com.thomsonreuters.lsps.transmart.etl
 
-import groovy.sql.Sql
-import com.thomsonreuters.lsps.transmart.etl.DataOperationProcessor
 import com.thomsonreuters.lsps.transmart.tools.ProcessLocker
 
 class CommandLineTool {
