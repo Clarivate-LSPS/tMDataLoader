@@ -667,7 +667,7 @@ BEGIN
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Create concept counts',0,stepCt,'Done');
 
-	insert into de_subject_snp_dataset
+	/*insert into de_subject_snp_dataset
 	(
     CONCEPT_CD,
     DATASET_NAME,
@@ -755,7 +755,7 @@ BEGIN
 
     stepCt := stepCt + 1;
     cz_write_audit(jobId,databaseName,procedureName,'Insert into DE_SNP_PROBE_SORTED_DEF',SQL%ROWCOUNT,stepCt,'Done');
-    commit;
+    commit;*/
 	--	delete each node that is hidden
 /* FOR r_delNodes in delNodes Loop
     --	deletes hidden nodes for a trial one at a time
