@@ -22,6 +22,7 @@ AS
   pathCount INTEGER(1);
   countNodeUnderTop INTEGER(8);
   topNodeCount integer(8);
+  countSourceCD integer(8);
   topNode	VARCHAR(500 BYTE);
   databaseName VARCHAR(100);
   procedureName VARCHAR(100);
@@ -140,65 +141,71 @@ BEGIN
 		commit;
 			
 		--	delete observation_fact SECURITY data, do before patient_dimension delete
-		select distinct x.source_cd into sourceCD
+		select count(x.source_cd) into countSourceCD
 			  from de_subject_sample_mapping x
 			  where x.trial_name = trialId;
-			  
-		delete from observation_fact f
-		where f.concept_cd = 'SECURITY'
-		  and f.patient_num in
-			 (select distinct p.patient_num from patient_dimension p
-			  where p.sourcesystem_cd like trialId || '%');
-		stepCt := stepCt + 1;
-		cz_write_audit(jobId,databaseName,procedureName,'Delete SECURITY data for trial from I2B2DEMODATA observation_fact',SQL%ROWCOUNT,stepCt,'Done');
-		commit;	
-		
-		
-		delete from deapp.de_subject_microarray_data
-		where trial_source = trialId || ':' || sourceCd
-		and assay_id in (
-		  select dssm.assay_id from
-			TM_LZ.lt_src_mrna_subj_samp_map ltssm
-			left join
-			deapp.de_subject_sample_mapping dssm
-			on
-			dssm.trial_name = ltssm.trial_name
-			and dssm.gpl_id = ltssm.platform
-			and dssm.subject_id = ltssm.subject_id
-			and dssm.sample_cd  = ltssm.sample_cd
-		  where
-			dssm.trial_name = trialId
-			and nvl(dssm.source_cd,'STD') = sourceCd
-		);
-		stepCt := stepCt + 1;
-		cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from deapp de_subject_microarray_data',SQL%ROWCOUNT,stepCt,'Done');
-		commit;	
-		
-		delete from deapp.de_subject_sample_mapping where
-		  assay_id in (
-			select dssm.assay_id from
-			  TM_LZ.lt_src_mrna_subj_samp_map ltssm
-			  left join
-			  deapp.de_subject_sample_mapping dssm
-			  on
-			  dssm.trial_name     = ltssm.trial_name
-			  and dssm.gpl_id     = ltssm.platform
-			  and dssm.subject_id = ltssm.subject_id
-			  and dssm.sample_cd  = ltssm.sample_cd
-			where
-			  dssm.trial_name = trialID
-			  and nvl(dssm.source_cd,'STD') = sourceCd);
 
-		stepCt := stepCt + 1;
-		cz_write_audit(jobId,databaseName,procedureName,'Delete trial from DEAPP de_subject_sample_mapping',SQL%ROWCOUNT,stepCt,'Done');
+    if (countSourceCD>0) then
+      select distinct x.source_cd into sourceCD
+          from de_subject_sample_mapping x
+          where x.trial_name = trialId;
 
-		commit;
-		  
+      delete from observation_fact f
+      where f.concept_cd = 'SECURITY'
+        and f.patient_num in
+         (select distinct p.patient_num from patient_dimension p
+          where p.sourcesystem_cd like trialId || '%');
+      stepCt := stepCt + 1;
+      cz_write_audit(jobId,databaseName,procedureName,'Delete SECURITY data for trial from I2B2DEMODATA observation_fact',SQL%ROWCOUNT,stepCt,'Done');
+      commit;
 
-		stepCt := stepCt + 1;
-		cz_write_audit(jobId,databaseName,procedureName,'Delete trial from DEAPP de_subject_sample_mapping',SQL%ROWCOUNT,stepCt,'Done');
 
-		commit;
+      delete from deapp.de_subject_microarray_data
+      where trial_source = trialId || ':' || sourceCd
+      and assay_id in (
+        select dssm.assay_id from
+        TM_LZ.lt_src_mrna_subj_samp_map ltssm
+        left join
+        deapp.de_subject_sample_mapping dssm
+        on
+        dssm.trial_name = ltssm.trial_name
+        and dssm.gpl_id = ltssm.platform
+        and dssm.subject_id = ltssm.subject_id
+        and dssm.sample_cd  = ltssm.sample_cd
+        where
+        dssm.trial_name = trialId
+        and nvl(dssm.source_cd,'STD') = sourceCd
+      );
+      stepCt := stepCt + 1;
+      cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from deapp de_subject_microarray_data',SQL%ROWCOUNT,stepCt,'Done');
+      commit;
+
+      delete from deapp.de_subject_sample_mapping where
+        assay_id in (
+        select dssm.assay_id from
+          TM_LZ.lt_src_mrna_subj_samp_map ltssm
+          left join
+          deapp.de_subject_sample_mapping dssm
+          on
+          dssm.trial_name     = ltssm.trial_name
+          and dssm.gpl_id     = ltssm.platform
+          and dssm.subject_id = ltssm.subject_id
+          and dssm.sample_cd  = ltssm.sample_cd
+        where
+          dssm.trial_name = trialID
+          and nvl(dssm.source_cd,'STD') = sourceCd);
+
+      stepCt := stepCt + 1;
+      cz_write_audit(jobId,databaseName,procedureName,'Delete trial from DEAPP de_subject_sample_mapping',SQL%ROWCOUNT,stepCt,'Done');
+
+      commit;
+
+
+      stepCt := stepCt + 1;
+      cz_write_audit(jobId,databaseName,procedureName,'Delete trial from DEAPP de_subject_sample_mapping',SQL%ROWCOUNT,stepCt,'Done');
+
+      commit;
+    end if;
 		--	delete patient data
 		
 		delete from patient_dimension
