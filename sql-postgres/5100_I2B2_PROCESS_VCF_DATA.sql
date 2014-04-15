@@ -74,7 +74,7 @@ BEGIN
 	update deapp.de_variant_subject_summary v
 	set assay_id = sm.assay_id
 	from deapp.de_subject_sample_mapping sm
-	where sm.trial_name = TrialID and sm.sample_cd = v.subject_id;
+	where sm.platform = 'VCF' and sm.trial_name = TrialID and sm.sample_cd = v.subject_id;
 
   get diagnostics rowCt := ROW_COUNT;
 	stepCt := stepCt + 1;
