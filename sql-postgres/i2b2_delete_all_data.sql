@@ -3,6 +3,7 @@
   trial_id character varying
  ,path_string varchar
  ,currentJobID numeric default -1
+ ,removeTop varchar default 'N'
 ) returns numeric AS
 $BODY$
 Declare
@@ -30,12 +31,12 @@ BEGIN
   if (trial_id is null) then
 	select count(distinct trial_name) into trialCount
 		from DEAPP.de_subject_sample_mapping where concept_code in (
-			select concept_cd from I2B2DEMODATA.concept_dimension where concept_path like path_string || '%'
+			select concept_cd from I2B2DEMODATA.concept_dimension where concept_path like path_string || '%' ESCAPE '`'
 		);
 	if (trialCount = 1) then
 		select distinct trial_name into TrialId
 			from DEAPP.de_subject_sample_mapping where concept_code in (
-				select concept_cd from I2B2DEMODATA.concept_dimension where concept_path like path_string || '%'
+				select concept_cd from I2B2DEMODATA.concept_dimension where concept_path like path_string || '%' ESCAPE '`'
 			);
 	ELSIF ( trialCount = 0 ) THEN  
 		TrialId := null;
@@ -85,13 +86,13 @@ BEGIN
     where 
     concept_path = pathString;
   
-  if (topNodeCount <> 0) then
+  if (topNodeCount > 0) then
     select parent_concept_path into topNode
       from I2B2DEMODATA.concept_counts 
       where 
       concept_path = pathString;
   else
-    topNode := null;
+    topNode := pathString;
   end if;
 
   
@@ -127,16 +128,18 @@ BEGIN
   
   --	delete any table_access data
   delete from i2b2metadata.table_access 
-  where c_fullname like pathString || '%';
-	
+  where c_fullname like pathString || '%' ESCAPE '`';
+	stepCt := stepCt + 1;
+	get diagnostics rowCt := ROW_COUNT;
+	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from I2B2METADATA table_access',rowCt,stepCt,'Done') into rtnCd;
 	--	delete any i2b2_tag data
 	
 	delete from i2b2metadata.i2b2_tags
-	where path like pathString || '%';
+	where path like pathString || '%' ESCAPE '`';
 	stepCt := stepCt + 1;
 	get diagnostics rowCt := ROW_COUNT;
 	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from I2B2METADATA i2b2_tags',rowCt,stepCt,'Done') into rtnCd;
-	/*/*commit;*/*/
+
 	
 	--	delete clinical data
 	if (trialId is not NUll) 
@@ -237,7 +240,7 @@ BEGIN
 	end if;
 	
 	/*Check and delete top node, if remove node is last*/
-  if (topNode is not null) then
+	if (removeTop = 'N') then
     select count(*) into countNodeUnderTop
       from I2B2DEMODATA.concept_counts 
       where parent_concept_path = topNode;
@@ -248,7 +251,7 @@ BEGIN
       
       if (countNodeUnderTop = 0) 
       then
-        select tm_cz.i2b2_delete_all_data(null, topNode, jobID) into rtnCd;
+        select tm_cz.i2b2_delete_all_data(null, topNode, jobID, 'Y') into rtnCd;
       end if;
   end if;
 
