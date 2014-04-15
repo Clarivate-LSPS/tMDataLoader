@@ -192,7 +192,7 @@ BEGIN
 		  deapp.de_subject_sample_mapping dssm
 		  on
 		  dssm.trial_name     = ltssm.trial_name
-		  and nvl(dssm.gpl_id,'')     = nvl(ltssm.platform,'')
+		  and nvl(dssm.gpl_id, 'VCF')     = nvl(ltssm.platform,'VCF')
 		  and dssm.subject_id = ltssm.subject_id
 		  and dssm.sample_cd  = ltssm.sample_cd
 		where
@@ -635,7 +635,7 @@ BEGIN
   update deapp.de_variant_subject_summary v
 	set assay_id = (select sm.assay_id
 	from deapp.de_subject_sample_mapping sm
-	where sm.trial_name = TrialID and sm.sample_cd = v.subject_id);
+	where sm.trial_name = TrialID and sm.sample_cd = v.subject_id and sm.platform='VCF');
 
 	stepCt := stepCt + 1;
 	tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Associate deapp.de_subject_sample_mapping with deapp.de_variant_subject_summary',SQL%ROWCOUNT,stepCt,'Done');
