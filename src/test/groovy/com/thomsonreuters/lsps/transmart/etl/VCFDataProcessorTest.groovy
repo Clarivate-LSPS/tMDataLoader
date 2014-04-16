@@ -62,10 +62,7 @@ class VCFDataProcessorTest extends ConfigAwareTestCase {
         assertThat(db, hasRecord('deapp.de_variant_subject_idx', dataset_id: studyId, subject_id: 'VCF_TST001', position: 1))
         assertThat(db, hasRecord('deapp.de_variant_subject_idx', dataset_id: studyId, subject_id: 'VCF_TST002', position: 2))
         // verify deapp.de_variant_subject_summary
-        //TODO: samples for '/' & no separator
-        //TODO: check for allele eq to .
-        //TODO: check for multiple alternatives
-        //TODO: check for missing GT format
+
         assertThat(db, hasRecord('deapp.de_variant_subject_summary', dataset_id: studyId, subject_id: 'VCF_TST001',
                 chr: '22', pos: 16050408, rs_id: 'rs149201999', variant_type: 'SNV',
                 reference: true, variant: 'T|T', variant_format: 'R|R', allele1: 0, allele2: 0))
@@ -78,16 +75,47 @@ class VCFDataProcessorTest extends ConfigAwareTestCase {
         assertThat(db, hasRecord('deapp.de_variant_subject_summary', dataset_id: studyId, subject_id: 'VCF_TST002',
                 chr: '22', pos: 16050612, rs_id: 'rs146752890', variant_type: 'SNV',
                 reference: true, variant: '/C', variant_format: '/R', allele1: null, allele2: 0))
+        assertThat(db, hasRecord('deapp.de_variant_subject_summary', dataset_id: studyId, subject_id: 'VCF_TST001',
+                chr: '22', pos: 16050616, rs_id: 'rs146752889', variant_type: 'SNV',
+                reference: true, variant: null, variant_format: null, allele1: null, allele2: null))
+        assertThat(db, hasRecord('deapp.de_variant_subject_summary', dataset_id: studyId, subject_id: 'VCF_TST001',
+                chr: '22', pos: 16050620, rs_id: 'rs146752880', variant_type: 'SNV',
+                reference: false, variant: 'T/G', variant_format: 'V/V', allele1: 2, allele2: 1))
+        assertThat(db, hasRecord('deapp.de_variant_subject_summary', dataset_id: studyId, subject_id: 'VCF_TST001',
+                chr: '22', pos: 16050624, rs_id: 'rs146752879', variant_type: 'SNV',
+                reference: true, variant: null, variant_format: null, allele1: null, allele2: null))
+
         assertSampleAssociated('VCF_TST001', 'rs149201999')
         assertSampleAssociated('VCF_TST001', 'rs146752890')
+        assertSampleAssociated('VCF_TST001', 'rs146752889')
+        assertSampleAssociated('VCF_TST001', 'rs146752880')
+        assertSampleAssociated('VCF_TST001', 'rs146752879')
+
         assertSampleAssociated('VCF_TST002', 'rs149201999')
         assertSampleAssociated('VCF_TST002', 'rs146752890')
+        assertSampleAssociated('VCF_TST002', 'rs146752889')
+        assertSampleAssociated('VCF_TST002', 'rs146752880')
+        assertSampleAssociated('VCF_TST002', 'rs146752879')
+
         // verify deapp.de_variant_subject_detail
         assertThat(db, hasRecord('deapp.de_variant_subject_detail',
                 [dataset_id: studyId, chr: '22', pos: 16050408, rs_id: 'rs149201999'],
                 [ref: 'T', alt: 'C', qual: '100', filter: 'PASS',
                 info: 'LDAF=0.0649;RSQ=0.8652;AN=2184;ERATE=0.0046;VT=SNP;AA=.;AVGPOST=0.9799;THETA=0.0149;SNPSOURCE=LOWCOV;AC=134;AF=0.06;ASN_AF=0.04;AMR_AF=0.05;AFR_AF=0.10;EUR_AF=0.06',
                 format: 'GT:DS:GL', variant_value: '0|0:0.050:-0.03,-1.17,-5.00\t0|1:0.900:-0.71,-0.09,-5.00']))
+
+        assertThat(db, hasRecord('deapp.de_variant_subject_detail',
+                [dataset_id: studyId, chr: '22', pos: 16050620, rs_id: 'rs146752880'],
+                [ref: 'C', alt: 'G,T', qual: '100', filter: 'PASS',
+                        info: 'AC=184;RSQ=0.8228;AVGPOST=0.9640;AN=2184;ERATE=0.0031;VT=SNP;AA=.;THETA=0.0127;LDAF=0.0902;SNPSOURCE=LOWCOV;AF=0.08;ASN_AF=0.08;AMR_AF=0.14;AFR_AF=0.08;EUR_AF=0.07',
+                        format: 'GT:DS:GL', variant_value: '2/1:1.000:-2.05,-0.01,-1.71	./0:1.000:-0.86,-0.06,-5.00']))
+
+        assertThat(db, hasRecord('deapp.de_variant_subject_detail',
+                [dataset_id: studyId, chr: '22', pos: 16050624, rs_id: 'rs146752879'],
+                [ref: 'C', alt: 'G', qual: '100', filter: 'PASS',
+                        info: 'AC=184;RSQ=0.8228;AVGPOST=0.9640;AN=2184;ERATE=0.0031;VT=SNP;AA=.;THETA=0.0127;LDAF=0.0902;SNPSOURCE=LOWCOV;AF=0.08;ASN_AF=0.08;AMR_AF=0.14;AFR_AF=0.08;EUR_AF=0.07',
+                        format: 'DS:GL', variant_value: '1/0:1.000:-2.05,-0.01,-1.71	./0:1.000:-0.86,-0.06,-5.00']))
+
         // verify deapp.de_variant_population_info
         assertThat(db, hasRecord('deapp.de_variant_population_info',
                 [dataset_id: studyId, info_name: 'LDAF'],

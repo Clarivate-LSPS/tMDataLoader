@@ -155,8 +155,8 @@ class VCFDataProcessor extends DataProcessor {
             VcfFile.SampleData sampleData = sampleEntry.value
             CharSequence variant = ''
             CharSequence variantFormat = ''
-            Integer allele1 = sampleData.allele1 != '.' ? sampleData.allele1 as int : null
-            Integer allele2 = sampleData.allele2 != '.' ? sampleData.allele2 as int : null
+            Integer allele1 = sampleData.allele1 != null && sampleData.allele1 != '.' ? sampleData.allele1 as int : null
+            Integer allele2 = sampleData.allele2 != null && sampleData.allele2 != '.' ? sampleData.allele2 as int : null
             if (sampleData.allele1 == '0') {
                 variant += entry.reference
                 variantFormat += 'R'
