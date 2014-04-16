@@ -162,7 +162,33 @@ BEGIN
 		stepCt := stepCt + 1;
 		get diagnostics rowCt := ROW_COUNT;
 		select cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_subject_summary',rowCt,stepCt,'Done') into rtnCd;
-			
+
+		delete from deapp.de_variant_population_data where dataset_id = TrialId;
+		stepCt := stepCt + 1;
+		get diagnostics rowCt := ROW_COUNT;
+		select cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_population_data',rowCt,stepCt,'Done') into rtnCd;
+
+    delete from deapp.de_variant_population_info where dataset_id = TrialId;
+    stepCt := stepCt + 1;
+    get diagnostics rowCt := ROW_COUNT;
+		select cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_population_info',rowCt,stepCt,'Done') into rtnCd;
+
+    delete from deapp.de_variant_subject_detail where dataset_id = TrialId;
+    stepCt := stepCt + 1;
+    get diagnostics rowCt := ROW_COUNT;
+		select cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_subject_detail',rowCt,stepCt,'Done') into rtnCd;
+
+    delete from deapp.de_variant_subject_idx where dataset_id = TrialId;
+    stepCt := stepCt + 1;
+    get diagnostics rowCt := ROW_COUNT;
+		select cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_subject_idx',rowCt,stepCt,'Done') into rtnCd;
+
+
+    delete from deapp.de_variant_dataset where dataset_id = TrialId;
+    stepCt := stepCt + 1;
+    get diagnostics rowCt := ROW_COUNT;
+		cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_dataset',SQL%ROWCOUNT,stepCt,'Done');
+
 		--	delete observation_fact SECURITY data, do before patient_dimension delete
 		select count(x.source_cd) into sourceCDCount
 			  from deapp.de_subject_sample_mapping x
