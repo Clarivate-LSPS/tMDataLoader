@@ -1,5 +1,6 @@
 package com.thomsonreuters.lsps.transmart.etl
 
+import com.thomsonreuters.lsps.transmart.Fixtures
 import org.hamcrest.core.IsNull
 
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasSample
@@ -14,6 +15,11 @@ class DeleteOperationTestCase extends ConfigAwareTestCase {
     private SNPDataProcessor _processorLoadSNP
     private ClinicalDataProcessor _processorLoadClinical
     private DeleteDataProcessor _processorDelete
+    private VCFDataProcessor _processorLoadVCF
+
+    VCFDataProcessor getDataProcessor() {
+        _processorLoadVCF ?: (_processorLoadVCF = new VCFDataProcessor(config))
+    }
 
     ExpressionDataProcessor getProcessorLoad() {
         _processorLoad ?: (_processorLoad = new ExpressionDataProcessor(config))
@@ -29,6 +35,12 @@ class DeleteOperationTestCase extends ConfigAwareTestCase {
 
     ClinicalDataProcessor getProcessorLoadClinical() {
         _processorLoadClinical ?: (_processorLoadClinical = new ClinicalDataProcessor(config))
+    }
+
+    @Override
+    void setUp() {
+        super.setUp()
+        runScript('I2B2_DELETE_ALL_DATA.sql')
     }
 
     String studyName = 'Test Study'
@@ -54,6 +66,16 @@ class DeleteOperationTestCase extends ConfigAwareTestCase {
         else
             assertThat(sample, IsNull.notNullValue())
 
+    }
+
+    void assertThatDataDeletedFromDeVariantSubSum(inpData){
+        String trialId = inpData['id'].toString();
+        def sample = sql.firstRow('select VARIANT_SUBJECT_SUMMARY_ID from deapp.de_variant_subject_summary where assay_id in (\n' +
+                'select assay_id\n' +
+                '\tfrom deapp.de_subject_sample_mapping \n' +
+                '\twhere trial_name = ?)',
+                trialId)
+        assertThat(sample, IsNull.nullValue())
     }
 
     void assertThatTopNodeDelete(String pathTopNode, isDelete){
@@ -210,5 +232,16 @@ class DeleteOperationTestCase extends ConfigAwareTestCase {
         processorDelete.process(inpData);
 
         assertThatTopNodeDelete("\\Test Studies\\", false);
+    }
+
+    void testItDeleteVCFData(){
+        assertTrue(dataProcessor.process(Fixtures.vcfData, [name: studyName, node: $/Test Studies\${studyName}_VCF/$]))
+
+        def inpData = ['id'  : 'GSE0',
+                'path': "\\Test Studies\\${studyName}_VCF\\"];
+        processorDelete.process(inpData);
+
+        assertThatDataDeleted(inpData, true)
+        assertThatDataDeletedFromDeVariantSubSum(inpData)
     }
 }
