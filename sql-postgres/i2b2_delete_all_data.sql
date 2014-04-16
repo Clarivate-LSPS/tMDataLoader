@@ -27,6 +27,10 @@ Declare
   stepCt numeric(18,0);
   rtnCd	 integer;
 BEGIN
+  if (path_string is not null) then
+	pathString := REGEXP_REPLACE('\' || path_string || '\','(\\){2,}', '\','g');
+  end if;
+  
   procedureName := 'i2b2_delete_all_data';
   if (trial_id is null) then
 	select count(distinct trial_name) into trialCount
@@ -149,7 +153,15 @@ BEGIN
 		stepCt := stepCt + 1;
 		get diagnostics rowCt := ROW_COUNT;
 		select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from lz_src_clinical_data',rowCt,stepCt,'Done') into rtnCd;
-		/*commit;*/
+		
+		/*Deleting data from de_variant_subject_summary*/
+		delete from deapp.de_variant_subject_summary v
+		  where assay_id = (select sm.assay_id
+		  from deapp.de_subject_sample_mapping sm
+		  where sm.trial_name = TrialID and sm.sample_cd = v.subject_id);
+		stepCt := stepCt + 1;
+		get diagnostics rowCt := ROW_COUNT;
+		select cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_subject_summary',rowCt,stepCt,'Done') into rtnCd;
 			
 		--	delete observation_fact SECURITY data, do before patient_dimension delete
 		select count(x.source_cd) into sourceCDCount
