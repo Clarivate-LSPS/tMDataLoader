@@ -32,6 +32,10 @@ AS
   more_path exception;
 
 BEGIN
+  if (path_string is not null) then
+    select REGEXP_REPLACE('\' || path_string || '\','(\\){2,}', '\') into pathString from dual;
+  end if;
+
   if (trial_id is null) then
 	select count(distinct trial_name) into trialCount
 		from DEAPP.de_subject_sample_mapping where concept_code in (
@@ -50,9 +54,9 @@ BEGIN
   else
 	TrialId := trial_id;
   end if;
-  
+
   if (path_string is null) then
-    select count(concept_path) into pathCount 
+    select count(concept_path) into pathCount
       from I2B2DEMODATA.concept_dimension where concept_cd in (
         select concept_code from DEAPP.de_subject_sample_mapping where trial_name = TrialId
       );
@@ -60,7 +64,7 @@ BEGIN
       select concept_path into pathString
        from (
           select level, concept_path
-          from i2b2demodata.concept_counts 
+          from i2b2demodata.concept_counts
           start with CONCEPT_PATH = (
             select concept_path
               from I2B2DEMODATA.concept_dimension where concept_cd in (
@@ -70,10 +74,10 @@ BEGIN
           connect by prior  PARENT_CONCEPT_PATH = CONCEPT_PATH
           order by level desc)
           where ROWNUM  = 1;
-    else 
+    else
       raise more_path;
     end if;
-  else 
+  else
     pathString := path_string;
   end if;
   
@@ -139,7 +143,16 @@ BEGIN
 		stepCt := stepCt + 1;
 		cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from lz_src_clinical_data',SQL%ROWCOUNT,stepCt,'Done');
 		commit;
-			
+
+    /*Deleting data from de_variant_subject_summary*/
+    delete from deapp.de_variant_subject_summary v
+      where assay_id = (select sm.assay_id
+      from deapp.de_subject_sample_mapping sm
+      where sm.trial_name = TrialID and sm.sample_cd = v.subject_id);
+    stepCt := stepCt + 1;
+		cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_subject_summary',SQL%ROWCOUNT,stepCt,'Done');
+		commit;
+
 		--	delete observation_fact SECURITY data, do before patient_dimension delete
 		select count(x.source_cd) into countSourceCD
 			  from de_subject_sample_mapping x
@@ -265,4 +278,5 @@ BEGIN
     cz_end_audit (jobID, 'FAIL');
   
 END;
- 
+/
+exit;
