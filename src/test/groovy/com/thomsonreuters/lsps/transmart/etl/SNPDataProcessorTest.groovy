@@ -60,13 +60,13 @@ class SNPDataProcessorTest extends ConfigAwareTestCase {
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
         assertThat(db, hasCopyNumber('TST001', 'SNP_A-4265338', 2))
         assertThat(db, hasCopyNumber('TST002', 'CN_497981', 1))
-        assertThat(sql, hasNode($/\Test Studies\${studyName}\SNP\Test SNP Platform\Unknown\/$).withPatientCount(3))
+        assertThat(db, hasNode($/\Test Studies\${studyName}\SNP\Test SNP Platform\Unknown\/$).withPatientCount(3))
 
         processor.process(new File(studyDir(studyName, studyId, additionalStudiesDir), "SNPDataToUpload"),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
         assertThat(db, hasCopyNumber('TST001', 'SNP_A-4265338', 1))
         assertThat(db, hasCopyNumber('TST002', 'CN_497981', 1))
         assertThat(db, hasCopyNumber('TST001', 'SNP_A-2176913', 1))
-        assertThat(sql, hasNode($/\Test Studies\${studyName}\SNP\Test SNP Platform\Unknown\/$).withPatientCount(4))
+        assertThat(db, hasNode($/\Test Studies\${studyName}\SNP\Test SNP Platform\Unknown\/$).withPatientCount(4))
     }
 }

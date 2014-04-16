@@ -57,17 +57,12 @@ AS
   sourceCd		varchar2(50);
   secureStudy	varchar2(1);
 
-  dataType		varchar2(10);
   sqlText		varchar2(1000);
   tText			varchar2(1000);
   gplTitle		varchar2(1000);
   pExists		number;
-  dataParitioned number;
-  partTbl   	number;
-  partExists 	number;
   sampleCt		number;
   idxExists 	number;
-  logBase		number;
   pCount		integer;
   sCount		integer;
   tablespaceName	varchar2(200);
@@ -119,17 +114,6 @@ BEGIN
 	topNode := REGEXP_REPLACE('\' || top_node || '\','(\\){2,}', '\');	
 	select length(topNode)-length(replace(topNode,'\','')) into topLevel from dual;
 
-	if data_type is null then
-		dataType := 'R';
-	else
-		if data_type in ('R','T','L','Z') then
-			dataType := data_type;
-		else
-			dataType := 'R';
-		end if;
-	end if;
-
-	logBase := log_base;
 	sourceCd := upper(nvl(source_cd,'STD'));
 
   --Set Audit Parameters
@@ -306,66 +290,54 @@ BEGIN
 	cz_write_audit(jobId,databaseName,procedureName,'Delete data from observation_fact',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
 
-  select count(*) into dataParitioned
-    from all_tables
-    where table_name = 'DE_SUBJECT_MICROARRAY_DATA'
-    and partitioned = 'YES';
+	delete from deapp.de_snp_calls_by_gsm
+	where patient_num in (
+	  select dssm.omic_patient_id
+	  from TM_LZ.lt_src_mrna_subj_samp_map ltssm
+      inner join deapp.de_subject_sample_mapping dssm
+      on dssm.trial_name     = ltssm.trial_name
+        and dssm.gpl_id     = ltssm.platform
+        and dssm.subject_id = ltssm.subject_id
+        and dssm.sample_cd  = ltssm.sample_cd
+    where
+      dssm.trial_name = TrialID
+      and nvl(dssm.source_cd,'STD') = sourceCd
+      and dssm.platform = 'SNP'
+	);
 
-  select count(*)
-		into pExists
-		from all_tab_partitions
-		where table_name = 'DE_SUBJECT_MICROARRAY_DATA'
-		and partition_name = TrialId || ':' || sourceCd;
+	stepCt := stepCt + 1;
+	cz_write_audit(jobId,databaseName,procedureName,'Truncated de_snp_calls_by_gsm',0,stepCt,'Done');
+  	COMMIT;
 
+	delete from deapp.de_snp_copy_number
+	where patient_num in (
+	  select dssm.omic_patient_id
+	  from TM_LZ.lt_src_mrna_subj_samp_map ltssm
+      inner join deapp.de_subject_sample_mapping dssm
+      on dssm.trial_name     = ltssm.trial_name
+        and dssm.gpl_id     = ltssm.platform
+        and dssm.subject_id = ltssm.subject_id
+        and dssm.sample_cd  = ltssm.sample_cd
+    where
+      dssm.trial_name = TrialID
+      and nvl(dssm.source_cd,'STD') = sourceCd
+      and dssm.platform = 'SNP'
+	);
 
-	if dataParitioned = 0 or pExists <> 0  then
-		--	dataset is not partitioned so must delete
-		delete from de_subject_microarray_data
-		where trial_source = TrialId || ':' || sourceCd 
-		and assay_id in (
-			select dssm.assay_id from 
-				TM_LZ.lt_src_mrna_subj_samp_map ltssm
-				left join
-				deapp.de_subject_sample_mapping dssm
-				on 
-				dssm.trial_name = ltssm.trial_name
-				and dssm.gpl_id = ltssm.platform
-				and dssm.subject_id = ltssm.subject_id
-				and dssm.sample_cd  = ltssm.sample_cd
-			where 
-				dssm.trial_name = TrialId
-				and nvl(dssm.source_cd,'STD') = sourceCd
-				and dssm.platform = 'SNP'
-		);
-
-		stepCt := stepCt + 1;
-    cz_write_audit(jobId,databaseName,procedureName,'Delete data from de_subject_microarray_data',SQL%ROWCOUNT,stepCt,'Done');
-    commit;
-
-  end if;
-
-  if dataParitioned <> 0 and pExists = 0 then
-		  --	Create partition in de_subject_microarray_data if it doesn't exist else truncate partition
-			--	needed to add partition to de_subject_microarray_data
-			sqlText := 'alter table deapp.de_subject_microarray_data add PARTITION "' || TrialID || ':' || sourceCd || '"  VALUES (' || '''' || TrialID || ':' || sourceCd || '''' || ') ' ||
-						   'NOLOGGING COMPRESS ';
-			execute immediate(sqlText);
-			stepCt := stepCt + 1;
-			cz_write_audit(jobId,databaseName,procedureName,'Adding partition to de_subject_microarray_data',0,stepCt,'Done');
-	end if;
+	stepCt := stepCt + 1;
+	cz_write_audit(jobId,databaseName,procedureName,'Truncated de_snp_copy_number',0,stepCt,'Done');
+  	COMMIT;
 
 	--	Cleanup any existing data in de_subject_sample_mapping.  
   delete from de_subject_sample_mapping where
   assay_id in (
     select dssm.assay_id from 
       TM_LZ.lt_src_mrna_subj_samp_map ltssm
-      left join
-      deapp.de_subject_sample_mapping dssm
-      on 
-      dssm.trial_name     = ltssm.trial_name
-      and dssm.gpl_id     = ltssm.platform
-      and dssm.subject_id = ltssm.subject_id
-      and dssm.sample_cd  = ltssm.sample_cd
+      inner join deapp.de_subject_sample_mapping dssm
+      on dssm.trial_name     = ltssm.trial_name
+        and dssm.gpl_id     = ltssm.platform
+        and dssm.subject_id = ltssm.subject_id
+        and dssm.sample_cd  = ltssm.sample_cd
     where 
       dssm.trial_name = TrialID
       and nvl(dssm.source_cd,'STD') = sourceCd
@@ -899,28 +871,6 @@ BEGIN
 	i2b2_load_security_data(jobId);
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Load security data',0,stepCt,'Done');
-  	COMMIT;
-
-	delete from deapp.de_snp_calls_by_gsm
-	where patient_num in (
-	  select omic_patient_id
-	  from deapp.de_subject_sample_mapping
-	  where trial_name = TrialID
-	);
-
-	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Truncated de_snp_calls_by_gsm',0,stepCt,'Done');
-  	COMMIT;
-	
-	delete from deapp.de_snp_copy_number
-	where patient_num in (
-	  select omic_patient_id
-	  from deapp.de_subject_sample_mapping
-	  where trial_name = TrialID
-	);
-
-	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Truncated de_snp_copy_number',0,stepCt,'Done');
   	COMMIT;
 	
 	insert into deapp.DE_SNP_CALLS_BY_GSM

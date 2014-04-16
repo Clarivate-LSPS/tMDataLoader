@@ -34,7 +34,7 @@ class HasRecord extends BaseMatcher<Sql> {
     @Override
     boolean matches(Object item) {
         record = SqlMethods.findRecord(item as Sql, keyAttrs, tableName)
-        valueAttrs.every { it.value == normalizeValue(record[it.key]) }
+        record && valueAttrs.every { it.value == normalizeValue(record[it.key]) }
     }
 
     @Override

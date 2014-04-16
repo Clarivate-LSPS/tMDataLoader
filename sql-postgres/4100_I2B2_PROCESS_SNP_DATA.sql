@@ -81,9 +81,11 @@ BEGIN
   where patient_num in (
     select sm.omic_patient_id
     from deapp.de_subject_sample_mapping sm, tm_lz.lt_src_mrna_subj_samp_map tsm
-    where sm.trial_name = TrialID and sm.source_cd = sourceCD
+    where sm.trial_name = TrialID
+      and sm.source_cd = sourceCD
 		  and coalesce(sm.site_id, '') = coalesce(tsm.site_id, '')
 		  and sm.subject_id = tsm.subject_id and sm.sample_cd = tsm.sample_cd
+		  and sm.platform = 'SNP'
   );
 
   get diagnostics rowCt := ROW_COUNT;
@@ -107,9 +109,11 @@ BEGIN
   where patient_num in (
     select sm.omic_patient_id
     from deapp.de_subject_sample_mapping sm, tm_lz.lt_src_mrna_subj_samp_map tsm
-    where sm.trial_name = TrialID and sm.source_cd = sourceCD
+    where sm.trial_name = TrialID
+      and sm.source_cd = sourceCD
 		  and coalesce(sm.site_id, '') = coalesce(tsm.site_id, '')
 		  and sm.subject_id = tsm.subject_id and sm.sample_cd = tsm.sample_cd
+		  and sm.platform = 'SNP'
   );
 
   get diagnostics rowCt := ROW_COUNT;
