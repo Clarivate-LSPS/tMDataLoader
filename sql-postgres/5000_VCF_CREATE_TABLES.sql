@@ -14,26 +14,27 @@ IF NOT EXISTS (select 1 from pg_tables where schemaname = 'deapp' and tablename=
       metadata_comment text,
       variant_dataset_type character varying(50)
   )
-  TABLESPACE "transmart";
+  TABLESPACE "deapp";
 END IF;
 
-IF NOT EXISTS (select 1 from pg_tables where schemaname = 'deapp' and tablename='de_variant_subject_idx') THEN
-  --
-  -- Name: de_variant_subject_idx_seq; Type: SEQUENCE; Schema: deapp; Owner: -
-  --
-  IF NOT EXISTS(SELECT 1
-                FROM   pg_class     c
-                JOIN   pg_namespace n ON n.oid = c.relnamespace
-                WHERE  c.relname = 'de_variant_subject_idx_seq'
-                AND    n.nspname = 'deapp') THEN
-    CREATE SEQUENCE deapp.de_variant_subject_idx_seq
-        START WITH 1
-        INCREMENT BY 1
-        NO MINVALUE
-        NO MAXVALUE
-        CACHE 1;
-  END IF;
+--
+-- Name: de_variant_subject_idx_seq; Type: SEQUENCE; Schema: deapp; Owner: -
+--
+IF NOT EXISTS(SELECT 1
+              FROM   pg_class     c
+              JOIN   pg_namespace n ON n.oid = c.relnamespace
+              WHERE  c.relname = 'de_variant_subject_idx_seq'
+              AND    n.nspname = 'deapp') THEN
+  CREATE SEQUENCE deapp.de_variant_subject_idx_seq
+      START WITH 1
+      INCREMENT BY 1
+      NO MINVALUE
+      NO MAXVALUE
+      CACHE 1;
+END IF;
 
+
+IF NOT EXISTS (select 1 from pg_tables where schemaname = 'deapp' and tablename='de_variant_subject_idx') THEN
   --
   -- Name: de_variant_subject_idx; Type: TABLE; Schema: deapp; Owner: -
   --
@@ -43,7 +44,7 @@ IF NOT EXISTS (select 1 from pg_tables where schemaname = 'deapp' and tablename=
       "position" bigint,
       variant_subject_idx_id bigint DEFAULT nextval('deapp.de_variant_subject_idx_seq'::regclass)
   )
-  TABLESPACE "transmart";
+  TABLESPACE "deapp";
 
   --
   -- Name: variant_subject_idx_uk; Type: INDEX; Schema: deapp; Owner: -
@@ -55,7 +56,8 @@ IF NOT EXISTS (select 1 from pg_tables where schemaname = 'deapp' and tablename=
                 AND    n.nspname = 'deapp') THEN
     CREATE UNIQUE INDEX variant_subject_idx_uk
     ON deapp.de_variant_subject_idx
-    USING btree (dataset_id, subject_id, "position");
+    USING btree (dataset_id, subject_id, "position")
+    TABLESPACE "indx";
   END IF;
 
 
@@ -70,7 +72,11 @@ IF NOT EXISTS (select 1 from pg_tables where schemaname = 'deapp' and tablename=
   END IF;
 END IF;
 
-IF NOT EXISTS (select 1 from pg_tables where schemaname = 'deapp' and tablename='de_variant_subject_summary') THEN
+IF NOT EXISTS(SELECT 1
+              FROM   pg_class     c
+              JOIN   pg_namespace n ON n.oid = c.relnamespace
+              WHERE  c.relname = 'de_variant_subject_summary_seq'
+              AND    n.nspname = 'deapp') THEN
   --
   -- Name: de_variant_subject_summary_seq; Type: SEQUENCE; Schema: deapp; Owner: -
   --
@@ -80,7 +86,9 @@ IF NOT EXISTS (select 1 from pg_tables where schemaname = 'deapp' and tablename=
       NO MINVALUE
       NO MAXVALUE
       CACHE 1;
+END IF;
 
+IF NOT EXISTS (select 1 from pg_tables where schemaname = 'deapp' and tablename='de_variant_subject_summary') THEN
   --
   -- Name: de_variant_subject_summary; Type: TABLE; Schema: deapp; Owner: -
   --
@@ -99,7 +107,7 @@ IF NOT EXISTS (select 1 from pg_tables where schemaname = 'deapp' and tablename=
       allele2 integer,
       assay_id bigint
   )
-  TABLESPACE "transmart";
+  TABLESPACE "deapp";
 
   --
   -- Name: COLUMN de_variant_subject_summary.reference; Type: COMMENT; Schema: deapp; Owner: -
@@ -124,7 +132,8 @@ IF NOT EXISTS (select 1 from pg_tables where schemaname = 'deapp' and tablename=
   --
   CREATE UNIQUE INDEX variant_subject_summary_uk
   ON deapp.de_variant_subject_summary
-  USING btree (dataset_id, chr, pos, rs_id, subject_id);
+  USING btree (dataset_id, chr, pos, rs_id, subject_id)
+  TABLESPACE "indx";
 
   --
   -- Name: variant_subject_summary_fk; Type: FK CONSTRAINT; Schema: deapp; Owner: -
@@ -133,7 +142,11 @@ IF NOT EXISTS (select 1 from pg_tables where schemaname = 'deapp' and tablename=
   ADD CONSTRAINT variant_subject_summary_fk FOREIGN KEY (dataset_id) REFERENCES deapp.de_variant_dataset(dataset_id);
 END IF;
 
-IF NOT EXISTS (select 1 from pg_tables where schemaname = 'deapp' and tablename='de_variant_subject_detail') THEN
+IF NOT EXISTS(SELECT 1
+              FROM   pg_class     c
+              JOIN   pg_namespace n ON n.oid = c.relnamespace
+              WHERE  c.relname = 'de_variant_subject_detail_seq'
+              AND    n.nspname = 'deapp') THEN
   --
   -- Name: de_variant_subject_detail_seq; Type: SEQUENCE; Schema: deapp; Owner: -
   --
@@ -143,7 +156,9 @@ IF NOT EXISTS (select 1 from pg_tables where schemaname = 'deapp' and tablename=
       NO MINVALUE
       NO MAXVALUE
       CACHE 1;
+END IF;
 
+IF NOT EXISTS (select 1 from pg_tables where schemaname = 'deapp' and tablename='de_variant_subject_detail') THEN
   --
   -- Name: deapp.de_variant_subject_detail; Type: TABLE; Schema: deapp; Owner: -
   --
@@ -161,7 +176,7 @@ IF NOT EXISTS (select 1 from pg_tables where schemaname = 'deapp' and tablename=
       format character varying(500),
       variant_value text
   )
-  TABLESPACE "transmart";
+  TABLESPACE "deapp";
 
   --
   -- Name: variant_subject_detail_id; Type: CONSTRAINT; Schema: deapp; Owner: -
@@ -172,17 +187,26 @@ IF NOT EXISTS (select 1 from pg_tables where schemaname = 'deapp' and tablename=
   --
   -- Name: de_variant_sub_detail_idx2; Type: INDEX; Schema: deapp; Owner: -
   --
-  CREATE INDEX de_variant_sub_detail_idx2 ON deapp.de_variant_subject_detail USING btree (dataset_id, chr);
+  CREATE INDEX de_variant_sub_detail_idx2
+  ON deapp.de_variant_subject_detail
+  USING btree (dataset_id, chr)
+  TABLESPACE "indx";
 
   --
   -- Name: de_variant_sub_dt_idx1; Type: INDEX; Schema: deapp; Owner: -
   --
-  CREATE INDEX de_variant_sub_dt_idx1 ON deapp.de_variant_subject_detail USING btree (dataset_id, rs_id);
+  CREATE INDEX de_variant_sub_dt_idx1
+  ON deapp.de_variant_subject_detail
+  USING btree (dataset_id, rs_id)
+  TABLESPACE "indx";
 
   --
   -- Name: variant_subject_detail_uk; Type: INDEX; Schema: deapp; Owner: -
   --
-  CREATE UNIQUE INDEX variant_subject_detail_uk ON deapp.de_variant_subject_detail USING btree (dataset_id, chr, pos, rs_id);
+  CREATE UNIQUE INDEX variant_subject_detail_uk
+  ON deapp.de_variant_subject_detail
+  USING btree (dataset_id, chr, pos, rs_id)
+  TABLESPACE "indx";
 
   --
   -- Name: variant_subject_detail_fk; Type: FK CONSTRAINT; Schema: deapp; Owner: -
@@ -192,7 +216,11 @@ IF NOT EXISTS (select 1 from pg_tables where schemaname = 'deapp' and tablename=
 
 END IF;
 
-IF NOT EXISTS (select 1 from pg_tables where schemaname = 'deapp' and tablename='de_variant_population_data') THEN
+IF NOT EXISTS(SELECT 1
+              FROM   pg_class     c
+              JOIN   pg_namespace n ON n.oid = c.relnamespace
+              WHERE  c.relname = 'de_variant_population_data_seq'
+              AND    n.nspname = 'deapp') THEN
   --
   -- Name: deapp.de_variant_population_data_seq; Type: SEQUENCE; Schema: deapp; Owner: -
   --
@@ -202,7 +230,9 @@ IF NOT EXISTS (select 1 from pg_tables where schemaname = 'deapp' and tablename=
       NO MINVALUE
       NO MAXVALUE
       CACHE 1;
+END IF;
 
+IF NOT EXISTS (select 1 from pg_tables where schemaname = 'deapp' and tablename='de_variant_population_data') THEN
   --
   -- Name: deapp.de_variant_population_data; Type: TABLE; Schema: deapp; Owner: -
   --
@@ -217,7 +247,7 @@ IF NOT EXISTS (select 1 from pg_tables where schemaname = 'deapp' and tablename=
       float_value double precision,
       text_value character varying(5000)
   )
-  TABLESPACE "transmart";
+  TABLESPACE "deapp";
 
   --
   -- Name: deapp.de_variant_population_data_id_idx; Type: CONSTRAINT; Schema: deapp; Owner: -
@@ -228,7 +258,10 @@ IF NOT EXISTS (select 1 from pg_tables where schemaname = 'deapp' and tablename=
   --
   -- Name: de_variant_population_data_default_idx; Type: INDEX; Schema: deapp; Owner: -
   --
-  CREATE INDEX de_variant_population_data_default_idx ON deapp.de_variant_population_data USING btree (dataset_id, chr, pos, info_name);
+  CREATE INDEX de_variant_population_data_default_idx
+  ON deapp.de_variant_population_data
+  USING btree (dataset_id, chr, pos, info_name)
+  TABLESPACE "indx";
 
   --
   -- Name: de_variant_population_data_fk; Type: FK CONSTRAINT; Schema: deapp; Owner: -
@@ -237,7 +270,11 @@ IF NOT EXISTS (select 1 from pg_tables where schemaname = 'deapp' and tablename=
       ADD CONSTRAINT de_variant_population_data_fk FOREIGN KEY (dataset_id) REFERENCES deapp.de_variant_dataset(dataset_id);
 END IF;
 
-IF NOT EXISTS (select 1 from pg_tables where schemaname = 'deapp' and tablename='de_variant_population_info') THEN
+IF NOT EXISTS(SELECT 1
+              FROM   pg_class     c
+              JOIN   pg_namespace n ON n.oid = c.relnamespace
+              WHERE  c.relname = 'de_variant_population_info_seq'
+              AND    n.nspname = 'deapp') THEN
   --
   -- Name: deapp.de_variant_population_info_seq; Type: SEQUENCE; Schema: deapp; Owner: -
   --
@@ -247,7 +284,9 @@ IF NOT EXISTS (select 1 from pg_tables where schemaname = 'deapp' and tablename=
       NO MINVALUE
       NO MAXVALUE
       CACHE 1;
+END IF;
 
+IF NOT EXISTS (select 1 from pg_tables where schemaname = 'deapp' and tablename='de_variant_population_info') THEN
   --
   -- Name: deapp.de_variant_population_info; Type: TABLE; Schema: deapp; Owner: -
   --
@@ -259,7 +298,7 @@ IF NOT EXISTS (select 1 from pg_tables where schemaname = 'deapp' and tablename=
       type character varying(30),
       number character varying(10)
   )
-  TABLESPACE "transmart";
+  TABLESPACE "deapp";
 
   --
   -- Name: de_variant_population_info_id_idx; Type: CONSTRAINT; Schema: deapp; Owner: -
@@ -270,7 +309,10 @@ IF NOT EXISTS (select 1 from pg_tables where schemaname = 'deapp' and tablename=
   --
   -- Name: variant_population_info_dataset_name; Type: INDEX; Schema: deapp; Owner: -
   --
-  CREATE INDEX variant_population_info_dataset_name ON deapp.de_variant_population_info USING btree (dataset_id, info_name);
+  CREATE INDEX variant_population_info_dataset_name
+  ON deapp.de_variant_population_info
+  USING btree (dataset_id, info_name)
+  TABLESPACE "indx";
 
   --
   -- Name: de_variant_population_info_fk; Type: FK CONSTRAINT; Schema: deapp; Owner: -
