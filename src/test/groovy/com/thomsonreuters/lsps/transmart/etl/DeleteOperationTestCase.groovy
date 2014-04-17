@@ -89,6 +89,19 @@ class DeleteOperationTestCase extends ConfigAwareTestCase {
         def tableAccessCount = sql.firstRow('select count(*) from table_access where c_fullname = ?', pathTopNode)
         assertEquals(tableAccessCount[0] as Integer, i2b2CountExpect)
     }
+
+    void assertThatSubTopNodeDelete(String pathTopNode, isDelete){
+        Integer i2b2CountExpect = (isDelete ? 0 : 1);
+        def i2b2Count = sql.firstRow('select count(*) from i2b2 where c_fullname = ?', pathTopNode)
+        assertEquals(i2b2Count[0] as Integer, i2b2CountExpect)
+
+        def i2b2SecureCount = sql.firstRow('select count(*) from i2b2_secure where c_fullname = ?', pathTopNode)
+        assertEquals(i2b2SecureCount[0] as Integer, i2b2CountExpect)
+        Integer index =pathTopNode.indexOf('\\');
+        pathTopNode=pathTopNode.substring(index, pathTopNode.indexOf('\\', index+1)+1);
+        def tableAccessCount = sql.firstRow('select count(*) from table_access where c_fullname = ?', pathTopNode)
+        assertEquals(tableAccessCount[0] as Integer, i2b2CountExpect)
+    }
     /**
      * Remove data by Id and don't understand full path to study.
      * If system exist study with trialId equals GSE0 test is down
@@ -243,5 +256,27 @@ class DeleteOperationTestCase extends ConfigAwareTestCase {
 
         assertThatDataDeleted(inpData, true)
         assertThatDataDeletedFromDeVariantSubSum(inpData)
+    }
+
+    void testItDeleteTopEmptyNode()
+    {
+        processorLoad.process(
+                new File("fixtures/Test Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
+                [name: studyName, node: "Test Studies\\Test Study\\${studyName}_1".toString()])
+        processorLoad.process(
+                new File("fixtures/Test Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
+                [name: studyName, node: "Test Studies\\Test Study\\${studyName}_2".toString()])
+        assertThat(sql, hasSample(studyId, 'TST1000000719'))
+        def inpData = ['id'  : studyId,
+                'path': "\\Test Studies\\Test Study\\${studyName}_2\\"];
+        processorDelete.process(inpData);
+
+        assertThatSubTopNodeDelete("\\Test Studies\\Test Study\\",false)
+
+        inpData = ['id'  : studyId,
+                'path': "\\Test Studies\\Test Study\\${studyName}_1\\"];
+        processorDelete.process(inpData);
+        assertThatSubTopNodeDelete("\\Test Studies\\Test Study\\", true)
+        assertThatTopNodeDelete("\\Test Studies\\", true)
     }
 }
