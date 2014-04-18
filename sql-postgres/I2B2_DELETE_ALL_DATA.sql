@@ -3,7 +3,6 @@
   trial_id character varying
  ,path_string varchar
  ,currentJobID numeric default -1
- ,removeTop varchar default 'N'
 ) returns numeric AS
 $BODY$
 Declare
@@ -20,6 +19,7 @@ Declare
   countNodeUnderTop INTEGER;
   topNode	VARCHAR(500);
   topNodeCount	INTEGER;
+  isExistTopNode integer;
   sourceCDCount INTEGER;
   databaseName VARCHAR(100);
   procedureName VARCHAR(100);
@@ -96,7 +96,7 @@ BEGIN
       where 
       concept_path = pathString;
   else
-    topNode := pathString;
+    topNode := substring(pathString from 1 for position('\' in substring(pathString from 2))+1);
   end if;
 
   
@@ -133,9 +133,6 @@ BEGIN
   --	delete any table_access data
   delete from i2b2metadata.table_access 
   where c_fullname like pathString || '%' ESCAPE '`';
-	stepCt := stepCt + 1;
-	get diagnostics rowCt := ROW_COUNT;
-	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from I2B2METADATA table_access',rowCt,stepCt,'Done') into rtnCd;
 	--	delete any i2b2_tag data
 	
 	delete from i2b2metadata.i2b2_tags
@@ -161,33 +158,33 @@ BEGIN
 		  where sm.trial_name = TrialID and sm.sample_cd = v.subject_id);
 		stepCt := stepCt + 1;
 		get diagnostics rowCt := ROW_COUNT;
-		select cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_subject_summary',rowCt,stepCt,'Done') into rtnCd;
+		select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_subject_summary',rowCt,stepCt,'Done') into rtnCd;
 
 		delete from deapp.de_variant_population_data where dataset_id = TrialId;
 		stepCt := stepCt + 1;
 		get diagnostics rowCt := ROW_COUNT;
-		select cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_population_data',rowCt,stepCt,'Done') into rtnCd;
+		select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_population_data',rowCt,stepCt,'Done') into rtnCd;
 
     delete from deapp.de_variant_population_info where dataset_id = TrialId;
     stepCt := stepCt + 1;
     get diagnostics rowCt := ROW_COUNT;
-		select cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_population_info',rowCt,stepCt,'Done') into rtnCd;
+		select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_population_info',rowCt,stepCt,'Done') into rtnCd;
 
     delete from deapp.de_variant_subject_detail where dataset_id = TrialId;
     stepCt := stepCt + 1;
     get diagnostics rowCt := ROW_COUNT;
-		select cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_subject_detail',rowCt,stepCt,'Done') into rtnCd;
+		select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_subject_detail',rowCt,stepCt,'Done') into rtnCd;
 
     delete from deapp.de_variant_subject_idx where dataset_id = TrialId;
     stepCt := stepCt + 1;
     get diagnostics rowCt := ROW_COUNT;
-		select cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_subject_idx',rowCt,stepCt,'Done') into rtnCd;
+		select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_subject_idx',rowCt,stepCt,'Done') into rtnCd;
 
 
     delete from deapp.de_variant_dataset where dataset_id = TrialId;
     stepCt := stepCt + 1;
     get diagnostics rowCt := ROW_COUNT;
-		cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_dataset',SQL%ROWCOUNT,stepCt,'Done');
+	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_dataset',rowCt,stepCt,'Done') into rtnCd;
 
 		--	delete observation_fact SECURITY data, do before patient_dimension delete
 		select count(x.source_cd) into sourceCDCount
@@ -278,20 +275,26 @@ BEGIN
 	end if;
 	
 	/*Check and delete top node, if remove node is last*/
-	if (removeTop = 'N') then
+    stepCt := stepCt + 1;
+    select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Check and delete top node '||topNode||', if remove node is last',0,stepCt,'Done') into rtnCd;
     select count(*) into countNodeUnderTop
-      from I2B2DEMODATA.concept_counts 
-      where parent_concept_path = topNode;
+    from I2B2DEMODATA.concept_counts
+    where parent_concept_path = topNode;
       
       stepCt := stepCt + 1;
-	get diagnostics rowCt := ROW_COUNT;
+	  get diagnostics rowCt := ROW_COUNT;
       select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Check need removed top node '||topNode,rowCt,stepCt,'Done') into rtnCd;
       
       if (countNodeUnderTop = 0) 
       then
-        select tm_cz.i2b2_delete_all_data(null, topNode, jobID, 'Y') into rtnCd;
+        select count(*) into isExistTopNode
+             from I2B2METADATA.i2b2
+            where c_fullname = topNode;
+
+        if (isExistTopNode !=0 ) then
+          select tm_cz.i2b2_delete_all_data(null, topNode, jobID) into rtnCd;
+        end if;
       end if;
-  end if;
 
   end if;
   
