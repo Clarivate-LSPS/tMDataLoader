@@ -49,7 +49,7 @@ class SqlMethods {
     }
 
     def insertRecords(CharSequence tableName, Collection<CharSequence> columns, Closure block) {
-        withBatch(buildInsertCommand(tableName, columns)) { st ->
+        withBatch(200, buildInsertCommand(tableName, columns)) { st ->
             block.call(st)
         }
     }
