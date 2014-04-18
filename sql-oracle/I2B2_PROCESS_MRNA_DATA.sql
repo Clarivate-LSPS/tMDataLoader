@@ -1100,3 +1100,5 @@ BEGIN
 		cz_end_audit (jobID, 'FAIL');
 		select 16 into rtn_code from dual;
 END;
+/
+exit;
