@@ -17,6 +17,10 @@ class ProcessLocker {
         return new ProcessLocker(name)
     }
 
+    public File getLockFile() {
+        return lockFile
+    }
+
     boolean tryLock() {
         if (isLocked()) {
             return false

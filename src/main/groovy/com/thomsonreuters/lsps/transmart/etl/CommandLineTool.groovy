@@ -60,8 +60,9 @@ class CommandLineTool {
             return
         }
 
-        if (!ProcessLocker.get('tMDataLoader').tryLock()) {
-            println 'Another TM Data Loader instance is already running'
+        def locker = ProcessLocker.get('tMDataLoader')
+        if (!locker.tryLock()) {
+            println "Probably another Transmart ETL tool instance is already running. This message may be result of previously incorrectly finished run. In this case, please, check manually if no other instances is running and if none remove ${locker.lockFile.absolutePath}"
             System.exit(-1)
             return
         }
