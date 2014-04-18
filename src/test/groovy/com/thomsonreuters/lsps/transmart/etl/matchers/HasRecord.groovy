@@ -50,9 +50,21 @@ class HasRecord extends BaseMatcher<Sql> {
     void describeMismatch(Object item, Description description) {
         if (record) {
             description.appendText("differs by: ")
-            description.appendValueList("(", ", ", ")",
-                    valueAttrs.findAll { it.value != normalizeValue(record[it.key]) }.
-                            collect { "${it.key}=${normalizeValue(record[it.key])}" })
+            boolean first = true
+            valueAttrs.each {
+                def actualValue = normalizeValue(record[it.key])
+                if (it.value == actualValue) {
+                    return;
+                }
+                if (!first) {
+                    description.appendText(', ')
+                } else {
+                    first = false
+                }
+                description.appendText("${it.key} (").
+                        appendValue(it.value).appendText('!=').appendValue(actualValue).
+                        appendText(")")
+            }
         } else {
             description.appendText("no record ").appendValue(keyAttrs).
                     appendText(' found in table ').appendValue(tableName)
