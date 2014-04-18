@@ -1,7 +1,5 @@
 package com.thomsonreuters.lsps.transmart.files
 
-import sun.misc.Regexp
-
 import java.util.regex.Pattern
 
 /**

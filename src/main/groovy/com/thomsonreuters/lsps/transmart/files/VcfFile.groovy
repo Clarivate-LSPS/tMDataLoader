@@ -36,6 +36,7 @@ class VcfFile extends CsvLikeFile {
         void setData(data) {
             this.data = data
             this.samplesData = null
+            this.infoData = null
             this.alternatives = (~/,/).split(alternativesString)
         }
 
