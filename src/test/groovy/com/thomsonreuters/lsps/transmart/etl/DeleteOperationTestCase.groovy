@@ -53,13 +53,13 @@ class DeleteOperationTestCase extends ConfigAwareTestCase {
         String trialId = inpData['id'].toString();
         Integer i2b2CountExpect = (isDelete ? 0 : 1);
 
-        def i2b2Count = sql.firstRow('select count(*) from i2b2 where c_fullname = ?', fullName)
+        def i2b2Count = sql.firstRow('select count(*) from i2b2metadata.i2b2 where c_fullname = ?', fullName)
         assertEquals(i2b2Count[0] as Integer, i2b2CountExpect)
 
-        def i2b2SecureCount = sql.firstRow('select count(*) from i2b2_secure where c_fullname = ?', fullName)
+        def i2b2SecureCount = sql.firstRow('select count(*) from i2b2metadata.i2b2_secure where c_fullname = ?', fullName)
         assertEquals(i2b2SecureCount[0] as Integer, i2b2CountExpect)
 
-        def sample = sql.firstRow('select * from de_subject_sample_mapping where trial_name = ? and sample_cd = ?',
+        def sample = sql.firstRow('select * from deapp.de_subject_sample_mapping where trial_name = ? and sample_cd = ?',
                 trialId, 'STD')
         if (isDelete)
             assertThat(sample, IsNull.nullValue())
@@ -80,26 +80,26 @@ class DeleteOperationTestCase extends ConfigAwareTestCase {
 
     void assertThatTopNodeDelete(String pathTopNode, isDelete){
         Integer i2b2CountExpect = (isDelete ? 0 : 1);
-        def i2b2Count = sql.firstRow('select count(*) from i2b2 where c_fullname = ?', pathTopNode)
+        def i2b2Count = sql.firstRow('select count(*) from i2b2metadata.i2b2 where c_fullname = ?', pathTopNode)
         assertEquals(i2b2Count[0] as Integer, i2b2CountExpect)
 
-        def i2b2SecureCount = sql.firstRow('select count(*) from i2b2_secure where c_fullname = ?', pathTopNode)
+        def i2b2SecureCount = sql.firstRow('select count(*) from i2b2metadata.i2b2_secure where c_fullname = ?', pathTopNode)
         assertEquals(i2b2SecureCount[0] as Integer, i2b2CountExpect)
 
-        def tableAccessCount = sql.firstRow('select count(*) from table_access where c_fullname = ?', pathTopNode)
+        def tableAccessCount = sql.firstRow('select count(*) from i2b2metadata.table_access where c_fullname = ?', pathTopNode)
         assertEquals(tableAccessCount[0] as Integer, i2b2CountExpect)
     }
 
     void assertThatSubTopNodeDelete(String pathTopNode, isDelete){
         Integer i2b2CountExpect = (isDelete ? 0 : 1);
-        def i2b2Count = sql.firstRow('select count(*) from i2b2 where c_fullname = ?', pathTopNode)
+        def i2b2Count = sql.firstRow('select count(*) from i2b2metadata.i2b2 where c_fullname = ?', pathTopNode)
         assertEquals(i2b2Count[0] as Integer, i2b2CountExpect)
 
-        def i2b2SecureCount = sql.firstRow('select count(*) from i2b2_secure where c_fullname = ?', pathTopNode)
+        def i2b2SecureCount = sql.firstRow('select count(*) from i2b2metadata.i2b2_secure where c_fullname = ?', pathTopNode)
         assertEquals(i2b2SecureCount[0] as Integer, i2b2CountExpect)
         Integer index =pathTopNode.indexOf('\\');
         pathTopNode=pathTopNode.substring(index, pathTopNode.indexOf('\\', index+1)+1);
-        def tableAccessCount = sql.firstRow('select count(*) from table_access where c_fullname = ?', pathTopNode)
+        def tableAccessCount = sql.firstRow('select count(*) from i2b2metadata.table_access where c_fullname = ?', pathTopNode)
         assertEquals(tableAccessCount[0] as Integer, i2b2CountExpect)
     }
     /**
