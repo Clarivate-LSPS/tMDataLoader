@@ -9,9 +9,10 @@ import com.thomsonreuters.lsps.transmart.sql.DatabaseType
 abstract class DataLoader {
     Database database
     CharSequence tableName
-    Collection<CharSequence> columnNames
+    Collection<? extends CharSequence> columnNames
 
     static def start(Database database, CharSequence tableName, Collection<CharSequence> columnNames, Closure block) {
+        columnNames = columnNames.collect { "\"${it}\"" }
         //FIXME: find better solution
         if (database.databaseType == DatabaseType.Postgres) {
             columnNames = columnNames*.toLowerCase()
