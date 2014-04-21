@@ -647,14 +647,14 @@ AS
           SET patient_count = (SELECT
                                  patient_count
                                FROM i2b2demodata.concept_counts
-                               WHERE concept_path = new_root_node)
+                               WHERE concept_path = new_path)
           WHERE concept_path = current_path;
 
+          COMMIT;
           stepCt := stepCt + 1;
           cz_write_audit(jobId, databaseName, procedureName,
                          'Insert ' || current_path || ' into i2b2demodata.concept_counts', SQL%ROWCOUNT, stepCt,
                          'Done');
-          COMMIT;
         END IF;
 
         SELECT
@@ -721,11 +721,11 @@ AS
                           WHERE CONCEPT_PATH = current_path)
           WHERE C_FULLNAME = current_path;
 
+          COMMIT;
           stepCt := stepCt + 1;
           cz_write_audit(jobId, databaseName, procedureName,
                          'Insert ' || current_path || ' into i2b2metadata.i2b2', SQL%ROWCOUNT, stepCt,
                          'Done');
-          COMMIT;
 
         END IF;
 
@@ -794,12 +794,25 @@ AS
                           WHERE CONCEPT_PATH = current_path)
           WHERE C_FULLNAME = current_path;
 
+          COMMIT;
+
           stepCt := stepCt + 1;
           cz_write_audit(jobId, databaseName, procedureName,
                          'Insert ' || current_path || ' into i2b2metadata.i2b2_secure', SQL%ROWCOUNT, stepCt,
                          'Done');
 
         END IF;
+
+      UPDATE i2b2demodata.concept_counts
+      SET parent_concept_path = parent_path_node
+      WHERE concept_path = current_path;
+
+      COMMIT;
+
+      stepCt := stepCt + 1;
+      cz_write_audit(jobId, databaseName, procedureName,
+                       'Update parent path of ' || current_path || ' in i2b2demodata.concept_counts', SQL%ROWCOUNT, stepCt,
+                       'Done');
 
       END IF;
         parent_path_node := current_path;
