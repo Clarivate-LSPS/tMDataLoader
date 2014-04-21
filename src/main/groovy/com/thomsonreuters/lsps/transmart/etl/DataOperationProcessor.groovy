@@ -15,14 +15,6 @@ abstract class DataOperationProcessor {
 
     abstract def processData()
 
-    boolean isPostgresConnection() {
-        config.db?.jdbcConnectionString?.startsWith("jdbc:postgresql:")
-    }
-
-    boolean isLocalPostgresConnection() {
-        isPostgresConnection() && config.db?.jdbcConnectionString?.matches('^jdbc:postgresql:(?://localhost(?::\\d+)?/)?(\\w+)$')
-    }
-
     boolean process(data) {
         def res = false
 
