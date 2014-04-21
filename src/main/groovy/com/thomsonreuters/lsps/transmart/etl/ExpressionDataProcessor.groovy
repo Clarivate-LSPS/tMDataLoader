@@ -166,30 +166,21 @@ class ExpressionDataProcessor extends DataProcessor {
             }
         }
 
-        if (database?.databaseType == DatabaseType.Postgres && database?.local) {
-            processExpressionFileForPostgres(f, sql, studyInfo)
+        if (database?.databaseType == DatabaseType.Postgres) {
+            processExpressionFileForPostgres(f, studyInfo)
         } else {
             processExpressionFileForGeneric(f, sql, studyInfo)
         }
     }
 
-    private void processExpressionFileForPostgres(File f, Sql sql, studyInfo) {
-        def tempCsv = File.createTempFile("expressionData", ".csv")
-        def lineNum = 0
-        tempCsv.withPrintWriter {
-            writer ->
-                lineNum = processEachRow f, studyInfo, {
-                    row ->
-                        writer.append(row[0]).append(',').
-                                append(row[1]).append(',').
-                                append(row[2]).append(',').
-                                append(row[3]).append("\n")
+    private void processExpressionFileForPostgres(File f, studyInfo) {
+        DataLoader.start(database, 'tm_lz.lt_src_mrna_data', ['TRIAL_NAME', 'PROBESET', 'EXPR_ID', 'INTENSITY_VALUE']) {
+            st ->
+                def lineNum = processEachRow(f, studyInfo) { row ->
+                    st.addBatch(row)
                 }
+                config.logger.log("Processed ${lineNum} rows")
         }
-        config.logger.log("Loading ${lineNum} rows into database")
-        sql.execute("COPY tm_lz.lt_src_mrna_data FROM '${tempCsv.getCanonicalPath()}' WITH DELIMITER ','".toString())
-        tempCsv.delete()
-        config.logger.log("Processed ${lineNum} rows")
     }
 
     private void processExpressionFileForGeneric(File f, Sql sql, studyInfo) {
