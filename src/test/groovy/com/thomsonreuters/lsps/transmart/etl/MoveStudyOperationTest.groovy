@@ -1,9 +1,9 @@
 package com.thomsonreuters.lsps.transmart.etl
 
-import org.junit.Before
-import org.junit.Test
 
+import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasNode
 import static com.thomsonreuters.lsps.transmart.Fixtures.studyDir
+import static org.junit.Assert.assertThat
 
 class MoveStudyOperationTest extends ConfigAwareTestCase {
     private MoveStudyProcessor _moveStudyProcessor
@@ -33,6 +33,7 @@ class MoveStudyOperationTest extends ConfigAwareTestCase {
         clinicalDataProcessor.process(
                 new File(studyDir(studyName, studyId), "ClinicalDataToUpload"),
                 [name: studyName, node: "Test Studies Move Test\\${studyName}".toString()])
+        runScript('I2B2_MOVE_STUDY.sql')
     }
 
     void testMoveStudyInOneRootNode() {
@@ -63,7 +64,12 @@ class MoveStudyOperationTest extends ConfigAwareTestCase {
         moveStudyProcessor.process(input)
 
         assertNewLevelIsAdded(newPath)
+        assertConceptCounts(newPath)
         removeStudy(newPath)
+    }
+
+    void assertConceptCounts(String newPath) {
+        assertThat(sql, hasNode(newPath).withPatientCount(9))
     }
 
     void testMoveStudyWithDeletingNewLevel() {
