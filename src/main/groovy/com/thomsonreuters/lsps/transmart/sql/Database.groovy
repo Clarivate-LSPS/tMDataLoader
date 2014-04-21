@@ -75,8 +75,4 @@ class Database {
     boolean isLocal() {
         host == 'localhost' || host == '127.0.0.1'
     }
-
-    boolean isPostgresConnection() {
-        databaseType == DatabaseType.Postgres
-    }
 }
