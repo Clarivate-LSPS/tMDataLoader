@@ -12,7 +12,7 @@ class MoveStudyOperationTest extends ConfigAwareTestCase {
 
     String studyName = 'Test Study'
     String studyId = 'GSE0'
-    String oldPath = "\\Test Studies\\${studyName}\\"
+    String oldPath = "\\Test Studies Move Test\\${studyName}\\"
 
     MoveStudyProcessor getMoveStudyProcessor() {
         _moveStudyProcessor ?: (_moveStudyProcessor = new MoveStudyProcessor(config))
@@ -32,11 +32,11 @@ class MoveStudyOperationTest extends ConfigAwareTestCase {
         super.setUp()
         clinicalDataProcessor.process(
                 new File(studyDir(studyName, studyId), "ClinicalDataToUpload"),
-                [name: studyName, node: "Test Studies\\${studyName}".toString()])
+                [name: studyName, node: "Test Studies Move Test\\${studyName}".toString()])
     }
 
     void testMoveStudyInOneRootNode() {
-        def newPath = "\\Test Studies\\Test Study Update\\"
+        def newPath = "\\Test Studies Move Test\\Test Study Update\\"
         def input = ['old_path': oldPath,
                 'new_path': newPath];
         moveStudyProcessor.process(input)
@@ -46,7 +46,7 @@ class MoveStudyOperationTest extends ConfigAwareTestCase {
     }
 
     void testMoveStudyWithCreatingNewRoot() {
-        def newPath = "\\Test Studies Update\\Test Study Update\\"
+        def newPath = "\\Test Studies Move Test Update\\Test Study Update\\"
         def input = ['old_path': oldPath,
                 'new_path': newPath];
         moveStudyProcessor.process(input)
@@ -57,7 +57,7 @@ class MoveStudyOperationTest extends ConfigAwareTestCase {
     }
 
     void testMoveStudyWithCreatingNewLevel() {
-        def newPath = "\\Test Studies\\Test Study\\New Level\\"
+        def newPath = "\\Test Studies Move Test\\Test Study\\New Level\\"
         def input = ['old_path': oldPath,
                 'new_path': newPath];
         moveStudyProcessor.process(input)
@@ -67,12 +67,12 @@ class MoveStudyOperationTest extends ConfigAwareTestCase {
     }
 
     void testMoveStudyWithDeletingNewLevel() {
-        def newPath = "\\Test Studies\\Test Study\\New Level\\"
+        def newPath = "\\Test Studies Move Test\\Test Study\\New Level\\"
         def input = ['old_path': oldPath,
                 'new_path': newPath];
         moveStudyProcessor.process(input)
 
-        def newPathShort = "\\Test Studies\\Test Study\\"
+        def newPathShort = "\\Test Studies Move Test\\Test Study\\"
         input = ['old_path': newPath,
                 'new_path': newPathShort];
         moveStudyProcessor.process(input)
