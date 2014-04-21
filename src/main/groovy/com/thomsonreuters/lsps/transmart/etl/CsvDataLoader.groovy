@@ -29,7 +29,8 @@ class CsvDataLoader extends DataLoader {
                         break
                     case String:
                     case GString:
-                        if ((value as String).indexOf('\t') != -1) {
+                        value = (value as String).replaceAll(/"/, '""')
+                        if (value.indexOf('\t') != -1) {
                             buf.append('\"').append(value).append('\"')
                         } else {
                             buf.append(value)
