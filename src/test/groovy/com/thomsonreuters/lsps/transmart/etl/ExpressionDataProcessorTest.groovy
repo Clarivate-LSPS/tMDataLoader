@@ -2,6 +2,7 @@ package com.thomsonreuters.lsps.transmart.etl
 
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasNode
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasPatient
+import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasRecord
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasSample
 import static org.hamcrest.CoreMatchers.equalTo
 import static org.hamcrest.CoreMatchers.notNullValue
@@ -54,8 +55,18 @@ class ExpressionDataProcessorTest extends ConfigAwareTestCase {
         assertThat(db, hasSample(studyId, 'TST1000000719'))
         assertThat(db, hasPatient('996RMS').inTrial(studyId))
         assertThat(db, hasNode("\\Test Studies\\${studyName}\\Biomarker Data\\Test GEX Platform\\Blood\\").
-                withPatientCount(29))
+                withPatientCount(32))
         assertThatSampleIsPresent('TST1000000719', ['1007_s_at': 6.624529839])
+
+        assertThat(db, hasRecord('deapp.de_subject_sample_mapping',
+                [trial_name: studyId, gpl_id: platformId, subject_id: '453PMS', sample_cd: 'TST1000000808'],
+                [timepoint: 'Attr2Value', tissue_type: 'Attr1Value']))
+        assertThat(db, hasRecord('deapp.de_subject_sample_mapping',
+                [trial_name: studyId, gpl_id: platformId, subject_id: '454PMS', sample_cd: 'TST1000000809'],
+                [tissue_type: 'Attr1Value', timepoint: null]))
+        assertThat(db, hasRecord('deapp.de_subject_sample_mapping',
+                [trial_name: studyId, gpl_id: platformId, subject_id: '455PMS', sample_cd: 'TST1000000810'],
+                [tissue_type: null, timepoint: 'Attr2Value']))
     }
 
     void testItMergeSamples() {
@@ -66,7 +77,7 @@ class ExpressionDataProcessorTest extends ConfigAwareTestCase {
         assertThatSampleIsPresent('TST1000000722', ['1007_s_at': 6.374219894])
         assertThatSampleIsPresent('TST1000000723', ['1007_s_at': 6.653120041])
         assertThat(db, hasNode("\\Test Studies\\${studyName}\\Biomarker Data\\Test GEX Platform\\Blood\\").
-                withPatientCount(29))
+                withPatientCount(32))
 
         processor.process(
                 new File("fixtures/Additional Test Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
@@ -76,6 +87,6 @@ class ExpressionDataProcessorTest extends ConfigAwareTestCase {
         assertThatSampleIsPresent('TST1000000722', ['1007_s_at': 5.374219894])
         assertThatSampleIsPresent('TST1000000723', ['1007_s_at': 6.653120041])
         assertThat(db, hasNode("\\Test Studies\\${studyName}\\Biomarker Data\\Test GEX Platform\\Blood\\").
-                withPatientCount(30))
+                withPatientCount(33))
     }
 }
