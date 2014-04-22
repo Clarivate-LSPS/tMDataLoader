@@ -23,18 +23,24 @@ class HasRecord extends BaseMatcher<Sql> {
         this.valueAttrs = valueAttrs
     }
 
-    private Object normalizeValue(Object value) {
+    private static Object normalizeValue(Object value, Class targetClass) {
         if (value instanceof Clob) {
-            return  ((Clob)value).getCharacterStream().text
-        } else {
-            return value
+            value = ((Clob)value).getCharacterStream().text
         }
+        switch (targetClass) {
+            case Boolean:
+                if (!(value instanceof Boolean)) {
+                    value = !(value.toString().toLowerCase() in ['0', 'n', 'f', 'false'])
+                }
+                break
+        }
+        return value
     }
 
     @Override
     boolean matches(Object item) {
         record = SqlMethods.findRecord(item as Sql, keyAttrs, tableName)
-        record && valueAttrs.every { it.value == normalizeValue(record[it.key]) }
+        record && valueAttrs.every { it.value == normalizeValue(record[it.key], it.value?.class) }
     }
 
     @Override
@@ -52,7 +58,7 @@ class HasRecord extends BaseMatcher<Sql> {
             description.appendText("differs by: ")
             boolean first = true
             valueAttrs.each {
-                def actualValue = normalizeValue(record[it.key])
+                def actualValue = normalizeValue(record[it.key], it.value?.class)
                 if (it.value == actualValue) {
                     return;
                 }
