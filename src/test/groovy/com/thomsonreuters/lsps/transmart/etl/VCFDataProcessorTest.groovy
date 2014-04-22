@@ -78,13 +78,13 @@ class VCFDataProcessorTest extends ConfigAwareTestCase {
                 reference: true, variant: '/C', variant_format: '/R', allele1: null, allele2: 0))
         assertThat(db, hasRecord('deapp.de_variant_subject_summary',
                 [dataset_id: studyId, subject_id: 'VCF_TST001', chr: '22', pos: 16050616, rs_id: 'rs146752889'],
-                [variant_type: 'SNV', reference: false, variant: 'G', variant_format: 'V', allele1: 1, allele2: null]))
+                [variant_type: 'SNV', reference: '0', variant: 'G', variant_format: 'V', allele1: 1, allele2: null]))
         assertThat(db, hasRecord('deapp.de_variant_subject_summary',
                 [dataset_id: studyId, subject_id: 'VCF_TST002', chr: '22', pos: 16050616, rs_id: 'rs146752889'],
-                [variant_type: 'SNV', reference: true, variant: 'C', variant_format: 'R', allele1: 0, allele2: null]))
+                [variant_type: 'SNV', reference: '1', variant: 'C', variant_format: 'R', allele1: 0, allele2: null]))
         assertThat(db, hasRecord('deapp.de_variant_subject_summary',
                 [dataset_id: studyId, subject_id: 'VCF_TST001', chr: '22', pos: 16050620, rs_id: 'rs146752880'],
-                [variant_type: 'SNV', reference: false, variant: 'T/G', variant_format: 'V/V', allele1: 2, allele2: 1]))
+                [variant_type: 'DIV', reference: '0', variant: 'T/G', variant_format: 'V/V', allele1: 2, allele2: 1]))
         assertThat(db, not(hasRecord('deapp.de_variant_subject_summary',
                 dataset_id: studyId, subject_id: 'VCF_TST001', chr: '22', pos: 16050624, rs_id: 'rs146752879')))
         assertThat(db, not(hasRecord('deapp.de_variant_subject_summary',
