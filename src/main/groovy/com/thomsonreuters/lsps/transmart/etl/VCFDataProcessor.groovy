@@ -124,26 +124,31 @@ class VCFDataProcessor extends DataProcessor {
         entry.infoData.entrySet().each {
             VcfFile.InfoField infoField = it.key
             Object[] values = it.value
-            String type = infoField.type.toLowerCase()
-            Integer intValue
-            Float floatValue
-            String textValue
-            values.eachWithIndex { value, int idx ->
-                switch (type) {
-                    case 'integer':
-                    case 'flag':
-                        intValue = value as int
-                        break
-                    case 'float':
-                        floatValue = value as float
-                        break
-                    case 'character':
-                    case 'string':
-                        textValue = value as String
-                        break
+            if (infoField != null && infoField.type != null) {
+                String type = infoField.type.toLowerCase()
+                Integer intValue
+                Float floatValue
+                String textValue
+                values.eachWithIndex { value, int idx ->
+                    switch (type) {
+                        case 'integer':
+                        case 'flag':
+                            intValue = value as int
+                            break
+                        case 'float':
+                            floatValue = value as float
+                            break
+                        case 'character':
+                        case 'string':
+                            textValue = value as String
+                            break
+                    }
+                    st.addBatch([trialId, entry.chromosome, entry.chromosomePosition, infoField.id,
+                            idx, intValue, floatValue, textValue])
                 }
-                st.addBatch([trialId, entry.chromosome, entry.chromosomePosition, infoField.id,
-                             idx, intValue, floatValue, textValue])
+            } else {
+                logger.log(LogType.WARNING, "Field with value=" + it.value + ' wont be added to deapp.de_variant_population_data' +
+                        'because it does not have description in INFO part in file header.')
             }
         }
     }

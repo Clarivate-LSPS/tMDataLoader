@@ -100,16 +100,12 @@ class VcfFile extends CsvLikeFile {
                     CharSequence[] parts = data[firstSampleIndex + idx].split(':')
                     SampleData sampleData = new SampleData()
                     if (gtIndex != -1) {
-                        def matches = parts[gtIndex] =~ /(.+)([\/|])(.+)/
-                        def matches1Allele = parts[gtIndex] =~ /(.+)/
+                        def matches = parts[gtIndex] =~ /(\d+|\.)(?:([\/|])(\d+|\.))?/
                         if (matches) {
                             sampleData.allele1 = matches[0][1]
                             sampleData.alleleSeparator = matches[0][2]
                             sampleData.allele2 = matches[0][3]
-                        } else if (matches1Allele) {
-                            sampleData.allele1 = matches1Allele[0][1]
                         }
-
                     }
                     samplesData[sample] = sampleData
                 }

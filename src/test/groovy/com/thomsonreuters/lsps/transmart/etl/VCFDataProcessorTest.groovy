@@ -110,13 +110,13 @@ class VCFDataProcessorTest extends ConfigAwareTestCase {
         assertThat(db, hasRecord('deapp.de_variant_subject_detail',
                 [dataset_id: studyId, chr: '22', pos: 16050620, rs_id: 'rs146752880'],
                 [ref: 'C', alt: 'G,T', qual: '100', filter: 'PASS',
-                        info: 'AC=184;RSQ=0.8228;AVGPOST=0.9640;AN=2184;ERATE=0.0031;VT=SNP;AA=.;THETA=0.0127;LDAF=0.0902;SNPSOURCE=LOWCOV;AF=0.08;ASN_AF=0.08;AMR_AF=0.14;AFR_AF=0.08;EUR_AF=0.07',
+                        info: 'UNKNW=42;AC=184;RSQ=0.8228;AVGPOST=0.9640;AN=2184;ERATE=0.0031;VT=SNP;AA=.;THETA=0.0127;LDAF=0.0902;SNPSOURCE=LOWCOV;AF=0.08;ASN_AF=0.08;AMR_AF=0.14;AFR_AF=0.08;EUR_AF=0.07',
                         format: 'GT:DS:GL', variant_value: '2/1:1.000:-2.05,-0.01,-1.71\t./0:1.000:-0.86,-0.06,-5.00']))
 
         assertThat(db, hasRecord('deapp.de_variant_subject_detail',
                 [dataset_id: studyId, chr: '22', pos: 16050624, rs_id: 'rs146752879'],
                 [ref: 'C', alt: 'G', qual: '100', filter: 'PASS',
-                        info: 'AC=184;RSQ=0.8228;AVGPOST=0.9640;AN=2184;ERATE=0.0031;VT=SNP;AA=.;THETA=0.0127;LDAF=0.0902;SNPSOURCE=LOWCOV;AF=0.08;ASN_AF=0.08;AMR_AF=0.14;AFR_AF=0.08;EUR_AF=0.07',
+                        info: 'TST_FLAG=0;AC=184;RSQ=0.8228;AVGPOST=0.9640;AN=2184;ERATE=0.0031;VT=SNP;AA=.;THETA=0.0127;LDAF=0.0902;SNPSOURCE=LOWCOV;AF=0.08;ASN_AF=0.08;AMR_AF=0.14;AFR_AF=0.08;EUR_AF=0.07',
                         format: 'DS:GL', variant_value: '1.000:-2.05,-0.01,-1.71\t1.000:-0.86,-0.06,-5.00']))
 
         // verify deapp.de_variant_population_info
@@ -124,8 +124,12 @@ class VCFDataProcessorTest extends ConfigAwareTestCase {
                 [dataset_id: studyId, info_name: 'LDAF'],
                 [description: 'MLE Allele Frequency Accounting for LD', type: 'Float', number: '1']))
         // verify deapp.de_variant_population_data
-        //TODO: check for Flag info field type
-        //TODO: check for non-existent field
+        assertThat(db, not(hasRecord('deapp.de_variant_population_data',
+                [dataset_id: studyId, chr: '22', pos:  16050620, info_name: 'UNKNW', info_index: 0],
+                [integer_value: 42, float_value: null, text_value: null])))
+        assertThat(db, hasRecord('deapp.de_variant_population_data',
+                [dataset_id: studyId, chr: '22', pos:  16050624, info_name: 'TST_FLAG', info_index: 0],
+                [integer_value: 0, float_value: null, text_value: null]))
         assertThat(db, hasRecord('deapp.de_variant_population_data',
                 [dataset_id: studyId, chr: '22', pos:  16050408, info_name: 'LDAF', info_index: 0],
                 [integer_value: null, float_value: 0.0649, text_value: null]))
