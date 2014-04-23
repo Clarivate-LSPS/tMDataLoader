@@ -19,4 +19,8 @@ class Fixtures {
     static File getVcfData(String studyName = 'Test Study', String studyId = 'GSE0') {
         new File(studyDir(studyName, studyId), 'VCFDataToUpload')
     }
+
+    static File getClinicalData(String studyName = 'Test Study', String studyId = 'GSE0') {
+        new File(studyDir(studyName, studyId), 'ClinicalDataToUpload')
+    }
 }
