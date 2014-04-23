@@ -1,9 +1,12 @@
 package com.thomsonreuters.lsps.transmart.etl
 
+import com.thomsonreuters.lsps.transmart.Fixtures
+
 import static com.thomsonreuters.lsps.transmart.Fixtures.getAdditionalStudiesDir
 import static com.thomsonreuters.lsps.transmart.Fixtures.studyDir
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasNode
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasPatient
+import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasRecord
 import static org.junit.Assert.assertThat
 
 /**
@@ -15,8 +18,21 @@ class ClinicalDataProcessorTest extends ConfigAwareTestCase {
     String studyName = 'Test Study'
     String studyId = 'GSE0'
 
+    @Override
+    void setUp() {
+        super.setUp()
+        runScript('I2B2_PROCESS_CLINICAL_DATA.sql')
+    }
+
     ClinicalDataProcessor getProcessor() {
         _processor ?: (_processor = new ClinicalDataProcessor(config))
+    }
+
+    void testItLoadsAge() {
+        processor.process(Fixtures.getClinicalData(studyName, studyId),
+                [name: studyName, node: "Test Studies\\${studyName}".toString()])
+        assertThat(db, hasRecord('i2b2demodata.patient_dimension',
+                ['sourcesystem_cd': "${studyId}:HCC827"], [age_in_years_num: 20]))
     }
 
     void testItLoadsData() {
