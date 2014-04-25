@@ -44,7 +44,7 @@ class CommandLineTool {
             _ longOpt: 'visit-name-first', 'Put VISIT_NAME before the data value'
             _ longOpt: 'data-value-first', 'Put VISIT NAME after the data value (default behavior, use to override non-standard config)'
             _ longOpt: 'delete-study-by-id', args: 1, argName: 'delete_id', 'Delete study by id'
-            _ longOpt: 'delete-study-by-path ', args: 1, argName: 'delete_path', 'Delete study by path'
+            _ longOpt: 'delete-study-by-path', args: 1, argName: 'delete_path', 'Delete study by path'
             _ longOpt: 'force-start', 'Force TM Data Loader start (even if another instance is already running)'
         }
         // TODO: implement stop-on-fail mode!
