@@ -29,7 +29,7 @@ class Database {
                         ["PGPASSWORD=${config.password}"] as String[])
                 break
             case DatabaseType.Oracle:
-                runner = Runtime.runtime.exec("sqlplus -s -l ${config.username}/${config.password}@${host}:${port}/${database} @${script.absolutePath}")
+                runner = Runtime.runtime.exec("sqlplus -l ${config.username}/${config.password}@${host}:${port}/${database} @${script.absolutePath}")
                 break
             default:
                 throw new UnsupportedOperationException("Can't run script for database: ${databaseType}")
