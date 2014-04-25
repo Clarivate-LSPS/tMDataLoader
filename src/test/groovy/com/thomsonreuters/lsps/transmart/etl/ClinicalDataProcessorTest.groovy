@@ -4,9 +4,7 @@ import com.thomsonreuters.lsps.transmart.Fixtures
 
 import static com.thomsonreuters.lsps.transmart.Fixtures.getAdditionalStudiesDir
 import static com.thomsonreuters.lsps.transmart.Fixtures.studyDir
-import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasNode
-import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasPatient
-import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasRecord
+import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.*
 import static org.junit.Assert.assertThat
 
 /**
@@ -21,7 +19,7 @@ class ClinicalDataProcessorTest extends ConfigAwareTestCase {
     @Override
     void setUp() {
         super.setUp()
-        runScript('I2B2_PROCESS_CLINICAL_DATA.sql')
+        runScript('I2B2_LOAD_CLINICAL_DATA.sql')
     }
 
     ClinicalDataProcessor getProcessor() {
