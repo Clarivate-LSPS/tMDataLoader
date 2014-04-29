@@ -812,9 +812,9 @@ BEGIN
 			  ,a.tissue_type as sample_type
 			  ,ttp.concept_cd as sample_type_cd
 			  ,a.trial_name
-			  ,a.attribute_2 as timepoint
+			  ,NULLIF(a.attribute_2, '') as timepoint
 			  ,a2.concept_cd as timepoint_cd
-			  ,a.attribute_1 as tissue_type
+			  ,NULLIF(a.attribute_1, '') as tissue_type
 			  ,a1.concept_cd as tissue_type_cd
 			  ,platform_type as platform
 			  ,pn.concept_cd as platform_cd
