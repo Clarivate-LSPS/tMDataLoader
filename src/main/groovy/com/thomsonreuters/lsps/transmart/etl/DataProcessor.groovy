@@ -21,7 +21,12 @@
 package com.thomsonreuters.lsps.transmart.etl
 
 import com.thomsonreuters.lsps.transmart.sql.Database
+import com.thomsonreuters.lsps.transmart.sql.DatabaseType
 import groovy.sql.Sql
+
+import java.sql.SQLException
+import java.sql.SQLWarning
+import java.sql.Statement
 
 abstract class DataProcessor {
     def config
@@ -43,14 +48,67 @@ abstract class DataProcessor {
         return config.logger
     }
 
-    def printAudit(Sql ctrlSql, jobId, lastSeqId) {
-        ctrlSql.eachRow("SELECT * FROM " + config.controlSchema + ".cz_job_audit WHERE job_id=${jobId} and seq_id>${lastSeqId} order by seq_id") {
-            row ->
+    private interface AuditPrinter {
+        void printNewMessages(Sql sql)
+    }
 
-                logger.log(LogType.DEBUG, "-- ${row.step_desc} [${row.step_status} / ${row.records_manipulated} recs / ${row.time_elapsed_secs}s]")
-                lastSeqId = row.seq_id
+    private class DefaultAuditPrinter implements AuditPrinter {
+        private def jobId
+        protected long lastSeqId
+
+        DefaultAuditPrinter(jobId) {
+            this.jobId = jobId
         }
-        return lastSeqId
+
+        void printNewMessages(Sql sql) {
+            def queryText = "SELECT * FROM " + getConfig().controlSchema + ".cz_job_audit WHERE job_id=${jobId} and seq_id>${lastSeqId} order by seq_id"
+            sql.eachRow(queryText) { row ->
+                getLogger().log(LogType.DEBUG, "-- ${row.step_desc} [${row.step_status} / ${row.records_manipulated} recs / ${row.time_elapsed_secs}s]")
+                lastSeqId = row.seq_id
+            }
+        }
+    }
+
+    private class PostgresAuditPrinter extends DefaultAuditPrinter  {
+        private volatile Statement statementToMonitor
+        private SQLWarning lastWarning
+        private Statement lastStatement
+
+        public PostgresAuditPrinter(jobId, Sql sql) {
+            super(jobId)
+            sql.withStatement { this.statementToMonitor = it }
+        }
+
+        private def printWarnings(SQLWarning warnings) {
+            long seqId
+            while (warnings) {
+                def message = warnings.localizedMessage
+                def match
+                if ((match = message =~ /^(\d+):\s(.*)$/)) {
+                    seqId = match[0][1] as long
+                    message = match[0][2]
+                }
+                if (seqId > lastSeqId) {
+                    getLogger().log(LogType.DEBUG, "-- ${message}")
+                    lastSeqId = seqId
+                }
+                lastWarning = warnings
+                warnings = warnings.nextWarning
+            }
+        }
+
+        void printNewMessages(Sql sql) {
+            if (statementToMonitor != lastStatement) {
+                lastStatement = statementToMonitor
+                try {
+                    printWarnings(lastStatement.warnings)
+                } catch (SQLException ignored) {
+                }
+            } else if (lastWarning) {
+                printWarnings(lastWarning.nextWarning)
+            }
+            super.printNewMessages(sql)
+        }
     }
 
     boolean process(File dir, studyInfo) {
@@ -69,7 +127,9 @@ abstract class DataProcessor {
                     jobId ->
 
                         sql.commit() // we need this for PostgreSQL version
-
+                        def auditPrinter = database.databaseType == DatabaseType.Postgres ?
+                                new PostgresAuditPrinter(jobId, sql) :
+                                new DefaultAuditPrinter(jobId)
                         logger.log("Job ID: ${jobId}")
 
                         def t = Thread.start {
@@ -78,21 +138,16 @@ abstract class DataProcessor {
                             sql.commit() // we need it for postgreSQL version
                         }
 
-                        def lastSeqId = 0
-
                         // opening control connection for the main thread
-                        def ctrlSql = Sql.newInstance(config.db.jdbcConnectionString, config.db.username, config.db.password, config.db.jdbcDriver)
+                        database.withSql { Sql ctrlSql ->
+                            while (true) {
+                                auditPrinter.printNewMessages(ctrlSql)
+                                if (!t.isAlive()) break
 
-                        while (true) {
-                            lastSeqId = printAudit(ctrlSql, jobId, lastSeqId)
-                            if (!t.isAlive()) break
-
-                            Thread.sleep(2000)
+                                Thread.sleep(10)
+                            }
                         }
-
-                        // closing control connection - don't need it anymore
-                        ctrlSql.close()
-                        printAudit(sql, jobId, lastSeqId)
+                        auditPrinter.printNewMessages(sql)
 
                         // figuring out if there are any errors in the error log
                         sql.eachRow("SELECT * FROM " + config.controlSchema + ".cz_job_error where job_id=${jobId} order by seq_id") {
