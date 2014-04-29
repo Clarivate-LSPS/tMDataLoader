@@ -144,7 +144,7 @@ abstract class DataProcessor {
                                 auditPrinter.printNewMessages(ctrlSql)
                                 if (!t.isAlive()) break
 
-                                Thread.sleep(10)
+                                Thread.sleep(2000)
                             }
                         }
                         auditPrinter.printNewMessages(sql)
