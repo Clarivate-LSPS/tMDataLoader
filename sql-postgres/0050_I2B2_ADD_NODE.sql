@@ -25,7 +25,7 @@ Declare
   root_node		varchar(2000);
   root_level	integer;
   rtnCd			integer;
-
+  
 	--Audit variables
 	newJobFlag		integer;
 	databaseName 	VARCHAR(100);
@@ -35,18 +35,18 @@ Declare
 	rowCt			numeric(18,0);
 	errorNumber		character varying;
 	errorMessage	character varying;
-
+  
 BEGIN
-
+    
 	stepCt := 0;
-
+	
 	--Set Audit Parameters
 	newJobFlag := 0; -- False (Default)
 	jobID := currentJobID;
 
 	databaseName := 'TM_CZ';
 	procedureName := 'I2B2_ADD_NODE';
-
+	
 	--Audit JOB Initialization
 	--If Job ID does not exist, then this is a single procedure run and we need to create it
 	IF(jobID IS NULL or jobID < 1)
@@ -54,44 +54,46 @@ BEGIN
 		newJobFlag := 1; -- True
 		select tm_cz.cz_start_audit (procedureName, databaseName) into jobId;
 	END IF;
-
+  
 	select tm_cz.parse_nth_value(path, 2, '\') into root_node;
-
+	
 	select c_hlevel into root_level
 	from i2b2metadata.table_access
 	where c_name = root_node;
-
+  
 	if path = ''  or path = '%' or path_name = ''
-	then
+	then 
 		select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Path or Path name missing, no action taken',0,stepCt,'Done') into rtnCd;
 		return 1;
 	end if;
-
+	
 
 	--Delete existing data.
 
-	DELETE FROM i2b2demodata.OBSERVATION_FACT
-	WHERE concept_cd IN (SELECT C_BASECODE FROM i2b2metadata.I2B2 WHERE C_FULLNAME = PATH);
-	get diagnostics rowCt := ROW_COUNT;
-	stepCt := stepCt + 1;
-	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Deleted any concepts for path from I2B2DEMODATA observation_fact',rowCt,stepCt,'Done') into rtnCd;
+	DELETE FROM i2b2demodata.OBSERVATION_FACT 	
+	USING i2b2metadata.I2B2 WHERE i2b2metadata.I2B2.C_FULLNAME = PATH AND i2b2demodata.OBSERVATION_FACT.concept_cd = i2b2metadata.I2B2.C_BASECODE;
+	--WHERE concept_cd IN (SELECT C_BASECODE FROM i2b2metadata.I2B2 WHERE C_FULLNAME = PATH);
+	
+	--get diagnostics rowCt := ROW_COUNT;
+	--stepCt := stepCt + 1;
+	--select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Deleted any concepts for path from I2B2DEMODATA observation_fact',rowCt,stepCt,'Done') into rtnCd;
 
 	--CONCEPT DIMENSION
 	DELETE FROM i2b2demodata.CONCEPT_DIMENSION
 	WHERE CONCEPT_PATH = path;
-	get diagnostics rowCt := ROW_COUNT;
-	stepCt := stepCt + 1;
-	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Deleted any concepts for path from I2B2DEMODATA concept_dimension',rowCt,stepCt,'Done') into rtnCd;
-
+	--get diagnostics rowCt := ROW_COUNT;
+	--stepCt := stepCt + 1;
+	--select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Deleted any concepts for path from I2B2DEMODATA concept_dimension',rowCt,stepCt,'Done') into rtnCd;
+    
 	--I2B2
 	DELETE FROM i2b2metadata.i2b2
 	WHERE C_FULLNAME = PATH;
-	get diagnostics rowCt := ROW_COUNT;
-	stepCt := stepCt + 1;
-	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Deleted path from I2B2METADATA i2b2',rowCt,stepCt,'Done') into rtnCd;
+	--get diagnostics rowCt := ROW_COUNT;
+	--stepCt := stepCt + 1;
+	--select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Deleted path from I2B2METADATA i2b2',rowCt,stepCt,'Done') into rtnCd;
 
 	--	Insert new node
-
+	
 	--CONCEPT DIMENSION
 	INSERT INTO i2b2demodata.CONCEPT_DIMENSION
 	(CONCEPT_CD, CONCEPT_PATH, NAME_CHAR,  UPDATE_DATE,  DOWNLOAD_DATE, IMPORT_DATE, SOURCESYSTEM_CD)
@@ -104,16 +106,16 @@ BEGIN
 	current_timestamp,
 	TrialID
 	);
-	get diagnostics rowCt := ROW_COUNT;
-	stepCt := stepCt + 1;
-	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Inserted concept for path into I2B2DEMODATA concept_dimension',rowCt,stepCt,'Done') into rtnCD;
+	--get diagnostics rowCt := ROW_COUNT;
+	--stepCt := stepCt + 1;
+	--select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Inserted concept for path into I2B2DEMODATA concept_dimension',rowCt,stepCt,'Done') into rtnCD;
 
 	--I2B2
 	INSERT INTO i2b2metadata.I2B2
 	(c_hlevel, C_FULLNAME, C_NAME, C_VISUALATTRIBUTES, c_synonym_cd, C_FACTTABLECOLUMN, C_TABLENAME, C_COLUMNNAME,
 	C_DIMCODE, C_TOOLTIP, UPDATE_DATE, DOWNLOAD_DATE, IMPORT_DATE, SOURCESYSTEM_CD, c_basecode, C_OPERATOR, c_columndatatype, c_comment,
 	m_applied_path)
-	SELECT
+	SELECT 
 	(length(concept_path) - coalesce(length(replace(concept_path, '\','')),0)) / length('\') - 2 + root_level,
 	CONCEPT_PATH,
 	NAME_CHAR,
@@ -134,12 +136,12 @@ BEGIN
 	case when TrialID is null then null else 'trial:' || TrialID end,
 	'@'
 	FROM i2b2demodata.CONCEPT_DIMENSION
-	WHERE
+	WHERE 
 	CONCEPT_PATH = path;
-	get diagnostics rowCt := ROW_COUNT;
-	stepCt := stepCt + 1;
-	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Inserted path into I2B2METADATA i2b2',rowCt,stepCt,'Done') into rtnCd;
-
+	--get diagnostics rowCt := ROW_COUNT;
+	--stepCt := stepCt + 1;
+	--select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Inserted path into I2B2METADATA i2b2',rowCt,stepCt,'Done') into rtnCd;
+		
       ---Cleanup OVERALL JOB if this proc is being run standalone
 	IF newJobFlag = 1
 	THEN
@@ -147,7 +149,7 @@ BEGIN
 	END IF;
 
 	return 1;
-
+	
 	EXCEPTION
 	WHEN OTHERS THEN
 		errorNumber := SQLSTATE;
@@ -158,7 +160,7 @@ BEGIN
 		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return -16;
 
-
+  
 END;
 
 $BODY$

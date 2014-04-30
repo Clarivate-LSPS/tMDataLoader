@@ -2,7 +2,9 @@
 
 -- DROP FUNCTION tm_cz.i2b2_create_concept_counts(character varying, numeric);
 
-CREATE OR REPLACE FUNCTION tm_cz.i2b2_create_concept_counts(path character varying, currentjobid numeric DEFAULT (-1))
+drop function if exists tm_cz.i2b2_create_concept_counts(character varying, numeric);
+
+CREATE OR REPLACE FUNCTION tm_cz.i2b2_create_concept_counts(path character varying, currentjobid numeric DEFAULT (-1), buildTree character varying DEFAULT('Y'))
   RETURNS numeric AS
 $BODY$
 /*************************************************************************
@@ -21,7 +23,7 @@ $BODY$
 * limitations under the License.
 ******************************************************************/
 Declare
-
+ 
 	--Audit variables
 	newJobFlag		integer;
 	databaseName 	VARCHAR(100);
@@ -32,8 +34,13 @@ Declare
 	errorNumber		character varying;
 	errorMessage	character varying;
 	rtnCd			numeric;
-
+  
 BEGIN
+     IF(buildTree = 'Y')
+	THEN
+		SELECT I2B2_CREATE_FULL_TREE(path, currentJobID) INTO rtnCd;
+	END IF;
+
 
 	--Set Audit Parameters
 	newJobFlag := 0; -- False (Default)
@@ -49,9 +56,9 @@ BEGIN
 		newJobFlag := 1; -- True
 		select tm_cz.cz_start_audit (procedureName, databaseName) into jobID;
 	END IF;
-
+    	
 	stepCt := 0;
-
+  
 	begin
 	delete from i2b2demodata.concept_counts
 	where concept_path like path || '%' escape '`';
@@ -84,15 +91,18 @@ BEGIN
 	    ,i2b2metadata.i2b2 la
 		,i2b2demodata.observation_fact tpm
 		,i2b2demodata.patient_dimension p
+		,TM_WZ.I2B2_LOAD_TREE_FULL tree
 	where fa.c_fullname like path || '%' escape '`'
 	  and substr(fa.c_visualattributes,2,1) != 'H'
-	  and la.c_fullname like fa.c_fullname || '%' escape '`'
+	  --and la.c_fullname like fa.c_fullname || '%' escape '`'
+	  and fa.RECORD_ID = tree.IDROOT 
+	  and la.RECORD_ID = tree.IDCHILD
 	  and la.c_visualattributes like 'L%'
 	  and tpm.patient_num = p.patient_num
 	  and la.c_basecode = tpm.concept_cd   -- outer join in oracle ???
 	group by fa.c_fullname
 			,ltrim(SUBSTR(fa.c_fullname, 1,instr(fa.c_fullname, '\',-1,2)));
-	get diagnostics rowCt := ROW_COUNT;
+	get diagnostics rowCt := ROW_COUNT;		
 	exception
 	when others then
 		errorNumber := SQLSTATE;
@@ -105,7 +115,32 @@ BEGIN
 	end;
 	stepCt := stepCt + 1;
 	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Insert counts for trial into I2B2DEMODATA concept_counts',rowCt,stepCt,'Done') into rtnCd;
+	
+	/*SELECT count(*) INTO rowCt FROM
+(
+	select fa.c_fullname
+		  ,ltrim(SUBSTR(fa.c_fullname, 1,tm_cz.instr(fa.c_fullname, '\',-1,2)))
+		  ,count(distinct tpm.patient_num)
+	from i2b2metadata.i2b2 fa
+	    ,i2b2metadata.i2b2 la
+		,i2b2demodata.observation_fact tpm
+		,i2b2demodata.patient_dimension p
+		,TM_WZ.I2B2_LOAD_TREE_FULL tree
+	where fa.c_fullname like '\Private Studies\Jace_Study_C0168T37' || '%' escape '`'
+	  and substr(fa.c_visualattributes,2,1) != 'H'
+	 -- and la.c_fullname like fa.c_fullname || '%' escape '`'
+	  and fa.RECORD_ID = tree.IDROOT 
+	  and la.RECORD_ID = tree.IDCHILD
+	  and la.c_visualattributes like 'L%'
+	  and tpm.patient_num = p.patient_num
+	  and la.c_basecode = tpm.concept_cd   -- outer join in oracle ???
+	group by fa.c_fullname
+			,ltrim(SUBSTR(fa.c_fullname, 1,tm_cz.instr(fa.c_fullname, '\',-1,2)))
 
+) t;
+
+	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Insert TEST counts for trial into I2B2DEMODATA concept_counts',rowCt,stepCt,'Done') into rtnCd;*/
+	
 	--SET ANY NODE WITH MISSING OR ZERO COUNTS TO HIDDEN
 
 	begin
@@ -122,7 +157,7 @@ BEGIN
 					and zc.patient_count = 0)
 			  )
 		and c_name != 'SECURITY';
-	get diagnostics rowCt := ROW_COUNT;
+	get diagnostics rowCt := ROW_COUNT;	
 	exception
 	when others then
 		errorNumber := SQLSTATE;
@@ -135,7 +170,7 @@ BEGIN
 	end;
 	stepCt := stepCt + 1;
 	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Nodes hidden with missing/zero counts for trial into I2B2DEMODATA concept_counts',rowCt,stepCt,'Done') into rtnCd;
-
+		
 	---Cleanup OVERALL JOB if this proc is being run standalone
 	IF newJobFlag = 1
 	THEN

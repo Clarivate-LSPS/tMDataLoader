@@ -276,7 +276,7 @@ BEGIN
 
 	begin
 	delete from tm_wz.wrk_clinical_data
-	where data_value is null;
+	where coalesce(data_value, '') = '';
 	exception
 	when others then
 		errorNumber := SQLSTATE;
@@ -414,7 +414,7 @@ BEGIN
 		   where upper(substr(t.category_path,tm_cz.instr(t.category_path,'\',-1,1)+1,length(t.category_path)-tm_cz.instr(t.category_path,'\',-1,1)))
 			     = upper(t.data_label)
 		     and t.data_label is not null)
-	  and tpm.data_label is not null;
+	  and tpm.data_label is not null AND tm_cz.instr(tpm.category_path,'\',-2, 1) > 0 AND tm_cz.instr(tpm.category_cd,'+',-2, 1) > 0;
 	get diagnostics rowCt := ROW_COUNT;
 	exception
 	when others then
@@ -1041,6 +1041,10 @@ BEGIN
 	stepCt := stepCt + 1;
 	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Inserted leaf nodes into I2B2METADATA i2b2',rowCt,stepCt,'Done') into rtnCd;
 
+
+	--New place form fill_in_tree
+	select tm_cz.i2b2_fill_in_tree(TrialId, topNode, jobID) into rtnCd;
+
 	--	delete from observation_fact all concept_cds for trial that are clinical data, exclude concept_cds from biomarker data
 
 	begin
@@ -1083,6 +1087,10 @@ BEGIN
 	end;
 	stepCt := stepCt + 1;
 	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Delete clinical data for study from observation_fact',rowCt,stepCt,'Done') into rtnCd;
+
+	DROP INDEX IF EXISTS fact_modifier_patient;
+	DROP INDEX IF EXISTS idx_ob_fact_2;
+	DROP INDEX IF EXISTS idx_ob_fact_1;
 
     --Insert into observation_fact
 
@@ -1131,10 +1139,19 @@ BEGIN
 	  and coalesce(a.visit_name,'**NULL**') = coalesce(t.visit_name,'**NULL**')
 	  and case when a.data_type = 'T' then a.data_value else '**NULL**' end = coalesce(t.data_value,'**NULL**')
 	  and t.leaf_node = i.c_fullname
+--	  and not exists		-- don't insert if lower level node exists
+--		 (select 1 from tm_wz.wt_trial_nodes x
+--		  where x.leaf_node like t.leaf_node || '%_' escape '`')
+--	  and a.data_value is not null;
 	  and not exists		-- don't insert if lower level node exists
-		 (select 1 from tm_wz.wt_trial_nodes x
-		  where x.leaf_node like t.leaf_node || '%_' escape '`')
-	  and a.data_value is not null;
+		(
+			select 1 from tm_wz.wt_trial_nodes x
+		  	--where x.leaf_node like t.leaf_node || '%_'
+			--Jule 2013. Performance fix by TR. Find if any leaf parent node is current
+			where (SUBSTR(x.leaf_node, 1, tm_cz.INSTR(x.leaf_node, '\', -2))) = t.leaf_node
+		)
+	  and a.data_value is not null AND NOT (a.data_type = 'N' AND a.data_value = '');
+
 	get diagnostics rowCt := ROW_COUNT;
 	exception
 	when others then
@@ -1149,27 +1166,58 @@ BEGIN
 	stepCt := stepCt + 1;
 	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Insert trial into I2B2DEMODATA observation_fact',rowCt,stepCt,'Done') into rtnCd;
 
+
+	--July 2013. Performance fix by TR. Prepare precompute tree
+	SELECT tm_cz.I2B2_CREATE_FULL_TREE(topNode, jobId) INTO rtnCd;
+	stepCt := stepCt + 1;
+	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Create i2b2 full tree', 0, stepCt,'Done') into rtnCd;
+
+
+   DELETE FROM TM_WZ.i2b2_load_path_with_count;
+
+   insert into TM_WZ.i2b2_load_path_with_count
+   select p.c_fullname, count(*)
+				 from i2b2metadata.i2b2 p
+					--,i2b2metadata.i2b2 c
+					,TM_WZ.I2B2_LOAD_TREE_FULL tree
+				 where p.c_fullname like topNode || '%' escape '`'
+				   --and c.c_fullname like p.c_fullname || '%'
+					and p.RECORD_ID = tree.IDROOT
+					--and c.rowid = tree.IDCHILD
+				 group by P.C_FULLNAME;
+
+
+	stepCt := stepCt + 1;
+	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Create i2b2 full tree counts', 0, stepCt,'Done') into rtnCd;
+
+
+
+
+	CREATE INDEX fact_modifier_patient ON i2b2demodata.observation_fact(modifier_cd, patient_num) tablespace indx;
+	CREATE INDEX idx_ob_fact_2 ON observation_fact (concept_cd,patient_num,encounter_num) tablespace indx;
+	CREATE INDEX idx_ob_fact_1 ON observation_fact (concept_cd) tablespace indx;
+
 	--	update c_visualattributes for all nodes in study, done to pick up node that changed c_columndatatype
 
 	begin
-	with upd as (select p.c_fullname, count(*) as nbr_children
+	/*with upd as (select p.c_fullname, count(*) as nbr_children
 				 from i2b2metadata.i2b2 p
 					 ,i2b2metadata.i2b2 c
 				 where p.c_fullname like topNode || '%' escape '`'
 				   and c.c_fullname like p.c_fullname || '%' escape '`'
-				 group by p.c_fullname)
+				 group by p.c_fullname)*/
 	update i2b2metadata.i2b2 b
-	set c_visualattributes=case when upd.nbr_children = 1
+	set c_visualattributes=case when u.nbr_children = 1
 								then 'L' || substr(b.c_visualattributes,2,2)
 								else 'F' || substr(b.c_visualattributes,2,1) ||
-									case when upd.c_fullname = topNode and highlight_study = 'Y'
+									case when u.c_fullname = topNode and highlight_study = 'Y'
 										 then 'J' else substr(b.c_visualattributes,3,1) end
 								end
-		,c_columndatatype=case when upd.nbr_children > 1 then 'T' else b.c_columndatatype end
-	from upd
-	where b.c_fullname = upd.c_fullname
+		,c_columndatatype=case when u.nbr_children > 1 then 'T' else b.c_columndatatype end
+	from TM_WZ.i2b2_load_path_with_count u
+	where b.c_fullname = u.c_fullname
 	  and b.c_fullname in
-		 (select x.c_fullname from i2b2 x
+		 (select x.c_fullname from i2b2metadata.i2b2 x
 		  where x.c_fullname like topNode || '%' escape '`');
   	get diagnostics rowCt := ROW_COUNT;
 	exception
@@ -1186,8 +1234,11 @@ BEGIN
 	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Set c_visualattributes in i2b2',rowCt,stepCt,'Done') into rtnCd;
 
 	-- final procs
+    --moved earlier
+	--select tm_cz.i2b2_fill_in_tree(TrialId, topNode, jobID) into rtnCd;
 
-	select tm_cz.i2b2_fill_in_tree(TrialId, topNode, jobID) into rtnCd;
+	stepCt := stepCt + 1;
+	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Finish fill in tree',0, stepCt,'Done') into rtnCd;
 
 	--	set sourcesystem_cd, c_comment to null if any added upper-level nodes
 
@@ -1210,7 +1261,7 @@ BEGIN
 	stepCt := stepCt + 1;
 	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Set sourcesystem_cd to null for added upper-level nodes',rowCt,stepCt,'Done') into rtnCd;
 
-	select tm_cz.i2b2_create_concept_counts(topNode, jobID) into rtnCd;
+	select tm_cz.i2b2_create_concept_counts(topNode, jobID, 'N') into rtnCd;
 
 	--	delete each node that is hidden after create concept counts
 
