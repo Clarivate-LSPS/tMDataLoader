@@ -98,7 +98,8 @@ abstract class DataProcessor {
         }
 
         void printNewMessages(Sql sql) {
-            if (statementToMonitor != lastStatement) {
+            if (statementToMonitor != lastStatement || lastWarning == null) {
+                lastWarning = null
                 lastStatement = statementToMonitor
                 try {
                     printWarnings(lastStatement.warnings)
