@@ -27,6 +27,7 @@ import groovy.sql.Sql
 import java.sql.SQLException
 import java.sql.SQLWarning
 import java.sql.Statement
+import java.util.concurrent.atomic.AtomicReference
 
 abstract class DataProcessor {
     def config
@@ -70,13 +71,23 @@ abstract class DataProcessor {
     }
 
     private class PostgresAuditPrinter extends DefaultAuditPrinter  {
-        private volatile Statement statementToMonitor
+        private class StatementHolder {
+            final Statement statement
+
+            StatementHolder(Statement statement) {
+                this.statement = statement
+            }
+        }
+
+        private AtomicReference<StatementHolder> statementHolder = new AtomicReference<>()
+        private StatementHolder lastStatement
         private SQLWarning lastWarning
-        private Statement lastStatement
 
         public PostgresAuditPrinter(jobId, Sql sql) {
             super(jobId)
-            sql.withStatement { this.statementToMonitor = it }
+            sql.withStatement { Statement statement->
+                this.statementHolder.set(new StatementHolder(statement))
+            }
         }
 
         private def printWarnings(SQLWarning warnings) {
@@ -98,11 +109,12 @@ abstract class DataProcessor {
         }
 
         void printNewMessages(Sql sql) {
-            if (statementToMonitor != lastStatement || lastWarning == null) {
+            StatementHolder current = statementHolder.get()
+            if (!current.is(null) && (!current.is(lastStatement) || lastWarning == null)) {
                 lastWarning = null
-                lastStatement = statementToMonitor
+                lastStatement = current
                 try {
-                    printWarnings(lastStatement.warnings)
+                    printWarnings(lastStatement.statement.warnings)
                 } catch (SQLException ignored) {
                 }
             } else if (lastWarning) {
