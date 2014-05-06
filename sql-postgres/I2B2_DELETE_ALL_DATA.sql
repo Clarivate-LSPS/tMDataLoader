@@ -153,9 +153,8 @@ BEGIN
 		
 		/*Deleting data from de_variant_subject_summary*/
 		delete from deapp.de_variant_subject_summary v
-		  where assay_id = (select sm.assay_id
-		  from deapp.de_subject_sample_mapping sm
-		  where sm.trial_name = TrialID and sm.sample_cd = v.subject_id);
+		where v.dataset_id = TrialID;
+
 		stepCt := stepCt + 1;
 		get diagnostics rowCt := ROW_COUNT;
 		select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_subject_summary',rowCt,stepCt,'Done') into rtnCd;
