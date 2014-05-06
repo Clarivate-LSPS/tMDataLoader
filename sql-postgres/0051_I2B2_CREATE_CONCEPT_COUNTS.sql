@@ -184,7 +184,7 @@ END;
 $BODY$
   LANGUAGE plpgsql VOLATILE SECURITY DEFINER
   COST 100;
-ALTER FUNCTION tm_cz.i2b2_create_concept_counts(character varying, numeric) SET search_path=tm_cz, i2b2demodata, i2b2metadata, pg_temp;
+ALTER FUNCTION tm_cz.i2b2_create_concept_counts(character varying, numeric, character varying) SET search_path=tm_cz, i2b2demodata, i2b2metadata, pg_temp;
 
-ALTER FUNCTION tm_cz.i2b2_create_concept_counts(character varying, numeric)
+ALTER FUNCTION tm_cz.i2b2_create_concept_counts(character varying, numeric, character varying)
   OWNER TO postgres;
