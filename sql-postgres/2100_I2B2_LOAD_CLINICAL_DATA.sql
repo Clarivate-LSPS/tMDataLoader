@@ -23,7 +23,6 @@ $BODY$
 Declare
 
 	--Audit variables
-	newJobFlag		integer;
 	databaseName 	VARCHAR(100);
 	procedureName 	VARCHAR(100);
 	jobID 			numeric(18,0);
@@ -80,21 +79,13 @@ BEGIN
 
 	TrialID := upper(trial_id);
 	secureStudy := upper(secure_study);
-	--Set Audit Parameters
-	newJobFlag := 0; -- False (Default)
-	jobID := currentJobID;
 
 	databaseName := 'TM_CZ';
 	procedureName := 'I2B2_LOAD_CLINICAL_DATA';
 
 	--Audit JOB Initialization
 	--If Job ID does not exist, then this is a single procedure run and we need to create it
-
-	IF(jobID IS NULL or jobID < 1)
-	THEN
-		newJobFlag := 1; -- True
-		select tm_cz.cz_start_audit (procedureName, databaseName) into jobID;
-	END IF;
+	select case when coalesce(currentjobid, -1) < 1 then currentjobid else tm_cz.cz_start_audit(procedureName, databaseName) end into jobId;
 
 	stepCt := 0;
 	stepCt := stepCt + 1;
@@ -1088,12 +1079,7 @@ BEGIN
 	stepCt := stepCt + 1;
 	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Delete clinical data for study from observation_fact',rowCt,stepCt,'Done') into rtnCd;
 
-	DROP INDEX IF EXISTS fact_modifier_patient;
-	DROP INDEX IF EXISTS idx_ob_fact_2;
-	DROP INDEX IF EXISTS idx_ob_fact_1;
-
-    --Insert into observation_fact
-
+	--Insert into observation_fact
 	begin
 	insert into i2b2demodata.observation_fact
 	(encounter_num,
@@ -1190,15 +1176,7 @@ BEGIN
 	stepCt := stepCt + 1;
 	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Create i2b2 full tree counts', 0, stepCt,'Done') into rtnCd;
 
-
-
-
-	CREATE INDEX fact_modifier_patient ON i2b2demodata.observation_fact(modifier_cd, patient_num) tablespace indx;
-	CREATE INDEX idx_ob_fact_2 ON observation_fact (concept_cd,patient_num,encounter_num) tablespace indx;
-	CREATE INDEX idx_ob_fact_1 ON observation_fact (concept_cd) tablespace indx;
-
 	--	update c_visualattributes for all nodes in study, done to pick up node that changed c_columndatatype
-
 	begin
 	/*with upd as (select p.c_fullname, count(*) as nbr_children
 				 from i2b2metadata.i2b2 p
@@ -1277,16 +1255,13 @@ BEGIN
 	END LOOP;
 
 	select tm_cz.i2b2_create_security_for_trial(TrialId, secureStudy, jobID) into rtnCd;
-	select tm_cz.i2b2_load_security_data(jobID) into rtnCd;
+	select tm_cz.i2b2_load_security_data(TrialId, jobID) into rtnCd;
 
 	stepCt := stepCt + 1;
 	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'End i2b2_load_clinical_data',0,stepCt,'Done') into rtnCd;
 
 	---Cleanup OVERALL JOB if this proc is being run standalone
-	IF newJobFlag = 1
-	THEN
-		select tm_cz.cz_end_audit (jobID, 'SUCCESS') into rtnCd;
-	END IF;
+	perform tm_cz.cz_end_audit (jobID, 'SUCCESS') where coalesce(currentJobId, -1) <> jobId;
 
 	return 1;
 /*
