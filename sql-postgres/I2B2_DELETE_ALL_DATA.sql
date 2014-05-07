@@ -47,7 +47,7 @@ BEGIN
 	else
 		stepCt := stepCt + 1;
 		select tm_cz.cz_write_audit(jobId,databasename,procedurename,'Please select right path to study',1,stepCt,'ERROR') into rtnCd;
-		select tm_cz.cz_error_handler(jobid,procedurename) into rtnCd;
+		select tm_cz.cz_error_handler(jobid, procedurename, '-1', 'Application raised error') into rtnCd;
 		select tm_cz.cz_end_audit (jobId,'FAIL') into rtnCd;
 		return -16;
 	end if;
@@ -77,7 +77,7 @@ BEGIN
     else 
 	stepCt := stepCt + 1;
 	select tm_cz.cz_write_audit(jobId,databasename,procedurename,'Please select right trial to study',1,stepCt,'ERROR') into rtnCd;
-	select tm_cz.cz_error_handler(jobid,procedurename) into rtnCd;
+	select tm_cz.cz_error_handler(jobid, procedurename, '-1', 'Application raised error') into rtnCd;
 	select tm_cz.cz_end_audit (jobId,'FAIL') into rtnCd;
 	return -16;
     end if;
