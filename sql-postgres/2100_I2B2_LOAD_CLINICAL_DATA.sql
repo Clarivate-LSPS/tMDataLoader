@@ -85,7 +85,7 @@ BEGIN
 
 	--Audit JOB Initialization
 	--If Job ID does not exist, then this is a single procedure run and we need to create it
-	select case when coalesce(currentjobid, -1) < 1 then currentjobid else tm_cz.cz_start_audit(procedureName, databaseName) end into jobId;
+	select case when coalesce(currentjobid, -1) < 1 then tm_cz.cz_start_audit(procedureName, databaseName) else currentjobid end into jobId;
 
 	stepCt := 0;
 	stepCt := stepCt + 1;

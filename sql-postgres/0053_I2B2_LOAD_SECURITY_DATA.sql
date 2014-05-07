@@ -40,7 +40,7 @@ BEGIN
 
 	--Audit JOB Initialization
 	--If Job ID does not exist, then this is a single procedure run and we need to create it
-	select case when coalesce(currentjobid, -1) < 1 then currentjobid else tm_cz.cz_start_audit(procedureName, databaseName) end into jobId;
+	select case when coalesce(currentjobid, -1) < 1 then tm_cz.cz_start_audit(procedureName, databaseName) else currentjobid end into jobId;
 
 	truncate table I2B2METADATA.i2b2_secure;
 
@@ -159,7 +159,7 @@ BEGIN
 	databaseName := 'TM_CZ';
 	procedureName := 'I2B2_LOAD_SECURITY';
 
-	select case when coalesce(currentjobid, -1) < 1 then currentjobid else tm_cz.cz_start_audit(procedureName, databaseName) end into jobId;
+	select case when coalesce(currentjobid, -1) < 1 then tm_cz.cz_start_audit(procedureName, databaseName) else currentjobid end into jobId;
 
 	delete from I2B2METADATA.i2b2_secure where sourcesystem_cd = sourcesystemCd;
 

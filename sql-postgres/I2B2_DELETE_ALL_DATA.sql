@@ -13,7 +13,6 @@ Declare
   
   --Audit variables
   rowCt		numeric(18,0);
-  newJobFlag INTEGER;
   trialCount INTEGER;
   pathCount INTEGER;
   countNodeUnderTop INTEGER;
@@ -27,11 +26,16 @@ Declare
   stepCt numeric(18,0);
   rtnCd	 integer;
 BEGIN
+  databaseName := 'TM_CZ';
+  procedureName := 'i2b2_delete_all_data';
+
+  select case when coalesce(currentjobid, -1) < 1 then tm_cz.cz_start_audit(procedureName, databaseName) else currentjobid end into jobId;
+
   if (path_string is not null) then
 	pathString := REGEXP_REPLACE('\' || path_string || '\','(\\){2,}', '\','g');
   end if;
   
-  procedureName := 'i2b2_delete_all_data';
+
   if (trial_id is null) then
 	select count(distinct trial_name) into trialCount
 		from DEAPP.de_subject_sample_mapping where concept_code in (
@@ -102,28 +106,13 @@ BEGIN
   
   stepCt := 0;
   
-  --Set Audit Parameters
-  newJobFlag := 0; -- False (Default)
-  jobID := currentJobID;
-
-  /*SELECT sys_context('USERENV', 'CURRENT_SCHEMA') INTO databaseName FROM dual;*/
-  
-
-  --Audit JOB Initialization
-  --If Job ID does not exist, then this is a single procedure run and we need to create it
-  IF(jobID IS NULL or jobID < 1)
-  THEN
-    newJobFlag := 1; -- True
-    select tm_cz.cz_start_audit (procedureName, databaseName) into rtnCd;
-  END IF;
-  
   if pathString != ''  or pathString != '%'
   then 
 	stepCt := stepCt + 1;
   if (topNode is null) then
-    select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Starting I2B2_DELETE_ALL_DATA from '||'/',0,stepCt,'Done') into rtnCd;
+    select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Starting I2B2_DELETE_ALL_DATA for '||'/',0,stepCt,'Done') into rtnCd;
   else
-    select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Starting I2B2_DELETE_ALL_DATA from '||topNode||' trial id '||trialId,0,stepCt,'Done') into rtnCd;
+    select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Starting I2B2_DELETE_ALL_DATA for '||topNode||' trial id '||trialId,0,stepCt,'Done') into rtnCd;
   end if;
 	
   --	delete all i2b2 nodes
@@ -297,11 +286,7 @@ BEGIN
 
   end if;
   
-    ---Cleanup OVERALL JOB if this proc is being run standalone
-  IF newJobFlag = 1
-  THEN
-    select tm_cz.cz_end_audit (jobID, 'SUCCESS') into rtnCd;
-  END IF;
+  perform tm_cz.cz_end_audit (jobID, 'SUCCESS') where coalesce(currentJobId, -1) <> jobId;
 
   return 1;
 END;
