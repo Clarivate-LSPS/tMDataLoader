@@ -1063,7 +1063,7 @@ BEGIN
 	  and sd.trial_name = TrialId
 	  and sd.source_cd = sourceCd
 	  and case when dataType = 'R'
-			   then case when md.intensity_value > 0 then 1 else 0 end
+			   then case when md.intensity_value::double precision > 0 then 1 else 0 end
 			   else 1 end = 1         --	take only >0 for dataType R
 	group by gs.probeset_id
 		  ,sd.assay_id;
