@@ -1,6 +1,8 @@
 /out
 /src/test/resources/TestConfig.groovy
 /.idea
+/.gradle
 /target
+/build
 *.iml
 

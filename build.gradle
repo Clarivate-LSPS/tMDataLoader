@@ -1,0 +1,33 @@
+apply plugin: 'java'
+apply plugin: 'maven'
+apply plugin: 'groovy'
+
+group = 'com.thomsonreuters.lsps.transmart.etl'
+version = '1.0-SNAPSHOT'
+
+description = """"""
+
+sourceCompatibility = 1.5
+targetCompatibility = 1.5
+
+repositories {
+    maven { url "http://repo.maven.apache.org/maven2" }
+}
+
+dependencies {
+    compile group: 'org.codehaus.groovy', name: 'groovy-all', version: '2.0.8'
+    runtime group: 'commons-cli', name: 'commons-cli', version: '1.2'
+    testCompile group: 'junit', name: 'junit', version: '4.11'
+}
+
+if (hasProperty('profile')) {
+    apply from: "${profile}-build.gradle"
+    logger.info("${profile}-build.gradle loaded")
+} else {
+    logger.warn("No profile specified. JDBC driver classes should be in class path (to built-in driver use command line option -Pprofile=<oracle|postgresql>)")
+}
+
+jar {
+    from { (configurations.compile + configurations.runtime).collect { it.isDirectory() ? it : zipTree(it) } }
+    manifest { attributes 'Main-Class': 'com.thomsonreuters.lsps.transmart.etl.CommandLineTool' }
+}
