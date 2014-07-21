@@ -1,0 +1,11 @@
+task deployJar(type: Jar, dependsOn: jar) {
+    baseName = project.name + '-deploy'
+    deps = configurations.runtime + configurations.archives.allArtifactFiles
+    depClasses = { deps.collect { it.isDirectory() ? it : zipTree(it) } }
+    from(depClasses) {
+        exclude 'META-INF/MANIFEST.MF'
+    }
+    manifest {
+        attributes 'Main-Class': 'com.benmccann.test.frontend.server.WebServer'
+    }
+}
