@@ -1,15 +1,17 @@
-// PostgreSQL config
-/*db {
+/* PostgreSQL config
+db {
     jdbcDriver = 'org.postgresql.Driver'
     jdbcConnectionString = 'jdbc:postgresql:transmart'
     username = 'postgres'
     password = 'postgres'
-}*/
+}
+//*/
 
-// Oracle config
+//* Oracle config
 db {
     jdbcConnectionString = 'jdbc:oracle:thin:@localhost:1521:ORCL'
     username = 'tm_cz'
     password = 'tm_cz'
     jdbcDriver = 'oracle.jdbc.OracleDriver'
 }
+//*/
