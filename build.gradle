@@ -1,3 +1,25 @@
+def configFileName = System.getProperty('user.home') + File.separator + '.tm_etl' + File.separator + 'Config.groovy'
+def configFile = new File(configFileName)
+if (configFile.exists()) {
+    project.ext.dbConfig = new ConfigSlurper().parse(configFile.toURI().toURL()).db
+    if (!hasProperty('database')) {
+        if (dbConfig.jdbcConnectionString.contains(":postgresql:")) {
+            project.ext.database = "postgresql"
+        } else if (dbConfig.jdbcConnectionString.contains(":oracle:")) {
+            project.ext.database = "oracle"
+        }
+    }
+}
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'org.flywaydb:flyway-gradle-plugin:3.0'
+    }
+}
+
 apply plugin: 'java'
 apply plugin: 'maven'
 apply plugin: 'groovy'
@@ -20,11 +42,11 @@ dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.11'
 }
 
-if (hasProperty('profile')) {
-    apply from: "${profile}-build.gradle"
-    logger.info("${profile}-build.gradle loaded")
+if (hasProperty('database')) {
+    apply from: "${database}-build.gradle"
+    logger.info("${database}-build.gradle loaded")
 } else {
-    logger.warn("No profile specified. JDBC driver classes should be in class path (to built-in driver use command line option -Pprofile=<oracle|postgresql>)")
+    logger.warn("No database specified. JDBC driver classes should be in class path (to built-in driver use command line option -Pdatabase=<oracle|postgresql>)")
 }
 
 jar {
