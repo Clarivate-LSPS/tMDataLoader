@@ -22,7 +22,7 @@ public abstract class ConfigAwareTestCase extends GroovyTestCase {
     private Sql _db
 
     File getDbScriptsDir() {
-        return new File("sql-${getDatabase().databaseType.toString().toLowerCase()}")
+        return new File("sql", getDatabase().databaseType.toString().toLowerCase())
     }
 
     void runScript(String scriptName) {
