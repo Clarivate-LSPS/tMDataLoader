@@ -18,7 +18,6 @@ class VCFDataProcessorTest extends ConfigAwareTestCase {
     @Override
     void setUp() {
         super.setUp()
-        runScript('VCF_CREATE_TABLES.sql')
         runScript('I2B2_PROCESS_VCF_DATA.sql')
         sql.execute('delete from i2b2demodata.observation_fact where modifier_cd = ?', studyId)
         sql.execute('delete from deapp.de_subject_sample_mapping where trial_name = ?', studyId)
