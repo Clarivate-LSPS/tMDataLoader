@@ -56,6 +56,8 @@ class DatabaseTest extends ConfigAwareTestCase {
         assertParse('jdbc:postgresql:transmart', [host: 'localhost', port: 5432, database: 'transmart'])
         assertParse('jdbc:postgresql://server/transmart', [host: 'server', port: 5432, database: 'transmart'])
         assertParse('jdbc:postgresql://server:5433/transmart', [host: 'server', port: 5433, database: 'transmart'])
+        assertParse('jdbc:postgresql://db.example.com:5433/transmart', [host: 'db.example.com', port: 5433, database: 'transmart'])
+        assertParse('jdbc:postgresql://127.0.0.1:5433/transmart', [host: '127.0.0.1', port: 5433, database: 'transmart'])
     }
 
     void testItParseOracleJdbcConnectionString() {
@@ -68,6 +70,8 @@ class DatabaseTest extends ConfigAwareTestCase {
         assertParse('jdbc:oracle:thin:@//server/orcl', [host: 'server', port: 1521, database: 'orcl'])
         assertParse('jdbc:oracle:thin:@//:1522/orcl', [host: 'localhost', port: 1522, database: 'orcl'])
         assertParse('jdbc:oracle:thin:@//server:1522/orcl', [host: 'server', port: 1522, database: 'orcl'])
+        assertParse('jdbc:oracle:thin:@//db.example.com:1522/orcl', [host: 'db.example.com', port: 1522, database: 'orcl'])
+        assertParse('jdbc:oracle:thin:@//127.0.0.1:1522/orcl', [host: '127.0.0.1', port: 1522, database: 'orcl'])
     }
 
     void testItRunScript() {
