@@ -52,8 +52,8 @@ class Database {
     }
 
     private void parseOracleJdbcConnectionString() {
-        def match = config.jdbcConnectionString =~ /^jdbc:oracle:thin:@(\w+)?(?::(\d+))?:(\w+)$/ ?:
-                config.jdbcConnectionString =~ /^jdbc:oracle:thin:@\/\/(\w+)?(?::(\d+))?\/(\w+)$/
+        def match = config.jdbcConnectionString =~ /^jdbc:oracle:thin:@((?:\w|[-.])+)?(?::(\d+))?:(\w+)$/ ?:
+                config.jdbcConnectionString =~ /^jdbc:oracle:thin:@\/\/((?:\w|[-.])+)?(?::(\d+))?\/(\w+)$/
         if (match.size()) {
             databaseType = DatabaseType.Oracle
             host = match[0][1] ?: 'localhost'
@@ -63,7 +63,7 @@ class Database {
     }
 
     private void parsePostgresJdbcConnectionString() {
-        def match = config.jdbcConnectionString =~ /^jdbc:postgresql:(?:\/\/(\w+)(?::(\d+))?\/)?(\w+)(?:\?.*)?$/
+        def match = config.jdbcConnectionString =~ /^jdbc:postgresql:(?:\/\/((?:\w|[-.])+)(?::(\d+))?\/)?(\w+)(?:\?.*)?$/
         if (match) {
             databaseType = DatabaseType.Postgres
             host = match[0][1] ?: 'localhost'

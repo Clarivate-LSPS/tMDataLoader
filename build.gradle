@@ -24,6 +24,16 @@ apply plugin: 'java'
 apply plugin: 'maven'
 apply plugin: 'groovy'
 
+if (hasProperty('dbConfig')) {
+    apply plugin: 'flyway'
+
+    flyway {
+        url = dbConfig.jdbcConnectionString
+        user = dbConfig.username
+        password = dbConfig.password
+    }
+}
+
 group = 'com.thomsonreuters.lsps.transmart.etl'
 version = '1.0-SNAPSHOT'
 
