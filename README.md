@@ -11,7 +11,17 @@ sample_data folder contains sample public datasets from GEO
 INSTALLING
 ==========
 
-Just copy tm_etl.jar to any directory on the server. It can be on the same machine as Transmart or any other one that has direct access to TM_CZ database schema used by tranSMART.
+For PostgreSQL:
+
+	gradlew deployJar -Pdatabase=postgresql
+
+For Oracle:
+
+	gradlew deployJar -Pdatabase=oracle
+
+Gradle will create tm_etl.jar in root directory with all necessary dependencies for specified database.
+
+Then, just copy tm_etl.jar to any directory on the server. It can be on the same machine as Transmart or any other one that has direct access to TM_CZ database schema used by tranSMART.
 
 Then, edit Config.groovy file and put it in your ~/.tm_etl directory.
 Please make sure you edit the configuration file before using the tool.
@@ -19,7 +29,7 @@ Please make sure you edit the configuration file before using the tool.
 For Oracle
 ==========
 
-Launch SQLDeveloper and execute the code of each *.sql file in sql-oracle directory, starting with 1_run_first.sql.
+Launch SQLDeveloper and execute the code of each *.sql file in sql/oracle directory, starting with 1_run_first.sql.
 This will apply necessary fixes to the database without breaking compatibility with other tools.
 
 For PostgreSQL
@@ -35,15 +45,19 @@ Then apply the fixes to your PostgreSQL database:
 	
 	cd transmartApp-DB/postgresql_wGEO
 	psql -d transmart -f post_1.1.0_update.sql
-	
-If you want "realtime" log updates in ETL tool, you also need:
+		
+If you want "realtime" log updates in database tables, you also need:
 
 1) Make sure dblink extension is installed with PostgreSQL (normally comes with standard 'contrib' package)
 2) Edit etl/functions/CZ_WRITE_AUDIT_withdblink.sql and specify login/password if ETL tool is not connecting to DB as a superuser
 3) Apply the fix:
 	
 	psql -d transmart -f etl/functions/CZ_WRITE_AUDIT_withdblink.sql
-	
+		
+Go back to tMDataLoader repository and run following commands:
+				
+	psql -d transmart -f sql/postgres/migrations.sql
+	psql -d transmart -f sql/postgres/procedures.sql  	  	
 
 PREPARING DATA FOR UPLOAD
 =========================
@@ -89,26 +103,35 @@ To start ETL process, just run the following command:
 You can run it with "-h" option to get a list of all available options:
 
     $ java -jar tm_etl.jar -h
-    usage: tm_etl [options] [<data_dir>]
-        --alt-clinical-proc <proc_name>   Name of alternative clinical stored
-                                          procedure (expert option)
-     -c,--config <config>                 Configuration filename
-        --data-value-first                Put VISIT NAME after the data value
-                                          (default behavior, use to override
-                                          non-standard config)
-        --force-start                     Force TM Data Loader start (even
-                                          if another instance is already
-                                          running)
-     -h,--help                            Show usage information
-     -i,--interactive                     Interactive (console) mode: progress
-                                          bar
-     -n,--no-rename                       Don't rename folders when failed
-     -s,--stop-on-fail                    Stop when upload is failed
-        --secure-study                    Make study securable
-     -t,--use-t                           Do not use Z datatype for T
-                                          expression data (expert option)
-     -v,--version                         Display version information and exit
-        --visit-name-first                Put VISIT_NAME before the data value
+    usage: tm_etl [options] [<data_dir>]                                      
+        --alt-clinical-proc <proc_name>        Name of alternative clinical   
+                                               stored procedure (expert       
+                                               option)                        
+        --alt-control-schema <alt_schema>      Name of alternative control    
+                                               schema (TM_CZ) - expert option 
+     -c,--config <config>                      Configuration filename         
+        --data-value-first                     Put VISIT NAME after the data  
+                                               value (default behavior, use to
+                                               override non-standard config)  
+        --delete-study-by-id <delete_id>       Delete study by id             
+        --delete-study-by-path <delete_path>   Delete study by path           
+        --force-start                          Force TM Data Loader start     
+                                               (even if another instance is   
+                                               already running)               
+     -h,--help                                 Show usage information         
+     -i,--interactive                          Interactive (console) mode:    
+                                               progress bar                   
+     -m,--move-study <old_path new_path>       Move study                     
+     -n,--no-rename                            Don't rename folders when      
+                                               failed                         
+     -s,--stop-on-fail                         Stop when upload is failed     
+        --secure-study                         Make study securable           
+     -t,--use-t                                Do not use Z datatype for T    
+                                               expression data (expert option)
+     -v,--version                              Display version information and
+                                               exit                           
+        --visit-name-first                     Put VISIT_NAME before the data 
+                                               value                          
 
 By default, the configuration file location is ~/.tm_etl/Config.groovy.
 You can specify the configuration file name using -c option.
