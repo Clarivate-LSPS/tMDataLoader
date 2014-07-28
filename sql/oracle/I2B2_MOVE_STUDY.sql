@@ -630,33 +630,6 @@ AS
           COMMIT;
         END IF;
 
--- insert new level nodes to i2b2demodata.concept_counts
-        SELECT
-          count(*)
-        INTO counter
-        FROM i2b2demodata.concept_counts
-        WHERE concept_path = current_path;
-
-        IF counter = 0
-        THEN
-          INSERT INTO i2b2demodata.concept_counts (concept_path, parent_concept_path)
-            VALUES (current_path, parent_path_node);
-          COMMIT;
-
-          UPDATE i2b2demodata.concept_counts
-          SET patient_count = (SELECT
-                                 patient_count
-                               FROM i2b2demodata.concept_counts
-                               WHERE concept_path = new_path)
-          WHERE concept_path = current_path;
-
-          COMMIT;
-          stepCt := stepCt + 1;
-          cz_write_audit(jobId, databaseName, procedureName,
-                         'Insert ' || current_path || ' into i2b2demodata.concept_counts', SQL%ROWCOUNT, stepCt,
-                         'Done');
-        END IF;
-
         SELECT
           count(*)
         INTO counter

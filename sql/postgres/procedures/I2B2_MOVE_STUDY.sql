@@ -810,46 +810,6 @@ FUNCTION TM_CZ.I2B2_MOVE_STUDY
 
                 END IF;
 
-        -- insert new level nodes to i2b2demodata.concept_counts
-                SELECT
-                  count(*)
-                INTO counter
-                FROM i2b2demodata.concept_counts
-                WHERE concept_path = current_path;
-
-                IF counter = 0
-                THEN
-                  begin
-                  INSERT INTO i2b2demodata.concept_counts (concept_path, parent_concept_path)
-                    VALUES (current_path, parent_path_node);
-
-
-                  UPDATE i2b2demodata.concept_counts
-                  SET patient_count = cc.patient_count FROM (SELECT
-                                         patient_count
-                                       FROM i2b2demodata.concept_counts
-                                       WHERE concept_path = new_path) AS cc
-                  WHERE concept_path = current_path;
-
-                  get diagnostics rowCt := ROW_COUNT;
-                  exception
-                    when others then
-                      errorNumber := SQLSTATE;
-                      errorMessage := SQLERRM;
-                      --Handle errors.
-                      select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
-                      --End Proc
-                      select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
-                      return -16;
-                  end;
-
-                  stepCt := stepCt + 1;
-                  select tm_cz.cz_write_audit(jobId, databaseName, procedureName,
-                                 'Insert ' || current_path || ' into i2b2demodata.concept_counts', rowCt, stepCt,
-                                 'Done') into rtnCd;
-
-                END IF;
-
                 SELECT
                   count(*)
                 INTO counter
