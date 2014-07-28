@@ -1,5 +1,5 @@
 CREATE OR REPLACE
-PROCEDURE "TM_CZ"."I2B2_MOVE_STUDY"
+PROCEDURE "I2B2_MOVE_STUDY_BY_PATH"
   (old_path_in  VARCHAR2,
    new_path_in  VARCHAR2,
    currentJobID NUMBER := null
@@ -71,7 +71,7 @@ AS
     stepCt := 0;
 
     stepCt := stepCt + 1;
-    tText := 'Start i2b2_move_study from ' || old_path || ' to ' || new_path;
+    tText := 'Start i2b2_move_study_by_path from ' || old_path || ' to ' || new_path;
     cz_write_audit(jobId, databaseName, procedureName, tText, 0, stepCt, 'Done');
 
 

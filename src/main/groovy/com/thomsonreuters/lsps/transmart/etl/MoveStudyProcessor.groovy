@@ -24,7 +24,7 @@ class MoveStudyProcessor extends DataOperationProcessor {
 
     @Override
     public String getProcedureName() {
-        return "I2B2_MOVE_STUDY"
+        return "I2B2_MOVE_STUDY_BY_PATH"
     }
 
     @Override

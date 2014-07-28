@@ -33,7 +33,7 @@ class MoveStudyOperationTest extends ConfigAwareTestCase {
         clinicalDataProcessor.process(
                 new File(studyDir(studyName, studyId), "ClinicalDataToUpload"),
                 [name: studyName, node: "Test Studies Move Test\\${studyName}".toString()])
-        runScript('I2B2_MOVE_STUDY.sql')
+        runScript('I2B2_MOVE_STUDY_BY_PATH.sql')
     }
 
     void testMoveStudyInOneRootNode() {
@@ -105,7 +105,6 @@ class MoveStudyOperationTest extends ConfigAwareTestCase {
         def secondLevelNode = '\\' + newPath.split('\\\\')[1] + "\\" + newPath.split('\\\\')[2] + "\\"
 
         def tablesToAttr = ['i2b2metadata.i2b2': 'c_fullname', 'i2b2metadata.i2b2_secure': 'c_fullname',
-                'i2b2demodata.concept_counts': 'concept_path',
                 'i2b2demodata.concept_dimension': 'concept_path']
 
         checkPaths(tablesToAttr, 'Second level node was not found in ', secondLevelNode, 1);
