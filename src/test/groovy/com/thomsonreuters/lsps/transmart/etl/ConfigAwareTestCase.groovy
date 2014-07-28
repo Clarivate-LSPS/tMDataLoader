@@ -1,6 +1,7 @@
 package com.thomsonreuters.lsps.transmart.etl
 
 import com.thomsonreuters.lsps.transmart.sql.Database
+import com.thomsonreuters.lsps.transmart.sql.DatabaseType
 import com.thomsonreuters.lsps.transmart.sql.SqlMethods
 import groovy.sql.Sql
 import org.junit.Assume
@@ -22,7 +23,12 @@ public abstract class ConfigAwareTestCase extends GroovyTestCase {
     private Sql _db
 
     File getDbScriptsDir() {
-        return new File("sql", getDatabase().databaseType.toString().toLowerCase())
+        def databaseType = getDatabase().databaseType
+        File dir = new File("sql", databaseType.toString().toLowerCase())
+        if (databaseType == DatabaseType.Postgres) {
+            dir = new File(dir, 'procedures')
+        }
+        return dir;
     }
 
     void runScript(String scriptName) {

@@ -1,7 +1,7 @@
---DROP FUNCTION tm_cz.i2b2_move_study(character varying,character varying,numeric);
+--DROP FUNCTION tm_cz.i2b2_move_study_by_path(character varying,character varying,numeric);
 
 CREATE OR REPLACE
-FUNCTION TM_CZ.I2B2_MOVE_STUDY
+FUNCTION TM_CZ.I2B2_MOVE_STUDY_BY_PATH
   (old_path_in  CHARACTER VARYING,
    new_path_in  CHARACTER VARYING,
    currentJobID NUMERIC DEFAULT -1
@@ -49,7 +49,7 @@ FUNCTION TM_CZ.I2B2_MOVE_STUDY
 
     jobID := currentJobID;
     databaseName := 'TM_CZ';
-    procedureName := 'I2B2_MOVE_STUDY';
+    procedureName := 'I2B2_MOVE_STUDY_BY_PATH';
 
 --If Job ID does not exist, then this is a single procedure run and we need to create it
     IF (jobID IS NULL OR jobID < 1)
@@ -60,7 +60,7 @@ FUNCTION TM_CZ.I2B2_MOVE_STUDY
 
     stepCt := 0;
     stepCt := stepCt + 1;
-    tText := 'Start i2b2_move_study from ' || old_path || ' to ' || new_path;
+    tText := 'Start i2b2_move_study_by_path from ' || old_path || ' to ' || new_path;
     select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Starting i2b2_process_snp_data',0,stepCt,'Done') into rtnCd;
 
 
@@ -1079,7 +1079,7 @@ FUNCTION TM_CZ.I2B2_MOVE_STUDY
   $BODY$
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER
 COST 100;
-ALTER FUNCTION tm_cz.i2b2_move_study( CHARACTER VARYING, CHARACTER VARYING, NUMERIC ) SET search_path = tm_cz, tm_lz, tm_wz, deapp, i2b2demodata, pg_temp;
+ALTER FUNCTION tm_cz.i2b2_move_study_by_path( CHARACTER VARYING, CHARACTER VARYING, NUMERIC ) SET search_path = tm_cz, tm_lz, tm_wz, deapp, i2b2demodata, pg_temp;
 
-ALTER FUNCTION tm_cz.i2b2_move_study( CHARACTER VARYING, CHARACTER VARYING, NUMERIC )
+ALTER FUNCTION tm_cz.i2b2_move_study_by_path( CHARACTER VARYING, CHARACTER VARYING, NUMERIC )
 OWNER TO postgres;
