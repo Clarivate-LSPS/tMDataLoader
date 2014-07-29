@@ -56,7 +56,7 @@ abstract class DataProcessor {
             sql.connection.autoCommit = false
 
             if (processFiles(dir, sql, studyInfo)) {
-                new AuditableJobRunner(sql, config).runJob(procedureName) { jobId->
+                res = new AuditableJobRunner(sql, config).runJob(procedureName) { jobId->
                     logger.log("Run procedures: ${getProcedureName()}")
                     runStoredProcedures(jobId, sql, studyInfo)
                 }
