@@ -58,10 +58,7 @@ class CsvDataLoader extends DataLoader {
             command += "(${columnNames.join(', ')})"
         }
         command += " FROM STDIN WITH (FORMAT CSV, DELIMITER '\t')"
-        Process runner = Runtime.runtime.exec(
-                ["psql", "-h", database.host, "-U", database.config.username,
-                 "-d", database.database, "-c", command] as String[],
-                ["PGPASSWORD=${database.config.password}"] as String[])
+        Process runner = database.runPsqlCommand("-c", command)
         runner.consumeProcessOutput(System.out, System.err)
         def printer = new PrintWriter(runner.out)
         def result = block.call(new BatchWriter(printer))

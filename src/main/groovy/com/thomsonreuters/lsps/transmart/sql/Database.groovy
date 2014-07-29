@@ -21,12 +21,19 @@ class Database {
         Sql.withInstance(config.jdbcConnectionString, config.username, config.password, config.jdbcDriver, block)
     }
 
+    Process runPsqlCommand(String ... additionalArgs) {
+        def env = System.getenv().entrySet().collect { "${it.key}=${it.value}" }
+        env << "PGPASSWORD=${config.password}"
+        def cmd = ['psql', '-h', host, '-U', config.username, '-d', database]
+        cmd.addAll(additionalArgs)
+        return Runtime.runtime.exec(cmd as String[], env as String[])
+    }
+
     Process runScript(File script) {
         Process runner
         switch (databaseType) {
             case DatabaseType.Postgres:
-                runner = Runtime.runtime.exec("psql -h ${host} -U ${config.username} -f ${script.absolutePath} -d ${database}",
-                        ["PGPASSWORD=${config.password}"] as String[])
+                runner = runPsqlCommand('-f', script.absolutePath)
                 break
             case DatabaseType.Oracle:
                 runner = Runtime.runtime.exec("sqlplus -l ${config.username}/${config.password}@${host}:${port}/${database} @${script.absolutePath}")
