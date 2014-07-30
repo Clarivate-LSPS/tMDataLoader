@@ -5,6 +5,8 @@ CREATE UNLOGGED TABLE IF NOT EXISTS tm_lz.lt_snp_calls_by_gsm
 )
 TABLESPACE "transmart" ;
 
+alter table tm_lz.lt_snp_calls_by_gsm owner to tm_lz;
+
 CREATE UNLOGGED TABLE IF NOT EXISTS tm_lz.lt_snp_copy_number
 (
 GSM_NUM VARCHAR(10),
@@ -16,8 +18,12 @@ GSM_NUM VARCHAR(10),
 )
 TABLESPACE "transmart";
 
+alter table tm_lz.lt_snp_copy_number owner to tm_lz;
+
 create UNLOGGED table IF NOT EXISTS tm_lz.lt_snp_gene_map(
   snp_name varchar,
   entrez_gene_id bigint
 )
 TABLESPACE "transmart";
+
+alter table tm_lz.lt_snp_gene_map owner to tm_lz;
