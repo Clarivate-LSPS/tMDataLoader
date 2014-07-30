@@ -58,17 +58,14 @@ class CsvDataLoader extends DataLoader {
             command += "(${columnNames.join(', ')})"
         }
         command += " FROM STDIN WITH (FORMAT CSV, DELIMITER '\t')"
-        Process runner = database.runPsqlCommand("-c", command)
-        runner.consumeProcessOutput(System.out, System.err)
-        def printer = new PrintWriter(runner.out)
-        def result = block.call(new BatchWriter(printer))
-        printer.println "\\."
-        printer.flush()
-        printer.close()
-        runner.waitFor()
-        if (runner.exitValue() != 0) {
-            throw new RuntimeException(runner.errorStream.text)
+        database.withSql { sql->
+            OutputStream out = org.postgresql.copy.PGCopyOutputStream.newInstance([sql.connection, command as String] as Object[])
+            def printer = new PrintWriter(out)
+            def result = block.call(new BatchWriter(printer))
+            printer.println "\\."
+            printer.flush()
+            printer.close()
+            return result
         }
-        return result
     }
 }

@@ -136,14 +136,14 @@ class ClinicalDataProcessor extends DataProcessor {
             throw new Exception("File ${f.getName()} doesn't exist")
         }
 
-        if (database?.databaseType == DatabaseType.Postgres && database?.local) {
-            processFileForLocalPostgres(sql, f, fMappings)
+        if (database?.databaseType == DatabaseType.Postgres) {
+            processFileForPostgres(sql, f, fMappings)
         } else {
             processFileForGenericDatabase(sql, f, fMappings)
         }
     }
 
-    private void processFileForLocalPostgres(sql, f, fMappings) {
+    private void processFileForPostgres(sql, f, fMappings) {
         DataLoader.start(database, 'tm_lz.lt_src_clinical_data', ['STUDY_ID', 'SITE_ID', 'SUBJECT_ID', 'VISIT_NAME',
                                                                   'DATA_LABEL', 'DATA_VALUE', 'CATEGORY_CD']) {
             st ->
