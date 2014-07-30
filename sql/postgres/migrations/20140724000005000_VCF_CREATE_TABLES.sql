@@ -323,3 +323,10 @@ END IF;
 
 END;
 $$;
+
+alter table deapp.de_variant_dataset owner to deapp;
+alter table deapp.de_variant_population_data owner to deapp;
+alter table deapp.de_variant_population_info owner to deapp;
+alter table deapp.de_variant_subject_detail owner to deapp;
+alter table deapp.de_variant_subject_idx owner to deapp;
+alter table deapp.de_variant_subject_summary owner to deapp;
