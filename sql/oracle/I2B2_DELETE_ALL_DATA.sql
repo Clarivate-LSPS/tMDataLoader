@@ -279,7 +279,7 @@ BEGIN
     where c_fullname = topNode;
 
     if (isExistTopNode !=0 ) then
-      tm_cz.i2b2_delete_all_data(null, topNode, jobID);
+      i2b2_delete_all_data(null, topNode, jobID);
     end if;
 
   end if;
