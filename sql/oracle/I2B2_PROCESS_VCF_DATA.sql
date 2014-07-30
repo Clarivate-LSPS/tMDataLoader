@@ -2,7 +2,7 @@
 --DROP PROCEDURE "TM_CZ"."I2B2_PROCESS_VCF_DATA";
 --/
 
-CREATE OR REPLACE PROCEDURE "TM_CZ"."I2B2_PROCESS_VCF_DATA"
+CREATE OR REPLACE PROCEDURE "I2B2_PROCESS_VCF_DATA"
 ( trial_id 		varchar2
  ,top_node		varchar2
  ,source_cd		varchar2 := 'STD'		--	default source_cd = 'STD'
@@ -638,7 +638,7 @@ BEGIN
 	where sm.trial_name = TrialID and sm.sample_cd = v.subject_id and sm.platform='VCF');
 
 	stepCt := stepCt + 1;
-	tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Associate deapp.de_subject_sample_mapping with deapp.de_variant_subject_summary',SQL%ROWCOUNT,stepCt,'Done');
+	cz_write_audit(jobId,databaseName,procedureName,'Associate deapp.de_subject_sample_mapping with deapp.de_variant_subject_summary',SQL%ROWCOUNT,stepCt,'Done');
   commit;
 /*
 	--UPDATE VISUAL ATTRIBUTES for Leaf Active (Default is folder)
