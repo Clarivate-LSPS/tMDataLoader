@@ -11,15 +11,11 @@ sample_data folder contains sample public datasets from GEO
 INSTALLING
 ==========
 
-For PostgreSQL:
+Run following command to produce tm_etl.jar from sources:
 
-	gradlew deployJar -Pdatabase=postgresql
+	gradlew deployJar
 
-For Oracle:
-
-	gradlew deployJar -Pdatabase=oracle
-
-Gradle will create tm_etl.jar in root directory with all necessary dependencies for specified database.
+Gradle will create tm_etl.jar in root directory with all necessary dependencies.
 
 Then, just copy tm_etl.jar to any directory on the server. It can be on the same machine as Transmart or any other one that has direct access to TM_CZ database schema used by tranSMART.
 
