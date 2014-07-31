@@ -11,6 +11,13 @@ Declare
   TrialType 	VARCHAR(250);
   sourceCD  	VARCHAR(250);
 
+  -- vcf datasets
+  vcfDataSetId varchar(100);
+  vcfDataSets CURSOR is
+    select distinct v.dataset_id
+    from  deapp.de_subject_sample_mapping sm, deapp.de_variant_subject_summary v
+    where sm.assay_id = v.assay_id;
+
   --Audit variables
   rowCt		numeric(18,0);
   trialCount INTEGER;
@@ -140,39 +147,44 @@ BEGIN
 		get diagnostics rowCt := ROW_COUNT;
 		select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from lz_src_clinical_data',rowCt,stepCt,'Done') into rtnCd;
 
-		/*Deleting data from de_variant_subject_summary*/
-		delete from deapp.de_variant_subject_summary v
-		where v.dataset_id = TrialID;
+    FOR vcfDataSet in vcfDataSets LOOP
+      vcfDataSetId := vcfDataSet.dataset_id;
 
-		stepCt := stepCt + 1;
-		get diagnostics rowCt := ROW_COUNT;
-		select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_subject_summary',rowCt,stepCt,'Done') into rtnCd;
+      /*Deleting data from de_variant_subject_summary*/
+      delete from deapp.de_variant_subject_summary v
+      where v.dataset_id = vcfDataSetId;
 
-		delete from deapp.de_variant_population_data where dataset_id = TrialId;
-		stepCt := stepCt + 1;
-		get diagnostics rowCt := ROW_COUNT;
-		select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_population_data',rowCt,stepCt,'Done') into rtnCd;
+      stepCt := stepCt + 1;
+      get diagnostics rowCt := ROW_COUNT;
+      select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_subject_summary',rowCt,stepCt,'Done') into rtnCd;
 
-    delete from deapp.de_variant_population_info where dataset_id = TrialId;
-    stepCt := stepCt + 1;
-    get diagnostics rowCt := ROW_COUNT;
-		select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_population_info',rowCt,stepCt,'Done') into rtnCd;
+      delete from deapp.de_variant_population_data where dataset_id = vcfDataSetId;
+      stepCt := stepCt + 1;
+      get diagnostics rowCt := ROW_COUNT;
+      select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_population_data',rowCt,stepCt,'Done') into rtnCd;
 
-    delete from deapp.de_variant_subject_detail where dataset_id = TrialId;
-    stepCt := stepCt + 1;
-    get diagnostics rowCt := ROW_COUNT;
-		select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_subject_detail',rowCt,stepCt,'Done') into rtnCd;
+      delete from deapp.de_variant_population_info where dataset_id = vcfDataSetId;
+      stepCt := stepCt + 1;
+      get diagnostics rowCt := ROW_COUNT;
+      select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_population_info',rowCt,stepCt,'Done') into rtnCd;
 
-    delete from deapp.de_variant_subject_idx where dataset_id = TrialId;
-    stepCt := stepCt + 1;
-    get diagnostics rowCt := ROW_COUNT;
-		select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_subject_idx',rowCt,stepCt,'Done') into rtnCd;
+      delete from deapp.de_variant_subject_detail where dataset_id = vcfDataSetId;
+      stepCt := stepCt + 1;
+      get diagnostics rowCt := ROW_COUNT;
+      select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_subject_detail',rowCt,stepCt,'Done') into rtnCd;
+
+      delete from deapp.de_variant_subject_idx where dataset_id = vcfDataSetId;
+      stepCt := stepCt + 1;
+      get diagnostics rowCt := ROW_COUNT;
+      select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_subject_idx',rowCt,stepCt,'Done') into rtnCd;
 
 
-    delete from deapp.de_variant_dataset where dataset_id = TrialId;
-    stepCt := stepCt + 1;
-    get diagnostics rowCt := ROW_COUNT;
-	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_dataset',rowCt,stepCt,'Done') into rtnCd;
+      delete from deapp.de_variant_dataset where dataset_id = vcfDataSetId;
+      stepCt := stepCt + 1;
+      get diagnostics rowCt := ROW_COUNT;
+
+      select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_dataset',rowCt,stepCt,'Done') into rtnCd;
+    END LOOP;
 
 		--	delete observation_fact SECURITY data, do before patient_dimension delete
 		select count(x.source_cd) into sourceCDCount

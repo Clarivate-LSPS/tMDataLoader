@@ -31,14 +31,24 @@ class VCFDataProcessor extends DataProcessor {
         studyInfo.sampleMapping = sampleMapping
     }
 
-    private void cleanup(Sql sql, String studyId) {
-        sql.execute('delete from deapp.de_variant_population_data where dataset_id = ?', studyId)
-        sql.execute('delete from deapp.de_variant_population_info where dataset_id = ?', studyId)
-        sql.execute('delete from deapp.de_variant_subject_summary where dataset_id = ?', studyId)
-        sql.execute('delete from deapp.de_variant_subject_detail where dataset_id = ?', studyId)
-        sql.execute('delete from deapp.de_variant_subject_idx where dataset_id = ?', studyId)
-        sql.execute('delete from deapp.de_variant_dataset where dataset_id = ?', studyId)
+    private void cleanupVcfTrialData(Sql sql, String trialId) {
+        boolean autoCommitMode = sql.connection.autoCommit
+        sql.connection.autoCommit = false
+        def dataSetIds = sql.rows('select distinct dataset_id from deapp.de_variant_subject_summary vss, deapp.de_subject_sample_mapping sm where sm.assay_id = vss.assay_id and trial_name = ?', trialId)
+        dataSetIds*.dataset_id.each { dataSetId ->
+            deleteDataSet(sql, dataSetId)
+        }
         sql.commit()
+        sql.connection.autoCommit = autoCommitMode
+    }
+
+    private void deleteDataSet(Sql sql, dataSetId) {
+        sql.execute('delete from deapp.de_variant_population_data where dataset_id = ?', dataSetId)
+        sql.execute('delete from deapp.de_variant_population_info where dataset_id = ?', dataSetId)
+        sql.execute('delete from deapp.de_variant_subject_summary where dataset_id = ?', dataSetId)
+        sql.execute('delete from deapp.de_variant_subject_detail where dataset_id = ?', dataSetId)
+        sql.execute('delete from deapp.de_variant_subject_idx where dataset_id = ?', dataSetId)
+        sql.execute('delete from deapp.de_variant_dataset where dataset_id = ?', dataSetId)
     }
 
     @Override
@@ -51,11 +61,8 @@ class VCFDataProcessor extends DataProcessor {
         loadMappingFile(mappingFile, studyInfo)
 
         String studyId = studyInfo.id as String
-        cleanup(sql, studyId)
-
-        loadMetadata(sql, studyInfo)
-
         def samplesLoader = new SamplesLoader(studyId)
+        studyInfo.sources = []
         dir.eachFileMatch(FileType.FILES, ~/(?i).*\.vcf$/) {
             processFile(it, sql, samplesLoader, studyInfo)
         }
@@ -63,27 +70,33 @@ class VCFDataProcessor extends DataProcessor {
         return true
     }
 
-    def loadMetadata(Sql sql, studyInfo) {
+    def createDataSet(Sql sql, trialId, sourceCd) {
         use(SqlMethods) {
+            String dataSetId = "${trialId}:${sourceCd}"
+            cleanupVcfTrialData(sql, trialId as String)
             logger.log(LogType.DEBUG, 'Loading study information into deapp.de_variant_dataset')
             sql.insertRecord('deapp.de_variant_dataset',
-                    dataset_id: studyInfo.id, etl_id: 'tMDataLoader', genome: 'hg19',
+                    dataset_id: dataSetId, etl_id: 'tMDataLoader', genome: 'hg19',
                     etl_date: Calendar.getInstance())
             sql.commit()
+            return dataSetId
         }
     }
 
     def processFile(File inputFile, Sql sql, SamplesLoader samplesLoader, studyInfo) {
         def vcfFile = new VcfFile(inputFile)
         def sampleMapping = studyInfo.sampleMapping
-        String trialId = studyInfo.id
+        String vcfName = inputFile.name.replaceFirst(/\.\w+$/, '').replaceAll(/\./, '_')
+        String sourceCd = vcfName.toUpperCase()
+        studyInfo.sources << sourceCd
+        String dataSetId = createDataSet(sql, studyInfo.id, sourceCd)
         logger.log(LogType.MESSAGE, "Processing file ${inputFile.getName()}")
         use(SqlMethods) {
             DataLoader.start(database, 'deapp.de_variant_subject_idx', ['DATASET_ID', 'SUBJECT_ID', 'POSITION']) { st ->
                 logger.log(LogType.DEBUG, "Loading samples: ${vcfFile.samples.size()}")
                 vcfFile.samples.eachWithIndex { sample, idx ->
-                    st.addBatch([trialId, sample, idx + 1])
-                    samplesLoader.addSample("VCF+${inputFile.name.replaceFirst(/\.\w+$/, '').replaceAll(/\./, '_')}", sampleMapping[sample] as String, sample, '')
+                    st.addBatch([dataSetId, sample, idx + 1])
+                    samplesLoader.addSample("VCF+${vcfName}", sampleMapping[sample] as String, sample, '', sourceCd: sourceCd)
                 }
             }
 
@@ -91,7 +104,7 @@ class VCFDataProcessor extends DataProcessor {
             DataLoader.start(database, 'deapp.de_variant_population_info',
                     ['DATASET_ID', 'INFO_NAME', 'DESCRIPTION', 'TYPE', 'NUMBER']) { populationInfo ->
                 vcfFile.infoFields.values().each {
-                    populationInfo.addBatch([trialId, it.id, it.description, it.type, it.number])
+                    populationInfo.addBatch([dataSetId, it.id, it.description, it.type, it.number])
                 }
             }
 
@@ -109,9 +122,9 @@ class VCFDataProcessor extends DataProcessor {
                         vcfFile.eachEntry { VcfFile.Entry entry ->
                             lineNumber++
                             logger.log(LogType.PROGRESS, "[${lineNumber}]")
-                            writeVariantSubjectDetailRecord(trialId, subjectDetail, entry)
-                            writeVariantSubjectSummaryRecords(trialId, subjectSummary, entry)
-                            writeVariantPopulationDataRecord(trialId, populationData, entry)
+                            writeVariantSubjectDetailRecord(dataSetId, subjectDetail, entry)
+                            writeVariantSubjectSummaryRecords(dataSetId, subjectSummary, entry)
+                            writeVariantPopulationDataRecord(dataSetId, populationData, entry)
                         }
                     }
                 }
@@ -144,7 +157,7 @@ class VCFDataProcessor extends DataProcessor {
                             break
                     }
                     st.addBatch([trialId, entry.chromosome, entry.chromosomePosition, infoField.id,
-                            idx, intValue, floatValue, textValue])
+                                 idx, intValue, floatValue, textValue])
                 }
             } else {
                 logger.log(LogType.WARNING, "Field with value=" + it.value + ' wont be added to deapp.de_variant_population_data' +
@@ -200,8 +213,8 @@ class VCFDataProcessor extends DataProcessor {
             }
 
             st.addBatch([trialId, sampleEntry.key, entry.probesetId, entry.chromosome, entry.chromosomePosition,
-                    variant, variantFormat, variantType,
-                    reference, allele1, allele2
+                         variant, variantFormat, variantType,
+                         reference, allele1, allele2
             ])
         }
     }
@@ -218,10 +231,13 @@ class VCFDataProcessor extends DataProcessor {
     boolean runStoredProcedures(Object jobId, Sql sql, Object studyInfo) {
         def studyId = studyInfo['id']
         def studyNode = studyInfo['node']
+        def sources = studyInfo['sources']
         if (studyId && studyNode) {
             use(SqlMethods) {
+                sources.each { source ->
                 sql.callProcedure("${config.controlSchema}.i2b2_process_vcf_data",
-                        studyId, studyNode, 'STD', config.securitySymbol, jobId)
+                            studyId, studyNode, source, config.securitySymbol, jobId)
+                }
             }
             return true
         } else {
