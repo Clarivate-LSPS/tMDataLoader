@@ -109,7 +109,8 @@ BEGIN
 	--	Get count of records in tm_lz.lt_src_mrna_subj_samp_map
 
 	select count(*) into sCount
-	from tm_lz.lt_src_mrna_subj_samp_map;
+	from tm_lz.lt_src_mrna_subj_samp_map sm
+	where sm.source_cd = upper(coalesce(sourceCd, 'STD'));
 
 	--	check if all subject_sample map records have a subject_id, If not, abort run
 
