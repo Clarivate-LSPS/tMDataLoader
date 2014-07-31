@@ -17,6 +17,12 @@ grant insert, delete, select on deapp.de_variant_population_info to tm_cz;
 grant insert, delete, select on deapp.de_variant_subject_detail to tm_cz;
 grant insert, delete, select on deapp.de_variant_subject_idx to tm_cz;
 grant insert, delete, select on deapp.de_variant_subject_summary to tm_cz;
+grant usage on sequence deapp.de_variant_subject_idx_seq to tm_cz;
+grant usage on sequence deapp.de_variant_population_info_seq to tm_cz;
+grant usage on sequence deapp.de_variant_population_data_seq to tm_cz;
+grant usage on sequence deapp.de_variant_subject_summary_seq to tm_cz;
+grant usage on sequence deapp.de_variant_subject_detail_seq to tm_cz;
+grant select on deapp.de_subject_sample_mapping to tm_cz;
 
 -- Permissions for biomart_user
 grant select on deapp.de_variant_dataset to biomart_user;
