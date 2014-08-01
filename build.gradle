@@ -11,8 +11,6 @@ apply plugin: 'java'
 apply plugin: 'maven'
 apply plugin: 'groovy'
 
-apply from: 'tasks.gradle'
-
 if (hasProperty('dbConfig')) {
     apply plugin: 'flyway'
 
@@ -50,3 +48,5 @@ jar {
         attributes 'Main-Class': 'com.thomsonreuters.lsps.transmart.etl.CommandLineTool', 'Implementation-Version': version
     }
 }
+
+apply from: 'tasks.gradle'

@@ -1,9 +1,19 @@
-task deployJar(dependsOn: jar) {
-    ext.outputFile = new File(rootDir, 'tm_etl.jar')
-    inputs.file jar.archivePath
-    outputs.files outputFile
+class DeployJar extends DefaultTask {
+    @InputFile
+    def File archivePath
 
-    doLast {
-        ant.copy(tofile: outputFile, file: jar.archivePath)
+    @OutputFile
+    def File outputFile
+
+    @TaskAction
+    void execute(IncrementalTaskInputs inputs) {
+        inputs.outOfDate { change ->
+            ant.copy(tofile: outputFile, file: change.file)
+        }
     }
+}
+
+task deployJar(dependsOn: jar, type: DeployJar) {
+    archivePath = jar.archivePath
+    outputFile = new File(rootDir, 'tm_etl.jar')
 }
