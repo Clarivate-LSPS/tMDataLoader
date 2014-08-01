@@ -61,6 +61,7 @@ class VCFDataProcessor extends DataProcessor {
         loadMappingFile(mappingFile, studyInfo)
 
         String studyId = studyInfo.id as String
+        cleanupVcfTrialData(sql, studyId)
         def samplesLoader = new SamplesLoader(studyId)
         studyInfo.sources = []
         dir.eachFileMatch(FileType.FILES, ~/(?i).*\.vcf$/) {
@@ -73,7 +74,7 @@ class VCFDataProcessor extends DataProcessor {
     def createDataSet(Sql sql, trialId, sourceCd) {
         use(SqlMethods) {
             String dataSetId = "${trialId}:${sourceCd}"
-            cleanupVcfTrialData(sql, trialId as String)
+            deleteDataSet(sql, dataSetId)
             logger.log(LogType.DEBUG, 'Loading study information into deapp.de_variant_dataset')
             sql.insertRecord('deapp.de_variant_dataset',
                     dataset_id: dataSetId, etl_id: 'tMDataLoader', genome: 'hg19',
@@ -85,6 +86,7 @@ class VCFDataProcessor extends DataProcessor {
 
     def processFile(File inputFile, Sql sql, SamplesLoader samplesLoader, studyInfo) {
         def vcfFile = new VcfFile(inputFile)
+        vcfFile.validate()
         def sampleMapping = studyInfo.sampleMapping
         String vcfName = inputFile.name.replaceFirst(/\.\w+$/, '').replaceAll(/\./, '_')
         String sourceCd = vcfName.toUpperCase()

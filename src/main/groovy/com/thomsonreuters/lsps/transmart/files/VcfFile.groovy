@@ -9,6 +9,15 @@ class VcfFile extends CsvLikeFile {
     private String[] _samples
     private Map<CharSequence, InfoField> infoFields
     private int firstSampleIndex
+    private int chromColumnIndex
+    private int posColumnIndex
+    private int idColumnIndex
+    private int refColumnIndex
+    private int altColumnIndex
+    private int qualColumnIndex
+    private int filterColumnIndex
+    private int infoColumnIndex
+    private int formatColumnIndex
 
     VcfFile(File file) {
         super(file, '##')
@@ -37,43 +46,43 @@ class VcfFile extends CsvLikeFile {
             this.data = data
             this.samplesData = null
             this.infoData = null
-            this.alternatives = (~/,/).split(alternativesString)
+            this.alternatives = (~/,/).split(alternativesString, -1)
         }
 
         CharSequence getChromosome() {
-            data[0]
+            data[chromColumnIndex]
         }
 
         long getChromosomePosition() {
-            data[1] as long
+            data[posColumnIndex] as long
         }
 
         String getProbesetId() {
-            data[2]
+            data[idColumnIndex]
         }
 
         String getReference() {
-            data[3]
+            data[refColumnIndex]
         }
 
         String getAlternativesString() {
-            data[4]
+            data[altColumnIndex]
         }
 
         String getQual() {
-            data[5]
+            data[qualColumnIndex]
         }
 
         String getFilter() {
-            data[6]
+            data[filterColumnIndex]
         }
 
         String getInfoString() {
-            data[7]
+            data[infoColumnIndex]
         }
 
         String getFormatString() {
-            data[8]
+            data[formatColumnIndex]
         }
 
         String[] getSampleValues() {
@@ -94,10 +103,10 @@ class VcfFile extends CsvLikeFile {
 
         private Map<CharSequence, SampleData> buildSamplesData() {
             Map<CharSequence, SampleData> samplesData = [:]
-            int gtIndex = formatString.split(':').toList().indexOf('GT')
+            int gtIndex = formatString.split(':', -1).toList().indexOf('GT')
             if (gtIndex != -1) {
                 VcfFile.this.samples.eachWithIndex { sample, idx ->
-                    CharSequence[] parts = data[firstSampleIndex + idx].split(':')
+                    CharSequence[] parts = data[firstSampleIndex + idx].split(':', -1)
                     SampleData sampleData = new SampleData()
                     if (gtIndex != -1) {
                         def matches = parts[gtIndex] =~ /(\d+|\.)(?:([\/|])(\d+|\.))?/
@@ -114,21 +123,45 @@ class VcfFile extends CsvLikeFile {
         }
 
         private Map<InfoField, Object[]> buildInfoData() {
+            if (infoString.isEmpty()) {
+                return [:]
+            }
             infoString.split(';').collectEntries {
-                def parts = it.split('=')
-                [infoFields[parts[0]], parts[1].split(',')]
+                def parts = it.split('=', 2)
+                [infoFields[parts[0]], parts[1].split(',', -1)]
             }
         }
     }
 
+    public void validate() {
+        prepareIfRequired();
+    }
+    
     @Override
     protected void prepare() {
         super.prepare()
-        int formatColumnIndex = header.findIndexOf('FORMAT'.&equals)
-        if (formatColumnIndex == -1) throw new UnsupportedOperationException("Column FORMAT was not found in VCF file")
+
+        chromColumnIndex = detectColumnIndex('#CHROM')
+        posColumnIndex = detectColumnIndex('POS')
+        idColumnIndex = detectColumnIndex('ID')
+        refColumnIndex = detectColumnIndex('REF')
+        altColumnIndex = detectColumnIndex('ALT')
+        qualColumnIndex = detectColumnIndex('QUAL')
+        filterColumnIndex = detectColumnIndex('FILTER')
+        infoColumnIndex = detectColumnIndex('INFO')
+        formatColumnIndex = detectColumnIndex('FORMAT')
+
         firstSampleIndex = formatColumnIndex + 1
         _samples = header[firstSampleIndex..-1]
         infoFields = buildInfoFields()
+    }
+
+    private int detectColumnIndex(String columnName) {
+        int idx  = header.findIndexOf(columnName.&equals)
+        if (idx == -1) {
+            throw new UnsupportedOperationException("Column ${columnName} was not found in ${file.name}")
+        }
+        return idx
     }
 
     String[] getSamples() {
@@ -154,7 +187,7 @@ class VcfFile extends CsvLikeFile {
 
     @Override
     protected makeEntry(String line) {
-        currentEntry.data = line.split('\t')
+        currentEntry.data = line.split('\t', -1)
         return currentEntry
     }
 }
