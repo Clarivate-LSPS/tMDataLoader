@@ -10,7 +10,7 @@ import org.junit.Assume
  * Created by bondarev on 3/28/14.
  */
 public abstract class ConfigAwareTestCase extends GroovyTestCase {
-    def connectionSettings
+    def config
     Database database
 
     @Override
@@ -18,7 +18,10 @@ public abstract class ConfigAwareTestCase extends GroovyTestCase {
         URL testConfigUrl = getClass().classLoader.getResource('TestConfig.groovy')
         Assume.assumeTrue("No database config was found. Please, copy src/test/resources/TestConfig.groovy.sample " +
                 "to src/test/resources/TestConfig.groovy and set-up your database connection", !testConfigUrl.is(null))
-        connectionSettings = new ConfigSlurper().parse(testConfigUrl).db
+        config = new ConfigSlurper().parse(testConfigUrl)
+        config.logger = config.logger ?: new Logger([isInteractiveMode: true])
+        config.controlSchema = config.controlSchema ?: 'tm_cz'
+        config.securitySymbol = config.securitySymbol ?: 'N'
     }
     private Sql _db
 
@@ -45,22 +48,13 @@ public abstract class ConfigAwareTestCase extends GroovyTestCase {
     }
 
     Database getDatabase() {
-        database ?: (database = new Database(connectionSettings))
+        database ?: (database = new Database(config.db))
     }
 
     Sql getDb() {
-        return _db ?: (_db = Sql.newInstance(connectionSettings.jdbcConnectionString,
-                connectionSettings.password, connectionSettings.username,
-                connectionSettings.jdbcDriver))
-    }
-
-    def getConfig() {
-        [
-                logger        : new Logger([isInteractiveMode: true]),
-                db            : connectionSettings,
-                controlSchema : 'tm_cz',
-                securitySymbol: 'N'
-        ]
+        return _db ?: (_db = Sql.newInstance(config.db.jdbcConnectionString,
+                config.db.password, config.db.username,
+                config.db.jdbcDriver))
     }
 
     void callProcedure(String procedureName, Object... params) {
@@ -79,7 +73,7 @@ public abstract class ConfigAwareTestCase extends GroovyTestCase {
         database.withSql { Sql sql ->
             def jobId = -1
             sql.call('{call ' + config.controlSchema + '.cz_start_audit(?,?,?)}',
-                    [jobName, connectionSettings.username, Sql.NUMERIC]) { jobId = it }
+                    [jobName, config.db.username, Sql.NUMERIC]) { jobId = it }
             block.call(jobId)
             def succeed = true
             sql.eachRow("SELECT * FROM " + config.controlSchema + ".cz_job_audit where job_id=${jobId} order by seq_id") { row ->

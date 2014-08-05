@@ -115,7 +115,9 @@ You can run it with "-h" option to get a list of all available options:
         --force-start                          Force TM Data Loader start     
                                                (even if another instance is   
                                                already running)               
-     -h,--help                                 Show usage information         
+     -h,--help                                 Show usage information
+        --highlight-clinical-data              Highlight studies with clinical
+                                               data
      -i,--interactive                          Interactive (console) mode:    
                                                progress bar                   
      -m,--move-study <old_path new_path>       Move study                     
