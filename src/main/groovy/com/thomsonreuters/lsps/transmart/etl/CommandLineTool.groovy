@@ -37,6 +37,7 @@ class CommandLineTool {
             t longOpt: 'use-t', 'Do not use Z datatype for T expression data (expert option)'
             s longOpt: 'stop-on-fail', 'Stop when upload is failed'
             m longOpt: 'move-study', args:2, argName:'old_path new_path', 'Move study'
+            _ longOpt: 'highlight-clinical-data', 'Highlight studies with clinical data'
             _ longOpt: 'alt-clinical-proc', args: 1, argName: 'proc_name', 'Name of alternative clinical stored procedure (expert option)'
             _ longOpt: 'alt-control-schema', args: 1, argName: 'alt_schema', 'Name of alternative control schema (TM_CZ) - expert option'
             _ longOpt: 'secure-study', 'Make study securable'
@@ -109,6 +110,11 @@ class CommandLineTool {
         if (opts?.s) {
             config.stopOnFail = true
             println ">>> WILL STOP ON FAIL"
+        }
+
+        if (opts?.'highlight-clinical-data') {
+            config.highlightClinicalData = true
+            println ">>> Studies with Clinical Data will be highlighted"
         }
 
         if (!config?.db?.jdbcConnectionString) {

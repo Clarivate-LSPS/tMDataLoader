@@ -24,12 +24,12 @@ class DirectoryProcessor {
     def config
 
     static Map dataProcessors = [
-            Clinical  : ClinicalDataProcessor,
             Expression: ExpressionDataProcessor,
             SNP       : SNPDataProcessor,
             VCF       : VCFDataProcessor,
             RBM       : RBMDataProcessor,
-            Meta      : MetaDataProcessor
+            Meta      : MetaDataProcessor,
+            Clinical  : ClinicalDataProcessor,
     ]
 
     DirectoryProcessor(conf) {
