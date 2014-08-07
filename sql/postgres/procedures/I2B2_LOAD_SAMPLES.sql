@@ -204,8 +204,8 @@ BEGIN
 	select parse_nth_value(topNode, 2, '\') into RootNode;
 
 	select count(*) into pExists
-	from i2b2metadata.i2b2
-	where c_name = rootNode;
+	from i2b2metadata.i2b2 i2, i2b2metadata.table_access ta
+	where i2.c_name = rootNode and ta.c_name = rootNode;
 
 	if pExists = 0 then
 		select i2b2_add_root_node(rootNode, jobId) into rtnCd;
