@@ -53,8 +53,8 @@ If you want "realtime" log updates in database tables, you also need:
 Go back to tMDataLoader repository and run following commands:
 				
 	psql -d transmart -f sql/postgres/migrations.sql
-	psql -d transmart -f sql/postgres/procedures.sql  	  	
-	psql -d transmart -f sql/postgres/permissions.sql  	  	
+	psql -d transmart -f sql/postgres/permissions.sql
+	psql -d transmart -f sql/postgres/procedures.sql
 
 PREPARING DATA FOR UPLOAD
 =========================

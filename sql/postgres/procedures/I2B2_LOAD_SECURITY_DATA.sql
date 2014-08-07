@@ -1,8 +1,8 @@
--- Function: tm_cz.i2b2_load_security_data(numeric)
+-- Function: i2b2_load_security_data(numeric)
 
--- DROP FUNCTION tm_cz.i2b2_load_security_data(numeric);
+-- DROP FUNCTION i2b2_load_security_data(numeric);
 
-CREATE OR REPLACE FUNCTION tm_cz.i2b2_load_security_data(currentjobid numeric DEFAULT (-1))
+CREATE OR REPLACE FUNCTION i2b2_load_security_data(currentjobid numeric DEFAULT (-1))
   RETURNS numeric AS
 $BODY$
 /*************************************************************************
@@ -35,17 +35,17 @@ Declare
 BEGIN
 
 	--Set Audit Parameters
-	databaseName := 'TM_CZ';
+	databaseName := current_schema();
 	procedureName := 'I2B2_LOAD_SECURITY';
 
 	--Audit JOB Initialization
 	--If Job ID does not exist, then this is a single procedure run and we need to create it
-	select case when coalesce(currentjobid, -1) < 1 then tm_cz.cz_start_audit(procedureName, databaseName) else currentjobid end into jobId;
+	select case when coalesce(currentjobid, -1) < 1 then cz_start_audit(procedureName, databaseName) else currentjobid end into jobId;
 
 	truncate table I2B2METADATA.i2b2_secure;
 
 	stepCt := stepCt + 1;
-	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Truncate I2B2METADATA i2b2_secure',0,stepCt,'Done') into rtnCd;
+	select cz_write_audit(jobId,databaseName,procedureName,'Truncate I2B2METADATA i2b2_secure',0,stepCt,'Done') into rtnCd;
 
 	insert into I2B2METADATA.i2b2_secure
 	(C_HLEVEL,
@@ -98,10 +98,10 @@ BEGIN
 		 on b.sourcesystem_cd = f.modifier_cd;
 	get diagnostics rowCt := ROW_COUNT;
     stepCt := stepCt + 1;
-    select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Insert security data into I2B2METADATA i2b2_secure',rowCt,stepCt,'Done') into rtnCd;
+    select cz_write_audit(jobId,databaseName,procedureName,'Insert security data into I2B2METADATA i2b2_secure',rowCt,stepCt,'Done') into rtnCd;
 
     ---Cleanup OVERALL JOB if this proc is being run standalone
-	perform tm_cz.cz_end_audit (jobID, 'SUCCESS') where coalesce(currentJobId, -1) <> jobId;
+	perform cz_end_audit (jobID, 'SUCCESS') where coalesce(currentJobId, -1) <> jobId;
 
 	return 1;
 
@@ -110,22 +110,22 @@ BEGIN
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
 		--Handle errors.
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		--End Proc
-		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return -16;
 
 END;
 
 $BODY$
   LANGUAGE plpgsql VOLATILE SECURITY DEFINER
+  SET search_path FROM CURRENT
   COST 100;
-ALTER FUNCTION tm_cz.i2b2_load_security_data(numeric) SET search_path=tm_cz, i2b2metadata, pg_temp;
 
-ALTER FUNCTION tm_cz.i2b2_load_security_data(numeric)
+ALTER FUNCTION i2b2_load_security_data(numeric)
   OWNER TO postgres;
 
-CREATE OR REPLACE FUNCTION tm_cz.i2b2_load_security_data(sourcesystemCd varchar(50), currentjobid numeric DEFAULT (-1))
+CREATE OR REPLACE FUNCTION i2b2_load_security_data(sourcesystemCd varchar(50), currentjobid numeric DEFAULT (-1))
   RETURNS numeric AS
 $BODY$
 /*************************************************************************
@@ -156,16 +156,16 @@ Declare
 
 BEGIN
 	--Set Audit Parameters
-	databaseName := 'TM_CZ';
+	databaseName := current_schema();
 	procedureName := 'I2B2_LOAD_SECURITY';
 
-	select case when coalesce(currentjobid, -1) < 1 then tm_cz.cz_start_audit(procedureName, databaseName) else currentjobid end into jobId;
+	select case when coalesce(currentjobid, -1) < 1 then cz_start_audit(procedureName, databaseName) else currentjobid end into jobId;
 
 	delete from I2B2METADATA.i2b2_secure where sourcesystem_cd = sourcesystemCd;
 
   get diagnostics rowCt := ROW_COUNT;
 	stepCt := stepCt + 1;
-	perform tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Clean-up I2B2METADATA i2b2_secure',rowCt,stepCt,'Done');
+	perform cz_write_audit(jobId,databaseName,procedureName,'Clean-up I2B2METADATA i2b2_secure',rowCt,stepCt,'Done');
 
 	insert into I2B2METADATA.i2b2_secure
 	(C_HLEVEL,
@@ -220,10 +220,10 @@ BEGIN
 
 	get diagnostics rowCt := ROW_COUNT;
   stepCt := stepCt + 1;
-  perform tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Insert security data into I2B2METADATA i2b2_secure',rowCt,stepCt,'Done');
+  perform cz_write_audit(jobId,databaseName,procedureName,'Insert security data into I2B2METADATA i2b2_secure',rowCt,stepCt,'Done');
 
     ---Cleanup OVERALL JOB if this proc is being run standalone
-	perform tm_cz.cz_end_audit (jobID, 'SUCCESS') where coalesce(currentJobId, -1) <> jobId;
+	perform cz_end_audit (jobID, 'SUCCESS') where coalesce(currentJobId, -1) <> jobId;
 
 	return 1;
 
@@ -232,17 +232,17 @@ BEGIN
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
 		--Handle errors.
-		perform tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage);
+		perform cz_error_handler (jobID, procedureName, errorNumber, errorMessage);
 		--End Proc
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 
 END;
 
 $BODY$
   LANGUAGE plpgsql VOLATILE SECURITY DEFINER
+  SET search_path FROM CURRENT
   COST 100;
-ALTER FUNCTION tm_cz.i2b2_load_security_data(varchar, numeric) SET search_path=tm_cz, i2b2metadata, pg_temp;
 
-ALTER FUNCTION tm_cz.i2b2_load_security_data(varchar, numeric)
+ALTER FUNCTION i2b2_load_security_data(varchar, numeric)
   OWNER TO postgres;

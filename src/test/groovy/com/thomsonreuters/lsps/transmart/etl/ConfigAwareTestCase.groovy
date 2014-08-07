@@ -36,6 +36,20 @@ public abstract class ConfigAwareTestCase extends GroovyTestCase {
 
     void runScript(String scriptName) {
         File sqlFile = dbScriptsDir.listFiles().find { it.name.endsWith(scriptName) }
+        if (database.databaseType == DatabaseType.Postgres) {
+            File tmpDir = new File("tmp")
+            tmpDir.mkdirs();
+            File tmpFile = File.createTempFile("script", ".sql", tmpDir)
+            tmpFile.deleteOnExit();
+            tmpFile.setReadable(true, false);
+            tmpFile.setWritable(true, false);
+            tmpFile.setExecutable(true, false);
+            tmpFile.withWriter {
+                it.println("set SEARCH_PATH = tm_cz, tm_lz, tm_wz, i2b2demodata, i2b2metadata, deapp, pg_temp;")
+                it.append(sqlFile.text)
+            }
+            sqlFile = tmpFile;
+        }
         def p = database.runScript(sqlFile)
         String errors = p.err.text
         if (errors) {

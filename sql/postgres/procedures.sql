@@ -1,3 +1,11 @@
+DO $$
+begin
+if current_schema() = 'public' then
+  set SEARCH_PATH = tm_cz, tm_lz, tm_wz, i2b2demodata, i2b2metadata, deapp, pg_temp;
+end if;
+end;
+$$;
+
 \i procedures/median.sql
 \i procedures/AUDIT_FUNCTIONS.sql
 \i procedures/I2B2_ADD_NODE.sql

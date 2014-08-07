@@ -1,8 +1,8 @@
--- Function: tm_cz.i2b2_delete_1_node(character varying)
+-- Function: i2b2_delete_1_node(character varying)
 
--- DROP FUNCTION tm_cz.i2b2_delete_1_node(character varying);
+-- DROP FUNCTION i2b2_delete_1_node(character varying);
 
-CREATE OR REPLACE FUNCTION tm_cz.i2b2_delete_1_node(path character varying)
+CREATE OR REPLACE FUNCTION i2b2_delete_1_node(path character varying)
   RETURNS numeric AS
 $BODY$
 /*************************************************************************
@@ -41,16 +41,16 @@ BEGIN
 	IF(jobID IS NULL or jobID < 1)
 	THEN
 		newJobFlag := 1; -- True
-		select tm_cz.cz_start_audit (procedureName, databaseName) into jobID;
+		select cz_start_audit (procedureName, databaseName) into jobID;
 	END IF;
     	
 	stepCt := 0;
 	--stepCt := stepCt + 1;
-	--select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Start i2b2_delete_1_node: ' || path,0,stepCt,'Done') into rtnCd;
+	--select cz_write_audit(jobId,databaseName,procedureName,'Start i2b2_delete_1_node: ' || path,0,stepCt,'Done') into rtnCd;
 	
 	if coalesce(path,'') = ''  or path = '%' 
 	then 
-		select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Path missing, no action taken',0,stepCt,'Done') into rtnCd;
+		select cz_write_audit(jobId,databaseName,procedureName,'Path missing, no action taken',0,stepCt,'Done') into rtnCd;
 		return 1;
 	end if;
 	
@@ -63,14 +63,14 @@ BEGIN
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
 		--Handle errors.
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		--End Proc
-		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return -16;
 	get diagnostics rowCt := ROW_COUNT;	
 	end;
 	--stepCt := stepCt + 1;
-	--select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Delete data from observation_fact',rowCt,stepCt,'Done') into rtnCd;
+	--select cz_write_audit(jobId,databaseName,procedureName,'Delete data from observation_fact',rowCt,stepCt,'Done') into rtnCd;
 
       --CONCEPT DIMENSION
 	begin
@@ -81,14 +81,14 @@ BEGIN
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
 		--Handle errors.
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		--End Proc
-		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return -16;
 	get diagnostics rowCt := ROW_COUNT;	
 	end;
 	--stepCt := stepCt + 1;
-	--select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Delete data from concept_dimension',rowCt,stepCt,'Done') into rtnCd;
+	--select cz_write_audit(jobId,databaseName,procedureName,'Delete data from concept_dimension',rowCt,stepCt,'Done') into rtnCd;
     
     --I2B2
 	begin
@@ -99,14 +99,14 @@ BEGIN
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
 		--Handle errors.
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		--End Proc
-		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return -16;
 	get diagnostics rowCt := ROW_COUNT;	
 	end;
 	--stepCt := stepCt + 1;
-	--select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Delete data from i2b2',rowCt,stepCt,'Done') into rtnCd;
+	--select cz_write_audit(jobId,databaseName,procedureName,'Delete data from i2b2',rowCt,stepCt,'Done') into rtnCd;
 	
 	--i2b2_secure
 	begin
@@ -117,14 +117,14 @@ BEGIN
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
 		--Handle errors.
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		--End Proc
-		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return -16;
 	get diagnostics rowCt := ROW_COUNT;	
 	end;
 	--stepCt := stepCt + 1;
-	--select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Delete data from i2b2_secure',rowCt,stepCt,'Done') into rtnCd;
+	--select cz_write_audit(jobId,databaseName,procedureName,'Delete data from i2b2_secure',rowCt,stepCt,'Done') into rtnCd;
 
 	--concept_counts
 	begin
@@ -135,17 +135,17 @@ BEGIN
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
 		--Handle errors.
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		--End Proc
-		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return -16;
 	get diagnostics rowCt := ROW_COUNT;	
 	end;
 	--stepCt := stepCt + 1;
-	--select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Delete data from concept_counts',rowCt,stepCt,'Done') into rtnCd;
+	--select cz_write_audit(jobId,databaseName,procedureName,'Delete data from concept_counts',rowCt,stepCt,'Done') into rtnCd;
 		
 	stepCt := stepCt + 1;
-	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'End i2b2_delete_1_node',rowCt,stepCt,'Done') into rtnCd;
+	select cz_write_audit(jobId,databaseName,procedureName,'End i2b2_delete_1_node',rowCt,stepCt,'Done') into rtnCd;
 	
 	return 1;
   
@@ -153,8 +153,8 @@ END;
 
 $BODY$
   LANGUAGE plpgsql VOLATILE SECURITY DEFINER
+  SET search_path FROM CURRENT
   COST 100;
-ALTER FUNCTION tm_cz.i2b2_delete_1_node(character varying) SET search_path=tm_cz, i2b2demodata, i2b2metadata, pg_temp;
 
-ALTER FUNCTION tm_cz.i2b2_delete_1_node(character varying)
+ALTER FUNCTION i2b2_delete_1_node(character varying)
   OWNER TO postgres;

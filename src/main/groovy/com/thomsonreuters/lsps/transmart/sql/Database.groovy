@@ -33,7 +33,7 @@ class Database {
         Process runner
         switch (databaseType) {
             case DatabaseType.Postgres:
-                runner = runPsqlCommand('-f', script.absolutePath)
+                runner = runPsqlCommand('-f', script.path)
                 break
             case DatabaseType.Oracle:
                 runner = Runtime.runtime.exec("sqlplus -l ${config.username}/${config.password}@${host}:${port}/${database} @${script.absolutePath}")

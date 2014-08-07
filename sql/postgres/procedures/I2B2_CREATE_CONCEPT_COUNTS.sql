@@ -1,10 +1,10 @@
--- Function: tm_cz.i2b2_create_concept_counts(character varying, numeric)
+-- Function: i2b2_create_concept_counts(character varying, numeric)
 
--- DROP FUNCTION tm_cz.i2b2_create_concept_counts(character varying, numeric);
+-- DROP FUNCTION i2b2_create_concept_counts(character varying, numeric);
 
-drop function if exists tm_cz.i2b2_create_concept_counts(character varying, numeric);
+drop function if exists i2b2_create_concept_counts(character varying, numeric);
 
-CREATE OR REPLACE FUNCTION tm_cz.i2b2_create_concept_counts(path character varying, currentjobid numeric DEFAULT (-1), buildTree character varying DEFAULT('Y'))
+CREATE OR REPLACE FUNCTION i2b2_create_concept_counts(path character varying, currentjobid numeric DEFAULT (-1), buildTree character varying DEFAULT('Y'))
   RETURNS numeric AS
 $BODY$
 /*************************************************************************
@@ -46,7 +46,7 @@ BEGIN
 	newJobFlag := 0; -- False (Default)
 	jobID := currentJobID;
 
-	databaseName := 'TM_CZ';
+	databaseName := current_schema();
 	procedureName := 'I2B2_CREATE_CONCEPT_COUNTS';
 
 	--Audit JOB Initialization
@@ -54,7 +54,7 @@ BEGIN
 	IF(jobID IS NULL or jobID < 1)
 	THEN
 		newJobFlag := 1; -- True
-		select tm_cz.cz_start_audit (procedureName, databaseName) into jobID;
+		select cz_start_audit (procedureName, databaseName) into jobID;
 	END IF;
     	
 	stepCt := 0;
@@ -68,13 +68,13 @@ BEGIN
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
 		--Handle errors.
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		--End Proc
-		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return -16;
 	end;
 	stepCt := stepCt + 1;
-	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Delete counts for trial from I2B2DEMODATA concept_counts',rowCt,stepCt,'Done') into rtnCd;
+	select cz_write_audit(jobId,databaseName,procedureName,'Delete counts for trial from I2B2DEMODATA concept_counts',rowCt,stepCt,'Done') into rtnCd;
 
 	--	Join each node (folder or leaf) in the path to it's leaf in the work table to count patient numbers
 
@@ -91,7 +91,7 @@ BEGIN
 	    ,i2b2metadata.i2b2 la
 		,i2b2demodata.observation_fact tpm
 		,i2b2demodata.patient_dimension p
-		,TM_WZ.I2B2_LOAD_TREE_FULL tree
+		,I2B2_LOAD_TREE_FULL tree
 	where fa.c_fullname like path || '%' escape '`'
 	  and substr(fa.c_visualattributes,2,1) != 'H'
 	  --and la.c_fullname like fa.c_fullname || '%' escape '`'
@@ -108,24 +108,24 @@ BEGIN
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
 		--Handle errors.
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		--End Proc
-		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return -16;
 	end;
 	stepCt := stepCt + 1;
-	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Insert counts for trial into I2B2DEMODATA concept_counts',rowCt,stepCt,'Done') into rtnCd;
+	select cz_write_audit(jobId,databaseName,procedureName,'Insert counts for trial into I2B2DEMODATA concept_counts',rowCt,stepCt,'Done') into rtnCd;
 	
 	/*SELECT count(*) INTO rowCt FROM
 (
 	select fa.c_fullname
-		  ,ltrim(SUBSTR(fa.c_fullname, 1,tm_cz.instr(fa.c_fullname, '\',-1,2)))
+		  ,ltrim(SUBSTR(fa.c_fullname, 1,instr(fa.c_fullname, '\',-1,2)))
 		  ,count(distinct tpm.patient_num)
 	from i2b2metadata.i2b2 fa
 	    ,i2b2metadata.i2b2 la
 		,i2b2demodata.observation_fact tpm
 		,i2b2demodata.patient_dimension p
-		,TM_WZ.I2B2_LOAD_TREE_FULL tree
+		,I2B2_LOAD_TREE_FULL tree
 	where fa.c_fullname like '\Private Studies\Jace_Study_C0168T37' || '%' escape '`'
 	  and substr(fa.c_visualattributes,2,1) != 'H'
 	 -- and la.c_fullname like fa.c_fullname || '%' escape '`'
@@ -135,11 +135,11 @@ BEGIN
 	  and tpm.patient_num = p.patient_num
 	  and la.c_basecode = tpm.concept_cd   -- outer join in oracle ???
 	group by fa.c_fullname
-			,ltrim(SUBSTR(fa.c_fullname, 1,tm_cz.instr(fa.c_fullname, '\',-1,2)))
+			,ltrim(SUBSTR(fa.c_fullname, 1,instr(fa.c_fullname, '\',-1,2)))
 
 ) t;
 
-	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Insert TEST counts for trial into I2B2DEMODATA concept_counts',rowCt,stepCt,'Done') into rtnCd;*/
+	select cz_write_audit(jobId,databaseName,procedureName,'Insert TEST counts for trial into I2B2DEMODATA concept_counts',rowCt,stepCt,'Done') into rtnCd;*/
 	
 	--SET ANY NODE WITH MISSING OR ZERO COUNTS TO HIDDEN
 
@@ -163,18 +163,18 @@ BEGIN
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
 		--Handle errors.
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		--End Proc
-		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return -16;
 	end;
 	stepCt := stepCt + 1;
-	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Nodes hidden with missing/zero counts for trial into I2B2DEMODATA concept_counts',rowCt,stepCt,'Done') into rtnCd;
+	select cz_write_audit(jobId,databaseName,procedureName,'Nodes hidden with missing/zero counts for trial into I2B2DEMODATA concept_counts',rowCt,stepCt,'Done') into rtnCd;
 		
 	---Cleanup OVERALL JOB if this proc is being run standalone
 	IF newJobFlag = 1
 	THEN
-		select tm_cz.cz_end_audit (jobID, 'SUCCESS') into rtnCd;
+		select cz_end_audit (jobID, 'SUCCESS') into rtnCd;
 	END IF;
 
 	return 1;
@@ -183,8 +183,8 @@ END;
 
 $BODY$
   LANGUAGE plpgsql VOLATILE SECURITY DEFINER
+  SET search_path FROM CURRENT
   COST 100;
-ALTER FUNCTION tm_cz.i2b2_create_concept_counts(character varying, numeric, character varying) SET search_path=tm_cz, i2b2demodata, i2b2metadata, pg_temp;
 
-ALTER FUNCTION tm_cz.i2b2_create_concept_counts(character varying, numeric, character varying)
+ALTER FUNCTION i2b2_create_concept_counts(character varying, numeric, character varying)
   OWNER TO postgres;
