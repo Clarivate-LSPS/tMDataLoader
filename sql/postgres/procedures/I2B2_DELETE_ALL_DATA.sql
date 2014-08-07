@@ -1,4 +1,4 @@
-create or replace function tm_cz.I2B2_DELETE_ALL_DATA
+create or replace function I2B2_DELETE_ALL_DATA
 (
   trial_id character varying
  ,path_string varchar
@@ -33,10 +33,10 @@ Declare
   stepCt numeric(18,0);
   rtnCd	 integer;
 BEGIN
-  databaseName := 'TM_CZ';
+  databaseName := current_schema();
   procedureName := 'i2b2_delete_all_data';
 
-  select case when coalesce(currentjobid, -1) < 1 then tm_cz.cz_start_audit(procedureName, databaseName) else currentjobid end into jobId;
+  select case when coalesce(currentjobid, -1) < 1 then cz_start_audit(procedureName, databaseName) else currentjobid end into jobId;
 
   if (path_string is not null) then
 	pathString := REGEXP_REPLACE('\' || path_string || '\','(\\){2,}', '\','g');
@@ -57,9 +57,9 @@ BEGIN
 		TrialId := null;
 	else
 		stepCt := stepCt + 1;
-		select tm_cz.cz_write_audit(jobId,databasename,procedurename,'Please select right path to study',1,stepCt,'ERROR') into rtnCd;
-		select tm_cz.cz_error_handler(jobid, procedurename, '-1', 'Application raised error') into rtnCd;
-		select tm_cz.cz_end_audit (jobId,'FAIL') into rtnCd;
+		select cz_write_audit(jobId,databasename,procedurename,'Please select right path to study',1,stepCt,'ERROR') into rtnCd;
+		select cz_error_handler(jobid, procedurename, '-1', 'Application raised error') into rtnCd;
+		select cz_end_audit (jobId,'FAIL') into rtnCd;
 		return -16;
 	end if;
   else
@@ -87,9 +87,9 @@ BEGIN
 	select concept_path into pathString from temp1 order by parent_concept_path limit 1;
     else
 	stepCt := stepCt + 1;
-	select tm_cz.cz_write_audit(jobId,databasename,procedurename,'Please select right trial to study',1,stepCt,'ERROR') into rtnCd;
-	select tm_cz.cz_error_handler(jobid, procedurename, '-1', 'Application raised error') into rtnCd;
-	select tm_cz.cz_end_audit (jobId,'FAIL') into rtnCd;
+	select cz_write_audit(jobId,databasename,procedurename,'Please select right trial to study',1,stepCt,'ERROR') into rtnCd;
+	select cz_error_handler(jobid, procedurename, '-1', 'Application raised error') into rtnCd;
+	select cz_end_audit (jobId,'FAIL') into rtnCd;
 	return -16;
     end if;
   else
@@ -117,14 +117,14 @@ BEGIN
   then
 	stepCt := stepCt + 1;
   if (topNode is null) then
-    select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Starting I2B2_DELETE_ALL_DATA for '||'/',0,stepCt,'Done') into rtnCd;
+    select cz_write_audit(jobId,databaseName,procedureName,'Starting I2B2_DELETE_ALL_DATA for '||'/',0,stepCt,'Done') into rtnCd;
   else
-    select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Starting I2B2_DELETE_ALL_DATA for '||topNode||' trial id '||trialId,0,stepCt,'Done') into rtnCd;
+    select cz_write_audit(jobId,databaseName,procedureName,'Starting I2B2_DELETE_ALL_DATA for '||topNode||' trial id '||trialId,0,stepCt,'Done') into rtnCd;
   end if;
 
   --	delete all i2b2 nodes
 
-  select tm_cz.i2b2_delete_all_nodes(pathString,jobId) into rtnCd;
+  select i2b2_delete_all_nodes(pathString,jobId) into rtnCd;
 
   --	delete any table_access data
   delete from i2b2metadata.table_access
@@ -135,17 +135,17 @@ BEGIN
 	where path like pathString || '%' ESCAPE '`';
 	stepCt := stepCt + 1;
 	get diagnostics rowCt := ROW_COUNT;
-	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from I2B2METADATA i2b2_tags',rowCt,stepCt,'Done') into rtnCd;
+	select cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from I2B2METADATA i2b2_tags',rowCt,stepCt,'Done') into rtnCd;
 
 
 	--	delete clinical data
 	if (trialId is not NUll)
 	then
-		delete from tm_lz.lz_src_clinical_data
+		delete from lz_src_clinical_data
 		where study_id = trialId;
 		stepCt := stepCt + 1;
 		get diagnostics rowCt := ROW_COUNT;
-		select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from lz_src_clinical_data',rowCt,stepCt,'Done') into rtnCd;
+		select cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from lz_src_clinical_data',rowCt,stepCt,'Done') into rtnCd;
 
     FOR vcfDataSet in vcfDataSets LOOP
       vcfDataSetId := vcfDataSet.dataset_id;
@@ -156,34 +156,34 @@ BEGIN
 
       stepCt := stepCt + 1;
       get diagnostics rowCt := ROW_COUNT;
-      select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_subject_summary',rowCt,stepCt,'Done') into rtnCd;
+      select cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_subject_summary',rowCt,stepCt,'Done') into rtnCd;
 
       delete from deapp.de_variant_population_data where dataset_id = vcfDataSetId;
       stepCt := stepCt + 1;
       get diagnostics rowCt := ROW_COUNT;
-      select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_population_data',rowCt,stepCt,'Done') into rtnCd;
+      select cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_population_data',rowCt,stepCt,'Done') into rtnCd;
 
       delete from deapp.de_variant_population_info where dataset_id = vcfDataSetId;
       stepCt := stepCt + 1;
       get diagnostics rowCt := ROW_COUNT;
-      select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_population_info',rowCt,stepCt,'Done') into rtnCd;
+      select cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_population_info',rowCt,stepCt,'Done') into rtnCd;
 
       delete from deapp.de_variant_subject_detail where dataset_id = vcfDataSetId;
       stepCt := stepCt + 1;
       get diagnostics rowCt := ROW_COUNT;
-      select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_subject_detail',rowCt,stepCt,'Done') into rtnCd;
+      select cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_subject_detail',rowCt,stepCt,'Done') into rtnCd;
 
       delete from deapp.de_variant_subject_idx where dataset_id = vcfDataSetId;
       stepCt := stepCt + 1;
       get diagnostics rowCt := ROW_COUNT;
-      select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_subject_idx',rowCt,stepCt,'Done') into rtnCd;
+      select cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_subject_idx',rowCt,stepCt,'Done') into rtnCd;
 
 
       delete from deapp.de_variant_dataset where dataset_id = vcfDataSetId;
       stepCt := stepCt + 1;
       get diagnostics rowCt := ROW_COUNT;
 
-      select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_dataset',rowCt,stepCt,'Done') into rtnCd;
+      select cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_dataset',rowCt,stepCt,'Done') into rtnCd;
     END LOOP;
 
 		--	delete observation_fact SECURITY data, do before patient_dimension delete
@@ -205,7 +205,7 @@ BEGIN
 			  where p.sourcesystem_cd like trialId || '%');
 		stepCt := stepCt + 1;
 		get diagnostics rowCt := ROW_COUNT;
-		select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Delete SECURITY data for trial from I2B2DEMODATA observation_fact',rowCt,stepCt,'Done') into rtnCd;
+		select cz_write_audit(jobId,databaseName,procedureName,'Delete SECURITY data for trial from I2B2DEMODATA observation_fact',rowCt,stepCt,'Done') into rtnCd;
 		/*commit;*/
 
 
@@ -213,7 +213,7 @@ BEGIN
 		where trial_name = trialId
 		and assay_id in (
 		  select dssm.assay_id from
-			TM_LZ.lt_src_mrna_subj_samp_map ltssm
+			lt_src_mrna_subj_samp_map ltssm
 			left join
 			deapp.de_subject_sample_mapping dssm
 			on
@@ -227,13 +227,13 @@ BEGIN
 		);
 		stepCt := stepCt + 1;
 		get diagnostics rowCt := ROW_COUNT;
-		select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from deapp de_subject_microarray_data',rowCt,stepCt,'Done') into rtnCd;
+		select cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from deapp de_subject_microarray_data',rowCt,stepCt,'Done') into rtnCd;
 		/*commit;*/
 
 		delete from deapp.de_subject_sample_mapping where
 		  assay_id in (
 			select dssm.assay_id from
-			  TM_LZ.lt_src_mrna_subj_samp_map ltssm
+			  lt_src_mrna_subj_samp_map ltssm
 			  left join
 			  deapp.de_subject_sample_mapping dssm
 			  on
@@ -247,14 +247,14 @@ BEGIN
 
 		stepCt := stepCt + 1;
 		get diagnostics rowCt := ROW_COUNT;
-		select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Delete trial from DEAPP de_subject_sample_mapping',rowCt,stepCt,'Done') into rtnCd;
+		select cz_write_audit(jobId,databaseName,procedureName,'Delete trial from DEAPP de_subject_sample_mapping',rowCt,stepCt,'Done') into rtnCd;
 
 		/*commit;*/
 
 
 		stepCt := stepCt + 1;
 		get diagnostics rowCt := ROW_COUNT;
-		select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Delete trial from DEAPP de_subject_sample_mapping',rowCt,stepCt,'Done') into rtnCd;
+		select cz_write_audit(jobId,databaseName,procedureName,'Delete trial from DEAPP de_subject_sample_mapping',rowCt,stepCt,'Done') into rtnCd;
 
 		/*commit;*/
 		--	delete patient data
@@ -263,27 +263,27 @@ BEGIN
 		where sourcesystem_cd like trialId || '%';
 		stepCt := stepCt + 1;
 		get diagnostics rowCt := ROW_COUNT;
-		select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from I2B2DEMODATA patient_dimension',rowCt,stepCt,'Done') into rtnCd;
+		select cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from I2B2DEMODATA patient_dimension',rowCt,stepCt,'Done') into rtnCd;
 		/*commit;*/
 
 		delete from i2b2demodata.patient_trial
 		where trial=  trialId;
 		stepCt := stepCt + 1;
 		get diagnostics rowCt := ROW_COUNT;
-		select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from I2B2DEMODATA patient_trial',rowCt,stepCt,'Done') into rtnCd;
+		select cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from I2B2DEMODATA patient_trial',rowCt,stepCt,'Done') into rtnCd;
 		/*commit;*/
 	end if;
 
 	/*Check and delete top node, if remove node is last*/
     stepCt := stepCt + 1;
-    select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Check and delete top node '||topNode||', if remove node is last',0,stepCt,'Done') into rtnCd;
+    select cz_write_audit(jobId,databaseName,procedureName,'Check and delete top node '||topNode||', if remove node is last',0,stepCt,'Done') into rtnCd;
     select count(*) into countNodeUnderTop
     from I2B2DEMODATA.concept_counts
     where parent_concept_path = topNode;
 
       stepCt := stepCt + 1;
 	  get diagnostics rowCt := ROW_COUNT;
-      select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Check need removed top node '||topNode,rowCt,stepCt,'Done') into rtnCd;
+      select cz_write_audit(jobId,databaseName,procedureName,'Check need removed top node '||topNode,rowCt,stepCt,'Done') into rtnCd;
 
       if (countNodeUnderTop = 0)
       then
@@ -292,17 +292,17 @@ BEGIN
             where c_fullname = topNode;
 
         if (isExistTopNode !=0 ) then
-          select tm_cz.i2b2_delete_all_data(null, topNode, jobID) into rtnCd;
+          select i2b2_delete_all_data(null, topNode, jobID) into rtnCd;
         end if;
       end if;
 
   end if;
 
-  perform tm_cz.cz_end_audit (jobID, 'SUCCESS') where coalesce(currentJobId, -1) <> jobId;
+  perform cz_end_audit (jobID, 'SUCCESS') where coalesce(currentJobId, -1) <> jobId;
 
   return 1;
 END;
 $BODY$
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER
-
-  COST 100;
+SET search_path FROM CURRENT
+COST 100;

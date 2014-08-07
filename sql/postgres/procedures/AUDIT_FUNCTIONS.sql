@@ -1,8 +1,8 @@
--- Function: tm_cz.cz_error_handler(numeric, character varying, character varying, character varying)
+-- Function: cz_error_handler(numeric, character varying, character varying, character varying)
 
--- DROP FUNCTION tm_cz.cz_error_handler(numeric, character varying, character varying, character varying);
+-- DROP FUNCTION cz_error_handler(numeric, character varying, character varying, character varying);
 
-CREATE OR REPLACE FUNCTION tm_cz.cz_error_handler(jobid numeric, procedurename character varying, errornumber character varying, errormessage character varying)
+CREATE OR REPLACE FUNCTION cz_error_handler(jobid numeric, procedurename character varying, errornumber character varying, errormessage character varying)
   RETURNS integer AS
 $BODY$
 /*************************************************************************
@@ -34,11 +34,11 @@ Declare
 BEGIN
 	--Get DB Name
 	select database_name INTO databaseName
-	from tm_cz.cz_job_master
+	from cz_job_master
 	where job_id=jobID;
 
 	--Get Latest Step
-	select max(step_number) into stepNo from tm_cz.cz_job_audit where job_id = jobID;
+	select max(step_number) into stepNo from cz_job_audit where job_id = jobID;
 
 	--Get all error info, passed in as parameters, only available from EXCEPTION block
 	--errorNumber := SQLSTATE;
@@ -49,10 +49,10 @@ BEGIN
 	--errorBackTrace := dbms_utility.format_error_backtrace;
 
 	--Update the audit step for the error
-	select tm_cz.cz_write_audit(jobID, databaseName,procedureName, 'Job Failed: See error log for details',1, stepNo, 'FAIL') into rtnCd;
+	select cz_write_audit(jobID, databaseName,procedureName, 'Job Failed: See error log for details',1, stepNo, 'FAIL') into rtnCd;
 
 	--write out the error info
-	select tm_cz.cz_write_error(jobID, errorNumber, errorMessage, errorStack, errorBackTrace) into rtnCd;
+	select cz_write_error(jobID, errorNumber, errorMessage, errorStack, errorBackTrace) into rtnCd;
 
 	return 1;
 
@@ -60,14 +60,14 @@ END;
 
 $BODY$
   LANGUAGE plpgsql VOLATILE SECURITY DEFINER
+  SET search_path FROM CURRENT
   COST 100;
-ALTER FUNCTION tm_cz.cz_error_handler(numeric, character varying, character varying, character varying) SET search_path=tm_cz, pg_temp;
 
-ALTER FUNCTION tm_cz.cz_error_handler(numeric, character varying, character varying, character varying)
+ALTER FUNCTION cz_error_handler(numeric, character varying, character varying, character varying)
   OWNER TO postgres;
 
 
-CREATE OR REPLACE FUNCTION tm_cz.cz_write_audit (jobid numeric, databasename varchar, procedurename varchar, stepdesc varchar, recordsmanipulated numeric, stepnumber numeric, stepstatus varchar)
+CREATE OR REPLACE FUNCTION cz_write_audit (jobid numeric, databasename varchar, procedurename varchar, stepdesc varchar, recordsmanipulated numeric, stepnumber numeric, stepstatus varchar)
   RETURNS numeric
 AS
 $BODY$
@@ -96,7 +96,7 @@ BEGIN
 
         select max(job_date)
     into lastTime
-    from tm_cz.cz_job_audit
+    from cz_job_audit
     where job_id = jobID;
 
         --        clock_timestamp() is the current system time
@@ -109,7 +109,7 @@ BEGIN
                                    DATE_PART('second', currTime - lastTime),0);
 
         begin
-        insert         into tm_cz.cz_job_audit
+        insert         into cz_job_audit
         (job_id
         ,database_name
          ,procedure_name
@@ -136,16 +136,17 @@ BEGIN
         exception
         when OTHERS then
                 --raise notice 'proc failed state=%  errm=%', SQLSTATE, SQLERRM;
-                select tm_cz.cz_write_error(jobId,0::varchar,SQLSTATE::varchar,SQLERRM::varchar,null::varchar) into rtnCd;
+                select cz_write_error(jobId,0::varchar,SQLSTATE::varchar,SQLERRM::varchar,null::varchar) into rtnCd;
                 return -16;
         end;
 
         return 1;
 END;
 $BODY$
-LANGUAGE plpgsql VOLATILE SECURITY DEFINER;
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER
+SET search_path FROM CURRENT;
 
-CREATE OR REPLACE FUNCTION tm_cz.cz_write_error (jobid numeric, errornumber varchar, errormessage varchar, errorstack varchar, errorbacktrace varchar)
+CREATE OR REPLACE FUNCTION cz_write_error (jobid numeric, errornumber varchar, errormessage varchar, errorstack varchar, errorbacktrace varchar)
   RETURNS numeric
 AS
 $BODY$
@@ -168,7 +169,7 @@ $BODY$
 BEGIN
 
 	begin
-	insert into tm_cz.cz_job_error(
+	insert into cz_job_error(
 		job_id,
 		error_number,
 		error_message,
@@ -182,7 +183,7 @@ BEGIN
 		errorStack,
 		errorBackTrace,
 		max(seq_id)
-  from tm_cz.cz_job_audit
+  from cz_job_audit
   where job_id=jobID;
 
   end;
@@ -196,4 +197,5 @@ BEGIN
 
 END;
 $BODY$
-LANGUAGE plpgsql VOLATILE SECURITY DEFINER;
+  LANGUAGE plpgsql VOLATILE SECURITY DEFINER
+  SET search_path FROM CURRENT;

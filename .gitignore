@@ -4,6 +4,7 @@
 /.gradle
 /target
 /build
+/tmp
 *.iml
 /tm_etl.jar
 

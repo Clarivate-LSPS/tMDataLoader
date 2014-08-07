@@ -1,8 +1,8 @@
--- Function: tm_cz.i2b2_process_mrna_data(character varying, character varying, character varying, character varying, numeric, character varying, numeric)
+-- Function: i2b2_process_mrna_data(character varying, character varying, character varying, character varying, numeric, character varying, numeric)
 
--- DROP FUNCTION tm_cz.i2b2_process_mrna_data(character varying, character varying, character varying, character varying, numeric, character varying, numeric);
+-- DROP FUNCTION i2b2_process_mrna_data(character varying, character varying, character varying, character varying, numeric, character varying, numeric);
 
-CREATE OR REPLACE FUNCTION tm_cz.i2b2_process_mrna_data
+CREATE OR REPLACE FUNCTION i2b2_process_mrna_data
 ( trial_id 		character varying
  ,top_node		character varying
  ,data_type		character varying default 'R'		--	R = raw data, do zscore calc, T = transformed data, load raw values as zscore,
@@ -60,7 +60,7 @@ BEGIN
 	--Set Audit Parameters
 	newJobFlag := 0; -- False (Default)
 	jobID := currentJobID;
-	databaseName := 'TM_CZ';
+	databaseName := current_schema();
 	procedureName := 'I2B2_PROCESS_MRNA_DATA';
 
 	--Audit JOB Initialization
@@ -69,12 +69,12 @@ BEGIN
 	IF(jobID IS NULL or jobID < 1)
 	THEN
 		newJobFlag := 1; -- True
-		select tm_cz.cz_start_audit (procedureName, databaseName) into jobID;
+		select cz_start_audit (procedureName, databaseName) into jobID;
 	END IF;
 
 	stepCt := 0;
 	stepCt := stepCt + 1;
-	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Starting i2b2_process_mrna_data',0,stepCt,'Done') into rtnCd;
+	select cz_write_audit(jobId,databaseName,procedureName,'Starting i2b2_process_mrna_data',0,stepCt,'Done') into rtnCd;
 
 	if data_type is null then
 		dataType := 'R';
@@ -91,17 +91,17 @@ BEGIN
 
 	--	check if platform exists in probeset_deapp .  If not, abort run.
 	select count(*) into pCount
-	from tm_cz.probeset_deapp
-	where platform in (select distinct m.platform from tm_lz.lt_src_mrna_subj_samp_map m);
+	from probeset_deapp
+	where platform in (select distinct m.platform from lt_src_mrna_subj_samp_map m);
 
 	if pCount = 0 then
-		select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'No Gene Expression platforms in deapp.de_mrna_annotation',0,pCount,'Done') into rtnCd;
-		select tm_cz.cz_error_handler (jobID, procedureName, '-1', 'Application raised error') into rtnCd;
-		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		select cz_write_audit(jobId,databaseName,procedureName,'No Gene Expression platforms in deapp.de_mrna_annotation',0,pCount,'Done') into rtnCd;
+		select cz_error_handler (jobID, procedureName, '-1', 'Application raised error') into rtnCd;
+		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return -16;
 	end if;
 
-	select tm_cz.I2B2_LOAD_SAMPLES(trial_id, top_node, 'MRNA_AFFYMETRIX', sourceCd, secure_study, jobID) into res;
+	select I2B2_LOAD_SAMPLES(trial_id, top_node, 'MRNA_AFFYMETRIX', sourceCd, secure_study, jobID) into res;
 	if res < 0 then
 	  return res;
 	end if;
@@ -129,12 +129,12 @@ BEGIN
 
 	--	tag data with probeset_id from reference.probeset_deapp
 
-	execute ('truncate table tm_wz.wt_subject_mrna_probeset');
+	execute ('truncate table wt_subject_mrna_probeset');
 
 	--	note: assay_id represents a unique subject/site/sample
 
 	begin
-	insert into tm_wz.wt_subject_mrna_probeset
+	insert into wt_subject_mrna_probeset
 	(probeset_id
 	,intensity_value
 	,assay_id
@@ -145,9 +145,9 @@ BEGIN
 		  ,sd.assay_id
 		  ,TrialId
 	from
-	  tm_lz.lt_src_mrna_data md
+	  lt_src_mrna_data md
       inner join deapp.de_subject_sample_mapping sd
-        inner join tm_cz.probeset_deapp gs
+        inner join probeset_deapp gs
         on sd.gpl_id = gs.platform
       on md.expr_id = sd.sample_cd and md.probeset = gs.probeset
 	where sd.platform = 'MRNA_AFFYMETRIX'
@@ -164,18 +164,18 @@ BEGIN
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
 		--Handle errors.
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		--End Proc
-		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return -16;
 	end;
 	stepCt := stepCt + 1;
-	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Insert into DEAPP wt_subject_mrna_probeset',rowCt,stepCt,'Done') into rtnCd;
+	select cz_write_audit(jobId,databaseName,procedureName,'Insert into DEAPP wt_subject_mrna_probeset',rowCt,stepCt,'Done') into rtnCd;
 
 	if rowCt = 0 then
-		select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Unable to match probesets to platform in probeset_deapp',0,rowCt,'Done') into rtnCd;
-		select tm_cz.cz_error_handler (jobID, procedureName, '-1', 'Application raised error') into rtnCd;
-		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		select cz_write_audit(jobId,databaseName,procedureName,'Unable to match probesets to platform in probeset_deapp',0,rowCt,'Done') into rtnCd;
+		select cz_error_handler (jobID, procedureName, '-1', 'Application raised error') into rtnCd;
+		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return -16;
 	end if;
 	
@@ -191,7 +191,7 @@ BEGIN
 		raise notice 'sqlText= %', sqlText;
 		execute sqlText;
 		stepCt := stepCt + 1;
-		select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Create partition ' || partitionName,1,stepCt,'Done') into rtnCd;
+		select cz_write_audit(jobId,databaseName,procedureName,'Create partition ' || partitionName,1,stepCt,'Done') into rtnCd;
 	else
         -- Keep this statement for backward compatibility
 		sqlText := 'drop index if exists ' || partitionIndx || '_idx1';
@@ -207,16 +207,16 @@ BEGIN
 		raise notice 'sqlText= %', sqlText;
 		execute sqlText;
 		stepCt := stepCt + 1;
-		select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Drop indexes on ' || partitionName,1,stepCt,'Done') into rtnCd;
+		select cz_write_audit(jobId,databaseName,procedureName,'Drop indexes on ' || partitionName,1,stepCt,'Done') into rtnCd;
 
     sqlText := 'delete from ' || partitionName || ' where assay_id in (' ||
-     'select sm.assay_id from deapp.de_subject_sample_mapping sm, tm_lz.lt_src_mrna_subj_samp_map tsm'
+     'select sm.assay_id from deapp.de_subject_sample_mapping sm, lt_src_mrna_subj_samp_map tsm'
      || ' where sm.trial_name = ''' || TrialID || ''' and sm.source_cd = '''|| sourceCD || ''''
      || ' and coalesce(sm.site_id, '''') = coalesce(tsm.site_id, '''') and sm.subject_id = tsm.subject_id and sm.sample_cd = tsm.sample_cd)';
     raise notice 'sqlText= %', sqlText;
     execute sqlText;
 		stepCt := stepCt + 1;
-		select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Truncate ' || partitionName,1,stepCt,'Done') into rtnCd;
+		select cz_write_audit(jobId,databaseName,procedureName,'Truncate ' || partitionName,1,stepCt,'Done') into rtnCd;
 	end if;
 
 	--	insert into de_subject_microarray_data when dataType is T (transformed)
@@ -225,25 +225,25 @@ BEGIN
 		sqlText := 'insert into ' || partitionName || ' (partition_id, trial_name, probeset_id, assay_id, log_intensity, zscore) ' ||
 				   'select ' || partitionId::text || ', trial_name, probeset_id, assay_id, intensity_value, ' ||
 				   'case when intensity_value < -2.5 then -2.5 when intensity_value > 2.5 then 2.5 else intensity_value end ' ||
-				   'from tm_wz.wt_subject_mrna_probeset';
+				   'from wt_subject_mrna_probeset';
 		raise notice 'sqlText= %', sqlText;
 		execute sqlText;
 		get diagnostics rowCt := ROW_COUNT;
 		stepCt := stepCt + 1;
-		select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Inserted data into ' || partitionName,rowCt,stepCt,'Done') into rtnCd;
+		select cz_write_audit(jobId,databaseName,procedureName,'Inserted data into ' || partitionName,rowCt,stepCt,'Done') into rtnCd;
 	else
 		--	calculate zscore and insert to partition
 
-		execute ('drop index if exists tm_wz.wt_subject_mrna_logs_i1');
-		execute ('drop index if exists tm_wz.wt_subject_mrna_calcs_i1');
-		execute ('truncate table tm_wz.wt_subject_microarray_logs');
-		execute ('truncate table tm_wz.wt_subject_microarray_calcs');
-		execute ('truncate table tm_wz.wt_subject_microarray_med');
+		execute ('drop index if exists wt_subject_mrna_logs_i1');
+		execute ('drop index if exists wt_subject_mrna_calcs_i1');
+		execute ('truncate table wt_subject_microarray_logs');
+		execute ('truncate table wt_subject_microarray_calcs');
+		execute ('truncate table wt_subject_microarray_med');
 		stepCt := stepCt + 1;
-		select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Drop indexes and truncate zscore work tables',1,stepCt,'Done') into rtnCd;
+		select cz_write_audit(jobId,databaseName,procedureName,'Drop indexes and truncate zscore work tables',1,stepCt,'Done') into rtnCd;
 
 		begin
-		insert into tm_wz.wt_subject_microarray_logs
+		insert into wt_subject_microarray_logs
 		(probeset_id
 		,assay_id
 		,raw_intensity
@@ -257,29 +257,29 @@ BEGIN
 			   end
 			  ,case when dataType = 'L' then intensity_value else ln(intensity_value::double precision) / ln(logBase::double precision) end
 			  ,trial_name
-		from tm_wz.wt_subject_mrna_probeset;
+		from wt_subject_mrna_probeset;
 		get diagnostics rowCt := ROW_COUNT;
 		exception
 		when others then
 			errorNumber := SQLSTATE;
 			errorMessage := SQLERRM;
 			--Handle errors.
-			select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+			select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 			--End Proc
-			select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+			select cz_end_audit (jobID, 'FAIL') into rtnCd;
 			return -16;
 		end;
 		stepCt := stepCt + 1;
-		select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Loaded data for trial in TM_WZ wt_subject_microarray_logs',rowCt,stepCt,'Done') into rtnCd;
+		select cz_write_audit(jobId,databaseName,procedureName,'Loaded data for trial in wt_subject_microarray_logs',rowCt,stepCt,'Done') into rtnCd;
 
-		execute ('create index wt_subject_mrna_logs_i1 on tm_wz.wt_subject_microarray_logs (probeset_id) tablespace "indx"');
+		execute ('create index wt_subject_mrna_logs_i1 on wt_subject_microarray_logs (probeset_id) tablespace "indx"');
 		stepCt := stepCt + 1;
-		select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Create index on TM_WZ wt_subject_microarray_logs',0,stepCt,'Done') into rtnCd;
+		select cz_write_audit(jobId,databaseName,procedureName,'Create index on wt_subject_microarray_logs',0,stepCt,'Done') into rtnCd;
 
 		--	calculate mean_intensity, median_intensity, and stddev_intensity per probeset
 
 		begin
-		insert into tm_wz.wt_subject_microarray_calcs
+		insert into wt_subject_microarray_calcs
 		(probeset_id
 		,mean_intensity
 		,median_intensity
@@ -291,7 +291,7 @@ BEGIN
 			  ,median(log_intensity::double precision)
 			  ,stddev(log_intensity)
 			  ,TrialID
-		from tm_wz.wt_subject_microarray_logs d
+		from wt_subject_microarray_logs d
 		group by d.probeset_id;
 		get diagnostics rowCt := ROW_COUNT;
 		exception
@@ -299,17 +299,17 @@ BEGIN
 			errorNumber := SQLSTATE;
 			errorMessage := SQLERRM;
 			--Handle errors.
-			select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+			select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 			--End Proc
-			select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+			select cz_end_audit (jobID, 'FAIL') into rtnCd;
 			return -16;
 		end;
 		stepCt := stepCt + 1;
-		select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Calculate intensities for trial in TM_WZ wt_subject_microarray_calcs',rowCt,stepCt,'Done') into rtnCd;
+		select cz_write_audit(jobId,databaseName,procedureName,'Calculate intensities for trial in wt_subject_microarray_calcs',rowCt,stepCt,'Done') into rtnCd;
 
-		execute ('create index wt_subject_mrna_calcs_i1 on tm_wz.wt_subject_microarray_calcs (probeset_id) tablespace "indx"');
+		execute ('create index wt_subject_mrna_calcs_i1 on wt_subject_microarray_calcs (probeset_id) tablespace "indx"');
 		stepCt := stepCt + 1;
-		select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Create index on TM_WZ wt_subject_microarray_calcs',0,stepCt,'Done') into rtnCd;
+		select cz_write_audit(jobId,databaseName,procedureName,'Create index on wt_subject_microarray_calcs',0,stepCt,'Done') into rtnCd;
 
 		-- calculate zscore and insert into partition
 
@@ -319,14 +319,14 @@ BEGIN
 				   'case when (d.log_intensity - c.median_intensity ) / c.stddev_intensity < -2.5 then -2.5 ' ||
 				   'when (d.log_intensity - c.median_intensity ) / c.stddev_intensity > 2.5 then 2.5 else ' ||
 				   '(d.log_intensity - c.median_intensity ) / c.stddev_intensity end end ' ||
-				   'from tm_wz.wt_subject_microarray_logs d ' ||
-				   ',tm_wz.wt_subject_microarray_calcs c ' ||
+				   'from wt_subject_microarray_logs d ' ||
+				   ',wt_subject_microarray_calcs c ' ||
 				   'where d.probeset_id = c.probeset_id';
 		raise notice 'sqlText= %', sqlText;
 		execute sqlText;
 		get diagnostics rowCt := ROW_COUNT;
 		stepCt := stepCt + 1;
-		select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Calculate Z-Score and insert into ' || partitionName,rowCt,stepCt,'Done') into rtnCd;
+		select cz_write_audit(jobId,databaseName,procedureName,'Calculate Z-Score and insert into ' || partitionName,rowCt,stepCt,'Done') into rtnCd;
 	end if;
 
 	--	create indexes on partition
@@ -342,12 +342,12 @@ BEGIN
     ---Cleanup OVERALL JOB if this proc is being run standalone
 
 	stepCt := stepCt + 1;
-	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'End i2b2_process_mrna_data',0,stepCt,'Done') into rtnCd;
+	select cz_write_audit(jobId,databaseName,procedureName,'End i2b2_process_mrna_data',0,stepCt,'Done') into rtnCd;
 
 	---Cleanup OVERALL JOB if this proc is being run standalone
 	IF newJobFlag = 1
 	THEN
-		select tm_cz.cz_end_audit (jobID, 'SUCCESS') into rtnCd;
+		select cz_end_audit (jobID, 'SUCCESS') into rtnCd;
 	END IF;
 
 	return 1;
@@ -356,8 +356,8 @@ END;
 
 $BODY$
   LANGUAGE plpgsql VOLATILE SECURITY DEFINER
+  SET search_path FROM CURRENT
   COST 100;
-ALTER FUNCTION tm_cz.i2b2_process_mrna_data(character varying, character varying, character varying, character varying, numeric, character varying, numeric) SET search_path=tm_cz, tm_lz, tm_wz, deapp, i2b2demodata, pg_temp;
 
-ALTER FUNCTION tm_cz.i2b2_process_mrna_data(character varying, character varying, character varying, character varying, numeric, character varying, numeric)
+ALTER FUNCTION i2b2_process_mrna_data(character varying, character varying, character varying, character varying, numeric, character varying, numeric)
   OWNER TO postgres;

@@ -1,8 +1,8 @@
--- Function: tm_cz.i2b2_add_node(character varying, character varying, character varying, numeric)
+-- Function: i2b2_add_node(character varying, character varying, character varying, numeric)
 
--- DROP FUNCTION tm_cz.i2b2_add_node(character varying, character varying, character varying, numeric);
+-- DROP FUNCTION i2b2_add_node(character varying, character varying, character varying, numeric);
 
-CREATE OR REPLACE FUNCTION tm_cz.i2b2_add_node(trialid character varying, path character varying, path_name character varying, currentjobid numeric)
+CREATE OR REPLACE FUNCTION i2b2_add_node(trialid character varying, path character varying, path_name character varying, currentjobid numeric)
   RETURNS integer AS
 $BODY$
 /*************************************************************************
@@ -44,7 +44,7 @@ BEGIN
 	newJobFlag := 0; -- False (Default)
 	jobID := currentJobID;
 
-	databaseName := 'TM_CZ';
+	databaseName := current_schema();
 	procedureName := 'I2B2_ADD_NODE';
 	
 	--Audit JOB Initialization
@@ -52,10 +52,10 @@ BEGIN
 	IF(jobID IS NULL or jobID < 1)
 	THEN
 		newJobFlag := 1; -- True
-		select tm_cz.cz_start_audit (procedureName, databaseName) into jobId;
+		select cz_start_audit (procedureName, databaseName) into jobId;
 	END IF;
   
-	select tm_cz.parse_nth_value(path, 2, '\') into root_node;
+	select parse_nth_value(path, 2, '\') into root_node;
 	
 	select c_hlevel into root_level
 	from i2b2metadata.table_access
@@ -63,7 +63,7 @@ BEGIN
   
 	if path = ''  or path = '%' or path_name = ''
 	then 
-		select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Path or Path name missing, no action taken',0,stepCt,'Done') into rtnCd;
+		select cz_write_audit(jobId,databaseName,procedureName,'Path or Path name missing, no action taken',0,stepCt,'Done') into rtnCd;
 		return 1;
 	end if;
 	
@@ -76,21 +76,21 @@ BEGIN
 	
 	--get diagnostics rowCt := ROW_COUNT;
 	--stepCt := stepCt + 1;
-	--select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Deleted any concepts for path from I2B2DEMODATA observation_fact',rowCt,stepCt,'Done') into rtnCd;
+	--select cz_write_audit(jobId,databaseName,procedureName,'Deleted any concepts for path from I2B2DEMODATA observation_fact',rowCt,stepCt,'Done') into rtnCd;
 
 	--CONCEPT DIMENSION
 	DELETE FROM i2b2demodata.CONCEPT_DIMENSION
 	WHERE CONCEPT_PATH = path;
 	--get diagnostics rowCt := ROW_COUNT;
 	--stepCt := stepCt + 1;
-	--select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Deleted any concepts for path from I2B2DEMODATA concept_dimension',rowCt,stepCt,'Done') into rtnCd;
+	--select cz_write_audit(jobId,databaseName,procedureName,'Deleted any concepts for path from I2B2DEMODATA concept_dimension',rowCt,stepCt,'Done') into rtnCd;
     
 	--I2B2
 	DELETE FROM i2b2metadata.i2b2
 	WHERE C_FULLNAME = PATH;
 	--get diagnostics rowCt := ROW_COUNT;
 	--stepCt := stepCt + 1;
-	--select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Deleted path from I2B2METADATA i2b2',rowCt,stepCt,'Done') into rtnCd;
+	--select cz_write_audit(jobId,databaseName,procedureName,'Deleted path from I2B2METADATA i2b2',rowCt,stepCt,'Done') into rtnCd;
 
 	--	Insert new node
 	
@@ -108,7 +108,7 @@ BEGIN
 	);
 	--get diagnostics rowCt := ROW_COUNT;
 	--stepCt := stepCt + 1;
-	--select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Inserted concept for path into I2B2DEMODATA concept_dimension',rowCt,stepCt,'Done') into rtnCD;
+	--select cz_write_audit(jobId,databaseName,procedureName,'Inserted concept for path into I2B2DEMODATA concept_dimension',rowCt,stepCt,'Done') into rtnCD;
 
 	--I2B2
 	INSERT INTO i2b2metadata.I2B2
@@ -140,12 +140,12 @@ BEGIN
 	CONCEPT_PATH = path;
 	--get diagnostics rowCt := ROW_COUNT;
 	--stepCt := stepCt + 1;
-	--select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Inserted path into I2B2METADATA i2b2',rowCt,stepCt,'Done') into rtnCd;
+	--select cz_write_audit(jobId,databaseName,procedureName,'Inserted path into I2B2METADATA i2b2',rowCt,stepCt,'Done') into rtnCd;
 		
       ---Cleanup OVERALL JOB if this proc is being run standalone
 	IF newJobFlag = 1
 	THEN
-		select tm_cz.cz_end_audit (jobID, 'SUCCESS') into rtnCD;
+		select cz_end_audit (jobID, 'SUCCESS') into rtnCD;
 	END IF;
 
 	return 1;
@@ -155,9 +155,9 @@ BEGIN
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
 		--Handle errors.
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		--End Proc
-		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return -16;
 
   
@@ -165,8 +165,8 @@ END;
 
 $BODY$
   LANGUAGE plpgsql VOLATILE SECURITY DEFINER
+  SET search_path FROM CURRENT
   COST 100;
-ALTER FUNCTION tm_cz.i2b2_add_node(character varying, character varying, character varying, numeric) SET search_path=tm_cz, i2b2metadata, i2b2demodata, pg_temp;
 
-ALTER FUNCTION tm_cz.i2b2_add_node(character varying, character varying, character varying, numeric)
+ALTER FUNCTION i2b2_add_node(character varying, character varying, character varying, numeric)
   OWNER TO postgres;

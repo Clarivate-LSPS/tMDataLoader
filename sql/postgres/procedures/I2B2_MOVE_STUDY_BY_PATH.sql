@@ -1,7 +1,7 @@
---DROP FUNCTION tm_cz.i2b2_move_study_by_path(character varying,character varying,numeric);
+--DROP FUNCTION i2b2_move_study_by_path(character varying,character varying,numeric);
 
 CREATE OR REPLACE
-FUNCTION TM_CZ.I2B2_MOVE_STUDY_BY_PATH
+FUNCTION I2B2_MOVE_STUDY_BY_PATH
   (old_path_in  CHARACTER VARYING,
    new_path_in  CHARACTER VARYING,
    currentJobID NUMERIC DEFAULT -1
@@ -48,20 +48,20 @@ FUNCTION TM_CZ.I2B2_MOVE_STUDY_BY_PATH
     newJobFlag := 0; -- False (Default)
 
     jobID := currentJobID;
-    databaseName := 'TM_CZ';
+    databaseName := current_schema();
     procedureName := 'I2B2_MOVE_STUDY_BY_PATH';
 
 --If Job ID does not exist, then this is a single procedure run and we need to create it
     IF (jobID IS NULL OR jobID < 1)
     THEN
       newJobFlag := 1; -- True
-      select tm_cz.cz_start_audit (procedureName, databaseName) into jobID;
+      select cz_start_audit (procedureName, databaseName) into jobID;
     END IF;
 
     stepCt := 0;
     stepCt := stepCt + 1;
     tText := 'Start i2b2_move_study_by_path from ' || old_path || ' to ' || new_path;
-    select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Starting i2b2_process_snp_data',0,stepCt,'Done') into rtnCd;
+    select cz_write_audit(jobId,databaseName,procedureName,'Starting i2b2_process_snp_data',0,stepCt,'Done') into rtnCd;
 
 
 
@@ -72,9 +72,9 @@ FUNCTION TM_CZ.I2B2_MOVE_STUDY_BY_PATH
     IF old_path = '' or new_path=''
     THEN
       stepCt := stepCt + 1;
-      select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'New or old path is empty. Please check input parameters',0,stepCt,'Done') into rtnCd;
-      select tm_cz.cz_error_handler (jobID, procedureName, '-1', 'Application raised error') into rtnCd;
-      select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+      select cz_write_audit(jobId,databaseName,procedureName,'New or old path is empty. Please check input parameters',0,stepCt,'Done') into rtnCd;
+      select cz_error_handler (jobID, procedureName, '-1', 'Application raised error') into rtnCd;
+      select cz_end_audit (jobID, 'FAIL') into rtnCd;
       return -16;
     END IF;
 
@@ -82,9 +82,9 @@ FUNCTION TM_CZ.I2B2_MOVE_STUDY_BY_PATH
     IF old_path = new_path
     THEN
       stepCt := stepCt + 1;
-      select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Please select different old and new paths',0,stepCt,'Done') into rtnCd;
-      select tm_cz.cz_error_handler (jobID, procedureName, '-1', 'Application raised error') into rtnCd;
-      select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+      select cz_write_audit(jobId,databaseName,procedureName,'Please select different old and new paths',0,stepCt,'Done') into rtnCd;
+      select cz_error_handler (jobID, procedureName, '-1', 'Application raised error') into rtnCd;
+      select cz_end_audit (jobID, 'FAIL') into rtnCd;
       return -16;
     END IF;
     -- check old root node exists
@@ -97,9 +97,9 @@ FUNCTION TM_CZ.I2B2_MOVE_STUDY_BY_PATH
     IF rowsExists = 0
     THEN
       stepCt := stepCt + 1;
-      select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Please select exists study path to move',0,stepCt,'Done') into rtnCd;
-      select tm_cz.cz_error_handler (jobID, procedureName, '-1', 'Application raised error') into rtnCd;
-      select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+      select cz_write_audit(jobId,databaseName,procedureName,'Please select exists study path to move',0,stepCt,'Done') into rtnCd;
+      select cz_error_handler (jobID, procedureName, '-1', 'Application raised error') into rtnCd;
+      select cz_end_audit (jobID, 'FAIL') into rtnCd;
       return -16;
     END IF;
 
@@ -196,14 +196,14 @@ FUNCTION TM_CZ.I2B2_MOVE_STUDY_BY_PATH
           errorNumber := SQLSTATE;
           errorMessage := SQLERRM;
           --Handle errors.
-          select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+          select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
           --End Proc
-          select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+          select cz_end_audit (jobID, 'FAIL') into rtnCd;
           return -16;
       end;
 
       stepCt := stepCt + 1;
-      select tm_cz.cz_write_audit(jobId, databaseName, procedureName, 'Create new root node in table_access', rowCt, stepCt,
+      select cz_write_audit(jobId, databaseName, procedureName, 'Create new root node in table_access', rowCt, stepCt,
                      'Done')  into rtnCd;
 
 
@@ -278,15 +278,15 @@ FUNCTION TM_CZ.I2B2_MOVE_STUDY_BY_PATH
           errorNumber := SQLSTATE;
           errorMessage := SQLERRM;
           --Handle errors.
-          select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+          select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
           --End Proc
-          select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+          select cz_end_audit (jobID, 'FAIL') into rtnCd;
           return -16;
       end;
 
 
       stepCt := stepCt + 1;
-      select tm_cz.cz_write_audit(jobId, databaseName, procedureName, 'Create new root node in i2b2', rowCt, stepCt, 'Done')  into rtnCd;
+      select cz_write_audit(jobId, databaseName, procedureName, 'Create new root node in i2b2', rowCt, stepCt, 'Done')  into rtnCd;
 
 
 -- create new root in i2b2_secure
@@ -346,14 +346,14 @@ FUNCTION TM_CZ.I2B2_MOVE_STUDY_BY_PATH
           errorNumber := SQLSTATE;
           errorMessage := SQLERRM;
           --Handle errors.
-          select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+          select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
           --End Proc
-          select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+          select cz_end_audit (jobID, 'FAIL') into rtnCd;
           return -16;
       end;
 
       stepCt := stepCt + 1;
-      select tm_cz.cz_write_audit(jobId, databaseName, procedureName, 'Create new root node in i2b2_secure', rowCt, stepCt,
+      select cz_write_audit(jobId, databaseName, procedureName, 'Create new root node in i2b2_secure', rowCt, stepCt,
                      'Done')  into rtnCd;
 
 
@@ -387,14 +387,14 @@ FUNCTION TM_CZ.I2B2_MOVE_STUDY_BY_PATH
           errorNumber := SQLSTATE;
           errorMessage := SQLERRM;
           --Handle errors.
-          select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+          select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
           --End Proc
-          select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+          select cz_end_audit (jobID, 'FAIL') into rtnCd;
           return -16;
       end;
 
       stepCt := stepCt + 1;
-      select tm_cz.cz_write_audit(jobId, databaseName, procedureName, 'Create new root node in i2b2demodata.concept_dimension', rowCt, stepCt,
+      select cz_write_audit(jobId, databaseName, procedureName, 'Create new root node in i2b2demodata.concept_dimension', rowCt, stepCt,
                      'Done')  into rtnCd;
 
     END IF;
@@ -431,14 +431,14 @@ FUNCTION TM_CZ.I2B2_MOVE_STUDY_BY_PATH
           errorNumber := SQLSTATE;
           errorMessage := SQLERRM;
           --Handle errors.
-          select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+          select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
           --End Proc
-          select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+          select cz_end_audit (jobID, 'FAIL') into rtnCd;
           return -16;
       end;
 
       stepCt := stepCt + 1;
-      select tm_cz.cz_write_audit(jobId, databaseName, procedureName, 'Remove old root node from i2b2, i2b2_secure, table_access',
+      select cz_write_audit(jobId, databaseName, procedureName, 'Remove old root node from i2b2, i2b2_secure, table_access',
                      rowCt, stepCt, 'Done')  into rtnCd;
 
 
@@ -508,7 +508,7 @@ FUNCTION TM_CZ.I2B2_MOVE_STUDY_BY_PATH
 
                         stepCt := stepCt + 1;
                         get diagnostics rowCt := ROW_COUNT;
-                        select tm_cz.cz_write_audit(jobId, databaseName, procedureName, 'Remove ' || current_path || ' from i2b2metadata.i2b2',
+                        select cz_write_audit(jobId, databaseName, procedureName, 'Remove ' || current_path || ' from i2b2metadata.i2b2',
                                      rowCt, stepCt,
                                      'Done') into rtnCd;
                       END IF;
@@ -528,7 +528,7 @@ FUNCTION TM_CZ.I2B2_MOVE_STUDY_BY_PATH
 
                         stepCt := stepCt + 1;
                         get diagnostics rowCt := ROW_COUNT;
-                        select tm_cz.cz_write_audit(jobId, databaseName, procedureName,
+                        select cz_write_audit(jobId, databaseName, procedureName,
                                      'Remove ' || current_path || ' from i2b2metadata.i2b2_secure', rowCt, stepCt,
                                      'Done') into rtnCd;
                       END IF;
@@ -549,7 +549,7 @@ FUNCTION TM_CZ.I2B2_MOVE_STUDY_BY_PATH
 
                         stepCt := stepCt + 1;
                         get diagnostics rowCt := ROW_COUNT;
-                        select tm_cz.cz_write_audit(jobId, databaseName, procedureName, 'Remove ' || current_path || ' i2b2demodata.concept_counts',
+                        select cz_write_audit(jobId, databaseName, procedureName, 'Remove ' || current_path || ' i2b2demodata.concept_counts',
                                        rowCt, stepCt,
                                        'Done') into rtnCd;
                       END IF;
@@ -570,7 +570,7 @@ FUNCTION TM_CZ.I2B2_MOVE_STUDY_BY_PATH
 
                         stepCt := stepCt + 1;
                         get diagnostics rowCt := ROW_COUNT;
-                        select tm_cz.cz_write_audit(jobId, databaseName, procedureName,
+                        select cz_write_audit(jobId, databaseName, procedureName,
                                      'Remove ' || current_path || ' i2b2demodata.concept_dimension', rowCt, stepCt,
                                      'Done') into rtnCd;
                       END IF;
@@ -584,9 +584,9 @@ FUNCTION TM_CZ.I2B2_MOVE_STUDY_BY_PATH
                           errorNumber := SQLSTATE;
                           errorMessage := SQLERRM;
                           --Handle errors.
-                          select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+                          select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
                           --End Proc
-                          select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+                          select cz_end_audit (jobID, 'FAIL') into rtnCd;
                           return -16;
                   end;
 
@@ -617,14 +617,14 @@ FUNCTION TM_CZ.I2B2_MOVE_STUDY_BY_PATH
           errorNumber := SQLSTATE;
           errorMessage := SQLERRM;
           --Handle errors.
-          select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+          select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
           --End Proc
-          select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+          select cz_end_audit (jobID, 'FAIL') into rtnCd;
           return -16;
     end;
 
     stepCt := stepCt + 1;
-    select tm_cz.cz_write_audit(jobId, databaseName, procedureName, 'Rename paths in i2b2 and i2b2_secure', rowCt, stepCt,
+    select cz_write_audit(jobId, databaseName, procedureName, 'Rename paths in i2b2 and i2b2_secure', rowCt, stepCt,
                    'Done') into rtnCd;
 
 
@@ -643,14 +643,14 @@ FUNCTION TM_CZ.I2B2_MOVE_STUDY_BY_PATH
           errorNumber := SQLSTATE;
           errorMessage := SQLERRM;
           --Handle errors.
-          select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+          select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
           --End Proc
-          select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+          select cz_end_audit (jobID, 'FAIL') into rtnCd;
           return -16;
     end;
 
     stepCt := stepCt + 1;
-    select tm_cz.cz_write_audit(jobId, databaseName, procedureName, 'Update c_name in i2b2 and i2b2_secure', rowCt, stepCt,
+    select cz_write_audit(jobId, databaseName, procedureName, 'Update c_name in i2b2 and i2b2_secure', rowCt, stepCt,
                    'Done') into rtnCd;
 
 --rename paths in concept_dimension
@@ -665,14 +665,14 @@ FUNCTION TM_CZ.I2B2_MOVE_STUDY_BY_PATH
           errorNumber := SQLSTATE;
           errorMessage := SQLERRM;
           --Handle errors.
-          select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+          select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
           --End Proc
-          select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+          select cz_end_audit (jobID, 'FAIL') into rtnCd;
           return -16;
     end;
 
     stepCt := stepCt + 1;
-    select tm_cz.cz_write_audit(jobId, databaseName, procedureName, 'Rename paths in concept_dimension', rowCt, stepCt,
+    select cz_write_audit(jobId, databaseName, procedureName, 'Rename paths in concept_dimension', rowCt, stepCt,
                    'Done') into rtnCd;
 
 -- rename old_root_node in concept_counts
@@ -686,14 +686,14 @@ FUNCTION TM_CZ.I2B2_MOVE_STUDY_BY_PATH
           errorNumber := SQLSTATE;
           errorMessage := SQLERRM;
           --Handle errors.
-          select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+          select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
           --End Proc
-          select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+          select cz_end_audit (jobID, 'FAIL') into rtnCd;
           return -16;
     end;
 
     stepCt := stepCt + 1;
-    select tm_cz.cz_write_audit(jobId, databaseName, procedureName, 'Update parent_concept_path in concept_counts', rowCt,
+    select cz_write_audit(jobId, databaseName, procedureName, 'Update parent_concept_path in concept_counts', rowCt,
                    stepCt, 'Done') into rtnCd;
 -- update concept_counts
     begin
@@ -708,14 +708,14 @@ FUNCTION TM_CZ.I2B2_MOVE_STUDY_BY_PATH
           errorNumber := SQLSTATE;
           errorMessage := SQLERRM;
           --Handle errors.
-          select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+          select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
           --End Proc
-          select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+          select cz_end_audit (jobID, 'FAIL') into rtnCd;
           return -16;
     end;
 
     stepCt := stepCt + 1;
-    select tm_cz.cz_write_audit(jobId, databaseName, procedureName, 'Rename paths in concept_counts', rowCt, stepCt, 'Done') into rtnCd;
+    select cz_write_audit(jobId, databaseName, procedureName, 'Rename paths in concept_counts', rowCt, stepCt, 'Done') into rtnCd;
 
   IF new_level_num > old_level_num
     THEN
@@ -797,14 +797,14 @@ FUNCTION TM_CZ.I2B2_MOVE_STUDY_BY_PATH
                     errorNumber := SQLSTATE;
                     errorMessage := SQLERRM;
                     --Handle errors.
-                    select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+                    select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
                     --End Proc
-                    select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+                    select cz_end_audit (jobID, 'FAIL') into rtnCd;
                     return -16;
                   end;
 
                   stepCt := stepCt + 1;
-                  select tm_cz.cz_write_audit(jobId, databaseName, procedureName,
+                  select cz_write_audit(jobId, databaseName, procedureName,
                                  'Insert ' || current_path || ' into i2b2demodata.concept_dimension', rowCt, stepCt,
                                  'Done') into rtnCd;
 
@@ -896,14 +896,14 @@ FUNCTION TM_CZ.I2B2_MOVE_STUDY_BY_PATH
                       errorNumber := SQLSTATE;
                       errorMessage := SQLERRM;
                       --Handle errors.
-                      select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+                      select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
                       --End Proc
-                      select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+                      select cz_end_audit (jobID, 'FAIL') into rtnCd;
                       return -16;
                   end;
 
                   stepCt := stepCt + 1;
-                  select tm_cz.cz_write_audit(jobId, databaseName, procedureName,
+                  select cz_write_audit(jobId, databaseName, procedureName,
                                  'Insert ' || current_path || ' into i2b2metadata.i2b2', rowCt, stepCt,
                                  'Done') into rtnCd;
 
@@ -984,14 +984,14 @@ FUNCTION TM_CZ.I2B2_MOVE_STUDY_BY_PATH
                       errorNumber := SQLSTATE;
                       errorMessage := SQLERRM;
                       --Handle errors.
-                      select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+                      select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
                       --End Proc
-                      select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+                      select cz_end_audit (jobID, 'FAIL') into rtnCd;
                       return -16;
                   end;
 
                   stepCt := stepCt + 1;
-                  select tm_cz.cz_write_audit(jobId, databaseName, procedureName,
+                  select cz_write_audit(jobId, databaseName, procedureName,
                                  'Insert ' || current_path || ' into i2b2metadata.i2b2_secure', rowCt, stepCt,
                                  'Done') into rtnCd;
                 END IF;
@@ -1007,14 +1007,14 @@ FUNCTION TM_CZ.I2B2_MOVE_STUDY_BY_PATH
                       errorNumber := SQLSTATE;
                       errorMessage := SQLERRM;
                       --Handle errors.
-                      select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+                      select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
                       --End Proc
-                      select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+                      select cz_end_audit (jobID, 'FAIL') into rtnCd;
                       return -16;
                 end;
 
                 stepCt := stepCt + 1;
-                select tm_cz.cz_write_audit(jobId, databaseName, procedureName,
+                select cz_write_audit(jobId, databaseName, procedureName,
                 'Update parent path of ' || current_path || ' in i2b2demodata.concept_counts',rowCt, stepCt,
                 'Done') into rtnCd;
 
@@ -1034,14 +1034,14 @@ FUNCTION TM_CZ.I2B2_MOVE_STUDY_BY_PATH
             errorNumber := SQLSTATE;
             errorMessage := SQLERRM;
             --Handle errors.
-            select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+            select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
             --End Proc
-            select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+            select cz_end_audit (jobID, 'FAIL') into rtnCd;
             return -16;
     end;
 
     stepCt := stepCt + 1;
-    select tm_cz.cz_write_audit(jobId, databaseName, procedureName,
+    select cz_write_audit(jobId, databaseName, procedureName,
                                  'Update levels in i2b2metadata.i2b2', rowCt, stepCt,
                                  'Done') into rtnCd;
 
@@ -1055,22 +1055,22 @@ FUNCTION TM_CZ.I2B2_MOVE_STUDY_BY_PATH
             errorNumber := SQLSTATE;
             errorMessage := SQLERRM;
             --Handle errors.
-            select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+            select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
             --End Proc
-            select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+            select cz_end_audit (jobID, 'FAIL') into rtnCd;
             return -16;
 
     end;
 
      stepCt := stepCt + 1;
-     select tm_cz.cz_write_audit(jobId, databaseName, procedureName,
+     select cz_write_audit(jobId, databaseName, procedureName,
                                  'Update levels in i2b2metadata.i2b2_secure', rowCt, stepCt,
                                  'Done') into rtnCd;
 
     ---Cleanup OVERALL JOB if this proc is being run standalone
     IF newJobFlag = 1
     THEN
-      select tm_cz.cz_end_audit (jobID, 'SUCCESS') into rtnCD;
+      select cz_end_audit (jobID, 'SUCCESS') into rtnCD;
     END IF;
 
     return 1;
@@ -1078,8 +1078,8 @@ FUNCTION TM_CZ.I2B2_MOVE_STUDY_BY_PATH
 
   $BODY$
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER
+SET search_path FROM CURRENT
 COST 100;
-ALTER FUNCTION tm_cz.i2b2_move_study_by_path( CHARACTER VARYING, CHARACTER VARYING, NUMERIC ) SET search_path = tm_cz, tm_lz, tm_wz, deapp, i2b2demodata, pg_temp;
 
-ALTER FUNCTION tm_cz.i2b2_move_study_by_path( CHARACTER VARYING, CHARACTER VARYING, NUMERIC )
+ALTER FUNCTION i2b2_move_study_by_path( CHARACTER VARYING, CHARACTER VARYING, NUMERIC )
 OWNER TO postgres;
