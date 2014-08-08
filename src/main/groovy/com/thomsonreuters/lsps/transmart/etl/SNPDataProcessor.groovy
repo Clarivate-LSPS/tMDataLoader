@@ -30,11 +30,11 @@ class SNPDataProcessor extends DataProcessor {
 
     @Override
     public boolean processFiles(File dir, Sql sql, Object studyInfo) {
-        sql.execute('TRUNCATE TABLE tm_lz.lt_src_mrna_subj_samp_map')
-        sql.execute('TRUNCATE TABLE tm_lz.lt_src_mrna_data')
+        sql.execute("TRUNCATE TABLE ${config.loadSchema}.lt_src_mrna_subj_samp_map")
+        sql.execute("TRUNCATE TABLE ${config.loadSchema}.lt_src_mrna_data")
 
-        sql.execute('TRUNCATE TABLE tm_lz.lt_snp_calls_by_gsm')
-        sql.execute('TRUNCATE TABLE tm_lz.lt_snp_copy_number')
+        sql.execute("TRUNCATE TABLE ${config.loadSchema}.lt_snp_calls_by_gsm")
+        sql.execute("TRUNCATE TABLE ${config.loadSchema}.lt_snp_copy_number")
 
         def platformList = [] as Set
 
@@ -51,7 +51,7 @@ class SNPDataProcessor extends DataProcessor {
                  processExpressionFile(it, sql, studyInfo)
              }*/
 
-            // Load data to tmp tables TM_LZ.LT_SNP_CALLS_BY_GSM  and TM_LZ.LT_SNP_COPY_NUMBER
+            // Load data to tmp tables LT_SNP_CALLS_BY_GSM and LT_SNP_COPY_NUMBER
             def callsFileList = studyInfo['callsFileNameList'] as List
             if (callsFileList.size() > 0) {
                 callsFileList.each { String name ->
@@ -75,12 +75,12 @@ class SNPDataProcessor extends DataProcessor {
 
     private void processSnpCallsFile(Sql sql, File f) {
         config.logger.log(LogType.MESSAGE, "Processing calls for ${f.getName()}")
-        loadFileToTable(sql, f, 'tm_lz.lt_snp_calls_by_gsm', ['GSM_NUM', 'SNP_NAME', 'SNP_CALLS'])
+        loadFileToTable(sql, f, "${config.loadSchema}.lt_snp_calls_by_gsm", ['GSM_NUM', 'SNP_NAME', 'SNP_CALLS'])
     }
 
     private void processSnpCopyNumberFile(Sql sql, File f) {
         config.logger.log(LogType.MESSAGE, "Processing copy number for ${f.getName()}")
-        loadFileToTable(sql, f, 'tm_lz.lt_snp_copy_number',
+        loadFileToTable(sql, f, "${config.loadSchema}.lt_snp_copy_number",
                 ['GSM_NUM', 'SNP_NAME', 'CHROM', 'CHROM_POS', 'COPY_NUMBER']) {
             [it[0], it[1], it[2], it[3], it[4] as double]
         }
@@ -137,7 +137,7 @@ class SNPDataProcessor extends DataProcessor {
 
         sql.withTransaction {
             sql.withBatch(100, """\
-				INSERT into tm_lz.lt_src_mrna_subj_samp_map (TRIAL_NAME, SITE_ID, 
+				INSERT into ${config.loadSchema}.lt_src_mrna_subj_samp_map (TRIAL_NAME, SITE_ID,
 					SUBJECT_ID, SAMPLE_CD, PLATFORM, TISSUE_TYPE, 
 					ATTRIBUTE_1, ATTRIBUTE_2, CATEGORY_CD, SOURCE_CD) 
 				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'STD')
@@ -202,9 +202,9 @@ class SNPDataProcessor extends DataProcessor {
 
     private void loadSNPGeneMap(Sql sql, File platformFile) {
         config.logger.log('Loading SNP Gene Map')
-        sql.execute('truncate table tm_lz.lt_snp_gene_map')
+        sql.execute("truncate table ${config.loadSchema}.lt_snp_gene_map")
         config.logger.log('Processing platform file')
-        sql.withBatch(500, 'insert into tm_lz.lt_snp_gene_map (snp_name, entrez_gene_id) values (?, ?)') { st ->
+        sql.withBatch(500, "insert into ${config.loadSchema}.lt_snp_gene_map (snp_name, entrez_gene_id) values (?, ?)") { st ->
             PlatformProcessor.eachPlatformEntry(platformFile, config.logger) { entry ->
                 st.addBatch([entry.probeset_id, entry.entrez_gene_id as long])
             }
@@ -214,7 +214,7 @@ class SNPDataProcessor extends DataProcessor {
             insert into deapp.de_snp_gene_map
             (snp_name, entrez_gene_id)
             select t.snp_name, t.entrez_gene_id
-            from tm_lz.lt_snp_gene_map t
+            from ${config.loadSchema}.lt_snp_gene_map t
             left join deapp.de_snp_gene_map gm
             on gm.snp_name = t.snp_name
             where gm.snp_name is null

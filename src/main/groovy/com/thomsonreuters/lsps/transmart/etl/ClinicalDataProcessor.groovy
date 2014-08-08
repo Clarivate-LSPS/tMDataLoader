@@ -109,7 +109,7 @@ class ClinicalDataProcessor extends DataProcessor {
         // read mapping file first
         // then parse files that are specified there (to allow multiple files per study)
 
-        sql.execute('TRUNCATE TABLE tm_lz.lt_src_clinical_data')
+        sql.execute("TRUNCATE TABLE ${config.loadSchema}.lt_src_clinical_data")
         sql.commit()
 
         dir.eachFileMatch(~/(?i).+_Mapping_File\.txt/) {
@@ -144,7 +144,7 @@ class ClinicalDataProcessor extends DataProcessor {
     }
 
     private void processFileForPostgres(sql, f, fMappings) {
-        DataLoader.start(database, 'tm_lz.lt_src_clinical_data', ['STUDY_ID', 'SITE_ID', 'SUBJECT_ID', 'VISIT_NAME',
+        DataLoader.start(database, "${config.loadSchema}.lt_src_clinical_data", ['STUDY_ID', 'SITE_ID', 'SUBJECT_ID', 'VISIT_NAME',
                                                                   'DATA_LABEL', 'DATA_VALUE', 'CATEGORY_CD']) {
             st ->
                 def lineNum = processEachRow(f, fMappings) { row ->
@@ -160,7 +160,7 @@ class ClinicalDataProcessor extends DataProcessor {
 
         sql.withTransaction {
             sql.withBatch(100, """\
-					INSERT into tm_lz.lt_src_clinical_data
+					INSERT into ${config.loadSchema}.lt_src_clinical_data
 										(STUDY_ID, SITE_ID, SUBJECT_ID, VISIT_NAME, DATA_LABEL, DATA_VALUE, CATEGORY_CD)
 									VALUES (:study_id, :site_id, :subj_id, :visit_name,
 										:data_label, :data_value, :category_cd)
@@ -177,7 +177,7 @@ class ClinicalDataProcessor extends DataProcessor {
 
     private boolean trySetStudyId(Sql sql, studyInfo) {
 // OK, now we need to retrieve studyID & node
-        def rows = sql.rows("select study_id, count(*) as cnt from tm_lz.lt_src_clinical_data group by study_id")
+        def rows = sql.rows("select study_id, count(*) as cnt from ${config.loadSchema}.lt_src_clinical_data group by study_id")
         def rsize = rows.size()
 
         if (rsize > 0) {

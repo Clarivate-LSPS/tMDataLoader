@@ -187,7 +187,7 @@ BEGIN
 	delete from de_subject_sample_mapping where
 	  assay_id in (
 		select dssm.assay_id from
-		  TM_LZ.lt_src_mrna_subj_samp_map ltssm
+		  lt_src_mrna_subj_samp_map ltssm
 		  left join
 		  deapp.de_subject_sample_mapping dssm
 		  on
@@ -486,7 +486,7 @@ BEGIN
 			  ,a.source_cd
 			  ,TrialId as omic_source_study
 			  ,b.patient_num as omic_patient_id
-		from tm_lz.lt_src_mrna_subj_samp_map a
+		from lt_src_mrna_subj_samp_map a
 		--Joining to Pat_dim to ensure the ID's match. If not I2B2 won't work.
 		inner join patient_dimension b
 		  on regexp_replace(TrialID || ':' || nvl(a.site_id,'') || ':' || a.subject_id,'(::){1,}', ':') = b.sourcesystem_cd

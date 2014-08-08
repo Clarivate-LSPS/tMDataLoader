@@ -63,6 +63,7 @@ class VCFDataProcessor extends DataProcessor {
         String studyId = studyInfo.id as String
         cleanupVcfTrialData(sql, studyId)
         def samplesLoader = new SamplesLoader(studyId)
+        samplesLoader.loadSchema = config.loadSchema
         studyInfo.sources = []
         dir.eachFileMatch(FileType.FILES, ~/(?i).*\.vcf$/) {
             processFile(it, sql, samplesLoader, studyInfo)

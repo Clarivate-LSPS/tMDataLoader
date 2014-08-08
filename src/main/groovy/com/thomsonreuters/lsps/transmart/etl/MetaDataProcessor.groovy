@@ -34,7 +34,7 @@ class MetaDataProcessor extends DataProcessor {
 	@Override
 	public boolean processFiles(File f, Sql sql, Object studyInfo) {
 		
-		sql.execute('TRUNCATE TABLE tm_lz.lt_src_study_metadata')
+		sql.execute("TRUNCATE TABLE ${config.loadSchema}.lt_src_study_metadata")
 		
 		def lineNum = 0
 		
@@ -42,7 +42,7 @@ class MetaDataProcessor extends DataProcessor {
 		
 		sql.withTransaction {
 			sql.withBatch(100, """\
-					INSERT into tm_lz.lt_src_study_metadata
+					INSERT into ${config.loadSchema}.lt_src_study_metadata
 					(
 						STUDY_ID, 
 						TITLE, 

@@ -293,7 +293,7 @@ BEGIN
 	delete from deapp.de_snp_calls_by_gsm
 	where patient_num in (
 	  select dssm.omic_patient_id
-	  from TM_LZ.lt_src_mrna_subj_samp_map ltssm
+	  from lt_src_mrna_subj_samp_map ltssm
       inner join deapp.de_subject_sample_mapping dssm
       on dssm.trial_name     = ltssm.trial_name
         and dssm.gpl_id     = ltssm.platform
@@ -312,7 +312,7 @@ BEGIN
 	delete from deapp.de_snp_copy_number
 	where patient_num in (
 	  select dssm.omic_patient_id
-	  from TM_LZ.lt_src_mrna_subj_samp_map ltssm
+	  from lt_src_mrna_subj_samp_map ltssm
       inner join deapp.de_subject_sample_mapping dssm
       on dssm.trial_name     = ltssm.trial_name
         and dssm.gpl_id     = ltssm.platform
@@ -332,7 +332,7 @@ BEGIN
   delete from de_subject_sample_mapping where
   assay_id in (
     select dssm.assay_id from 
-      TM_LZ.lt_src_mrna_subj_samp_map ltssm
+      lt_src_mrna_subj_samp_map ltssm
       inner join deapp.de_subject_sample_mapping dssm
       on dssm.trial_name     = ltssm.trial_name
         and dssm.gpl_id     = ltssm.platform
@@ -876,7 +876,7 @@ BEGIN
 	insert into deapp.DE_SNP_CALLS_BY_GSM
 	(gsm_num, snp_name, snp_calls, patient_num) 
 	select ltscbg.gsm_num, ltscbg.snp_name, ltscbg.snp_calls, sm.omic_patient_id from 
-		tm_lz.lt_snp_calls_by_gsm ltscbg
+		lt_snp_calls_by_gsm ltscbg
 		inner join deapp.de_subject_sample_mapping sm
 		on sm.sample_cd = ltscbg.gsm_num
 		where sm.trial_name = TrialID;
@@ -888,7 +888,7 @@ BEGIN
   	insert into deapp.DE_SNP_COPY_NUMBER
 	(snp_name, chrom, chrom_pos, copy_number, patient_num)
 	select lscn.snp_name, lscn.chrom, lscn.chrom_pos, power(2, lscn.copy_number) as copy_number, sm.omic_patient_id as patient_num from
-		tm_lz.LT_SNP_COPY_NUMBER lscn
+		LT_SNP_COPY_NUMBER lscn
 		inner join deapp.de_subject_sample_mapping sm
 		on sm.sample_cd = lscn.gsm_num
 		where sm.trial_name = TrialID;

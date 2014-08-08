@@ -19,10 +19,10 @@ class I2B2LoadSamplesTest extends ConfigAwareTestCase {
     }
 
     void testItLoadSamples() {
-        def sampleLoader = new SamplesLoader(trialId)
-        sampleLoader.addSample('LDR+PLATFORM+TISSUETYPE', 'LDR_TST_SUBJ_001', 'LDR_TST_SMP_001', platform)
-        sampleLoader.addSample('LDR+PLATFORM+TISSUETYPE', 'LDR_TST_SUBJ_002', 'LDR_TST_SMP_002', null, tissueType: 'Blood')
-        sampleLoader.loadSamples(db)
+        def samplesLoader = new SamplesLoader(trialId)
+        samplesLoader.addSample('LDR+PLATFORM+TISSUETYPE', 'LDR_TST_SUBJ_001', 'LDR_TST_SMP_001', platform)
+        samplesLoader.addSample('LDR+PLATFORM+TISSUETYPE', 'LDR_TST_SUBJ_002', 'LDR_TST_SMP_002', null, tissueType: 'Blood')
+        samplesLoader.loadSamples(db)
 
         insertIfNotExists('deapp.de_gpl_info', [platform: platform, title: 'Loader Test Platform',
                                                 organism: 'Homo Sapiens', marker_type: 'Gene Expression'])

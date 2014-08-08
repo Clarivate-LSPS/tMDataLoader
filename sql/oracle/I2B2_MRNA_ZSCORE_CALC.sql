@@ -1,5 +1,10 @@
+SET DEFINE ON;
 
-  CREATE OR REPLACE PROCEDURE "I2B2_MRNA_ZSCORE_CALC"
+DEFINE TM_WZ_SCHEMA='TM_WZ';
+DEFINE TM_LZ_SCHEMA='TM_LZ';
+DEFINE TM_CZ_SCHEMA='TM_CZ';
+
+CREATE OR REPLACE PROCEDURE "I2B2_MRNA_ZSCORE_CALC"
 (
   trial_id VARCHAR2
  ,run_type varchar2 := 'L'
@@ -120,10 +125,10 @@ BEGIN
 	from all_indexes
 	where table_name = 'WT_SUBJECT_MICROARRAY_LOGS'
 	  and index_name = 'WT_SUBJECT_MRNA_LOGS_I1'
-	  and owner = 'TM_WZ';
+	  and owner = '&TM_WZ_SCHEMA';
 
 	if idxExists = 1 then
-		execute immediate('drop index tm_wz.wt_subject_mrna_logs_i1');
+		execute immediate('drop index "&TM_WZ_SCHEMA".wt_subject_mrna_logs_i1');
 	end if;
 
 	select count(*)
@@ -131,14 +136,14 @@ BEGIN
 	from all_indexes
 	where table_name = 'WT_SUBJECT_MICROARRAY_CALCS'
 	  and index_name = 'WT_SUBJECT_MRNA_CALCS_I1'
-	  and owner = 'TM_WZ';
+	  and owner = '&TM_WZ_SCHEMA';
 
 	if idxExists = 1 then
-		execute immediate('drop index tm_wz.wt_subject_mrna_calcs_i1');
+		execute immediate('drop index "&TM_WZ_SCHEMA".wt_subject_mrna_calcs_i1');
 	end if;
 
 	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Truncate work tables in TM_WZ',0,stepCt,'Done');
+	cz_write_audit(jobId,databaseName,procedureName,'Truncate work tables in &TM_WZ_SCHEMA',0,stepCt,'Done');
 
 	--	if dataType = L, use intensity_value as log_intensity
 	--	if dataType = R, always use intensity_value
@@ -231,13 +236,13 @@ BEGIN
 	end if;
 
 	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Loaded data for trial in TM_WZ wt_subject_microarray_logs',SQL%ROWCOUNT,stepCt,'Done');
+	cz_write_audit(jobId,databaseName,procedureName,'Loaded data for trial in &TM_WZ_SCHEMA wt_subject_microarray_logs',SQL%ROWCOUNT,stepCt,'Done');
 
 	commit;
 
-	execute immediate('create index tm_wz.wt_subject_mrna_logs_i1 on tm_wz.wt_subject_microarray_logs (trial_name, probeset_id) nologging');
+	execute immediate('create index "&TM_WZ_SCHEMA".wt_subject_mrna_logs_i1 on "&TM_WZ_SCHEMA".wt_subject_microarray_logs (trial_name, probeset_id) nologging');
 	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Create index on TM_WZ wt_subject_microarray_logs',0,stepCt,'Done');
+	cz_write_audit(jobId,databaseName,procedureName,'Create index on &TM_WZ_SCHEMA wt_subject_microarray_logs',0,stepCt,'Done');
 
 --	calculate mean_intensity, median_intensity, and stddev_intensity per experiment, probe
 
@@ -257,13 +262,13 @@ BEGIN
 	group by d.trial_name
 			,d.probeset_id;
 	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Calculate intensities for trial in TM_WZ wt_subject_microarray_calcs',SQL%ROWCOUNT,stepCt,'Done');
+	cz_write_audit(jobId,databaseName,procedureName,'Calculate intensities for trial in &TM_WZ_SCHEMA wt_subject_microarray_calcs',SQL%ROWCOUNT,stepCt,'Done');
 
 	commit;
 
-	execute immediate('create index tm_wz.wt_subject_mrna_calcs_i1 on tm_wz.wt_subject_microarray_calcs (trial_name, probeset_id) nologging');
+	execute immediate('create index "&TM_WZ_SCHEMA".wt_subject_mrna_calcs_i1 on "&TM_WZ_SCHEMA".wt_subject_microarray_calcs (trial_name, probeset_id) nologging');
 	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Create index on TM_WZ wt_subject_microarray_calcs',0,stepCt,'Done');
+	cz_write_audit(jobId,databaseName,procedureName,'Create index on &TM_WZ_SCHEMA wt_subject_microarray_calcs',0,stepCt,'Done');
 
 -- calculate zscore
 
@@ -295,7 +300,7 @@ BEGIN
 		,wt_subject_microarray_calcs c
     where d.probeset_id = c.probeset_id;
 	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Calculate Z-Score for trial in TM_WZ wt_subject_microarray_med',SQL%ROWCOUNT,stepCt,'Done');
+	cz_write_audit(jobId,databaseName,procedureName,'Calculate Z-Score for trial in "&TM_WZ_SCHEMA" wt_subject_microarray_med',SQL%ROWCOUNT,stepCt,'Done');
 
     commit;
 
@@ -427,7 +432,7 @@ BEGIN
 	  execute immediate('truncate table wt_subject_microarray_med');
 
    	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Truncate work tables in TM_WZ',0,stepCt,'Done');
+	cz_write_audit(jobId,databaseName,procedureName,'Truncate work tables in &TM_WZ_SCHEMA',0,stepCt,'Done');
 
     ---Cleanup OVERALL JOB if this proc is being run standalone
   IF newJobFlag = 1
