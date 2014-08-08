@@ -205,7 +205,7 @@ BEGIN
 		
 	--	truncate wrk_clinical_data and load data from external file
 	
-	execute immediate('truncate table tm_wz.wrk_clinical_data');
+	execute immediate('truncate table wrk_clinical_data');
 	begin
     execute immediate('drop index "TM_WZ"."IDX_WRK_CD"');
   exception
@@ -510,7 +510,7 @@ BEGIN
 
 -- determine numeric data types
 
-	execute immediate('truncate table tm_wz.wt_num_data_types');
+	execute immediate('truncate table wt_num_data_types');
   
 	insert into wt_num_data_types
 	(category_cd
@@ -534,7 +534,7 @@ BEGIN
 	--	Check if any duplicate records of key columns (site_id, subject_id, visit_name, data_label, category_cd) for numeric data
 	--	exist.  Raise error if yes
 	
-	execute immediate('truncate table tm_wz.wt_clinical_data_dups');
+	execute immediate('truncate table wt_clinical_data_dups');
 	
 	insert into wt_clinical_data_dups
 	(site_id
@@ -596,7 +596,7 @@ BEGIN
 
 	-- Build all needed leaf nodes in one pass for both numeric and text nodes
  
-	execute immediate('truncate table tm_wz.wt_trial_nodes');
+	execute immediate('truncate table wt_trial_nodes');
 	
 	insert /*+ APPEND parallel(wt_trial_nodes, 4) */ into wt_trial_nodes nologging
 	(leaf_node
@@ -656,7 +656,7 @@ BEGIN
 	cz_write_audit(jobId,databaseName,procedureName,'Updated node name for leaf nodes',SQL%ROWCOUNT,stepCt,'Done');
 	commit;	
 	
-	-- execute immediate('analyze table tm_wz.wt_trial_nodes compute statistics');
+	-- execute immediate('analyze table wt_trial_nodes compute statistics');
 	
 	--	insert subjects into patient_dimension if needed
 	
@@ -926,8 +926,8 @@ BEGIN
         exception
           when index_not_exists then null;
     end; 
-    execute immediate('analyze table tm_wz.wt_trial_nodes compute statistics');
-    execute immediate('analyze table tm_wz.WRK_CLINICAL_DATA compute statistics');
+    execute immediate('analyze table wt_trial_nodes compute statistics');
+    execute immediate('analyze table WRK_CLINICAL_DATA compute statistics');
   end;
 
   --execute immediate('DROP INDEX "I2B2DEMODATA"."OF_CTX_BLOB"'); 
@@ -1041,13 +1041,13 @@ BEGIN
 	commit;
   
   	--July 2013. Performance fix by TR.
-   execute immediate('truncate table TM_WZ.I2B2_LOAD_PATH_WITH_COUNT'); 
+   execute immediate('truncate table I2B2_LOAD_PATH_WITH_COUNT');
    
-   insert into TM_WZ.i2b2_load_path_with_count  
+   insert into i2b2_load_path_with_count
    select /*+ parallel(4) */ p.c_fullname, count(*) 
 				 from i2b2 p
 					--,i2b2 c
-					,TM_WZ.I2B2_LOAD_TREE_FULL tree
+					,I2B2_LOAD_TREE_FULL tree
 				 where p.c_fullname like topNode || '%'
 				   --and c.c_fullname like p.c_fullname || '%'
 					and p.rowid = tree.IDROOT 
@@ -1055,7 +1055,7 @@ BEGIN
 				 group by P.C_FULLNAME;
     
 	commit;
-  execute immediate('analyze table TM_WZ.I2B2_LOAD_PATH_WITH_COUNT compute statistics');
+  execute immediate('analyze table I2B2_LOAD_PATH_WITH_COUNT compute statistics');
   execute immediate('analyze table I2B2METADATA.I2B2 compute statistics');
   
   	stepCt := stepCt + 1;
@@ -1072,7 +1072,7 @@ BEGIN
 						 case when u.c_fullname = topNode and highlight_study = 'Y'
 							  then 'J' else substr(a.c_visualattributes,3,1) end
 			   end
-		from TM_WZ.i2b2_load_path_with_count u
+		from i2b2_load_path_with_count u
 		where a.c_fullname = u.c_fullname)
 	where EXISTS
 		(select 1 from i2b2 x

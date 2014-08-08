@@ -53,25 +53,25 @@ BEGIN
  
  -- The slow way of loading tree into I2B2_LOAD_TREE_FULL
  
-	execute immediate('truncate table TM_WZ.I2B2_LOAD_PATH');
-	INSERT INTO "TM_WZ"."I2B2_LOAD_PATH"(PATH, RECORD_ID)
+	execute immediate('truncate table I2B2_LOAD_PATH');
+	INSERT INTO "I2B2_LOAD_PATH"(PATH, RECORD_ID)
 	SELECT  SUBSTR(p.c_fullname, LENGTH(path), LENGTH(p.c_fullname) - LENGTH(path) + 1), p.rowid
 	from i2b2 p 
 	where p.c_fullname like path || '%';
 	
 	commit; 
 	
-	execute immediate('analyze table TM_WZ.I2B2_LOAD_PATH compute statistics');
-	execute immediate('truncate table TM_WZ.I2B2_LOAD_TREE_FULL');
+	execute immediate('analyze table I2B2_LOAD_PATH compute statistics');
+	execute immediate('truncate table I2B2_LOAD_TREE_FULL');
 
-	INSERT INTO "TM_WZ"."I2B2_LOAD_TREE_FULL" 
+	INSERT INTO "I2B2_LOAD_TREE_FULL"
 	SELECT /*+ parallel(8) */ p.RECORD_ID, c.RECORD_ID
-	from "TM_WZ"."I2B2_LOAD_PATH" p ,"TM_WZ"."I2B2_LOAD_PATH" c
+	from "I2B2_LOAD_PATH" p ,"I2B2_LOAD_PATH" c
 	where c.PATH like p.PATH || '%';
 	  
 	commit; 
     
-	execute immediate('analyze table TM_WZ.I2B2_LOAD_TREE_FULL compute statistics');
+	execute immediate('analyze table I2B2_LOAD_TREE_FULL compute statistics');
 
  
 

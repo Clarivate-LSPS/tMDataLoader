@@ -141,7 +141,7 @@ END IF;
 	    ,i2b2 la
 		,observation_fact tpm
 		,patient_dimension p
-		,TM_WZ.I2B2_LOAD_TREE_FULL tree
+		,I2B2_LOAD_TREE_FULL tree
 	where fa.c_fullname like path || '%'
 	  and substr(fa.c_visualattributes,2,1) != 'H'
 	  --and la.c_fullname like fa.c_fullname || '%'
