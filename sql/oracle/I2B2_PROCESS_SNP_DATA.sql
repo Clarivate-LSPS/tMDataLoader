@@ -350,12 +350,12 @@ BEGIN
 
 --	truncate tmp node table
 
-	execute immediate('truncate table tm_wz.wt_mrna_nodes');
+	execute immediate('truncate table wt_mrna_nodes');
 
 --	load temp table with leaf node path, use temp table with distinct sample_type, ATTR2, platform, and title   this was faster than doing subselect
 --	from wt_subject_mrna_data
 
-	execute immediate('truncate table tm_wz.wt_mrna_node_values');
+	execute immediate('truncate table wt_mrna_node_values');
 
 	insert into wt_mrna_node_values
 	(category_cd
