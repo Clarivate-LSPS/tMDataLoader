@@ -104,8 +104,10 @@ You can run it with "-h" option to get a list of all available options:
         --alt-clinical-proc <proc_name>        Name of alternative clinical   
                                                stored procedure (expert       
                                                option)                        
-        --alt-control-schema <alt_schema>      Name of alternative control    
+        --alt-control-schema <schema>          Name of alternative control    
                                                schema (TM_CZ) - expert option 
+        --alt-load-schema <schema>             Name of alternative load    
+                                               schema (TM_LZ) - expert option                                               
      -c,--config <config>                      Configuration filename         
         --data-value-first                     Put VISIT NAME after the data  
                                                value (default behavior, use to

@@ -21,6 +21,7 @@ public abstract class ConfigAwareTestCase extends GroovyTestCase {
         config = new ConfigSlurper().parse(testConfigUrl)
         config.logger = config.logger ?: new Logger([isInteractiveMode: true])
         config.controlSchema = config.controlSchema ?: 'tm_cz'
+        config.loadSchema = config.loadSchema ?: 'tm_lz'
         config.securitySymbol = config.securitySymbol ?: 'N'
     }
     private Sql _db
@@ -45,7 +46,7 @@ public abstract class ConfigAwareTestCase extends GroovyTestCase {
             tmpFile.setWritable(true, false);
             tmpFile.setExecutable(true, false);
             tmpFile.withWriter {
-                it.println("set SEARCH_PATH = tm_cz, tm_lz, tm_wz, i2b2demodata, i2b2metadata, deapp, pg_temp;")
+                it.println("set SEARCH_PATH = ${config.controlSchema}, ${config.loadSchema}, tm_wz, i2b2demodata, i2b2metadata, deapp, pg_temp;")
                 it.append(sqlFile.text)
             }
             sqlFile = tmpFile;

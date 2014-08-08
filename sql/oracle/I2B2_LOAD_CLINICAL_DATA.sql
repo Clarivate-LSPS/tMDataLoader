@@ -1,5 +1,8 @@
-SET DEFINE OFF;
--- previous line disables prompting for & prefixed values
+SET DEFINE ON;
+
+DEFINE TM_WZ_SCHEMA='TM_WZ';
+DEFINE TM_LZ_SCHEMA='TM_LZ';
+DEFINE TM_CZ_SCHEMA='TM_CZ';
 
 create or replace
 PROCEDURE                                                       "I2B2_LOAD_CLINICAL_DATA" 
@@ -19,7 +22,7 @@ AS
 	--	JEA@20111115	Reuse concept_cds, i2b2 and concept_dimension
 	--	JEA@20111201	Added join to concept_dimension when setting datatype of N and xml for i2b2
 	--	JEA@20111220	Don't delete patients that exist in de_subject_sample_mapping
-	--	JEA@20111226	Change all & to ' and ' in category_cd, data_label or data_value
+	--	JEA@20111226	Change all '&' to ' and ' in category_cd, data_label or data_value
 	--	JEA@20120103	Only check for dups for numeric data values, text won't cause problems on insert
 	--	JEA@20120103	Remove setting c_basecode to null for folders
 	--	JEA@20120104	Don't insert into observation_fact if lower-level leaf node exists
@@ -171,7 +174,7 @@ BEGIN
 	/*delete from lz_src_clinical_data
 	where study_id = TrialId;*/
 	
-	/*execute immediate('truncate table tm_lz.lz_src_clinical_data');
+	/*execute immediate('truncate table lz_src_clinical_data');
 	
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Delete existing data from lz_src_clinical_data',SQL%ROWCOUNT,stepCt,'Done');
@@ -207,7 +210,7 @@ BEGIN
 	
 	execute immediate('truncate table wrk_clinical_data');
 	begin
-    execute immediate('drop index "TM_WZ"."IDX_WRK_CD"');
+    execute immediate('drop index "&TM_WZ_SCHEMA"."IDX_WRK_CD"');
   exception
     when index_not_exists then null;
   end;
@@ -241,7 +244,7 @@ BEGIN
 	from lt_src_clinical_data
 	WHERE data_value is not null;
 	
-	execute immediate('CREATE INDEX TM_WZ.IDX_WRK_CD ON TM_WZ.WRK_CLINICAL_DATA (DATA_TYPE ASC, DATA_VALUE ASC, VISIT_NAME ASC, DATA_LABEL ASC, CATEGORY_CD ASC, USUBJID ASC)');
+	execute immediate('CREATE INDEX "&TM_WZ_SCHEMA".IDX_WRK_CD ON "&TM_WZ_SCHEMA".WRK_CLINICAL_DATA (DATA_TYPE ASC, DATA_VALUE ASC, VISIT_NAME ASC, DATA_LABEL ASC, CATEGORY_CD ASC, USUBJID ASC)');
 	
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Load lt_src_clinical_data to work table',SQL%ROWCOUNT,stepCt,'Done');
@@ -477,7 +480,7 @@ BEGIN
 */
 	--	comment out may need later
 	
-/*	--	change any % to Pct and & and + to ' and ' and _ to space in data_label only
+/*	--	change any % to Pct and '&' and + to ' and ' and _ to space in data_label only
 	
 	update wrk_clinical_data
 	set data_label=replace(replace(replace(replace(data_label,'%',' Pct'),'&',' and '),'+',' and '),'_',' ')

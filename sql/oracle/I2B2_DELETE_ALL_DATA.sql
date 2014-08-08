@@ -202,7 +202,7 @@ BEGIN
       where trial_source = trialId || ':' || sourceCd
       and assay_id in (
         select dssm.assay_id from
-        TM_LZ.lt_src_mrna_subj_samp_map ltssm
+        lt_src_mrna_subj_samp_map ltssm
         left join
         deapp.de_subject_sample_mapping dssm
         on
@@ -221,7 +221,7 @@ BEGIN
       delete from deapp.de_subject_sample_mapping where
         assay_id in (
         select dssm.assay_id from
-          TM_LZ.lt_src_mrna_subj_samp_map ltssm
+          lt_src_mrna_subj_samp_map ltssm
           left join
           deapp.de_subject_sample_mapping dssm
           on

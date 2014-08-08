@@ -79,15 +79,15 @@ class DatabaseTest extends ConfigAwareTestCase {
         sampleScript.deleteOnExit()
         def db = new Database(config.db)
         db.withSql { Sql sql->
-            sql.execute('delete from tm_lz.lt_src_mrna_subj_samp_map where trial_name = ?', 'TEST SCRIPT LOAD')
+            sql.execute("delete from ${config.loadSchema}.lt_src_mrna_subj_samp_map where trial_name = ?", 'TEST SCRIPT LOAD')
         }
-        sampleScript.write('insert into tm_lz.lt_src_mrna_subj_samp_map (trial_name) values (\'TEST SCRIPT LOAD\');\n')
+        sampleScript.write("insert into ${config.loadSchema}.lt_src_mrna_subj_samp_map (trial_name) values ('TEST SCRIPT LOAD');\n")
         if (db.databaseType == DatabaseType.Oracle) {
             sampleScript.append('exit;')
         }
         println db.runScript(sampleScript).errorStream.text
         db.withSql { Sql sql->
-            def result = sql.firstRow('select * from tm_lz.lt_src_mrna_subj_samp_map where trial_name = ?',
+            def result = sql.firstRow("select * from ${config.loadSchema}.lt_src_mrna_subj_samp_map where trial_name = ?",
                     'TEST SCRIPT LOAD')
             assertThat(result, notNullValue())
         }

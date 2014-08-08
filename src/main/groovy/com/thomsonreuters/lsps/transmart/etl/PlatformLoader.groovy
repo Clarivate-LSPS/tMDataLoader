@@ -16,7 +16,7 @@ class PlatformLoader {
     }
 
     void doLoad(File platformFile, String platform, studyInfo) {
-        sql.execute('TRUNCATE TABLE tm_lz.lt_src_deapp_annot')
+        sql.execute("TRUNCATE TABLE ${config.loadSchema}.lt_src_deapp_annot")
 
         def row = sql.firstRow("SELECT count(*) as cnt FROM " + config.controlSchema + ".annotation_deapp WHERE gpl_id=?",
                 [platform])
@@ -72,7 +72,7 @@ class PlatformLoader {
 
             sql.withTransaction {
                 sql.withBatch(500, """\
-						INSERT into tm_lz.lt_src_deapp_annot (GPL_ID,PROBE_ID,GENE_SYMBOL,GENE_ID,ORGANISM)
+						INSERT into ${config.loadSchema}.lt_src_deapp_annot (GPL_ID,PROBE_ID,GENE_SYMBOL,GENE_ID,ORGANISM)
 						VALUES (?, ?, ?, ?, ?)
 				""") {
                     stmt ->

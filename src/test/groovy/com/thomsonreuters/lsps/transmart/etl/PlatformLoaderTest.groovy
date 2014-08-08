@@ -15,7 +15,7 @@ class PlatformLoaderTest extends ConfigAwareTestCase {
         def platformInfo = sql.firstRow("select * from deapp.de_gpl_info where platform = ?", 'TST')
         assertThat(platformInfo.organism, equalTo('Homo Sapiens'))
         assertThat(platformInfo.title, equalTo('Test Platform'))
-        def cntRow = sql.firstRow('select count(*) from tm_lz.lt_src_deapp_annot where gpl_id = ?', 'TST')
+        def cntRow = sql.firstRow("select count(*) from ${config.loadSchema}.lt_src_deapp_annot where gpl_id = ?", 'TST')
         assertThat(cntRow[0] as long, equalTo(4L))
     }
 }
