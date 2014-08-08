@@ -13,7 +13,7 @@ AS
   -- JEA@20090817 - Changed processing to eliminate need for cursor
   -- JEA@20091118 - Added auditing
   -- JEA@20100507 - Changed to account for Biomarker mRNA nodes that may have different patient counts from
-  --				the Samples & Timepoints concept
+  --				the Samples and Timepoints concept
   -- JEA220100702 - Remove separate pass for Biomarker mRNA nodes, they now have unique concept codes
   -- JEA@20111025	Exclude samples from being counted as subjects
   -- JEA@20120113	Allow for third character in c_visualattributes
@@ -66,7 +66,7 @@ BEGIN
 	execute immediate('truncate table tmp_concept_counts');
 	
 	--	insert data for leaf nodes, do Biomarker mRNA nodes first so that the correct patients are joined to de_subject_sample_mapping
-	--	this is done because mRNA nodes can share concept_cds with Samples & Timepoints nodes
+	--	this is done because mRNA nodes can share concept_cds with Samples and Timepoints nodes
 	
 	insert into tmp_concept_counts
 	(leaf_path
