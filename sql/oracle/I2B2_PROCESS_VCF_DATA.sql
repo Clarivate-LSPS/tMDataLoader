@@ -1,3 +1,7 @@
+SET DEFINE ON;
+
+DEFINE TM_WZ_SCHEMA='TM_WZ';
+
 -- Function: "I2B2_PROCESS_VCF_DATA"
 --DROP PROCEDURE "I2B2_PROCESS_VCF_DATA";
 --/
@@ -204,10 +208,10 @@ BEGIN
 	cz_write_audit(jobId,databaseName,procedureName,'Delete trial from DEAPP de_subject_sample_mapping',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
 --	truncate tmp node table
-	execute immediate('truncate table wt_mrna_nodes');
+	execute immediate('truncate table "&TM_WZ_SCHEMA".wt_mrna_nodes');
 --	load temp table with leaf node path, use temp table with distinct sample_type, ATTR2, platform, and title   this was faster than doing subselect
 --	from wt_subject_mrna_data
-	execute immediate('truncate table wt_mrna_node_values');
+	execute immediate('truncate table "&TM_WZ_SCHEMA".wt_mrna_node_values');
 
 	insert into wt_mrna_node_values
 	(category_cd
@@ -769,7 +773,7 @@ BEGIN
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Load security data',0,stepCt,'Done');
 --	tag data with probeset_id from reference.probeset_deapp
-	execute immediate ('truncate table wt_subject_mrna_probeset');    */
+	execute immediate ('truncate table "&TM_WZ_SCHEMA".wt_subject_mrna_probeset');    */
 	--	note: assay_id represents a unique subject/site/sample
 
 

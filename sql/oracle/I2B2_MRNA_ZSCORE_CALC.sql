@@ -116,9 +116,9 @@ BEGIN
 
 --	truncate tmp tables
 
-	execute immediate('truncate table wt_subject_microarray_logs');
-	execute immediate('truncate table wt_subject_microarray_calcs');
-	execute immediate('truncate table wt_subject_microarray_med');
+	execute immediate('truncate table "&TM_WZ_SCHEMA".wt_subject_microarray_logs');
+	execute immediate('truncate table "&TM_WZ_SCHEMA".wt_subject_microarray_calcs');
+	execute immediate('truncate table "&TM_WZ_SCHEMA".wt_subject_microarray_med');
 
 	select count(*)
 	into idxExists
@@ -427,9 +427,9 @@ BEGIN
 
 --	cleanup tmp_ files
 
-    execute immediate('truncate table wt_subject_microarray_logs');
-	  execute immediate('truncate table wt_subject_microarray_calcs');
-	  execute immediate('truncate table wt_subject_microarray_med');
+    execute immediate('truncate table "&TM_WZ_SCHEMA".wt_subject_microarray_logs');
+	  execute immediate('truncate table "&TM_WZ_SCHEMA".wt_subject_microarray_calcs');
+	  execute immediate('truncate table "&TM_WZ_SCHEMA".wt_subject_microarray_med');
 
    	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Truncate work tables in &TM_WZ_SCHEMA',0,stepCt,'Done');
