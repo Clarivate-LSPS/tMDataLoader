@@ -30,11 +30,11 @@ class SNPDataProcessor extends DataProcessor {
 
     @Override
     public boolean processFiles(File dir, Sql sql, Object studyInfo) {
-        sql.execute("TRUNCATE TABLE ${config.loadSchema}.lt_src_mrna_subj_samp_map")
-        sql.execute("TRUNCATE TABLE ${config.loadSchema}.lt_src_mrna_data")
+        sql.execute("TRUNCATE TABLE ${config.loadSchema}.lt_src_mrna_subj_samp_map" as String)
+        sql.execute("TRUNCATE TABLE ${config.loadSchema}.lt_src_mrna_data" as String)
 
-        sql.execute("TRUNCATE TABLE ${config.loadSchema}.lt_snp_calls_by_gsm")
-        sql.execute("TRUNCATE TABLE ${config.loadSchema}.lt_snp_copy_number")
+        sql.execute("TRUNCATE TABLE ${config.loadSchema}.lt_snp_calls_by_gsm" as String)
+        sql.execute("TRUNCATE TABLE ${config.loadSchema}.lt_snp_copy_number" as String)
 
         def platformList = [] as Set
 
@@ -202,7 +202,7 @@ class SNPDataProcessor extends DataProcessor {
 
     private void loadSNPGeneMap(Sql sql, File platformFile) {
         config.logger.log('Loading SNP Gene Map')
-        sql.execute("truncate table ${config.loadSchema}.lt_snp_gene_map")
+        sql.execute("truncate table ${config.loadSchema}.lt_snp_gene_map" as String)
         config.logger.log('Processing platform file')
         sql.withBatch(500, "insert into ${config.loadSchema}.lt_snp_gene_map (snp_name, entrez_gene_id) values (?, ?)") { st ->
             PlatformProcessor.eachPlatformEntry(platformFile, config.logger) { entry ->
@@ -218,7 +218,7 @@ class SNPDataProcessor extends DataProcessor {
             left join deapp.de_snp_gene_map gm
             on gm.snp_name = t.snp_name
             where gm.snp_name is null
-        """)
+        """ as String)
         config.logger.log('SNP Gene Map loaded')
         sql.commit()
     }

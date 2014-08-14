@@ -16,7 +16,7 @@ class PlatformLoader {
     }
 
     void doLoad(File platformFile, String platform, studyInfo) {
-        sql.execute("TRUNCATE TABLE ${config.loadSchema}.lt_src_deapp_annot")
+        sql.execute("TRUNCATE TABLE ${config.loadSchema}.lt_src_deapp_annot" as String)
 
         def row = sql.firstRow("SELECT count(*) as cnt FROM " + config.controlSchema + ".annotation_deapp WHERE gpl_id=?",
                 [platform])

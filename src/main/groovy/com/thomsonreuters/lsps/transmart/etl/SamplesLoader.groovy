@@ -23,7 +23,7 @@ class SamplesLoader {
     }
 
     void loadSamples(Sql sql) {
-        sql.execute("delete from ${loadSchema}.lt_src_mrna_subj_samp_map")
+        sql.execute("delete from ${loadSchema}.lt_src_mrna_subj_samp_map" as String)
         sql.withBatch(
                 """
                 INSERT into ${loadSchema}.lt_src_mrna_subj_samp_map

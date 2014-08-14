@@ -109,7 +109,7 @@ class ClinicalDataProcessor extends DataProcessor {
         // read mapping file first
         // then parse files that are specified there (to allow multiple files per study)
 
-        sql.execute("TRUNCATE TABLE ${config.loadSchema}.lt_src_clinical_data")
+        sql.execute("TRUNCATE TABLE ${config.loadSchema}.lt_src_clinical_data" as String)
         sql.commit()
 
         dir.eachFileMatch(~/(?i).+_Mapping_File\.txt/) {
@@ -177,7 +177,7 @@ class ClinicalDataProcessor extends DataProcessor {
 
     private boolean trySetStudyId(Sql sql, studyInfo) {
 // OK, now we need to retrieve studyID & node
-        def rows = sql.rows("select study_id, count(*) as cnt from ${config.loadSchema}.lt_src_clinical_data group by study_id")
+        def rows = sql.rows("select study_id, count(*) as cnt from ${config.loadSchema}.lt_src_clinical_data group by study_id" as String)
         def rsize = rows.size()
 
         if (rsize > 0) {
