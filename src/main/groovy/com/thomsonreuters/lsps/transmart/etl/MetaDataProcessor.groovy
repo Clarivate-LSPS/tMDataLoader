@@ -34,7 +34,7 @@ class MetaDataProcessor extends DataProcessor {
 	@Override
 	public boolean processFiles(File f, Sql sql, Object studyInfo) {
 		
-		sql.execute("TRUNCATE TABLE ${config.loadSchema}.lt_src_study_metadata")
+		sql.execute("TRUNCATE TABLE ${config.loadSchema}.lt_src_study_metadata" as String)
 		
 		def lineNum = 0
 		
