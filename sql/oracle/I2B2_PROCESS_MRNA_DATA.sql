@@ -950,37 +950,28 @@ BEGIN
 
 	insert into wt_subject_mrna_probeset
 	(probeset_id
---	,expr_id
 	,intensity_value
 	,patient_id
---	,sample_cd
---	,subject_id
 	,trial_name
 	,assay_id
-	)
-	select gs.probeset_id
---		  ,sd.sample_cd
+	)      
+  select da.probeset_id
 		  ,cast(avg(cast (md.intensity_value as number(30,20))) as number) as aiv -- temporary fix to avoid overflow in some cases, need to address this properly by changing staging tables
 		  ,sd.patient_id
---		  ,sd.sample_cd
---		  ,sd.subject_id
 		  ,TrialId
 		  ,sd.assay_id
 	from de_subject_sample_mapping sd
 		,lt_src_mrna_data md
-		,probeset_deapp gs
+		,de_mrna_annotation da
 	where sd.sample_cd = md.expr_id
 	  and sd.platform = 'MRNA_AFFYMETRIX'
 	  and sd.trial_name = TrialId
 	  and sd.source_cd = sourceCd
-	  and sd.gpl_id = gs.platform
-	  and md.probeset = gs.probeset
+	  and sd.gpl_id = da.gpl_id
+	  and md.probeset = da.probe_id
 	  and decode(dataType,'R',sign(md.intensity_value),1) = 1  --	take only >0 for dataType R
-	group by gs.probeset_id
-		--  ,sd.sample_cd
+	group by da.probeset_id
 		  ,sd.patient_id
-		--  ,sd.sample_cd
-		--  ,sd.subject_id
 		  ,sd.assay_id;
 
 	pExists := SQL%ROWCOUNT;
