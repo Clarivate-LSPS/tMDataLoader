@@ -145,7 +145,7 @@ class CommandLineTool {
         if (config.loadSchema) {
             println ">>> USING ALTERNATIVE LOAD SCHEMA: ${config.loadSchema}"
         } else {
-            config.controlSchema = 'tm_lz'
+            config.loadSchema = 'tm_lz'
         }
 
         if (!config?.containsKey('visitNameFirst')) {
