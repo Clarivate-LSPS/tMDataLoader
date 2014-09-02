@@ -13,7 +13,7 @@ class DeployJar extends DefaultTask {
     }
 }
 
-task deployJar(dependsOn: jar, type: DeployJar) {
+task deployJar(dependsOn: [jar, bootRepackage], type: DeployJar) {
     archivePath = jar.archivePath
     outputFile = new File(rootDir, 'tm_etl.jar')
 }
