@@ -39,58 +39,44 @@ BEGIN
   select case when coalesce(currentjobid, -1) < 1 then cz_start_audit(procedureName, databaseName) else currentjobid end into jobId;
 
   if (path_string is not null) then
-	pathString := REGEXP_REPLACE('\' || path_string || '\','(\\){2,}', '\','g');
+	  pathString := REGEXP_REPLACE('\' || path_string || '\','(\\){2,}', '\','g');
   end if;
 
-
   if (trial_id is null) then
-	select count(distinct trial_name) into trialCount
+	  select count(distinct trial_name) into trialCount
 		from DEAPP.de_subject_sample_mapping where concept_code in (
 			select concept_cd from I2B2DEMODATA.concept_dimension where concept_path like path_string || '%' ESCAPE '`'
 		);
-	if (trialCount = 1) then
-		select distinct trial_name into TrialId
-			from DEAPP.de_subject_sample_mapping where concept_code in (
-				select concept_cd from I2B2DEMODATA.concept_dimension where concept_path like path_string || '%' ESCAPE '`'
-			);
-	ELSIF ( trialCount = 0 ) THEN
-		TrialId := null;
-	else
-		stepCt := stepCt + 1;
-		select cz_write_audit(jobId,databasename,procedurename,'Please select right path to study',1,stepCt,'ERROR') into rtnCd;
-		select cz_error_handler(jobid, procedurename, '-1', 'Application raised error') into rtnCd;
-		select cz_end_audit (jobId,'FAIL') into rtnCd;
-		return -16;
-	end if;
+    if (trialCount = 1) then
+      select distinct trial_name into TrialId
+        from DEAPP.de_subject_sample_mapping where concept_code in (
+          select concept_cd from I2B2DEMODATA.concept_dimension where concept_path like path_string || '%' ESCAPE '`'
+        );
+    ELSIF ( trialCount = 0 ) THEN
+      TrialId := null;
+    else
+      stepCt := stepCt + 1;
+      select cz_write_audit(jobId,databasename,procedurename,'Please select right path to study',1,stepCt,'ERROR') into rtnCd;
+      select cz_error_handler(jobid, procedurename, '-1', 'Application raised error') into rtnCd;
+      select cz_end_audit (jobId,'FAIL') into rtnCd;
+      return -16;
+    end if;
   else
-	TrialId := trial_id;
+	  TrialId := trial_id;
   end if;
 
   if (path_string is null) then
-    select count(concept_path) into pathCount
-      from I2B2DEMODATA.concept_dimension where concept_cd in (
-        select concept_code from DEAPP.de_subject_sample_mapping where trial_name = TrialId
-      );
-    if (pathCount = 1) then
-      WITH RECURSIVE temp1 (concept_path, PARENT_CONCEPT_PATH, level) as
-	(select concept_path, parent_concept_path, 1 from i2b2demodata.concept_counts t1 where concept_path = (
-		select concept_path
-		      from I2B2DEMODATA.concept_dimension t1
-		      where concept_cd in (
-			select concept_code from DEAPP.de_subject_sample_mapping where trial_name = TrialId
-		      )
-	      )
-	 union
-	  select t2.concept_path, t2.parent_concept_path, level + 1 from i2b2demodata.concept_counts t2
-	  inner join temp1 on (temp1.parent_concept_path = t2.concept_path)
-	)
-	select concept_path into pathString from temp1 order by parent_concept_path limit 1;
-    else
-	stepCt := stepCt + 1;
-	select cz_write_audit(jobId,databasename,procedurename,'Please select right trial to study',1,stepCt,'ERROR') into rtnCd;
-	select cz_error_handler(jobid, procedurename, '-1', 'Application raised error') into rtnCd;
-	select cz_end_audit (jobId,'FAIL') into rtnCd;
-	return -16;
+    SELECT DISTINCT ON (i2b2.sourcesystem_cd) i2b2.c_fullname into pathString
+    FROM i2b2metadata.i2b2
+    WHERE i2b2.sourcesystem_cd = TrialID
+    ORDER BY i2b2.sourcesystem_cd, char_length(i2b2.c_fullname::text);
+
+    if pathString is null then
+      stepCt := stepCt + 1;
+      select cz_write_audit(jobId,databasename,procedurename, 'No study with id ''' || TrialId || ''' found',1,stepCt,'ERROR') into rtnCd;
+      select cz_error_handler(jobid, procedurename, '-1', 'Application raised error') into rtnCd;
+      select cz_end_audit (jobId,'FAIL') into rtnCd;
+      return -16;
     end if;
   else
     pathString := path_string;
@@ -113,14 +99,13 @@ BEGIN
 
   stepCt := 0;
 
-  if pathString != ''  or pathString != '%'
-  then
-	stepCt := stepCt + 1;
-  if (topNode is null) then
-    select cz_write_audit(jobId,databaseName,procedureName,'Starting I2B2_DELETE_ALL_DATA for '||'/',0,stepCt,'Done') into rtnCd;
-  else
-    select cz_write_audit(jobId,databaseName,procedureName,'Starting I2B2_DELETE_ALL_DATA for '||topNode||' trial id '||trialId,0,stepCt,'Done') into rtnCd;
-  end if;
+  if pathString != '' or pathString != '%' then
+	  stepCt := stepCt + 1;
+    if (TrialID is null) then
+      select cz_write_audit(jobId,databaseName,procedureName,'Starting I2B2_DELETE_ALL_DATA for ''' || pathString || '''',0,stepCt,'Done') into rtnCd;
+    else
+      select cz_write_audit(jobId,databaseName,procedureName,'Starting I2B2_DELETE_ALL_DATA for ''' || pathString || ''' with id: ' || TrialId,0,stepCt,'Done') into rtnCd;
+    end if;
 
   --	delete all i2b2 nodes
 
@@ -274,16 +259,16 @@ BEGIN
 		/*commit;*/
 	end if;
 
-	/*Check and delete top node, if remove node is last*/
+	/*Check and delete top node, if removed node is last*/
     stepCt := stepCt + 1;
-    select cz_write_audit(jobId,databaseName,procedureName,'Check and delete top node '||topNode||', if remove node is last',0,stepCt,'Done') into rtnCd;
+    select cz_write_audit(jobId,databaseName,procedureName,'Check and delete top node '||topNode||' if removed node is last',0,stepCt,'Done') into rtnCd;
     select count(*) into countNodeUnderTop
     from I2B2DEMODATA.concept_counts
     where parent_concept_path = topNode;
 
       stepCt := stepCt + 1;
 	  get diagnostics rowCt := ROW_COUNT;
-      select cz_write_audit(jobId,databaseName,procedureName,'Check need removed top node '||topNode,rowCt,stepCt,'Done') into rtnCd;
+      select cz_write_audit(jobId,databaseName,procedureName,'Check if need to remove top node '||topNode,rowCt,stepCt,'Done') into rtnCd;
 
       if (countNodeUnderTop = 0)
       then

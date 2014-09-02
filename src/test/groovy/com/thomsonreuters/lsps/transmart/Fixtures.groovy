@@ -24,6 +24,10 @@ class Fixtures {
         new File(studyDir(studyName, studyId), 'MultiVCFDataToUpload')
     }
 
+    static File getExpressionData(String studyName = 'Test Study', String studyId = 'GSE0') {
+        new File(studyDir(studyName, studyId), 'ExpressionDataToUpload')
+    }
+
     static File getClinicalData(String studyName = 'Test Study', String studyId = 'GSE0') {
         new File(studyDir(studyName, studyId), 'ClinicalDataToUpload')
     }
