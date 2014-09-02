@@ -4,12 +4,16 @@ buildscript {
     }
     dependencies {
         classpath 'org.flywaydb:flyway-gradle-plugin:3.0'
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:1.1.5.RELEASE")
     }
 }
 
 apply plugin: 'java'
 apply plugin: 'maven'
 apply plugin: 'groovy'
+apply plugin: 'idea'
+apply plugin: 'eclipse'
+apply plugin: 'spring-boot'
 
 if (hasProperty('dbConfig')) {
     apply plugin: 'flyway'
@@ -43,10 +47,13 @@ dependencies {
 }
 
 jar {
-    from { (configurations.compile + configurations.runtime).collect { it.isDirectory() ? it : zipTree(it) } }
     manifest {
         attributes 'Main-Class': 'com.thomsonreuters.lsps.transmart.etl.CommandLineTool', 'Implementation-Version': version
     }
+}
+
+[sourceSets.main, sourceSets.test].each {
+    it.output.resourcesDir = it.output.classesDir
 }
 
 apply from: 'tasks.gradle'
