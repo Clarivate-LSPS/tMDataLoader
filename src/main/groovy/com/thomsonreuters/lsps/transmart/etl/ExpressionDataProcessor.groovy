@@ -211,7 +211,7 @@ class ExpressionDataProcessor extends DataProcessor {
                     if (cols[0] != "ID_REF") throw new Exception("Incorrect gene expression file")
 
                     cols.each {
-                        header << it
+                        header << it.trim()
                     }
                 } else {
                     config.logger.log(LogType.PROGRESS, "[${lineNum}]")
