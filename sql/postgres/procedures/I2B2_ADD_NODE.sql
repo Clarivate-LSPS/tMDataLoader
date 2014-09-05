@@ -119,7 +119,7 @@ BEGIN
 	(length(concept_path) - coalesce(length(replace(concept_path, '\','')),0)) / length('\') - 2 + root_level,
 	CONCEPT_PATH,
 	NAME_CHAR,
-	'FA',
+	case when ((length(concept_path) - coalesce(length(replace(concept_path, '\','')),0)) / length('\') - 2 + root_level)=1 then 'FAS' else 'FA' end,
 	'N',
 	'CONCEPT_CD',
 	'CONCEPT_DIMENSION',
@@ -141,7 +141,7 @@ BEGIN
 	--get diagnostics rowCt := ROW_COUNT;
 	--stepCt := stepCt + 1;
 	--select cz_write_audit(jobId,databaseName,procedureName,'Inserted path into I2B2METADATA i2b2',rowCt,stepCt,'Done') into rtnCd;
-		
+
       ---Cleanup OVERALL JOB if this proc is being run standalone
 	IF newJobFlag = 1
 	THEN

@@ -132,7 +132,7 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
           new_root_node       AS c_fullname,
           new_root_node_name  AS c_name,
           'N'                 AS c_synonym_cd,
-          'CA'                AS c_visualattributes,
+          'CAP'                AS c_visualattributes,
           null                AS c_totalnum,
           null                AS c_basecode,
           null                AS c_metadataxml,
@@ -807,7 +807,7 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
                             current_path,
                             current_path_attr_name,
                             '',
-                            'FA',
+                            case when current_path_level=1 then 'FAS' else 'FA' end,
                             '',
                             '',
                             '',
@@ -899,7 +899,7 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
                             current_path,
                             current_path,
                             current_path_attr_name,
-                            'FA');
+                            case when current_path_level=1 then 'FAS' else 'FA' end);
 
                    UPDATE i2b2metadata.i2b2_secure
                    SET

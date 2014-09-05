@@ -172,7 +172,7 @@ AS
           new_root_node       AS c_fullname,
           new_root_node_name  AS c_name,
           'N'                 AS c_synonym_cd,
-          'CA'                AS c_visualattributes,
+          'CAP'                AS c_visualattributes,
           null                AS c_totalnum,
           null                AS c_basecode,
           null                AS c_metadataxml,
@@ -655,7 +655,7 @@ AS
                     current_path,
                     current_path,
                     current_path_attr_name,
-                    'FA'
+                    decode (current_path_level, 1, 'FAS', 'FA')
             );
           COMMIT;
 
@@ -727,7 +727,7 @@ AS
                     current_path,
                     current_path,
                     current_path_attr_name,
-                    'FA');
+                    decode (current_path_level, 1, 'FAS', 'FA'));
           COMMIT;
 
           UPDATE i2b2metadata.i2b2_secure

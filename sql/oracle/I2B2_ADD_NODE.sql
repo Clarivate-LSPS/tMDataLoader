@@ -109,7 +109,7 @@ BEGIN
       (length(concept_path) - nvl(length(replace(concept_path, '\')),0)) / length('\') - 2 + root_level,
       CONCEPT_PATH,
       NAME_CHAR,
-      'FA',
+      decode (((length(concept_path) - nvl(length(replace(concept_path, '\')),0)) / length('\') - 2 + root_level), 1, 'FAS', 'FA'),
       'N',
       'CONCEPT_CD',
       'CONCEPT_DIMENSION',
