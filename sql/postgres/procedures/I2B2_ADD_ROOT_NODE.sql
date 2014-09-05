@@ -95,7 +95,7 @@ Begin
 		  ,rootPath as c_fullname
 		  ,rootNode as c_name
 		  ,'N' as c_synonym_cd
-		  ,'CA' as c_visualattributes
+		  ,'CAP' as c_visualattributes
 		  ,null as c_totalnum
 		  ,null as c_basecode
 		  ,null as c_metadataxml
@@ -153,7 +153,7 @@ Begin
 		  ,rootPath as c_fullname
 		  ,rootNode as c_name
 		  ,'N' as c_synonym_cd
-		  ,'CA' as c_visualattributes
+		  ,'CAP' as c_visualattributes
 		  ,null as c_totalnum
 		  ,null as c_basecode
 		  ,null as c_metadataxml
