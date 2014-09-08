@@ -74,32 +74,16 @@ AS
     tText := 'Start i2b2_move_study_by_path from ' || old_path || ' to ' || new_path;
     cz_write_audit(jobId, databaseName, procedureName, tText, 0, stepCt, 'Done');
 
-
--- check first and last /
-
     old_path := trim(old_path_in);
     new_path := trim(new_path_in);
 
-    IF old_path = '' or new_path=''
+    IF old_path is null or new_path is null
+      or old_path = '' or new_path=''
     THEN
       RAISE empty_paths;
     END IF;
 
-    IF old_path = new_path
-    THEN
-      RAISE duplicated_paths;
-    END IF;
-    -- check old root node exists
-    SELECT
-      count(*)
-    INTO rowsExists
-    FROM i2b2metadata.i2b2
-    WHERE c_fullname = old_path;
-    IF rowsExists = 0
-    THEN
-      RAISE old_study_missed;
-    END IF;
-
+     -- check first and last /
     SELECT
       SUBSTR(old_path, 1, 1)
     INTO tmp
@@ -134,6 +118,23 @@ AS
     IF tmp <> '\'
     THEN
       new_path := new_path || '\';
+    END IF;
+
+    -- check duplicates
+    IF old_path = new_path
+    THEN
+      RAISE duplicated_paths;
+    END IF;
+
+    -- check old root node exists
+    SELECT
+      count(*)
+    INTO rowsExists
+    FROM i2b2metadata.i2b2
+    WHERE c_fullname = old_path;
+    IF rowsExists = 0
+    THEN
+      RAISE old_study_missed;
     END IF;
 
     old_root_node := REGEXP_REPLACE(old_path, '(\\(\w|\s)*\\)(.*)', '\1');

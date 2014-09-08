@@ -42,7 +42,7 @@ class MoveStudyOperationTest extends ConfigAwareTestCase {
                 'new_path': newPath];
         moveStudyProcessor.process(input)
 
-        assertPathsExisting(newPath)
+        assertPathsExisting(newPath, oldPath)
         removeStudy(newPath)
     }
 
@@ -52,7 +52,7 @@ class MoveStudyOperationTest extends ConfigAwareTestCase {
                 'new_path': newPath];
         moveStudyProcessor.process(input)
 
-        assertPathsExisting(newPath)
+        assertPathsExisting(newPath, oldPath)
         assertRootNodeExisting(newPath)
         removeStudy(newPath)
     }
@@ -86,6 +86,54 @@ class MoveStudyOperationTest extends ConfigAwareTestCase {
         assertNewLevelWasDeleted(newPath)
         removeStudy(newPathShort)
     }
+
+    void testMoveStudyWithoutTrailingSlash() {
+        def oldPathWoSlash = oldPath.substring(0, oldPath.length()-1);
+        def newPathWoSlash = "\\Test Studies Move Test\\Test Study Wo Slash"
+        def input = ['old_path': oldPathWoSlash,
+                'new_path': newPathWoSlash];
+        moveStudyProcessor.process(input)
+        assertPathsExisting(newPathWoSlash, oldPathWoSlash)
+
+        def newPath = "\\Test Studies Move Test\\Test Study With Slash\\"
+        input = ['old_path': newPathWoSlash,
+                'new_path': newPath];
+        moveStudyProcessor.process(input)
+        assertPathsExisting(newPath, newPathWoSlash)
+
+        input = ['old_path': newPath,
+                'new_path': newPathWoSlash];
+        moveStudyProcessor.process(input)
+        assertPathsExisting(newPathWoSlash, newPath)
+
+        removeStudy(newPathWoSlash)
+    }
+
+   /* void testMoveStudyToExistNode() {
+        def errStudyPath = "\\Test Studies Move Test\\Test Study Update 2\\"
+        clinicalDataProcessor.process(
+                new File(studyDir(studyName, studyId), "ClinicalDataToUpload"),
+                [name: studyName, node: errStudyPath.toString()])
+
+        def input = ['old_path': errStudyPath,
+                'new_path': oldPath];
+        moveStudyProcessor.process(input)
+        // Expect error of trying addition to exists node
+
+        errStudyPath = "\\Test Studies Move Test\\Test Study Update 2\\New level\\"
+        input = ['old_path': oldPath,
+                'new_path': errStudyPath];
+        moveStudyProcessor.process(input)
+        // Expect error of trying addition to exists node
+
+        errStudyPath = "\\Test Studies Move Test\\"
+        input = ['old_path': oldPath,
+                'new_path': errStudyPath];
+        moveStudyProcessor.process(input)
+        // Expect error of trying addition to root node
+
+        removeStudy(oldPath)
+    }*/
 
 
     def assertRootNodeExisting(String newPath) {
@@ -121,7 +169,7 @@ class MoveStudyOperationTest extends ConfigAwareTestCase {
 
     }
 
-    private void assertPathsExisting(String newPath) {
+    private void assertPathsExisting(String newPath, String oldPath) {
         def tablesToAttr = ['i2b2metadata.i2b2': 'c_fullname', 'i2b2metadata.i2b2_secure': 'c_fullname',
                 'i2b2demodata.concept_dimension': 'concept_path', 'i2b2demodata.concept_counts': 'concept_path']
 
@@ -130,6 +178,7 @@ class MoveStudyOperationTest extends ConfigAwareTestCase {
     }
 
     private void checkPaths(Map tablesToAttr, String errorMessage, String checkedPath, int correctCount) {
+        checkedPath = checkedPath.charAt(checkedPath.length() - 1) != '\\' ? checkedPath + '\\' : checkedPath
         for (t in tablesToAttr) {
             def c = sql.firstRow('select count(*) from ' + t.key + ' where ' + t.value + ' = ?', checkedPath)
             assertEquals(errorMessage + t.key, c[0] as Integer, correctCount)
