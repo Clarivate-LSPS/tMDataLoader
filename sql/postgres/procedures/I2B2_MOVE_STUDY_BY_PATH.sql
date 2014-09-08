@@ -63,13 +63,11 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
     tText := 'Start i2b2_move_study_by_path from ' || old_path || ' to ' || new_path;
     select cz_write_audit(jobId,databaseName,procedureName,'Starting i2b2_process_snp_data',0,stepCt,'Done') into rtnCd;
 
-
-
-
     old_path := trim(old_path_in);
     new_path := trim(new_path_in);
 
-    IF old_path = '' or new_path=''
+    IF old_path = null or new_path = null
+      or old_path = '' or new_path = ''
     THEN
       stepCt := stepCt + 1;
       select cz_write_audit(jobId,databaseName,procedureName,'New or old path is empty. Please check input parameters',0,stepCt,'Done') into rtnCd;
@@ -77,6 +75,10 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
       select cz_end_audit (jobID, 'FAIL') into rtnCd;
       return -16;
     END IF;
+
+    -- update slashes
+    old_path := REGEXP_REPLACE('\' || old_path || '\','(\\){2,}', '\','g');
+    new_path := REGEXP_REPLACE('\' || new_path || '\','(\\){2,}', '\','g');
 
     -- check duplicates
     IF old_path = new_path
@@ -101,44 +103,6 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
       select cz_error_handler (jobID, procedureName, '-1', 'Application raised error') into rtnCd;
       select cz_end_audit (jobID, 'FAIL') into rtnCd;
       return -16;
-    END IF;
-
-
--- check first and last /
-    SELECT
-      substring (old_path FROM 1 FOR 1)
-    INTO tmp;
-
-    IF tmp <> '\'
-    THEN
-      old_path := '\' || old_path;
-    END IF;
-
-    SELECT
-      substring(new_path FROM 1 FOR 1)
-    INTO tmp;
-
-    IF tmp <> '\'
-    THEN
-      new_path := '\' || new_path;
-    END IF;
-
-    SELECT
-      substring(old_path FROM '.{1}$')
-    INTO tmp;
-
-    IF tmp <> '\'
-    THEN
-      old_path := old_path || '\';
-    END IF;
-
-    SELECT
-      substring(new_path FROM '.{1}$')
-    INTO tmp;
-
-    IF tmp <> '\'
-    THEN
-      new_path := new_path || '\';
     END IF;
 
     old_root_node := REGEXP_REPLACE(old_path, '(\\(\w|\s)*\\)(.*)', '\1');

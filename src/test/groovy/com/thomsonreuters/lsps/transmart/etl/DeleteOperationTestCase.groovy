@@ -139,6 +139,26 @@ class DeleteOperationTestCase extends ConfigAwareTestCase {
         assertThatDataDeleted(testData, true);
     }
 
+    /*
+     * Check slash in the end of path name to remove
+     */
+    void testDeleteDataByNameWOSlash() {
+        processorLoad.process(
+                new File("fixtures/Test Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
+                [name: studyName, node: "Test Studies\\${studyName}".toString()])
+        assertThat(sql, hasSample(studyId, 'TST1000000719'))
+        def inpData = ['id'  : null,
+                'path': "\\Test Studies\\${studyName}"];
+        processorDelete.process(inpData);
+
+        def testData = [
+                'id'  : studyId,
+                'path': "\\Test Studies\\${studyName}\\"];
+
+        assertThatDataDeleted(testData, true);
+    }
+
+
     /**
      * Remove data by trial Id and full path study.
      */
