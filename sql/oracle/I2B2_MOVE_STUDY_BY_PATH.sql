@@ -22,6 +22,8 @@ AS
   new_path_last_node_name VARCHAR2(700 BYTE);
   rowsExists              INT;
   counter                 INT;
+  substringPos            INT;
+  substringPos2         INT;
   lvl_num_to_remove       INT;
   old_level_num           INT;
   new_level_num           INT;
@@ -43,6 +45,9 @@ AS
     old_study_missed EXCEPTION;
     empty_paths EXCEPTION;
     duplicated_paths EXCEPTION;
+    new_node_root_exception EXCEPTION;
+    new_path_exists_exception EXCEPTION;
+    subnode_exists_exception EXCEPTION;
 
   BEGIN
 
@@ -146,6 +151,73 @@ AS
     new_path_last_node_name := REGEXP_REPLACE(new_path, '(.*)\\((\w|\s)*)\\', '\2');
 -- ClinicalSample
 
+--check new path is not root node
+    IF new_root_node = new_path
+    THEN
+      RAISE new_node_root_exception;
+    END IF;
+
+-- check new path exists
+    SELECT
+      count(*)
+    INTO rowsExists
+    FROM i2b2metadata.i2b2
+    WHERE c_fullname = new_path;
+
+    SELECT instr(old_path, new_path)
+              INTO substringPos FROM dual;
+
+    IF rowsExists > 0 and substringPos = 0
+    THEN
+       RAISE new_path_exists_exception;
+    END IF;
+
+-- check that new path is not subnode of exists study
+   -- parse new_path to levels
+      SELECT
+        SYS_CONNECT_BY_PATH(STR, '\') || '\',
+        LVL,
+        STR
+      BULK COLLECT INTO paths_tab
+      FROM (
+
+        SELECT
+          LEVEL                                                  LVL,
+          LEVEL - 1                                              PARENT_LEVEL,
+          REGEXP_SUBSTR(ltrim(new_path, '\'), '[^\]+', 1, LEVEL) STR
+        FROM dual
+        CONNECT BY LEVEL <= LENGTH(REGEXP_REPLACE(ltrim(new_path, '\'), '[^\]+'))
+
+      )
+      START WITH PARENT_LEVEL = 0
+      CONNECT BY PRIOR LVL = PARENT_LEVEL;
+
+      FOR i IN 1 .. paths_tab.COUNT
+      LOOP
+        current_path := paths_tab(i).path;
+        current_path_level := paths_tab(i).lvl - 1;
+
+        IF current_path_level > 0 THEN
+          SELECT
+                count(*)
+                INTO rowsExists
+                FROM i2b2metadata.i2b2
+                WHERE c_fullname = current_path;
+
+          -- check cases with adding/removing new level /a/b/c/ -> /a/b/ and reverse /a/b/-> /a/b/c/
+          SELECT instr (old_path, current_path)
+          INTO substringPos FROM dual;
+
+          SELECT instr (current_path, old_path)
+          INTO substringPos2 FROM dual;
+
+          IF rowsExists > 0 and substringPos = 0 and substringPos2 = 0
+          THEN
+             RAISE subnode_exists_exception;
+          END IF;
+        END IF;
+
+      END LOOP;
 
 
 -- if 1
@@ -825,6 +897,24 @@ AS
     cz_error_handler(jobid, procedurename);
     cz_end_audit(jobId, 'FAIL');
     DBMS_OUTPUT.PUT_LINE('duplicated_paths');
+
+    WHEN new_node_root_exception THEN
+    cz_write_audit(jobId, databasename, procedurename, 'Please select new study target path: it can not be root node', 1, stepCt, 'ERROR');
+    cz_error_handler(jobid, procedurename);
+    cz_end_audit(jobId, 'FAIL');
+    DBMS_OUTPUT.PUT_LINE('new_node_root_exception');
+
+    WHEN new_path_exists_exception THEN
+    cz_write_audit(jobId, databasename, procedurename, 'Please select new study target path', 1, stepCt, 'ERROR');
+    cz_error_handler(jobid, procedurename);
+    cz_end_audit(jobId, 'FAIL');
+    DBMS_OUTPUT.PUT_LINE('new_path_exists_exception');
+
+    WHEN subnode_exists_exception THEN
+    cz_write_audit(jobId, databasename, procedurename, 'Please select new study target path: target path can not be subnode of exists study', 1, stepCt, 'ERROR');
+    cz_error_handler(jobid, procedurename);
+    cz_end_audit(jobId, 'FAIL');
+    DBMS_OUTPUT.PUT_LINE('subnode_exists_exception');
 
     WHEN OTHERS THEN
 --Handle errors.
