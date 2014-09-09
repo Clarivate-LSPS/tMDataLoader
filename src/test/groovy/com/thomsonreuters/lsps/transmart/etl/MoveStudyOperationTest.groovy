@@ -109,8 +109,8 @@ class MoveStudyOperationTest extends ConfigAwareTestCase {
         removeStudy(newPathWoSlash)
     }
 
-   /* void testMoveStudyToExistNode() {
-        def errStudyPath = "\\Test Studies Move Test\\Test Study Update 2\\"
+   void testMoveStudyToExistNode() {
+        def errStudyPath = "\\Test Studies Move Test\\Test Study 2\\"
         clinicalDataProcessor.process(
                 new File(studyDir(studyName, studyId), "ClinicalDataToUpload"),
                 [name: studyName, node: errStudyPath.toString()])
@@ -120,20 +120,24 @@ class MoveStudyOperationTest extends ConfigAwareTestCase {
         moveStudyProcessor.process(input)
         // Expect error of trying addition to exists node
 
-        errStudyPath = "\\Test Studies Move Test\\Test Study Update 2\\New level\\"
+        def errStudyPath1 = "\\Test Studies Move Test\\Test Study 2\\New level\\"
         input = ['old_path': oldPath,
-                'new_path': errStudyPath];
+                'new_path': errStudyPath1];
         moveStudyProcessor.process(input)
-        // Expect error of trying addition to exists node
+        // Expect error of trying addition to studies subnode
 
-        errStudyPath = "\\Test Studies Move Test\\"
+        def errStudyPath2 = "\\Test Studies Move Test\\"
         input = ['old_path': oldPath,
-                'new_path': errStudyPath];
+                'new_path': errStudyPath2];
         moveStudyProcessor.process(input)
         // Expect error of trying addition to root node
 
+        assertThat(db, hasNode(oldPath).withPatientCount(9))
+        assertThat(db, hasNode(errStudyPath).withPatientCount(9))
+
+        removeStudy(errStudyPath)
         removeStudy(oldPath)
-    }*/
+    }
 
 
     def assertRootNodeExisting(String newPath) {
@@ -174,7 +178,9 @@ class MoveStudyOperationTest extends ConfigAwareTestCase {
                 'i2b2demodata.concept_dimension': 'concept_path', 'i2b2demodata.concept_counts': 'concept_path']
 
         checkPaths(tablesToAttr, 'New paths were not added to ', newPath, 1);
-        checkPaths(tablesToAttr, 'Old paths were not updated in ', oldPath, 0);
+        if (oldPath != null) {
+            checkPaths(tablesToAttr, 'Old paths were not updated in ', oldPath, 0);
+        }
     }
 
     private void checkPaths(Map tablesToAttr, String errorMessage, String checkedPath, int correctCount) {

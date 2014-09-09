@@ -30,6 +30,8 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
     new_path_last_node_name VARCHAR(2000);
     rowsExists              INTEGER;
     counter                 INTEGER;
+    substringPos            INTEGER;
+    substringPos2           INTEGER;
     lvl_num_to_remove       INTEGER;
     old_level_num           INTEGER;
     new_level_num           INTEGER;
@@ -61,7 +63,7 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
     stepCt := 0;
     stepCt := stepCt + 1;
     tText := 'Start i2b2_move_study_by_path from ' || old_path || ' to ' || new_path;
-    select cz_write_audit(jobId,databaseName,procedureName,'Starting i2b2_process_snp_data',0,stepCt,'Done') into rtnCd;
+    select cz_write_audit(jobId,databaseName,procedureName,tText,0,stepCt,'Done') into rtnCd;
 
     old_path := trim(old_path_in);
     new_path := trim(new_path_in);
@@ -110,6 +112,96 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
     new_root_node_name := REGEXP_REPLACE(new_path, '\\((\w|\s)*)\\(.*)', '\1');
     new_path_last_node_name := REGEXP_REPLACE(new_path, '(.*)\\((\w|\s)*)\\', '\2');
 
+-- check new path is not root node
+    IF new_root_node = new_path
+    THEN
+      stepCt := stepCt + 1;
+      select cz_write_audit(jobId,databaseName,procedureName,
+            'Please select new study target path: it can not be root node',0,stepCt,'Done') into rtnCd;
+      select cz_error_handler (jobID, procedureName, '-1', 'Application raised error') into rtnCd;
+      select cz_end_audit (jobID, 'FAIL') into rtnCd;
+      return -16;
+    END IF;
+
+-- check new path exists
+    SELECT
+      count(*)
+    INTO rowsExists
+    FROM i2b2metadata.i2b2
+    WHERE c_fullname = new_path;
+
+    SELECT position (new_path in old_path)
+              INTO substringPos;
+
+    IF rowsExists > 0 and substringPos = 0
+    THEN
+      stepCt := stepCt + 1;
+      select cz_write_audit(jobId,databaseName,procedureName,'Please select new study target path',0,stepCt,'Done') into rtnCd;
+      select cz_error_handler (jobID, procedureName, '-1', 'Application raised error') into rtnCd;
+      select cz_end_audit (jobID, 'FAIL') into rtnCd;
+      return -16;
+    END IF;
+
+-- check that new path is not subnode of exists study
+        -- parse new_path to levels
+        DROP TABLE IF EXISTS temp_t CASCADE;
+        CREATE TEMP TABLE temp_t AS SELECT node_name
+        FROM regexp_split_to_table(new_path, '\\') AS node_name;
+
+        DELETE FROM temp_t WHERE node_name='';
+
+        DROP TABLE IF EXISTS temp_t_levels CASCADE;
+        CREATE TEMP TABLE temp_t_levels (lvl integer, parent_lvl integer,node_name varchar);
+
+        FOR i IN 0..((select count(*) from temp_t)-1) LOOP
+           INSERT INTO temp_t_levels (node_name) SELECT node_name FROM temp_t LIMIT 1 OFFSET i;
+           UPDATE temp_t_levels SET lvl=i+1, parent_lvl=i  WHERE node_name=(SELECT node_name FROM temp_t LIMIT 1 OFFSET i);
+        END LOOP;
+
+        DROP TABLE IF EXISTS temp_t_paths CASCADE;
+        CREATE TEMP TABLE temp_t_paths (lvl integer, parent_lvl integer,node_name varchar,node_path varchar);
+
+        WITH RECURSIVE temp_t_paths ("lvl", "parent_lvl", "node_name", "node_path") AS (
+        SELECT  T1.lvl,T1.parent_lvl, T1.node_name,  '\'|| T1.node_name
+            FROM temp_t_levels T1 WHERE T1.lvl=1
+        union
+        select T2.lvl, T2.parent_lvl, T2.node_name, temp_t_paths.node_path ||'\'|| T2.node_name
+             FROM temp_t_levels T2 INNER JOIN temp_t_paths ON (temp_t_paths.lvl= T2.parent_lvl))
+             INSERT INTO temp_t_paths (select * from temp_t_paths);
+
+        UPDATE temp_t_paths set node_path=node_path || '\';
+
+        select count(*) INTO counter from temp_t_paths where lvl > 1;
+        IF counter > 0
+          THEN
+          FOR i IN 1..counter LOOP
+              SELECT node_path INTO current_path FROM temp_t_paths WHERE lvl=i+1;
+
+              SELECT
+                count(*)
+              INTO rowsExists
+              FROM i2b2metadata.i2b2
+              WHERE c_fullname = current_path;
+
+              -- check cases with adding/removing new level /a/b/c/ -> /a/b/ and reverse /a/b/-> /a/b/c/
+              SELECT position (current_path in old_path)
+              INTO substringPos;
+
+              SELECT position (old_path in current_path)
+              INTO substringPos2;
+
+              IF rowsExists > 0 and substringPos = 0 and substringPos2 = 0
+              THEN
+                stepCt := stepCt + 1;
+                select cz_write_audit(jobId,databaseName,procedureName,
+                'Please select new study target path: target path can not be subnode of exists study',0,stepCt,'Done') into rtnCd;
+                select cz_error_handler (jobID, procedureName, '-1', 'Application raised error') into rtnCd;
+                select cz_end_audit (jobID, 'FAIL') into rtnCd;
+                return -16;
+              END IF;
+
+          END LOOP;
+        END IF;
 
 -- check new root node exists
 
