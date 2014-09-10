@@ -31,12 +31,12 @@ class PlatformProcessor {
         gplFile.eachEntry { String[] cols ->
             lineNum++
 
-            if (cols[entrezGeneIdIdx] ==~ /\d+/) {
+            if (cols[entrezGeneIdIdx].isEmpty() || cols[entrezGeneIdIdx] ==~ /\d+/) {
                 logger.log(LogType.PROGRESS, "[${lineNum}]")
                 processEntry([
                         probeset_id   : cols[0],
                         gene_symbol   : cols[geneSymbolIdx],
-                        entrez_gene_id: cols[entrezGeneIdIdx],
+                        entrez_gene_id: !cols[entrezGeneIdIdx].isEmpty() ? cols[entrezGeneIdIdx] : null,
                         species       : speciesIdx != -1 ? cols[speciesIdx] : null
                 ])
             }
