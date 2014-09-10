@@ -1,6 +1,7 @@
 package com.thomsonreuters.lsps.transmart.etl
 
 import static org.hamcrest.CoreMatchers.equalTo
+import static org.junit.Assert.assertNull
 import static org.junit.Assert.assertThat
 
 /**
@@ -16,6 +17,8 @@ class PlatformLoaderTest extends ConfigAwareTestCase {
         assertThat(platformInfo.organism, equalTo('Homo Sapiens'))
         assertThat(platformInfo.title, equalTo('Test Platform'))
         def cntRow = sql.firstRow("select count(*) from ${config.loadSchema}.lt_src_deapp_annot where gpl_id = ?", 'TST')
-        assertThat(cntRow[0] as long, equalTo(4L))
+        def emptyGeneId = sql.firstRow("select gene_id from ${config.loadSchema}.lt_src_deapp_annot where gpl_id = ? and gene_symbol = ?", 'TST', 'ARX')
+        assertNull(emptyGeneId['gene_id'])
+        assertThat(cntRow[0] as long, equalTo(5L))
     }
 }
