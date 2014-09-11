@@ -20,6 +20,7 @@
 
 package com.thomsonreuters.lsps.transmart.etl
 
+import com.thomsonreuters.lsps.transmart.files.CsvLikeFile
 import com.thomsonreuters.lsps.transmart.sql.DatabaseType
 import groovy.sql.Sql
 
@@ -30,13 +31,13 @@ class ClinicalDataProcessor extends DataProcessor {
     }
 
     private long processEachRow(File f, fMappings, Closure<List> processRow) {
-        def lineNum = 0L
-        f.splitEachLine("\t") {
+        def lineNum = 1L
+        CsvLikeFile csvFile = new CsvLikeFile(f, '# ')
+        csvFile.eachEntry { String[] data->
             def cols = [''] // to support 0-index properly (we use it for empty data values)
-            cols.addAll(it)
+            cols.addAll(Arrays.asList(data))
 
             lineNum++
-            if (lineNum < 2) return; // skipping header
 
             if (cols[fMappings['STUDY_ID']]) {
                 // the line shouldn't be empty
