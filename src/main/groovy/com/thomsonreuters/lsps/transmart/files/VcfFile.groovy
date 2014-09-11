@@ -1,4 +1,7 @@
 package com.thomsonreuters.lsps.transmart.files
+
+import org.apache.commons.csv.CSVRecord
+
 /**
  * CelFilesConverter
  * Created by bondarev on 3/25/14.
@@ -186,8 +189,8 @@ class VcfFile extends CsvLikeFile {
     }
 
     @Override
-    protected makeEntry(String line) {
-        currentEntry.data = line.split('\t', -1)
+    protected makeEntry(CSVRecord record) {
+        currentEntry.data = super.makeEntry(record)
         return currentEntry
     }
 }
