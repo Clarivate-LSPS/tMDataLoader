@@ -1,7 +1,8 @@
 package com.thomsonreuters.lsps.transmart.files
-
-import java.util.regex.Pattern
-
+import com.thomsonreuters.lsps.utils.SkipLinesReader
+import org.apache.commons.csv.CSVFormat
+import org.apache.commons.csv.CSVParser
+import org.apache.commons.csv.CSVRecord
 /**
  * Created by bondarev on 3/28/14.
  */
@@ -10,7 +11,6 @@ class CsvLikeFile {
     protected String lineComment
     private List<String> header
     private List<String> headComments
-    private final Pattern separator = Pattern.compile('\t')
     private boolean prepared
 
     CsvLikeFile(File file, String lineComment) {
@@ -37,8 +37,12 @@ class CsvLikeFile {
         })
     }
 
-    protected def makeEntry(String line) {
-        separator.split(line, -1)
+    protected def makeEntry(CSVRecord record) {
+        String[] entry = new String[record.size()]
+        for (int i = 0; i < record.size(); i++) {
+            entry[i] = record.get(i)
+        }
+        return entry
     }
 
     protected final void prepareIfRequired() {
@@ -53,16 +57,13 @@ class CsvLikeFile {
 
     def <T> T eachEntry(Closure<T> processEntry) {
         prepareIfRequired()
-        boolean headerSkipped = false
-        file.eachLine { line ->
-            if (line.isEmpty() || line.startsWith(lineComment)) {
-                return null;
+        file.withReader { reader ->
+            def skipLinesReader = new SkipLinesReader(reader, [lineComment])
+            def format = CSVFormat.TDF.withHeader().withSkipHeaderRecord(true)
+            def parser = new CSVParser(skipLinesReader, format)
+            for (CSVRecord record : parser) {
+                processEntry(makeEntry(record))
             }
-            if (!headerSkipped) {
-                headerSkipped = true;
-                return null;
-            }
-            processEntry(makeEntry(line))
         }
     }
 }
