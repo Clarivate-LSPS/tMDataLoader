@@ -187,7 +187,7 @@ class MoveStudyOperationTest extends ConfigAwareTestCase {
         checkedPath = checkedPath.charAt(checkedPath.length() - 1) != '\\' ? checkedPath + '\\' : checkedPath
         for (t in tablesToAttr) {
             def c = sql.firstRow('select count(*) from ' + t.key + ' where ' + t.value + ' = ?', checkedPath)
-            assertEquals(errorMessage + t.key, c[0] as Integer, correctCount)
+            assertEquals(errorMessage + t.key, correctCount, c[0] as Integer)
         }
     }
 

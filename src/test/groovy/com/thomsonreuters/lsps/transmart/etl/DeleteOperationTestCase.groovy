@@ -132,7 +132,7 @@ class DeleteOperationTestCase extends ConfigAwareTestCase {
      * Check slash in the end of path name to remove
      */
     void testDeleteDataByNameWOSlash() {
-        processorLoad.process(
+        expressionDataProcessor.process(
                 new File("fixtures/Test Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
         assertThat(sql, hasSample(studyId, 'TST1000000719'))
