@@ -20,6 +20,7 @@
 
 package com.thomsonreuters.lsps.transmart.etl
 
+import com.thomsonreuters.lsps.transmart.files.CsvLikeFile
 import com.thomsonreuters.lsps.transmart.sql.DatabaseType
 import groovy.sql.Sql
 
@@ -93,7 +94,8 @@ class ExpressionDataProcessor extends DataProcessor {
 
         config.logger.log("Mapping file: ${f.name}")
 
-        def lineNum = 0
+        int lineNum = 0
+        def mappingFile = new CsvLikeFile(f)
 
         sql.withTransaction {
             sql.withBatch(100, """\
@@ -101,24 +103,19 @@ class ExpressionDataProcessor extends DataProcessor {
 					SUBJECT_ID, SAMPLE_CD, PLATFORM, TISSUE_TYPE, 
 					ATTRIBUTE_1, ATTRIBUTE_2, CATEGORY_CD, SOURCE_CD) 
 				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'STD')
-		""") {
-                stmt ->
+		""") { stmt ->
+                mappingFile.eachEntry { cols ->
+                    lineNum++
+                    // cols: 0:study_id, 1:site_id, 2:subject_id, 3:sample_cd, 4:platform, 5:tissuetype, 6:attr1, 7:attr2, 8:category_cd
 
-                    f.splitEachLine("\t") {
-                        cols ->
+                    if (!(cols[2] && cols[3] && cols[4] && cols[8]))
+                        throw new Exception("Incorrect mapping file: mandatory columns not defined")
 
-                            lineNum++
-                            // cols: 0:study_id, 1:site_id, 2:subject_id, 3:sample_cd, 4:platform, 5:tissuetype, 6:attr1, 7:attr2, 8:category_cd
-                            if (cols[0] && lineNum > 1) {
-                                if (!(cols[2] && cols[3] && cols[4] && cols[8]))
-                                    throw new Exception("Incorrect mapping file: mandatory columns not defined")
+                    platformList << cols[4]
+                    studyIdList << cols[0]
 
-                                platformList << cols[4]
-                                studyIdList << cols[0]
-
-                                stmt.addBatch(cols)
-                            }
-                    }
+                    stmt.addBatch(cols)
+                }
             }
         }
 
@@ -203,29 +200,25 @@ class ExpressionDataProcessor extends DataProcessor {
     private long processEachRow(File f, studyInfo, Closure<List> processRow) {
         def row = [studyInfo.id as String, null, null, null]
         def lineNum = 0
-        def header = []
-        f.splitEachLine("\t") {
-            cols ->
-                lineNum++;
-                if (lineNum == 1) {
-                    if (cols[0] != "ID_REF") throw new Exception("Incorrect gene expression file")
+        def dataFile = new CsvLikeFile(f)
+        def header = dataFile.header
+        if (header[0] != 'ID_REF') {
+            throw new Exception("Incorrect gene expression file")
+        }
+        dataFile.eachEntry { cols ->
+            lineNum++;
 
-                    cols.each {
-                        header << it.trim()
-                    }
-                } else {
-                    config.logger.log(LogType.PROGRESS, "[${lineNum}]")
-                    row[1] = cols[0]
-                    cols.eachWithIndex { val, i ->
-                        // skip first column
-                        // rows should have intensity assigned to them, otherwise not interested
-                        if (i > 0 && val) {
-                            row[2] = header[i] as String
-                            row[3] = val
-                            processRow(row)
-                        }
-                    }
+            config.logger.log(LogType.PROGRESS, "[${lineNum}]")
+            row[1] = cols[0]
+            cols.eachWithIndex { val, i ->
+                // skip first column
+                // rows should have intensity assigned to them, otherwise not interested
+                if (i > 0 && val) {
+                    row[2] = header[i] as String
+                    row[3] = val
+                    processRow(row)
                 }
+            }
         }
         config.logger.log(LogType.PROGRESS, "")
         return lineNum
