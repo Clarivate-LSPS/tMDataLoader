@@ -1,8 +1,10 @@
 package com.thomsonreuters.lsps.transmart.files
+
 import com.thomsonreuters.lsps.utils.SkipLinesReader
 import org.apache.commons.csv.CSVFormat
 import org.apache.commons.csv.CSVParser
 import org.apache.commons.csv.CSVRecord
+
 /**
  * Created by bondarev on 3/28/14.
  */
@@ -12,26 +14,33 @@ class CsvLikeFile {
     private List<String> header
     private List<String> headComments
     private boolean prepared
+    protected CSVFormat format = CSVFormat.TDF.withHeader().withSkipHeaderRecord(true).withIgnoreEmptyLines(true)
 
-    CsvLikeFile(File file, String lineComment) {
+    protected def withParser(Closure closure) {
+        file.withReader { reader ->
+            def skipLinesReader = !lineComment.is(null) ? new SkipLinesReader(reader, [lineComment]) : reader
+            def parser = new CSVParser(skipLinesReader, format)
+            closure.call(parser)
+        }
+    }
+
+    CsvLikeFile(File file, String lineComment = null) {
         this.file = file
         this.lineComment = lineComment
     }
 
     String[] getHeader() {
-        header ?: (header = file.withReader { reader ->
-            String line;
-            while ((line = reader.readLine()).startsWith(lineComment));
-            line.split('\t', -1)
-        })
+        header ?: (header = withParser { it.headerMap.keySet() as String[] })
     }
 
     String[] getHeadComments() {
         headComments ?: (headComments = file.withReader { reader ->
-            String line
             List<String> headComments = []
-            while ((line = reader.readLine()).startsWith(lineComment)) {
-                headComments << line.substring(lineComment.length()).trim()
+            if (lineComment != null) {
+                String line
+                while ((line = reader.readLine()).startsWith(lineComment)) {
+                    headComments << line.substring(lineComment.length()).trim()
+                }
             }
             headComments
         })
@@ -57,10 +66,7 @@ class CsvLikeFile {
 
     def <T> T eachEntry(Closure<T> processEntry) {
         prepareIfRequired()
-        file.withReader { reader ->
-            def skipLinesReader = new SkipLinesReader(reader, [lineComment])
-            def format = CSVFormat.TDF.withHeader().withSkipHeaderRecord(true)
-            def parser = new CSVParser(skipLinesReader, format)
+        withParser { CSVParser parser ->
             for (CSVRecord record : parser) {
                 processEntry(makeEntry(record))
             }
