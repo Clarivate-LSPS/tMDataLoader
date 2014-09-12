@@ -189,7 +189,7 @@ class VcfFile extends CsvLikeFile {
     }
 
     @Override
-    protected makeEntry(CSVRecord record) {
+    protected def makeEntry(CSVRecord record) {
         currentEntry.data = super.makeEntry(record)
         return currentEntry
     }

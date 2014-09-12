@@ -20,6 +20,7 @@
 
 package com.thomsonreuters.lsps.transmart.etl
 
+import com.thomsonreuters.lsps.transmart.files.CsvLikeFile
 import groovy.sql.Sql
 
 class SNPDataProcessor extends DataProcessor {
@@ -87,7 +88,7 @@ class SNPDataProcessor extends DataProcessor {
     }
 
     private void loadFileToTable(Sql sql, File f, String table, columns, Closure prepareEntry = Closure.IDENTITY) {
-        new CsvFileLoader(sql, table, columns).with { loader->
+        new CsvFileLoader(sql, table, columns).with { loader ->
             loader.logger = config.logger
             loader.loadFile(f, prepareEntry)
         }
@@ -143,33 +144,30 @@ class SNPDataProcessor extends DataProcessor {
 				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'STD')
 		""") {
                 stmt ->
+                    CsvLikeFile mappingFile = new CsvLikeFile(f)
+                    mappingFile.eachEntry { cols ->
+                        // cols:0:calls_file_name, 1:copy_number_file_name, 2:study_id, 3:site_id, 4:subject_id,
+                        // 5:sample_cd, 6:platform, 7:tissuetype, 8:attr1, 9:attr2, 10:category_cd
 
-                    f.splitEachLine("\t") {
-                        cols ->
-
-                            lineNum++
-                            // cols:0:calls_file_name, 1:copy_number_file_name, 2:study_id, 3:site_id, 4:subject_id,
-                            // 5:sample_cd, 6:platform, 7:tissuetype, 8:attr1, 9:attr2, 10:category_cd
-
-                            if (cols[2] && lineNum > 1) {
-                                if (!(cols[0] || cols[1])) {
-                                    throw new Exception("Incorrect mapping file: calls_file_name or copy_number_file_name is empty")
-                                }
-
-                                if (!(cols[4] && cols[5] && cols[6] && cols[10]))
-                                    throw new Exception("Incorrect mapping file: mandatory columns not defined")
-
-                                if (cols[0]) {
-                                    callsFileList << cols[0]
-                                }
-                                if (cols[1]) {
-                                    copyNumberFileList << cols[1]
-                                }
-                                platformList << cols[6]
-                                studyIdList << cols[2]
-
-                                stmt.addBatch(cols[2..-1])
+                        if (cols[2]) {
+                            if (!(cols[0] || cols[1])) {
+                                throw new Exception("Incorrect mapping file: calls_file_name or copy_number_file_name is empty")
                             }
+
+                            if (!(cols[4] && cols[5] && cols[6] && cols[10]))
+                                throw new Exception("Incorrect mapping file: mandatory columns not defined")
+
+                            if (cols[0]) {
+                                callsFileList << cols[0]
+                            }
+                            if (cols[1]) {
+                                copyNumberFileList << cols[1]
+                            }
+                            platformList << cols[6]
+                            studyIdList << cols[2]
+
+                            stmt.addBatch(cols[2..-1])
+                        }
                     }
             }
         }
@@ -206,7 +204,7 @@ class SNPDataProcessor extends DataProcessor {
         config.logger.log('Processing platform file')
         sql.withBatch(500, "insert into ${config.loadSchema}.lt_snp_gene_map (snp_name, entrez_gene_id) values (?, ?)") { st ->
             PlatformProcessor.eachPlatformEntry(platformFile, config.logger) { entry ->
-                st.addBatch([entry.probeset_id, entry.entrez_gene_id as long])
+                st.addBatch([entry.probeset_id, entry.entrez_gene_id as Long])
             }
         }
         config.logger.log('Updating SNP Gene Map in database')
