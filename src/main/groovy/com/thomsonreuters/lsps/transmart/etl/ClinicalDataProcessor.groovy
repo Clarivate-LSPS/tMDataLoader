@@ -33,7 +33,7 @@ class ClinicalDataProcessor extends DataProcessor {
     private long processEachRow(File f, fMappings, Closure<List> processRow) {
         def lineNum = 1L
         CsvLikeFile csvFile = new CsvLikeFile(f, '# ')
-        csvFile.eachEntry { String[] data->
+        csvFile.eachEntry { String[] data ->
             def cols = [''] // to support 0-index properly (we use it for empty data values)
             cols.addAll(Arrays.asList(data))
 
@@ -146,7 +146,7 @@ class ClinicalDataProcessor extends DataProcessor {
 
     private void processFileForPostgres(sql, f, fMappings) {
         DataLoader.start(database, "${config.loadSchema}.lt_src_clinical_data", ['STUDY_ID', 'SITE_ID', 'SUBJECT_ID', 'VISIT_NAME',
-                                                                  'DATA_LABEL', 'DATA_VALUE', 'CATEGORY_CD']) {
+                                                                                 'DATA_LABEL', 'DATA_VALUE', 'CATEGORY_CD']) {
             st ->
                 def lineNum = processEachRow(f, fMappings) { row ->
                     st.addBatch([row.study_id, row.site_id, row.subj_id, row.visit_name, row.data_label,
@@ -229,67 +229,60 @@ class ClinicalDataProcessor extends DataProcessor {
 
         config.logger.log("Mapping file: ${f.name}")
 
-        def lineNum = 0
+        CsvLikeFile mappingFile = new CsvLikeFile(f as File)
+        mappingFile.eachEntry { cols ->
+            if (!mappings[cols[0]]) {
+                mappings[cols[0]] = [
+                        STUDY_ID  : 0,
+                        SITE_ID   : 0,
+                        SUBJ_ID   : 0,
+                        VISIT_NAME: 0,
+                        _DATA     : []
+                        // [ { DATA_LABEL_SOURCE => 1, DATA_LABEL_SOURCE_TYPE => 'A',
+                        // DATA_LABEL => Label, CATEGORY_CD => '', COLUMN => 1 } ] - 1-based column numbers
+                ];
+            }
 
-        f.splitEachLine("\t") {
-            cols ->
+            def curMapping = mappings[cols[0]]
 
-                lineNum++
+            def dataLabel = cols[3]
+            if (dataLabel != 'OMIT' && dataLabel != 'DATA_LABEL') {
+                if (dataLabel == '\\') {
+                    // the actual data label should be taken from a specified column [4]
+                    def dataLabelSource = 0
+                    def dataLabelSourceType = ''
 
-                if (cols[0] && lineNum > 1) {
-                    if (!mappings[cols[0]]) {
-                        mappings[cols[0]] = [
-                                STUDY_ID  : 0,
-                                SITE_ID   : 0,
-                                SUBJ_ID   : 0,
-                                VISIT_NAME: 0,
-                                _DATA     : []
-                                // [ { DATA_LABEL_SOURCE => 1, DATA_LABEL_SOURCE_TYPE => 'A',
-                                // DATA_LABEL => Label, CATEGORY_CD => '', COLUMN => 1 } ] - 1-based column numbers
-                        ];
+                    def m = cols[4] =~ /^(\d+)(A|B){0,1}$/
+                    if (m.size() > 0) {
+                        dataLabelSource = m[0][1].toInteger()
+                        dataLabelSourceType = (m[0][2] in ['A', 'B']) ? m[0][2] : 'A'
                     }
 
-                    def curMapping = mappings[cols[0]]
-
-                    def dataLabel = cols[3]
-                    if (dataLabel != 'OMIT' && dataLabel != 'DATA_LABEL') {
-                        if (dataLabel == '\\') {
-                            // the actual data label should be taken from a specified column [4]
-                            def dataLabelSource = 0
-                            def dataLabelSourceType = ''
-
-                            def m = cols[4] =~ /^(\d+)(A|B){0,1}$/
-                            if (m.size() > 0) {
-                                dataLabelSource = m[0][1].toInteger()
-                                dataLabelSourceType = (m[0][2] in ['A', 'B']) ? m[0][2] : 'A'
-                            }
-
-                            if (cols[1] && cols[2].toInteger() > 0 && dataLabelSource > 0) {
-                                curMapping['_DATA'].add([
-                                        CATEGORY_CD           : cols[1],
-                                        COLUMN                : cols[2].toInteger(),
-                                        DATA_LABEL_SOURCE     : dataLabelSource,
-                                        DATA_LABEL_SOURCE_TYPE: dataLabelSourceType
-                                ])
-                            }
+                    if (cols[1] && cols[2].toInteger() > 0 && dataLabelSource > 0) {
+                        curMapping['_DATA'].add([
+                                CATEGORY_CD           : cols[1],
+                                COLUMN                : cols[2].toInteger(),
+                                DATA_LABEL_SOURCE     : dataLabelSource,
+                                DATA_LABEL_SOURCE_TYPE: dataLabelSourceType
+                        ])
+                    }
+                } else {
+                    if (curMapping.containsKey(dataLabel)) {
+                        curMapping[dataLabel] = cols[2].toInteger()
+                    } else {
+                        if (cols[1] && cols[2].toInteger() > 0) {
+                            curMapping['_DATA'].add([
+                                    DATA_LABEL : dataLabel,
+                                    CATEGORY_CD: cols[1],
+                                    COLUMN     : cols[2].toInteger()
+                            ])
                         } else {
-                            if (curMapping.containsKey(dataLabel)) {
-                                curMapping[dataLabel] = cols[2].toInteger()
-                            } else {
-                                if (cols[1] && cols[2].toInteger() > 0) {
-                                    curMapping['_DATA'].add([
-                                            DATA_LABEL : dataLabel,
-                                            CATEGORY_CD: cols[1],
-                                            COLUMN     : cols[2].toInteger()
-                                    ])
-                                } else {
-                                    config.logger.log(LogType.ERROR, "Category or column number is missing for line ${lineNum}")
-                                    throw new Exception("Error parsing mapping file")
-                                }
-                            }
+                            config.logger.log(LogType.ERROR, "Category or column number is missing for line ${lineNum}")
+                            throw new Exception("Error parsing mapping file")
                         }
                     }
                 }
+            }
         }
 
         return mappings
