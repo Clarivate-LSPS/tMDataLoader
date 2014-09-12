@@ -1,5 +1,6 @@
 package com.thomsonreuters.lsps.transmart.etl
 
+import com.thomsonreuters.lsps.transmart.files.CsvLikeFile
 import groovy.sql.Sql
 
 /**
@@ -20,14 +21,11 @@ class CsvFileLoader {
     void loadFile(File f, Closure prepareEntry = Closure.IDENTITY) {
         String insertCommand = "insert into ${table}(${columns.join(',')}) values (${columns.collect { '?' }.join(',')})"
         long lineNum = 0
+        CsvLikeFile csvFile = new CsvLikeFile(f)
         sql.withBatch(500, insertCommand) { stmt ->
-            f.splitEachLine('\t') { entry ->
-                lineNum++
-                if (lineNum <= 1) {
-                    return
-                }
+            csvFile.eachEntry { entry ->
                 logger?.log(LogType.PROGRESS, "[${lineNum}]")
-                stmt.addBatch(prepareEntry(entry))
+                stmt.addBatch(prepareEntry.call((Object) entry))
             }
         }
         logger?.log(LogType.PROGRESS, '')
