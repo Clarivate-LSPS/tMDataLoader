@@ -1,15 +1,17 @@
 package com.thomsonreuters.lsps.transmart.etl
 
+import org.apache.commons.csv.CSVFormat
+import org.apache.commons.csv.CSVPrinter
+
 /**
  * Created by bondarev on 4/21/14.
  */
 class CsvDataLoader extends DataLoader {
     private static class BatchWriter {
-        private PrintWriter out
-        private StringBuilder buf = new StringBuilder()
+        private CSVPrinter printer
 
         BatchWriter(PrintWriter out) {
-            this.out = out
+            printer = new CSVPrinter(out, CSVFormat.TDF)
         }
 
         def addBatch(Object[] data) {
@@ -17,37 +19,13 @@ class CsvDataLoader extends DataLoader {
         }
 
         def addBatch(List data) {
-            buf.setLength(0)
-            for (int i = 0; i < data.size(); i++) {
-                def value = data[i]
-                switch (value) {
-                    case Integer:
-                    case Long:
-                    case Float:
-                    case Double:
-                        buf.append(value)
-                        break
-                    case String:
-                    case GString:
-                        value = (value as String).replaceAll(/"/, '""')
-                        if (value.indexOf('\t') != -1) {
-                            buf.append('\"').append(value).append('\"')
-                        } else {
-                            buf.append(value)
-                        }
-                        break
-                    case Boolean:
-                        buf.append(value ? 't' : 'f')
-                        break
-                    case null:
-                        break
-                    default:
-                        throw new RuntimeException("Invalid value type: ${data[i].class}")
+            for (def value : data) {
+                if (value instanceof Boolean) {
+                    value = value ? 't' : 'f'
                 }
-                buf.append('\t')
+                printer.print(value)
             }
-            buf.setLength(buf.length() - 1)
-            out.println(buf)
+            printer.println()
         }
     }
 
