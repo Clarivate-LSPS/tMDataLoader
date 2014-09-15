@@ -631,15 +631,19 @@ BEGIN
 			  ,observation_fact xf
 		  where xf.concept_cd = xd.concept_cd
 		  group by xd.concept_Cd
-		  having Max(xf.valtype_cd) = 'N');
+		  having Max(xf.valtype_cd) = 'T');
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Update c_columndatatype and c_metadataxml for numeric data types in I2B2METADATA i2b2',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
 
   update deapp.de_variant_subject_summary v
-	set assay_id = (select sm.assay_id
-	from deapp.de_subject_sample_mapping sm
-	where sm.trial_name = TrialID and sm.sample_cd = v.subject_id and sm.platform='VCF');
+    set assay_id = (select sm.assay_id
+    from deapp.de_subject_sample_mapping sm
+    where sm.trial_name = TrialID
+      and sm.sample_cd = v.subject_id
+      and sm.platform='VCF'
+      and v.dataset_id = sm.trial_name||':'||sm.source_cd
+      );
 
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Associate deapp.de_subject_sample_mapping with deapp.de_variant_subject_summary',SQL%ROWCOUNT,stepCt,'Done');
