@@ -11,7 +11,7 @@ class CsvDataLoader extends DataLoader {
         private CSVPrinter printer
 
         BatchWriter(PrintWriter out) {
-            printer = new CSVPrinter(out, CSVFormat.TDF)
+            printer = new CSVPrinter(out, CSVFormat.TDF.withRecordSeparator(System.lineSeparator()))
         }
 
         def addBatch(Object[] data) {
