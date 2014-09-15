@@ -9,11 +9,15 @@ AS
 
 --	JEA@20100106	New
 --	JEA@20100112	Added removal of SECURITY records from observation_fact
+  TYPE sourceCDs IS TABLE OF Varchar2(250);
+  TYPE tVarCh2 IS TABLE OF Varchar2(700);
 
   TrialID 		varchar2(100);
   pathString  VARCHAR2(700 BYTE);
+  tPathString  VARCHAR2(700 BYTE);
   TrialType 	VARCHAR2(250);
-  sourceCD  	VARCHAR2(250);
+  sourceCD  	sourceCDs;
+  pathStrings tVarCh2;
   
   --Audit variables
   newJobFlag INTEGER(1);
@@ -32,6 +36,21 @@ AS
   more_path exception;
 
 BEGIN
+  --Set Audit Parameters
+  newJobFlag := 0; -- False (Default)
+  jobID := currentJobID;
+
+  SELECT sys_context('USERENV', 'CURRENT_SCHEMA') INTO databaseName FROM dual;
+  procedureName := $$PLSQL_UNIT;
+
+  --Audit JOB Initialization
+  --If Job ID does not exist, then this is a single procedure run and we need to create it
+  IF(jobID IS NULL or jobID < 1)
+  THEN
+    newJobFlag := 1; -- True
+    cz_start_audit (procedureName, databaseName, jobID);
+  END IF;
+
   if (path_string is not null) then
     select REGEXP_REPLACE('\' || path_string || '\','(\\){2,}', '\') into pathString from dual;
   end if;
@@ -56,32 +75,37 @@ BEGIN
   end if;
 
   if (path_string is null) then
-    select count(concept_path) into pathCount
+    select concept_path bulk collect into pathStrings
       from I2B2DEMODATA.concept_dimension where concept_cd in (
         select concept_code from DEAPP.de_subject_sample_mapping where trial_name = TrialId
       );
-    if (pathCount = 1) then
-      select concept_path into pathString
-       from (
+
+    pathCount := 0;
+    FOR i IN pathStrings.FIRST..pathStrings.LAST LOOP
+      select concept_path into tPathString
+        from (
           select level, concept_path
-          from i2b2demodata.concept_counts
-          start with CONCEPT_PATH = (
-            select concept_path
-              from I2B2DEMODATA.concept_dimension where concept_cd in (
-                select concept_code from DEAPP.de_subject_sample_mapping where trial_name = TrialId
-              )
-          )
-          connect by prior  PARENT_CONCEPT_PATH = CONCEPT_PATH
-          order by level desc)
-          where ROWNUM  = 1;
-    else
+            from i2b2demodata.concept_counts
+            start with CONCEPT_PATH = pathStrings(i)
+        connect by prior  PARENT_CONCEPT_PATH = CONCEPT_PATH
+        order by level desc)
+        where ROWNUM  = 1;
+
+      if (tPathString = pathString) then
+        pathCount := pathCount + 1;
+        pathString := tPathString;
+      else
+        pathString := tPathString;
+      end if;
+    end loop;
+    if (pathCount = 2) then
       raise more_path;
     end if;
   else
     pathString := path_string;
   end if;
-  
-  
+
+
   select count(parent_concept_path) into topNodeCount
     from I2B2DEMODATA.concept_counts 
     where 
@@ -98,22 +122,7 @@ BEGIN
 
   
   stepCt := 0;
-  
-  --Set Audit Parameters
-  newJobFlag := 0; -- False (Default)
-  jobID := currentJobID;
 
-  SELECT sys_context('USERENV', 'CURRENT_SCHEMA') INTO databaseName FROM dual;
-  procedureName := $$PLSQL_UNIT;
-
-  --Audit JOB Initialization
-  --If Job ID does not exist, then this is a single procedure run and we need to create it
-  IF(jobID IS NULL or jobID < 1)
-  THEN
-    newJobFlag := 1; -- True
-    cz_start_audit (procedureName, databaseName, jobID);
-  END IF;
-  
   if pathString != ''  or pathString != '%'
   then 
 	stepCt := stepCt + 1;
@@ -146,9 +155,13 @@ BEGIN
 
     /*Deleting data from de_variant_subject_summary*/
     delete from deapp.de_variant_subject_summary v
-      where assay_id = (select sm.assay_id
+      where assay_id in (select sm.assay_id
       from deapp.de_subject_sample_mapping sm
-      where sm.trial_name = TrialID and sm.sample_cd = v.subject_id);
+      where sm.trial_name = TrialID
+        --and sm.sample_cd = v.subject_id
+        and sm.platform='VCF'
+        and v.dataset_id = sm.trial_name||':'||sm.source_cd
+        );
     stepCt := stepCt + 1;
 		cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_subject_summary',SQL%ROWCOUNT,stepCt,'Done');
 		commit;
@@ -184,10 +197,11 @@ BEGIN
 			  where x.trial_name = trialId;
 
     if (countSourceCD>0) then
-      select distinct x.source_cd into sourceCD
+      select distinct x.source_cd bulk collect into sourceCD
           from de_subject_sample_mapping x
           where x.trial_name = trialId;
 
+    FOR i IN sourceCD.FIRST..sourceCD.LAST LOOP
       delete from observation_fact f
       where f.concept_cd = 'SECURITY'
         and f.patient_num in
@@ -199,7 +213,7 @@ BEGIN
 
 
       delete from deapp.de_subject_microarray_data
-      where trial_source = trialId || ':' || sourceCd
+      where trial_source = trialId || ':' || sourceCD(i)
       and assay_id in (
         select dssm.assay_id from
         lt_src_mrna_subj_samp_map ltssm
@@ -212,7 +226,7 @@ BEGIN
         and dssm.sample_cd  = ltssm.sample_cd
         where
         dssm.trial_name = trialId
-        and nvl(dssm.source_cd,'STD') = sourceCd
+        and nvl(dssm.source_cd,'STD') = sourceCD(i)
       );
       stepCt := stepCt + 1;
       cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from deapp de_subject_microarray_data',SQL%ROWCOUNT,stepCt,'Done');
@@ -231,7 +245,7 @@ BEGIN
           and dssm.sample_cd  = ltssm.sample_cd
         where
           dssm.trial_name = trialID
-          and nvl(dssm.source_cd,'STD') = sourceCd);
+          and nvl(dssm.source_cd,'STD') = sourceCD(i));
 
       stepCt := stepCt + 1;
       cz_write_audit(jobId,databaseName,procedureName,'Delete trial from DEAPP de_subject_sample_mapping',SQL%ROWCOUNT,stepCt,'Done');
@@ -243,6 +257,8 @@ BEGIN
       cz_write_audit(jobId,databaseName,procedureName,'Delete trial from DEAPP de_subject_sample_mapping',SQL%ROWCOUNT,stepCt,'Done');
 
       commit;
+
+      end loop;
     end if;
 		--	delete patient data
 		
