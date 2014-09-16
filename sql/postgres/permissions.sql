@@ -25,6 +25,8 @@ grant usage on sequence deapp.de_variant_subject_detail_seq to tm_cz;
 grant select on deapp.de_subject_sample_mapping to tm_cz;
 grant execute on all functions in schema tm_cz to tm_cz;
 grant usage on schema tm_cz to tm_cz;
+grant usage on schema i2b2demodata to tm_cz;
+grant usage on schema i2b2metadata to tm_cz;
 
 -- Permissions for biomart_user
 grant select on deapp.de_variant_dataset to biomart_user;
