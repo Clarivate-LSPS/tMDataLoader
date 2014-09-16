@@ -7,12 +7,15 @@ grant select, insert, update, delete on i2b2metadata.table_access to "&TM_CZ_SCH
 grant select, insert, update, delete on i2b2demodata.observation_fact to "&TM_CZ_SCHEMA";
 grant select, insert, update, delete on i2b2demodata.concept_dimension to "&TM_CZ_SCHEMA";
 grant select, insert, update, delete on i2b2demodata.concept_counts to "&TM_CZ_SCHEMA";
+grant select, insert, update, delete on i2b2demodata.modifier_dimension to "&TM_CZ_SCHEMA";
 grant select, insert, update, delete on i2b2demodata.patient_dimension to "&TM_CZ_SCHEMA";
 grant select, insert, update, delete on i2b2demodata.patient_trial to "&TM_CZ_SCHEMA";
 grant select, insert, update, delete on i2b2metadata.i2b2 to "&TM_CZ_SCHEMA";
 grant select, insert, update, delete on i2b2metadata.i2b2_tags to "&TM_CZ_SCHEMA";
 grant select, insert, update, delete on i2b2metadata.i2b2_secure to "&TM_CZ_SCHEMA";
 
+grant select, insert, update, delete on biomart.bio_assay_data_annotation to "&TM_CZ_SCHEMA";
+grant select, insert, update, delete on biomart.bio_assay_feature_group to "&TM_CZ_SCHEMA"; 
 grant select, insert, update, delete on biomart.bio_data_uid to "&TM_CZ_SCHEMA";
 grant select, insert, update, delete on biomart.bio_experiment to "&TM_CZ_SCHEMA";
 grant select, insert, update, delete on biomart.bio_compound to "&TM_CZ_SCHEMA";
@@ -24,6 +27,7 @@ grant select, insert, update, delete on biomart.bio_disease to "&TM_CZ_SCHEMA";
 grant select, insert, update, delete on biomart.bio_clinical_trial to "&TM_CZ_SCHEMA";
 grant select, insert, update, delete on biomart.bio_content_reference to "&TM_CZ_SCHEMA";
 grant select, insert, update, delete on biomart.bio_content_repository to "&TM_CZ_SCHEMA";
+grant select, insert, update, delete on biomart.bio_marker to "&TM_CZ_SCHEMA";
 
 grant select, insert, update, delete on deapp.de_subject_sample_mapping to "&TM_CZ_SCHEMA";
 grant select, insert, update, delete on deapp.de_subject_microarray_data to "&TM_CZ_SCHEMA";
@@ -43,9 +47,15 @@ grant select, insert, update, delete on deapp.de_variant_dataset to "&TM_CZ_SCHE
 
 grant select, insert, update, delete on searchapp.search_secure_object to "&TM_CZ_SCHEMA";
 
+grant select, insert, update, delete on "&TM_LZ_SCHEMA".lt_snp_calls_by_gsm to "&TM_CZ_SCHEMA";
+grant select, insert, update, delete on "&TM_LZ_SCHEMA".lt_snp_copy_number to "&TM_CZ_SCHEMA";
+grant select, insert, update, delete on "&TM_LZ_SCHEMA".lt_snp_gene_map to "&TM_CZ_SCHEMA";
 grant select, insert, update, delete on "&TM_LZ_SCHEMA".lz_src_clinical_data to "&TM_CZ_SCHEMA";
 grant select, insert, update, delete on "&TM_LZ_SCHEMA".lt_src_study_metadata to "&TM_CZ_SCHEMA";
+grant select, insert, update, delete on "&TM_LZ_SCHEMA".lt_src_mrna_subj_samp_map to "&TM_CZ_SCHEMA";
 
+grant select, insert, update, delete on "&TM_WZ_SCHEMA".wt_mrna_nodes to "&TM_CZ_SCHEMA";
+grant select, insert, update, delete on "&TM_WZ_SCHEMA".wt_mrna_node_values to "&TM_CZ_SCHEMA";
 grant select, insert, update, delete on "&TM_WZ_SCHEMA".wt_trial_nodes to "&TM_CZ_SCHEMA";
 grant select, insert, update, delete on "&TM_WZ_SCHEMA".wrk_clinical_data to "&TM_CZ_SCHEMA";
 grant select, insert, update, delete on "&TM_WZ_SCHEMA".wt_num_data_types to "&TM_CZ_SCHEMA";
