@@ -187,7 +187,7 @@ BEGIN
 		where f.concept_cd = 'SECURITY'
 		  and f.patient_num in
 			 (select distinct p.patient_num from i2b2demodata.patient_dimension p
-			  where p.sourcesystem_cd like trialId || '%');
+			  where p.sourcesystem_cd like trialId || ':%');
 		stepCt := stepCt + 1;
 		get diagnostics rowCt := ROW_COUNT;
 		select cz_write_audit(jobId,databaseName,procedureName,'Delete SECURITY data for trial from I2B2DEMODATA observation_fact',rowCt,stepCt,'Done') into rtnCd;
@@ -245,7 +245,7 @@ BEGIN
 		--	delete patient data
 
 		delete from i2b2demodata.patient_dimension
-		where sourcesystem_cd like trialId || '%';
+		where sourcesystem_cd like trialId || ':%';
 		stepCt := stepCt + 1;
 		get diagnostics rowCt := ROW_COUNT;
 		select cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from I2B2DEMODATA patient_dimension',rowCt,stepCt,'Done') into rtnCd;

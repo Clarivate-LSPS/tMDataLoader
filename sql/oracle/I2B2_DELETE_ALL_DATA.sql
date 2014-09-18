@@ -206,7 +206,7 @@ BEGIN
       where f.concept_cd = 'SECURITY'
         and f.patient_num in
          (select distinct p.patient_num from patient_dimension p
-          where p.sourcesystem_cd like trialId || '%');
+          where p.sourcesystem_cd like trialId || ':%');
       stepCt := stepCt + 1;
       cz_write_audit(jobId,databaseName,procedureName,'Delete SECURITY data for trial from I2B2DEMODATA observation_fact',SQL%ROWCOUNT,stepCt,'Done');
       commit;
@@ -263,7 +263,7 @@ BEGIN
 		--	delete patient data
 		
 		delete from patient_dimension
-		where sourcesystem_cd like trialId || '%';
+		where sourcesystem_cd like trialId || ':%';
 		stepCt := stepCt + 1;
 		cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from I2B2DEMODATA patient_dimension',SQL%ROWCOUNT,stepCt,'Done');
 		commit;
