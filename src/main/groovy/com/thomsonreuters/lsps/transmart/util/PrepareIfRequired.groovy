@@ -14,8 +14,13 @@ class PrepareIfRequired {
 
     public final void prepareIfRequired() {
         if (!this._prepared) {
-            prepare()
             this._prepared = true
+            try {
+                prepare()
+            } catch (Throwable ex) {
+                this._prepared = false
+                throw ex;
+            }
         }
     }
 
