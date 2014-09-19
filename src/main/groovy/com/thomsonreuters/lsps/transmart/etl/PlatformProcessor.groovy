@@ -45,43 +45,4 @@ class PlatformProcessor {
         logger.log(LogType.PROGRESS, "")
         return lineNum
     }
-
-    static long eachMIRNAPlatformEntry(File platformFile, logger, Closure processEntry) {
-        long lineNum = 0
-        GplFile gplFile = new GplFile(platformFile)
-        int mirnaIdIdx = -1, snIdIdx = -1, organismIdx = -1
-        def header = gplFile.header
-        header.eachWithIndex { String val, int idx ->
-            if (val ==~ /(?i)(MIRNA[\s_]*)*ID/) mirnaIdIdx = idx
-            else if (val ==~ /(?i)SN[\s_]*ID/) snIdIdx = idx
-            else if (val ==~ /(?i)ORGANISM/) organismIdx = idx
-        }
-        if (organismIdx == -1) {
-            // OK, trying to get species from the description
-            logger.log(LogType.WARNING, "Organism not found in the platform file, using description")
-        }
-        if (mirnaIdIdx == -1 || snIdIdx == -1) {
-            throw new Exception("Incorrect platform file header")
-        }
-        logger.log(LogType.DEBUG, "MIRNA_ID, SN_ID, ORGANISM => " +
-                "${header[mirnaIdIdx]}, " +
-                "${header[snIdIdx]}, " +
-                "${organismIdx != -1 ? header[organismIdx] : '(Not specified)'}")
-
-        gplFile.eachEntry { String[] cols ->
-            lineNum++
-
-            logger.log(LogType.PROGRESS, "[${lineNum}]")
-            processEntry([
-                    id_ref      : cols[0],
-                    mirna_id    : !cols[mirnaIdIdx].isEmpty() ? cols[mirnaIdIdx] : null,
-                    sn_id       : !cols[snIdIdx].isEmpty() ? cols[snIdIdx] : null,
-                    organism    : organismIdx != -1 ? cols[organismIdx] : null
-            ])
-
-            return cols;
-        }
-        logger.log(LogType.PROGRESS, "")
-        return lineNum
-    }
 }

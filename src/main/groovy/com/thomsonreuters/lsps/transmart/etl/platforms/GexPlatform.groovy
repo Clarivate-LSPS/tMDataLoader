@@ -7,12 +7,9 @@ import groovy.sql.Sql
  * Time: 12:47
  */
 class GexPlatform extends GenePlatform {
-    GexPlatform(File platformFile, String id, config) {
-        this.platformFile = new GplFile(platformFile)
-        this.id = id
-        this.config = config
+    GexPlatform(File platformFile, String id, Object config) {
+        super(new GplFile(platformFile), id, config)
     }
-
 
     @Override
     public void cleanupTempTables(Sql sql) {
