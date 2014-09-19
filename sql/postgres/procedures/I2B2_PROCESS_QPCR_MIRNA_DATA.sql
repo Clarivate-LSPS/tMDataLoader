@@ -1,8 +1,9 @@
 --
 -- Name: i2b2_process_qpcr_mirna_data(character varying, character varying, character varying, character varying, numeric, character varying, numeric, character varying); Type: FUNCTION; Schema: tm_cz; Owner: -
 --
-CREATE FUNCTION i2b2_process_qpcr_mirna_data(trial_id character varying, top_node character varying, data_type character varying DEFAULT 'R'::character varying, source_cd character varying DEFAULT 'STD'::character varying, log_base numeric DEFAULT 2, secure_study character varying DEFAULT NULL::character varying, currentjobid numeric DEFAULT NULL::numeric, mirna_type character varying DEFAULT NULL::character varying) RETURNS numeric
+CREATE OR REPLACE FUNCTION i2b2_process_qpcr_mirna_data(trial_id character varying, top_node character varying, data_type character varying DEFAULT 'R'::character varying, source_cd character varying DEFAULT 'STD'::character varying, log_base numeric DEFAULT 2, secure_study character varying DEFAULT NULL::character varying, currentjobid numeric DEFAULT NULL::numeric, mirna_type character varying DEFAULT NULL::character varying) RETURNS numeric
     LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path FROM CURRENT
     AS $$
 /*************************************************************************
 
@@ -110,19 +111,19 @@ BEGIN
   newJobFlag := 0; -- False (Default)
   jobID := currentJobID;
 
-  databaseName := 'TM_CZ';
+  databaseName := current_schema();
   procedureName := 'I2B2_PROCESS_QPCR_MIRNA_DATA';
   --Audit JOB Initialization
   --If Job ID does not exist, then this is a single procedure run and we need to create it
   IF(jobID IS NULL or jobID < 1)
   THEN
     newJobFlag := 1; -- True
-    select cz_start_audit (procedureName, databaseName) into jobID;
+    select cz_start_audit(procedureName, databaseName) into jobID;
   END IF;
     	
 	stepCt := 0;
-	stepCt := stepCt + 1; get diagnostics rowCt := ROW_COUNT;
-	perform cz_write_audit(jobId,databaseName,procedureName,'Starting i2b2_process_qpcr_mirna_data',0,stepCt,'Done');
+	stepCt := stepCt + 1;
+	perform cz_write_audit(jobID,databaseName,procedureName,'Starting i2b2_process_qpcr_mirna_data',0,stepCt,'Done');
 	
 	--	Get count of records in LT_SRC_MIRNA_SUBJ_SAMP_MAP
 	
@@ -1195,7 +1196,7 @@ BEGIN
 	EXCEPTION
 	WHEN OTHERS THEN
 		--Handle errors.
-		perform cz_error_handler (jobID, procedureName, '-1', 'Application raised error');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
 		--End Proc
 		perform cz_end_audit (jobID, 'FAIL');
 		return 16;
