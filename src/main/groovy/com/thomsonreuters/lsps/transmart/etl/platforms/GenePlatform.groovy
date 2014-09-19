@@ -1,5 +1,4 @@
 package com.thomsonreuters.lsps.transmart.etl.platforms
-
 import com.thomsonreuters.lsps.transmart.etl.LogType
 import com.thomsonreuters.lsps.transmart.etl.PlatformLoader
 import com.thomsonreuters.lsps.transmart.files.CsvLikeFile
@@ -8,7 +7,6 @@ import com.thomsonreuters.lsps.transmart.util.PrepareIfRequired
 import com.thomsonreuters.lsps.transmart.util.annotations.RequiresPrepare
 import groovy.sql.BatchingPreparedStatementWrapper
 import groovy.sql.Sql
-
 /**
  * Date: 19.09.2014
  * Time: 17:18
@@ -22,6 +20,12 @@ abstract class GenePlatform {
     String organism
     protected def config
     protected CsvLikeFile platformFile
+
+    GenePlatform(CsvLikeFile platformFile, String id, config) {
+        this.platformFile = platformFile
+        this.id = id
+        this.config = config
+    }
 
     File getFile() {
         return platformFile.file
