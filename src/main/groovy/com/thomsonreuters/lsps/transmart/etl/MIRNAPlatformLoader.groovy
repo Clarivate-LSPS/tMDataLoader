@@ -49,8 +49,8 @@ class MIRNAPlatformLoader extends PlatformLoader {
                 if (platformTitle && platformOrganism) {
                     sql.execute("""\
 							INSERT into deapp.de_gpl_info (PLATFORM, TITLE, ORGANISM, ANNOTATION_DATE, MARKER_TYPE)
-							VALUES (?, ?, ?, current_timestamp, mirnaType)
-						""", [platform, platformTitle, platformOrganism])
+							VALUES (?, ?, ?, current_timestamp, ?)
+						""", [platform, platformTitle, platformOrganism, mirnaType])
                 } else {
                     throw new Exception("Cannot fetch platform title & organism for ${platform}")
                 }
