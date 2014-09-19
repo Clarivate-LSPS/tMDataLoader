@@ -13,7 +13,8 @@ import groovy.sql.Sql
  */
 @Mixin(PrepareIfRequired)
 abstract class GenePlatform {
-    public String id
+    String id
+    String platformType
     @RequiresPrepare
     String title
     @RequiresPrepare
@@ -21,8 +22,9 @@ abstract class GenePlatform {
     protected def config
     protected CsvLikeFile platformFile
 
-    GenePlatform(CsvLikeFile platformFile, String id, config) {
+    GenePlatform(CsvLikeFile platformFile, String platformType, String id, config) {
         this.platformFile = platformFile
+        this.platformType = platformType
         this.id = id
         this.config = config
     }

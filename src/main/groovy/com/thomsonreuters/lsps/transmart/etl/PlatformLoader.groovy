@@ -25,8 +25,8 @@ class PlatformLoader {
                 if (genePlatform.title && genePlatform.organism) {
                     sql.execute("""\
 							INSERT into deapp.de_gpl_info (PLATFORM, TITLE, ORGANISM, ANNOTATION_DATE, MARKER_TYPE)
-							VALUES (?, ?, ?, current_timestamp, 'Gene Expression')
-						""", [genePlatform.id, genePlatform.title, genePlatform.organism])
+							VALUES (?, ?, ?, current_timestamp, ?)
+						""", [genePlatform.id, genePlatform.title, genePlatform.organism, genePlatform.platformType])
                 } else {
                     throw new Exception("Cannot fetch platform title & organism for ${platform}")
                 }

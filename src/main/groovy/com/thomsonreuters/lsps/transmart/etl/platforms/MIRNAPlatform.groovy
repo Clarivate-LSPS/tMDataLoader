@@ -9,11 +9,8 @@ import groovy.sql.Sql
  * Time: 17:52
  */
 class MIRNAPlatform extends GenePlatform {
-    String mirnaType
-
     MIRNAPlatform(File platformFile, String id, String mirnaType, Object config) {
-        super(new GplFile(platformFile), id, config)
-        this.mirnaType = mirnaType
+        super(new GplFile(platformFile), mirnaType, id, config)
     }
 
     @Override
