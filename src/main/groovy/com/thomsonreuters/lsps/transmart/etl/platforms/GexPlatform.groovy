@@ -8,7 +8,7 @@ import groovy.sql.Sql
  */
 class GexPlatform extends GenePlatform {
     GexPlatform(File platformFile, String id, Object config) {
-        super(new GplFile(platformFile), id, config)
+        super(new GplFile(platformFile), 'Gene Expression', id, config)
     }
 
     @Override
