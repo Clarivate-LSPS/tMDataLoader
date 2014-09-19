@@ -1,5 +1,6 @@
 package com.thomsonreuters.lsps.transmart.files
 
+import com.thomsonreuters.lsps.transmart.util.annotations.RequiresPrepare
 import org.apache.commons.csv.CSVRecord
 
 /**
@@ -136,8 +137,8 @@ class VcfFile extends CsvLikeFile {
         }
     }
 
+    @RequiresPrepare
     public void validate() {
-        prepareIfRequired();
     }
     
     @Override
@@ -167,13 +168,13 @@ class VcfFile extends CsvLikeFile {
         return idx
     }
 
+    @RequiresPrepare
     String[] getSamples() {
-        prepareIfRequired()
         return _samples
     }
 
+    @RequiresPrepare
     Map<CharSequence, InfoField> getInfoFields() {
-        prepareIfRequired()
         infoFields
     }
 
