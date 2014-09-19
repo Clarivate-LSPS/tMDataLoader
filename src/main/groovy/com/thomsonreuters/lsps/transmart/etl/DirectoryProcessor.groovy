@@ -30,6 +30,7 @@ class DirectoryProcessor {
             RBM       : RBMDataProcessor,
             Meta      : MetaDataProcessor,
             Clinical  : ClinicalDataProcessor,
+            MIRNASeq  : MIRNADataProcessor,
     ]
 
     DirectoryProcessor(conf) {
