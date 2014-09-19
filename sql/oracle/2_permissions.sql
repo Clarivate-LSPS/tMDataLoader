@@ -66,6 +66,10 @@ grant select, insert, update, delete on "&TM_WZ_SCHEMA".wt_subject_microarray_ca
 grant select, insert, update, delete on "&TM_WZ_SCHEMA".wt_subject_microarray_med to "&TM_CZ_SCHEMA";
 
 grant select on sys.all_tables to "&TM_CZ_SCHEMA";
+-- the following 2 grants are done for ETL performance improvements, tm_cz_schema user needs
+-- to truncate tables and alter indexes in another users schema (DEAPP, I2B2DEMODATA)
+grant alter any table to "&TM_CZ_SCHEMA";
+grant alter any index to "&TM_CZ_SCHEMA";
 
 grant select on i2b2metadata.i2b2_id_seq to "&TM_CZ_SCHEMA";
 grant select on i2b2demodata.concept_id to "&TM_CZ_SCHEMA";
