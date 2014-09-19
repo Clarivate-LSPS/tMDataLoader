@@ -20,6 +20,7 @@
 
 package com.thomsonreuters.lsps.transmart.etl
 
+import com.thomsonreuters.lsps.transmart.etl.platforms.GexPlatform
 import com.thomsonreuters.lsps.transmart.files.CsvLikeFile
 import groovy.sql.Sql
 
@@ -225,7 +226,8 @@ class SNPDataProcessor extends DataProcessor {
         platformList.each { String platform ->
             File platformFile = new File(dir, "${platform}.txt")
             loadSNPGeneMap(sql, platformFile)
-            new PlatformLoader(sql, config).doLoad(platformFile, platform, studyInfo)
+            def gexPlatform = new GexPlatform(platformFile, platform, config)
+            new PlatformLoader(sql, config).doLoad(gexPlatform, studyInfo)
         }
     }
 }
