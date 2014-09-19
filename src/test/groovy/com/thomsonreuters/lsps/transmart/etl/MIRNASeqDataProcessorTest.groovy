@@ -16,7 +16,7 @@ class MIRNASeqDataProcessorTest extends ConfigAwareTestCase {
     String mirnaType = 'MIRNA_SEQ'
 
     MIRNADataProcessor getProcessor() {
-        _processor ?: (_processor = new MIRNADataProcessor(config, mirnaType))
+        _processor ?: (_processor = new MIRNADataProcessor(config))
     }
 
     @Override

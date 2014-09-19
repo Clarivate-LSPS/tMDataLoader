@@ -5,11 +5,11 @@ import com.thomsonreuters.lsps.transmart.sql.DatabaseType;
 import groovy.sql.Sql
 
 public class MIRNADataProcessor extends DataProcessor {
-    private _mirnaType
+    // TODO Update after adding MIRNA_QPCR type
+    private _mirnaType = "MIRNA_SEQ"
 
-    public MIRNADataProcessor(Object conf, String mirnaType) {
+    public MIRNADataProcessor(Object conf) {
         super(conf);
-        _mirnaType = mirnaType;
     }
 
     def getMirnaType() {
