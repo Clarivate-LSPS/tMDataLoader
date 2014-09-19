@@ -227,7 +227,7 @@ class SNPDataProcessor extends DataProcessor {
             File platformFile = new File(dir, "${platform}.txt")
             loadSNPGeneMap(sql, platformFile)
             def gexPlatform = new GexPlatform(platformFile, platform, config)
-            new PlatformLoader(sql, config).doLoad(gexPlatform, studyInfo)
+            gexPlatform.load(sql, studyInfo)
         }
     }
 }

@@ -143,10 +143,9 @@ class ExpressionDataProcessor extends DataProcessor {
     }
 
     private void loadPlatforms(File dir, Sql sql, List platformList, studyInfo) {
-        def platformLoader = new PlatformLoader(sql, config)
         platformList.each { String platform ->
             def gexPlatform = new GexPlatform(new File(dir, "${platform}.txt"), platform, config)
-            platformLoader.doLoad(gexPlatform, studyInfo)
+            gexPlatform.load(sql, studyInfo)
         }
     }
 

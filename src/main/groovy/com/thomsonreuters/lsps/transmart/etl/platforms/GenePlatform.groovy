@@ -1,6 +1,7 @@
 package com.thomsonreuters.lsps.transmart.etl.platforms
 
 import com.thomsonreuters.lsps.transmart.etl.LogType
+import com.thomsonreuters.lsps.transmart.etl.PlatformLoader
 import com.thomsonreuters.lsps.transmart.files.CsvLikeFile
 import com.thomsonreuters.lsps.transmart.files.MetaInfoHeader
 import com.thomsonreuters.lsps.transmart.util.PrepareIfRequired
@@ -79,6 +80,10 @@ abstract class GenePlatform {
         }
         config.logger.log(LogType.PROGRESS, "")
         return lineNum
+    }
+
+    public void load(Sql sql, studyInfo) {
+        new PlatformLoader(sql, config).doLoad(this, studyInfo)
     }
 
     public abstract int loadEntries(Sql sql)
