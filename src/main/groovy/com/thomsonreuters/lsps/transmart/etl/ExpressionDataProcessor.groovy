@@ -20,6 +20,7 @@
 
 package com.thomsonreuters.lsps.transmart.etl
 
+import com.thomsonreuters.lsps.transmart.etl.platforms.GexPlatform
 import com.thomsonreuters.lsps.transmart.files.CsvLikeFile
 import com.thomsonreuters.lsps.transmart.sql.DatabaseType
 import groovy.sql.Sql
@@ -144,7 +145,8 @@ class ExpressionDataProcessor extends DataProcessor {
     private void loadPlatforms(File dir, Sql sql, List platformList, studyInfo) {
         def platformLoader = new PlatformLoader(sql, config)
         platformList.each { String platform ->
-            platformLoader.doLoad(new File(dir, "${platform}.txt"), platform, studyInfo)
+            def gexPlatform = new GexPlatform(new File(dir, "${platform}.txt"), platform, config)
+            platformLoader.doLoad(gexPlatform, studyInfo)
         }
     }
 
