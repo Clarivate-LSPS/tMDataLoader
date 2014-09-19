@@ -9,6 +9,7 @@ public class MIRNADataProcessor extends DataProcessor {
 
     public MIRNADataProcessor(Object conf, String mirnaType) {
         super(conf);
+        _mirnaType = mirnaType;
     }
 
     def getMirnaType() {
