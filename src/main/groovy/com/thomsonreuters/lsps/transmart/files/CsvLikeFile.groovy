@@ -1,17 +1,13 @@
 package com.thomsonreuters.lsps.transmart.files
-
 import com.thomsonreuters.lsps.transmart.util.PrepareIfRequired
-import com.thomsonreuters.lsps.transmart.util.annotations.RequiresPrepare
 import com.thomsonreuters.lsps.utils.SkipLinesReader
 import org.apache.commons.csv.CSVFormat
 import org.apache.commons.csv.CSVParser
 import org.apache.commons.csv.CSVRecord
-
 /**
  * Created by bondarev on 3/28/14.
  */
-@Mixin(PrepareIfRequired)
-class CsvLikeFile {
+class CsvLikeFile implements PrepareIfRequired {
     File file
     protected String lineComment
     private List<String> header
@@ -56,8 +52,8 @@ class CsvLikeFile {
         return entry
     }
 
-    @RequiresPrepare
     def <T> T eachEntry(Closure<T> processEntry) {
+        prepareIfRequired()
         withParser { CSVParser parser ->
             for (CSVRecord record : parser) {
                 processEntry(makeEntry(record))

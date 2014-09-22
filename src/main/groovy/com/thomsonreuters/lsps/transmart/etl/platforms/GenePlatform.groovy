@@ -4,15 +4,13 @@ import com.thomsonreuters.lsps.transmart.etl.PlatformLoader
 import com.thomsonreuters.lsps.transmart.files.CsvLikeFile
 import com.thomsonreuters.lsps.transmart.files.MetaInfoHeader
 import com.thomsonreuters.lsps.transmart.util.PrepareIfRequired
-import com.thomsonreuters.lsps.transmart.util.annotations.RequiresPrepare
 import groovy.sql.BatchingPreparedStatementWrapper
 import groovy.sql.Sql
 /**
  * Date: 19.09.2014
  * Time: 17:18
  */
-@Mixin(PrepareIfRequired)
-abstract class GenePlatform {
+abstract class GenePlatform implements PrepareIfRequired {
     String id
     String platformType
     String title
@@ -59,10 +57,9 @@ abstract class GenePlatform {
     }
 
     protected void readPlatformInfo() {
-        use(MetaInfoHeader) {
-            title = title ?: platformFile.metaInfo.PLATFORM_TITLE
-            organism = organism ?: platformFile.metaInfo.PLATFORM_SPECIES
-        }
+        def metaInfoHeader = platformFile as MetaInfoHeader
+        title = title ?: metaInfoHeader.metaInfo.PLATFORM_TITLE
+        organism = organism ?: metaInfoHeader.metaInfo.PLATFORM_SPECIES
         if (!title) {
             def info = fetchPlatformInfo()
             title = info.title
@@ -73,7 +70,7 @@ abstract class GenePlatform {
         organism = organism ?: 'Homo Sapiens'
     }
 
-    protected void prepare() {
+    void prepare() {
         readPlatformInfo()
     }
 
