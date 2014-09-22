@@ -18,9 +18,7 @@ class VCFDataProcessor extends DataProcessor {
     private void loadMappingFile(File mappingFile, studyInfo) {
         def csv = new CsvLikeFile(mappingFile, '#')
         if (!studyInfo.id) {
-            use(MetaInfoHeader) {
-                studyInfo.id = csv.metaInfo.STUDY_ID
-            }
+            studyInfo.id = (csv as MetaInfoHeader).metaInfo.STUDY_ID
         }
         def sampleMapping = [:]
         csv.eachEntry {

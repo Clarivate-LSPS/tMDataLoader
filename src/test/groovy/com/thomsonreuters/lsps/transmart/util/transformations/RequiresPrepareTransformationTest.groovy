@@ -12,8 +12,7 @@ class RequiresPrepareTransformationTest extends GroovyTestCase {
         class Descendant extends Test {
         }
 
-        @Mixin(PrepareIfRequired)
-        abstract class Test {
+        abstract class Test implements PrepareIfRequired {
             @RequiresPrepare
             String prop = "test"
 

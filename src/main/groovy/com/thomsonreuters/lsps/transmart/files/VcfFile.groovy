@@ -1,14 +1,11 @@
 package com.thomsonreuters.lsps.transmart.files
 
-import com.thomsonreuters.lsps.transmart.util.annotations.RequiresPrepare
 import org.apache.commons.csv.CSVRecord
-
 /**
  * CelFilesConverter
  * Created by bondarev on 3/25/14.
  */
-@Mixin(MetaInfoHeader)
-class VcfFile extends CsvLikeFile {
+class VcfFile extends CsvLikeFile implements MetaInfoHeader {
     private Entry currentEntry = new Entry()
     private String[] _samples
     private Map<CharSequence, InfoField> infoFields
@@ -137,12 +134,12 @@ class VcfFile extends CsvLikeFile {
         }
     }
 
-    @RequiresPrepare
     public void validate() {
+        prepareIfRequired()
     }
     
     @Override
-    protected void prepare() {
+    void prepare() {
         super.prepare()
 
         chromColumnIndex = detectColumnIndex('#CHROM')
@@ -168,13 +165,13 @@ class VcfFile extends CsvLikeFile {
         return idx
     }
 
-    @RequiresPrepare
     String[] getSamples() {
+        prepareIfRequired()
         return _samples
     }
 
-    @RequiresPrepare
     Map<CharSequence, InfoField> getInfoFields() {
+        prepareIfRequired()
         infoFields
     }
 

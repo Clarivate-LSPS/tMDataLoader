@@ -79,8 +79,8 @@ public abstract class ConfigAwareTestCase extends GroovyTestCase {
     void insertIfNotExists(String tableName, Map data) {
         def columns = data.keySet()
         def values = columns.collect { data[it] }
-        if (!db.firstRow("select * from ${tableName} where ${columns.collect { "${it}=?" }.join(' and ')}", values)) {
-            db.executeInsert("insert into ${tableName}(${columns.join(', ')}) values (${(['?'] * columns.size()).join(',')})", values)
+        if (!db.firstRow("select * from ${tableName} where ${columns.collect { "${it}=?" }.join(' and ')}" as String, values as List)) {
+            db.executeInsert("insert into ${tableName}(${columns.join(', ')}) values (${(['?'] * columns.size()).join(',')})" as String, values as List)
         }
     }
 

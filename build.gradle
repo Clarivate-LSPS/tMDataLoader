@@ -41,7 +41,7 @@ repositories {
 }
 
 dependencies {
-    compile group: 'org.codehaus.groovy', name: 'groovy-all', version: '2.0.8'
+    compile group: 'org.codehaus.groovy', name: 'groovy-all', version: '2.3.6'
     compile 'com.oracle:ojdbc5:11.2.0.2.0'
     compile 'postgresql:postgresql:9.1-901-1.jdbc4'
     compile 'org.apache.commons:commons-csv:1.0'

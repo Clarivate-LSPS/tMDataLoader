@@ -27,7 +27,7 @@ class SqlMethods {
     }
 
     void callProcedure(String procedureName, Object... params) {
-        call("{call ${procedureName}(${(['?'] * params.size()).join(',')})}", params.collect { prepareValue(it) })
+        call("{call ${procedureName}(${(['?'] * params.size()).join(',')})}", params.collect { SqlMethods.prepareValue(it) })
     }
 
     private static String buildInsertCommand(CharSequence tableName, Collection<CharSequence> columns) {
@@ -40,7 +40,7 @@ class SqlMethods {
         attrs.entrySet().each {
             if (!it.value.is(null)) {
                 conditions << "${it.key}=?"
-                values << prepareValue(it.value)
+                values << SqlMethods.prepareValue(it.value)
             } else {
                 conditions << "${it.key} is null"
             }
@@ -56,7 +56,7 @@ class SqlMethods {
 
     def insertRecord(Map<CharSequence, Object> attrs, CharSequence tableName) {
         def columns = attrs.keySet()
-        def values = columns.collect { column -> prepareValue(attrs[column]) }
+        def values = columns.collect { column -> SqlMethods.prepareValue(attrs[column]) }
         executeInsert(buildInsertCommand(tableName, columns), values)
     }
 }
