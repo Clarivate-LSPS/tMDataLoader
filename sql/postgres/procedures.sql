@@ -14,6 +14,7 @@ $$;
 \i procedures/I2B2_LOAD_SECURITY_DATA.sql
 \i procedures/I2B2_LOAD_SAMPLES.sql
 \i procedures/I2B2_PROCESS_MRNA_DATA.sql
+\i procedures/I2B2_MIRNA_ZSCORE_CALC.sql
 \i procedures/I2B2_CREATE_FULL_TREE.sql
 \i procedures/I2B2_LOAD_CLINICAL_DATA.sql
 \i procedures/I2B2_PROCESS_SNP_DATA.sql

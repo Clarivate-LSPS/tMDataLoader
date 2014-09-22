@@ -6,17 +6,9 @@ import com.thomsonreuters.lsps.transmart.sql.DatabaseType;
 import groovy.sql.Sql
 
 public class MIRNADataProcessor extends DataProcessor {
-    // TODO Update after adding MIRNA_QPCR type
-    private _mirnaType = "MIRNA_SEQ"
-
     public MIRNADataProcessor(Object conf) {
         super(conf);
     }
-
-    def getMirnaType() {
-        return _mirnaType
-    }
-
     @Override
     public boolean processFiles(File dir, Sql sql, Object studyInfo) {
         sql.execute("TRUNCATE TABLE ${config.loadSchema}.lt_src_mirna_subj_samp_map" as String)
@@ -31,7 +23,7 @@ public class MIRNADataProcessor extends DataProcessor {
         platformList = platformList.toList()
 
         if (platformList.size() > 0) {
-            loadPlatforms(dir, sql, platformList, studyInfo, mirnaType)
+            loadPlatforms(dir, sql, platformList, studyInfo, studyInfo['base_datatype'])
 
             dir.eachFileMatch(~/(?i).+_MIRNA_Data_[RLTZ](_GPL\d+)*\.txt/) {
                 processMIRNAFile(it, sql, studyInfo)
@@ -48,6 +40,7 @@ public class MIRNADataProcessor extends DataProcessor {
         def studyId = studyInfo['id']
         def studyNode = studyInfo['node']
         def studyDataType = studyInfo['datatype']
+        def mirnaType = studyInfo['base_datatype']
 
         if (studyDataType == 'T' && !config.useT) {
             config.logger.log("Original DataType='T', but using 'Z' instead (workaround); use -t option to alter this behavior")
