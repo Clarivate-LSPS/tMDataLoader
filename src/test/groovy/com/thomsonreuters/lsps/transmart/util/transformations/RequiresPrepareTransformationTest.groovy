@@ -7,23 +7,25 @@ class RequiresPrepareTransformationTest extends GroovyTestCase {
     void testItTransformFields() {
         def source = '''
         import com.thomsonreuters.lsps.transmart.util.annotations.RequiresPrepare
+        import com.thomsonreuters.lsps.transmart.util.PrepareIfRequired
 
-        class Test {
+        class Descendant extends Test {
+        }
+
+        @Mixin(PrepareIfRequired)
+        abstract class Test {
             @RequiresPrepare
             String prop = "test"
 
             @RequiresPrepare
             String prop2
 
-            boolean prepared;
-
             String getProp() {
                 return prop
             }
 
-            void prepareIfRequired() {
+            void prepare() {
                 prop2 = "test2"
-                prepared = true;
             }
         }
         '''
