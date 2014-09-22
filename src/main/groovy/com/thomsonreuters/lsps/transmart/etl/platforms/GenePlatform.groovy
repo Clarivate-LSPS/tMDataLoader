@@ -27,13 +27,13 @@ abstract class GenePlatform {
         this.config = config
     }
 
-    @RequiresPrepare
     String getTitle() {
+        prepareIfRequired()
         return title
     }
 
-    @RequiresPrepare
     String getOrganism() {
+        prepareIfRequired()
         return organism
     }
 

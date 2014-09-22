@@ -30,7 +30,8 @@ class DirectoryProcessor {
             RBM       : RBMDataProcessor,
             Meta      : MetaDataProcessor,
             Clinical  : ClinicalDataProcessor,
-            MIRNASeq  : MIRNADataProcessor,
+            MIRNA_SEQ : MIRNADataProcessor,
+            MIRNA_QPCR: MIRNADataProcessor,
     ]
 
     DirectoryProcessor(conf) {
@@ -143,6 +144,7 @@ class DirectoryProcessor {
 
             def dataProcessor = processorClass.newInstance(config)
             try {
+                studyInfo['base_datatype'] = dataType
                 res = dataProcessor.process(dataDir, studyInfo)
             }
             catch (Exception e) {
