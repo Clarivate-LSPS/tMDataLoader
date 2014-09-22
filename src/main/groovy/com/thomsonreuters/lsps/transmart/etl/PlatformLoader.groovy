@@ -28,7 +28,7 @@ class PlatformLoader {
 							VALUES (?, ?, ?, current_timestamp, ?)
 						""", [genePlatform.id, genePlatform.title, genePlatform.organism, genePlatform.platformType])
                 } else {
-                    throw new Exception("Cannot fetch platform title & organism for ${platform}")
+                    throw new Exception("Cannot fetch platform title & organism for ${genePlatform.id}")
                 }
             } else {
                 genePlatform.title = row.title
