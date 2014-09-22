@@ -15,9 +15,7 @@ import groovy.sql.Sql
 abstract class GenePlatform {
     String id
     String platformType
-    @RequiresPrepare
     String title
-    @RequiresPrepare
     String organism
     protected def config
     protected CsvLikeFile platformFile
@@ -27,6 +25,16 @@ abstract class GenePlatform {
         this.platformType = platformType
         this.id = id
         this.config = config
+    }
+
+    @RequiresPrepare
+    String getTitle() {
+        return title
+    }
+
+    @RequiresPrepare
+    String getOrganism() {
+        return organism
     }
 
     File getFile() {
