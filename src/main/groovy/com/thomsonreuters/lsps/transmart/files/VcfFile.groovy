@@ -38,6 +38,8 @@ class VcfFile extends CsvLikeFile implements MetaInfoHeader {
     }
 
     class Entry {
+        public static final String UNDEFINED_VALUE = ".";
+
         private String[] data
         private Map samplesData
         private Map<InfoField, Object[]> infoData
@@ -124,7 +126,7 @@ class VcfFile extends CsvLikeFile implements MetaInfoHeader {
         }
 
         private Map<InfoField, Object[]> buildInfoData() {
-            if (infoString.isEmpty()) {
+            if (infoString.isEmpty() || UNDEFINED_VALUE.equals(infoString)) {
                 return [:]
             }
             infoString.split(';').collectEntries {
