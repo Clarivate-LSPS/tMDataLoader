@@ -52,7 +52,7 @@ class AuditableJobRunner {
             database.withSql { Sql ctrlSql ->
                 while (t.isAlive()) {
                     auditPrinter.printNewMessages(ctrlSql)
-                    t.join(2000)
+                    t.join(1000)
                 }
             }
             auditPrinter.printNewMessages(sql)
