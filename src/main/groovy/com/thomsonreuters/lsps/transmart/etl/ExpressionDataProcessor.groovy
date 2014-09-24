@@ -76,7 +76,7 @@ class ExpressionDataProcessor extends DataProcessor {
             }
 
             sql.call("{call " + config.controlSchema + ".i2b2_process_mrna_data (?, ?, ?, null, null, '" + config.securitySymbol + "', ?, ?)}",
-                    [studyId, studyNode, studyDataType, jobId, Sql.NUMERIC]) {}
+                    [studyId, studyNode, studyDataType, jobId, Sql.NUMERIC])
         } else {
             config.logger.log(LogType.ERROR, "Study ID or Node or DataType not defined!")
             return false;
