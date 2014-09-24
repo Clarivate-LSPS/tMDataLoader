@@ -32,4 +32,12 @@ class ProteinDataProcessorTest extends ConfigAwareTestCase {
                 new File("fixtures/Test Studies/${studyName}/ProteinDataToUpload"),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
     }
+
+     /*INSERT INTO biomart.bio_marker(
+     bio_marker_name, bio_marker_description, organism, primary_external_id, bio_marker_type)
+     VALUES ('P51659', 'P51659', 'HOMO SAPIENS', 'P51659', 'PROTEIN'),
+     ('O00231', 'O00231', 'HOMO SAPIENS', 'O00231', 'PROTEIN'),
+     ('P50440', 'P50440', 'HOMO SAPIENS', 'P50440', 'PROTEIN'),
+     ('P37802', 'P37802', 'HOMO SAPIENS', 'P37802', 'PROTEIN'),
+     ('P02647', 'P02647', 'HOMO SAPIENS', 'P02647', 'PROTEIN');*/
 }

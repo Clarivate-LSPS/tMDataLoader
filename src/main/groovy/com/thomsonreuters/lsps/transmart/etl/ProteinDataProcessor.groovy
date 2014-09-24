@@ -189,11 +189,11 @@ public class ProteinDataProcessor extends DataProcessor {
 
             config.logger.log(LogType.PROGRESS, "[${lineNum}]")
             row[1] = cols[0]
-            row[2] = cols[1]
             cols.eachWithIndex { val, i ->
                 // skip first and second column
                 // rows should have intensity assigned to them, otherwise not interested
                 if (i > 1 && val) {
+                    row[2] = header[i] as String
                     row[3] = val
                     processRow(row)
                 }
