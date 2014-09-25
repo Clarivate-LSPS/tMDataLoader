@@ -229,4 +229,9 @@ class VCFDataProcessorTest extends ConfigAwareTestCase {
                  info: 'TST_FLAG=0;AC=184;RSQ=0.8228;AVGPOST=0.9640;AN=2184;ERATE=0.0031;VT=SNP;AA=.;THETA=0.0127;LDAF=0.0902;SNPSOURCE=LOWCOV;AF=0.08;ASN_AF=0.08;AMR_AF=0.14;AFR_AF=0.08;EUR_AF=0.07',
                  format: 'DS:GL', variant_value: '1.000:-0.86,-0.06,-5.00']))
     }
+
+    void testItNotLoadsStudyWithWrongMapping() {
+        String studyName = 'Study with Wrong Mapping';
+        assertFalse(dataProcessor.process(Fixtures.invalidStudies.VCF.getProperty(studyName) as File, [name: studyName, node: $/Invalid Studies\${studyName}/$]))
+    }
 }

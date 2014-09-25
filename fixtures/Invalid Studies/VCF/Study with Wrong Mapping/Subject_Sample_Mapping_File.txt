@@ -1,0 +1,5 @@
+# STUDY_ID: VCF_WRONG_MAPPING
+# STUDY_TITLE: VCF Study with Wrong Mapping
+SUBJECT_ID	SAMPLE_CD
+Subject_0	Subject_0
+Subject_1	Subject_1
