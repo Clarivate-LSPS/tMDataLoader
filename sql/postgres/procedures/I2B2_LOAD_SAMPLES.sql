@@ -446,7 +446,9 @@ BEGIN
 		  ,case when instr(substr(category_cd,1,instr(category_cd,'PLATFORM')+8),'ATTR1') > 1 then attribute_1 else '' end as attribute_1
           ,case when instr(substr(category_cd,1,instr(category_cd,'PLATFORM')+8),'ATTR2') > 1 then attribute_2 else '' end as attribute_2
 		  ,'PLATFORM'
-	from  wt_mrna_node_values;
+	from  wt_mrna_node_values
+	where category_cd like '%PLATFORM%';
+
 	get diagnostics rowCt := ROW_COUNT;
 	exception
 	when others then
@@ -685,7 +687,7 @@ BEGIN
 	begin
 	with upd as (select a.site_id, a.subject_id, a.sample_cd,
 					ln.concept_cd as concept_code, ttp.concept_cd as sample_type_cd, a2.concept_cd as timepoint_cd, a1.concept_cd as tissue_type_cd, a.category_cd,
-				  pd.patient_num as patient_id, ln.concept_cd || '-' || pd.patient_num::text as data_uid,
+					pn.concept_cd as platform_cd, pd.patient_num as patient_id, ln.concept_cd || '-' || pd.patient_num::text as data_uid,
 					ln.tissue_type as sample_type, ln.attribute_1 as tissue_type, ln.attribute_2 as timepoint, a.platform as gpl_id
 				 from lt_src_mrna_subj_samp_map a
 				 inner join i2b2demodata.patient_dimension pd
@@ -696,7 +698,7 @@ BEGIN
 					and coalesce(a.attribute_1,'') = coalesce(ln.attribute_1,'')
 					and coalesce(a.attribute_2,'') = coalesce(ln.attribute_2,'')
 					and ln.node_type = 'LEAF'
-				 inner join wt_mrna_nodes pn
+				 left join wt_mrna_nodes pn
 					on  a.platform = pn.platform
 					and case when instr(substr(a.category_cd,1,instr(a.category_cd,'PLATFORM')+8),'TISSUETYPE') > 1 then a.tissue_type else '' end = coalesce(pn.tissue_type,'')
 					and case when instr(substr(a.category_cd,1,instr(a.category_cd,'PLATFORM')+8),'ATTR1') > 1 then a.attribute_1 else '' end = coalesce(pn.attribute_1,'')
@@ -726,6 +728,7 @@ BEGIN
 			,timepoint_cd=upd.timepoint_cd
 			,tissue_type_cd=upd.tissue_type_cd
 			,category_cd=upd.category_cd
+			,platform_cd=upd.platform_cd
 			,patient_id=upd.patient_id
 			,data_uid=upd.data_uid
 			,sample_type=upd.sample_type
@@ -836,7 +839,7 @@ BEGIN
 			and coalesce(a.attribute_1,'') = coalesce(ln.attribute_1,'')
 			and coalesce(a.attribute_2,'') = coalesce(ln.attribute_2,'')
 			and ln.node_type = 'LEAF'
-		inner join wt_mrna_nodes pn
+		left join wt_mrna_nodes pn
 			on a.platform = pn.platform
 			and case when instr(substr(a.category_cd,1,instr(a.category_cd,'PLATFORM')+8),'TISSUETYPE') > 1 then a.tissue_type else '' end = coalesce(pn.tissue_type,'')
 			and case when instr(substr(a.category_cd,1,instr(a.category_cd,'PLATFORM')+8),'ATTR1') > 1 then a.attribute_1 else '' end = coalesce(pn.attribute_1,'')
