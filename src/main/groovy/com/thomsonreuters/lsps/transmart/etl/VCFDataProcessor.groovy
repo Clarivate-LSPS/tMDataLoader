@@ -65,8 +65,10 @@ class VCFDataProcessor extends DataProcessor {
         def samplesLoader = new SamplesLoader(studyId)
         samplesLoader.loadSchema = config.loadSchema
         studyInfo.sources = []
-        dir.eachFileMatch(FileType.FILES, ~/(?i).*\.vcf$/) {
-            processFile(it, sql, samplesLoader, studyInfo)
+        def files = []
+        dir.eachFileMatch(FileType.FILES, ~/(?i).*\.vcf$/) { files << it }
+        if (!files.every { processFile(it, sql, samplesLoader, studyInfo) }) {
+            return false
         }
         samplesLoader.loadSamples(sql)
         return true
@@ -85,10 +87,22 @@ class VCFDataProcessor extends DataProcessor {
         }
     }
 
+    def checkAllSamplesMapped(VcfFile vcfFile, Map sampleMapping) {
+        List<String> notMappedSamples = vcfFile.samples.findAll { !sampleMapping.containsKey(it) }
+        if (notMappedSamples) {
+            logger.log(LogType.ERROR, "Not all samples mapped to subjects! Please, check mapping file. Not mapped samples: ${notMappedSamples}")
+            return false
+        }
+        return true
+    }
+
     def processFile(File inputFile, Sql sql, SamplesLoader samplesLoader, studyInfo) {
         def vcfFile = new VcfFile(inputFile)
         vcfFile.validate()
         def sampleMapping = studyInfo.sampleMapping
+        if (!checkAllSamplesMapped(vcfFile, sampleMapping as Map)) {
+            return false
+        }
         String vcfName = inputFile.name.replaceFirst(/\.\w+$/, '').replaceAll(/\./, '_')
         String sourceCd = vcfName.toUpperCase()
         studyInfo.sources << sourceCd
@@ -134,6 +148,7 @@ class VCFDataProcessor extends DataProcessor {
             }
             logger.log(LogType.PROGRESS, '')
         }
+        return true
     }
 
     private void writeVariantPopulationDataRecord(String trialId, st, VcfFile.Entry entry) {
