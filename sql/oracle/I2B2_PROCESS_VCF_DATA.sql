@@ -253,7 +253,7 @@ BEGIN
 		  ,platform as platform
 		  ,tissue_type
 		  ,attribute_1 as attribute_1
-          ,attribute_2 as attribute_2
+      ,attribute_2 as attribute_2
 		  ,'LEAF'
 	from  wt_mrna_node_values;
     stepCt := stepCt + 1;
@@ -277,9 +277,10 @@ BEGIN
 		  ,platform as platform
 		  ,case when instr(substr(category_cd,1,instr(category_cd,'PLATFORM')+8),'TISSUETYPE') > 1 then tissue_type else null end as tissue_type
 		  ,case when instr(substr(category_cd,1,instr(category_cd,'PLATFORM')+8),'ATTR1') > 1 then attribute_1 else null end as attribute_1
-          ,case when instr(substr(category_cd,1,instr(category_cd,'PLATFORM')+8),'ATTR2') > 1 then attribute_2 else null end as attribute_2
+      ,case when instr(substr(category_cd,1,instr(category_cd,'PLATFORM')+8),'ATTR2') > 1 then attribute_2 else null end as attribute_2
 		  ,'PLATFORM'
-	from  wt_mrna_node_values;
+	from  wt_mrna_node_values
+	where category_cd like '%PLATFORM%';
     stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Create platform nodes in wt_mrna_nodes',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
@@ -486,7 +487,7 @@ BEGIN
 			  ,nvl(a.platform,'VCF') as gpl_id
 			  ,coalesce(sid.patient_num,b.patient_num) as sample_id
 			  ,a.sample_cd
-			  ,nvl(a.category_cd,'Biomarker_Data+Gene_Expression+PLATFORM+TISSUETYPE+ATTR1+ATTR2') as category_cd
+			  ,nvl(a.category_cd,'VCF') as category_cd
 			  ,a.source_cd
 			  ,TrialId as omic_source_study
 			  ,b.patient_num as omic_patient_id
@@ -500,7 +501,7 @@ BEGIN
 			and nvl(a.attribute_1,'@') = nvl(ln.attribute_1,'@')
 			and nvl(a.attribute_2,'@') = nvl(ln.attribute_2,'@')
 			and ln.node_type = 'LEAF'
-		inner join wt_mrna_nodes pn
+		left join wt_mrna_nodes pn
 			on nvl(a.platform,'VCF') = pn.platform
 			and case when instr(substr(a.category_cd,1,instr(a.category_cd,'PLATFORM')+8),'TISSUETYPE') > 1 then a.tissue_type else '@' end = nvl(pn.tissue_type,'@')
 			and case when instr(substr(a.category_cd,1,instr(a.category_cd,'PLATFORM')+8),'ATTR1') > 1 then a.attribute_1 else '@' end = nvl(pn.attribute_1,'@')
