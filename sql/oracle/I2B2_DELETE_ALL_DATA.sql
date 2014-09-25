@@ -32,6 +32,21 @@ AS
   more_path exception;
 
 BEGIN
+  --Set Audit Parameters
+  newJobFlag := 0; -- False (Default)
+  jobID := currentJobID;
+
+  SELECT sys_context('USERENV', 'CURRENT_SCHEMA') INTO databaseName FROM dual;
+  procedureName := $$PLSQL_UNIT;
+
+  --Audit JOB Initialization
+  --If Job ID does not exist, then this is a single procedure run and we need to create it
+  IF(jobID IS NULL or jobID < 1)
+  THEN
+    newJobFlag := 1; -- True
+    cz_start_audit (procedureName, databaseName, jobID);
+  END IF;
+
   if (path_string is not null) then
     select REGEXP_REPLACE('\' || path_string || '\','(\\){2,}', '\') into pathString from dual;
   end if;
@@ -98,21 +113,6 @@ BEGIN
 
   
   stepCt := 0;
-  
-  --Set Audit Parameters
-  newJobFlag := 0; -- False (Default)
-  jobID := currentJobID;
-
-  SELECT sys_context('USERENV', 'CURRENT_SCHEMA') INTO databaseName FROM dual;
-  procedureName := $$PLSQL_UNIT;
-
-  --Audit JOB Initialization
-  --If Job ID does not exist, then this is a single procedure run and we need to create it
-  IF(jobID IS NULL or jobID < 1)
-  THEN
-    newJobFlag := 1; -- True
-    cz_start_audit (procedureName, databaseName, jobID);
-  END IF;
   
   if pathString != ''  or pathString != '%'
   then 
