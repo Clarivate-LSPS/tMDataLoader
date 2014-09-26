@@ -20,5 +20,6 @@ $$;
 \i procedures/I2B2_PROCESS_SNP_DATA.sql
 \i procedures/I2B2_PROCESS_VCF_DATA.sql
 \i procedures/I2B2_DELETE_ALL_DATA.sql
+\i procedures/I2B2_MOVE_STUDY_BY_PATH.sql
 \i procedures/I2B2_ADD_ROOT_NODE.sql
 
