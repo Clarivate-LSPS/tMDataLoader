@@ -130,7 +130,64 @@ Begin
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Insert root_node ' || rootNode || ' to i2b2',SQL%ROWCOUNT,stepCt,'Done');
     COMMIT;	
-			
+
+  --	insert root_node into i2b2
+
+	insert into i2b2_secure
+	(c_hlevel
+	,c_fullname
+	,c_name
+	,c_synonym_cd
+	,c_visualattributes
+	,c_totalnum
+	,c_basecode
+	,c_metadataxml
+	,c_facttablecolumn
+	,c_tablename
+	,c_columnname
+	,c_columndatatype
+	,c_operator
+	,c_dimcode
+	,c_comment
+	,c_tooltip
+	,update_date
+	,download_date
+	,import_date
+	,sourcesystem_cd
+	,valuetype_cd
+	,secure_obj_token
+	)
+	select 0 as c_hlevel
+		  ,rootPath as c_fullname
+		  ,rootNode as c_name
+		  ,'N' as c_synonym_cd
+		  ,'CA' as c_visualattributes
+		  ,null as c_totalnum
+		  ,null as c_basecode
+		  ,null as c_metadataxml
+		  ,'concept_cd' as c_facttablecolumn
+		  ,'concept_dimension' as c_tablename
+		  ,'concept_path' as c_columnname
+		  ,'T' as c_columndatatype
+		  ,'LIKE' as c_operator
+		  ,rootPath as c_dimcode
+		  ,null as c_comment
+		  ,rootPath as c_tooltip
+		  ,sysdate as update_date
+		  ,null as download_date
+		  ,sysdate as import_date
+		  ,null as sourcesystem_cd
+		  ,null as valuetype_cd
+		  , 'EXP:PUBLIC' as secure_obj_token
+	from dual
+	where not exists
+		 (select 1 from i2b2_secure x
+		  where x.c_name = rootNode);
+
+	stepCt := stepCt + 1;
+	cz_write_audit(jobId,databaseName,procedureName,'Insert root_node ' || rootNode || ' to i2b2_secure',SQL%ROWCOUNT,stepCt,'Done');
+    COMMIT;
+
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'End ' || procedureName,0,stepCt,'Done');
 	

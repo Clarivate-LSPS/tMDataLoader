@@ -133,6 +133,42 @@ BEGIN
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Inserted path into I2B2METADATA i2b2',SQL%ROWCOUNT,stepCt,'Done');
     COMMIT;
+
+     --I2B2_SECURE
+    INSERT /*+ APPEND */
+     INTO I2B2_SECURE nologging
+      (c_hlevel, C_FULLNAME, C_NAME, C_VISUALATTRIBUTES, c_synonym_cd, C_FACTTABLECOLUMN, C_TABLENAME, C_COLUMNNAME,
+      C_DIMCODE, C_TOOLTIP, UPDATE_DATE, DOWNLOAD_DATE, IMPORT_DATE, SOURCESYSTEM_CD, c_basecode, C_OPERATOR, c_columndatatype, c_comment,
+	    m_applied_path, secure_obj_token)
+    SELECT
+      (length(concept_path) - nvl(length(replace(concept_path, '\')),0)) / length('\') - 2 + root_level,
+      CONCEPT_PATH,
+      NAME_CHAR,
+      'FA',
+      'N',
+      'CONCEPT_CD',
+      'CONCEPT_DIMENSION',
+      'CONCEPT_PATH',
+      CONCEPT_PATH,
+      CONCEPT_PATH,
+      sysdate,
+      sysdate,
+      sysdate,
+      SOURCESYSTEM_CD,
+      CONCEPT_CD,
+      'LIKE',
+      'T',
+      decode(TrialID,null,null,'trial:' || TrialID),
+	    '@',
+	    'EXP:PUBLIC'
+    FROM
+      CONCEPT_DIMENSION
+    WHERE
+      CONCEPT_PATH = path;
+	  stepCt := stepCt + 1;
+	  cz_write_audit(jobId,databaseName,procedureName,'Inserted path into I2B2METADATA i2b2_secure',SQL%ROWCOUNT,stepCt,'Done');
+    COMMIT;
+
 	  END IF;
       ---Cleanup OVERALL JOB if this proc is being run standalone
   IF newJobFlag = 1
