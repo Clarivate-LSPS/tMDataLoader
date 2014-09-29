@@ -23,7 +23,23 @@ class ProteinDataProcessorTest extends ConfigAwareTestCase {
         super.setUp()
         sql.execute('delete from i2b2demodata.observation_fact where modifier_cd = ? or sourcesystem_cd = ?', studyId, studyId)
         sql.execute('delete from deapp.de_subject_sample_mapping where trial_name = ?', studyId)
+        runScript('I2B2_LOAD_PROTEOMICS_ANNOT.sql')
         runScript('I2B2_PROCESS_PROTEOMICS_DATA.sql')
+    }
+
+    void assertThatSampleIsPresent(String sampleId, sampleData) {
+        def sample = sql.firstRow('select * from deapp.de_subject_sample_mapping where trial_name = ? and sample_cd = ?',
+                studyId, sampleId)
+        assertThat(sample, notNullValue())
+
+        sampleData.each { gene_symbol, value ->
+            def rows = sql.rows("select d.zscore from deapp.de_subject_protein_data d " +
+                    "inner join deapp.de_protein_annotation a on d.protein_annotation_id = a.id " +
+                    "where a.gpl_id = ? and d.assay_id = ? and d.gene_symbol = ?",
+                    platformId, sample.assay_id, gene_symbol)
+            assertThat(rows?.size(), equalTo(1))
+            assertEquals(rows[0].zscore as double, value as double, 0.001)
+        }
     }
 
 
@@ -31,13 +47,19 @@ class ProteinDataProcessorTest extends ConfigAwareTestCase {
         processor.process(
                 new File("fixtures/Test Studies/${studyName}/ProteinDataToUpload"),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
-    }
+        assertThat(db, hasSample(studyId, 'P50440'))
+        assertThat(db, hasPatient('GSM918945').inTrial(studyId))
+        assertThat(db, hasNode("\\Test Studies\\${studyName}\\Biomarker Data\\Test Protein Platform\\").
+                withPatientCount(5))
 
-     /*INSERT INTO biomart.bio_marker(
-     bio_marker_name, bio_marker_description, organism, primary_external_id, bio_marker_type)
-     VALUES ('P51659', 'P51659', 'HOMO SAPIENS', 'P51659', 'PROTEIN'),
-     ('O00231', 'O00231', 'HOMO SAPIENS', 'O00231', 'PROTEIN'),
-     ('P50440', 'P50440', 'HOMO SAPIENS', 'P50440', 'PROTEIN'),
-     ('P37802', 'P37802', 'HOMO SAPIENS', 'P37802', 'PROTEIN'),
-     ('P02647', 'P02647', 'HOMO SAPIENS', 'P02647', 'PROTEIN');*/
+        assertThat(db, hasRecord('deapp.de_subject_sample_mapping',
+                [trial_name: studyId, gpl_id: platformId, subject_id: 'GSM918944', sample_cd: 'P50440'],
+                [platform: 'PROTEIN']))
+
+        assertThat(db, hasRecord('deapp.de_subject_protein_data',
+                [trial_name: studyId, subject_id: 'GSM918946', gene_symbol: 'P50440'],
+                [component: 'RPPGFSPFR(QTF-2)']))
+
+        assertThatSampleIsPresent('P50440', ['O00231': 0.02146])
+    }
 }

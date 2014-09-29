@@ -54,7 +54,7 @@ class MIRNASeqDataProcessorTest extends ConfigAwareTestCase {
 
         assertThat(db, hasRecord('deapp.de_subject_sample_mapping',
                 [trial_name: studyId, gpl_id: platformId, subject_id: 'GSM918944', sample_cd: 'GSM918944'],
-                [tissue_type: 'Synovium', platform: mirnaType, trial_name: studyId]))
+                [tissue_type: 'Synovium', platform: mirnaType]))
 
         assertThat(db, hasRecord('deapp.de_subject_mirna_data',
                 [trial_source: studyId + ':STD', trial_name: studyId], null))

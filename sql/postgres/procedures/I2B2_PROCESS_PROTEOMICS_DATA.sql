@@ -136,7 +136,7 @@ BEGIN
 		return 161;
 	end if;
 	
-	select count(*) into pCount
+	/*select count(*) into pCount
 	from LT_PROTEIN_ANNOTATION
 	where gpl_id in (select distinct m.platform from LT_SRC_PROTEOMICS_SUB_SAM_MAP m);
 
@@ -146,7 +146,7 @@ BEGIN
 		select CZ_ERROR_HANDLER(JOBID,PROCEDURENAME, '-1', 'Application raised error') into rtnCd;
 		select cz_end_audit (jobId,'FAIL') into rtnCd;
 		return 163;
-	end if;
+	end if;*/
 	
 	select count(*) into pCount
 	from DE_gpl_info
