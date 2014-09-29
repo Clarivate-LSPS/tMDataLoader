@@ -22,4 +22,6 @@ $$;
 \i procedures/I2B2_DELETE_ALL_DATA.sql
 \i procedures/I2B2_MOVE_STUDY_BY_PATH.sql
 \i procedures/I2B2_ADD_ROOT_NODE.sql
+\i procedures/I2B2_LOAD_PROTEOMICS_ANNOT.sql
+\i procedures/I2B2_PROCESS_PROTEOMICS_DATA.sql
 
