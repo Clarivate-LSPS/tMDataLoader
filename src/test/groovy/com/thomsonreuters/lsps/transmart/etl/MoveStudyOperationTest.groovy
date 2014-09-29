@@ -1,5 +1,6 @@
 package com.thomsonreuters.lsps.transmart.etl
 
+import com.thomsonreuters.lsps.transmart.sql.DatabaseType
 import org.junit.Ignore
 
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasNode
@@ -228,7 +229,11 @@ class MoveStudyOperationTest extends ConfigAwareTestCase {
 
     private void checkChildNodes(Map tablesToAttr, String errorMessage, String checkedPath) {
         for (t in tablesToAttr) {
-            def c = sql.firstRow('select count(*) from i2b2metadata.i2b2 where c_fullname LIKE ? || \'%\' ESCAPE \'`\';', checkedPath)
+            def query = 'select count(*) from i2b2metadata.i2b2 where c_fullname LIKE ? || \'%\''
+            if (database?.databaseType == DatabaseType.Postgres) {
+                query += ' ESCAPE \'`\''
+            }
+            def c = sql.firstRow(query, checkedPath)
             assertTrue(errorMessage + t.key, (c[0] as Integer) > 0)
         }
     }

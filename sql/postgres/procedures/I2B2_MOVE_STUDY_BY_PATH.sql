@@ -215,7 +215,7 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
     THEN
     -- create new root in table_access,
       BEGIN
-      select tm_cz.i2b2_add_root_node(new_root_node_name, null) into rtnCd;
+      select tm_cz.i2b2_add_root_node(new_root_node_name, jobID) into rtnCd;
       get diagnostics rowCt := ROW_COUNT;
       exception
           when others then
