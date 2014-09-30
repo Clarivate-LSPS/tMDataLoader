@@ -32,6 +32,7 @@ class DirectoryProcessor {
             Clinical  : ClinicalDataProcessor,
             MIRNA_SEQ : MIRNADataProcessor,
             MIRNA_QPCR: MIRNADataProcessor,
+            Protein   : ProteinDataProcessor,
     ]
 
     DirectoryProcessor(conf) {
