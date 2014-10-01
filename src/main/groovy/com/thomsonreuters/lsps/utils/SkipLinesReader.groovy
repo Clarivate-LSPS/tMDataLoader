@@ -13,11 +13,16 @@ class SkipLinesReader extends Reader {
     private static final char NL = '\n';
     private static final char[] EMPTY_BUFFER = new char[0];
     private SortedSet<CharSequence> prefixes = new TreeSet<>();
+    private int skippedLinesCount;
 
     SkipLinesReader(Reader reader, Collection<String> skipPrefixes) {
         this.reader = reader instanceof BufferedReader ? (BufferedReader) reader : new BufferedReader(reader)
         this.prefixes.addAll(skipPrefixes);
         this.prefixBuffer = new char[this.prefixes.last().length()];
+    }
+
+    int getSkippedLinesCount() {
+        return skippedLinesCount
     }
 
     private void skipLines() {
@@ -35,6 +40,7 @@ class SkipLinesReader extends Reader {
     }
 
     private int skipToNextLine(char[] buf, int off, int end) {
+        skippedLinesCount++;
         while (off < end) {
             if (buf[off++] == NL) {
                 return off;

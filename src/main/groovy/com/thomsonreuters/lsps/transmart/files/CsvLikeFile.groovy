@@ -1,4 +1,7 @@
 package com.thomsonreuters.lsps.transmart.files
+
+import com.thomsonreuters.lsps.transmart.etl.LogType
+import com.thomsonreuters.lsps.transmart.etl.Logger
 import com.thomsonreuters.lsps.transmart.util.PrepareIfRequired
 import com.thomsonreuters.lsps.utils.SkipLinesReader
 import org.apache.commons.csv.CSVFormat
@@ -8,6 +11,8 @@ import org.apache.commons.csv.CSVRecord
  * Created by bondarev on 3/28/14.
  */
 class CsvLikeFile implements PrepareIfRequired {
+    private static final Logger logger = new Logger([:])
+
     File file
     protected String lineComment
     private List<String> header
@@ -20,9 +25,16 @@ class CsvLikeFile implements PrepareIfRequired {
 
     protected def withParser(Closure closure) {
         file.withReader { reader ->
-            def skipLinesReader = !lineComment.is(null) ? new SkipLinesReader(reader, [lineComment]) : reader
-            def parser = new CSVParser(skipLinesReader, format)
-            closure.call(parser)
+            def linesReader = !lineComment.is(null) ? new SkipLinesReader(reader, [lineComment]) : reader
+            def parser = new CSVParser(linesReader, format)
+            if (closure.maximumNumberOfParameters == 2) {
+                def lineNumberProducer = linesReader instanceof SkipLinesReader ?
+                        { (linesReader as SkipLinesReader).skippedLinesCount + parser.currentLineNumber } :
+                        parser.&getCurrentLineNumber
+                closure.call(parser, lineNumberProducer)
+            } else {
+                closure.call(parser)
+            }
         }
     }
 
@@ -58,9 +70,16 @@ class CsvLikeFile implements PrepareIfRequired {
 
     def <T> T eachEntry(Closure<T> processEntry) {
         prepareIfRequired()
-        withParser { CSVParser parser ->
+        withParser { CSVParser parser, lineNumberProducer ->
+            def _processEntry = processEntry.maximumNumberOfParameters == 2 ?
+                    { processEntry(makeEntry(it), lineNumberProducer()) } :
+                    { processEntry(makeEntry(it)) }
             for (CSVRecord record : parser) {
-                processEntry(makeEntry(record))
+                if (!record.consistent) {
+                    logger.log(LogType.WARNING, "Line [${lineNumberProducer()}] skipped: it is not consistent - ${record.toMap()}")
+                    continue
+                }
+                _processEntry(record)
             }
         }
     }

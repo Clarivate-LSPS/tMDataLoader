@@ -230,7 +230,7 @@ class ClinicalDataProcessor extends DataProcessor {
         config.logger.log("Mapping file: ${f.name}")
 
         CsvLikeFile mappingFile = new CsvLikeFile(f as File)
-        mappingFile.eachEntry { cols ->
+        mappingFile.eachEntry { cols, lineNum ->
             if (!mappings[cols[0]]) {
                 mappings[cols[0]] = [
                         STUDY_ID  : 0,
