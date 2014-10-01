@@ -110,9 +110,7 @@ class SkipLinesReader extends Reader {
                     }
                 }
             }
-            if (cbuf[off] == NL) {
-                atLineStart = true;
-            }
+            atLineStart = cbuf[off] == NL
             off++;
         }
         return end - start;
