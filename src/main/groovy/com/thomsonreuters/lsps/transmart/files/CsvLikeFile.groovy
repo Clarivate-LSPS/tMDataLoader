@@ -12,7 +12,11 @@ class CsvLikeFile implements PrepareIfRequired {
     protected String lineComment
     private List<String> header
     private List<String> headComments
-    protected CSVFormat format = CSVFormat.TDF.withHeader().withSkipHeaderRecord(true).withIgnoreEmptyLines(true)
+    protected CSVFormat format = CSVFormat.TDF.
+            withHeader().
+            withSkipHeaderRecord(true).
+            withIgnoreEmptyLines(true).
+            withAllowMissingColumnNames(true)
 
     protected def withParser(Closure closure) {
         file.withReader { reader ->
