@@ -7,6 +7,7 @@ import com.thomsonreuters.lsps.utils.SkipLinesReader
 import org.apache.commons.csv.CSVFormat
 import org.apache.commons.csv.CSVParser
 import org.apache.commons.csv.CSVRecord
+
 /**
  * Created by bondarev on 3/28/14.
  */
@@ -21,6 +22,7 @@ class CsvLikeFile implements PrepareIfRequired {
             withHeader().
             withSkipHeaderRecord(true).
             withIgnoreEmptyLines(true).
+            withIgnoreSurroundingSpaces(true).
             withAllowMissingColumnNames(true)
 
     protected def withParser(Closure closure) {
@@ -76,8 +78,21 @@ class CsvLikeFile implements PrepareIfRequired {
                     { processEntry(makeEntry(it)) }
             for (CSVRecord record : parser) {
                 if (!record.consistent) {
-                    logger.log(LogType.WARNING, "Line [${lineNumberProducer()}] skipped: it is not consistent - ${record.toMap()}")
-                    continue
+                    List<String> values = record.iterator().toList()
+                    if (values.every { it.isEmpty() }) {
+                        logger.log(LogType.WARNING, "Line [${lineNumberProducer()}] ignored. It is inconsistent, but all values is empty.")
+                        continue
+                    } else if (record.size() > parser.headerMap.size()) {
+                        def extraValues = values.subList(parser.headerMap.size(), values.size())
+                        if (extraValues.every { it.isEmpty() }) {
+                            logger.log(LogType.WARNING, "Line [${lineNumberProducer()}] is inconsistent - it has extra empty values.")
+                        } else {
+                            throw new RuntimeException("Line [${lineNumberProducer()}] is inconsistent - it has extra values: ${extraValues}")
+                        }
+                    } else {
+                        def errorMessage = "Line [${lineNumberProducer()}] is inconsistent - ${record.toMap()}, missing columns: ${parser.headerMap.keySet() - record.toMap().keySet()}"
+                        throw new RuntimeException(errorMessage)
+                    }
                 }
                 _processEntry(record)
             }
