@@ -20,6 +20,8 @@
 
 package com.thomsonreuters.lsps.transmart.etl
 
+import java.sql.SQLException
+
 enum LogType { MESSAGE, WARNING, ERROR, DEBUG, PROGRESS }
 
 class Logger {
@@ -51,7 +53,20 @@ class Logger {
 		
 		return str
 	}
-	
+
+    void log(LogType ltype, Exception ex) {
+        StringWriter stringWriter = new StringWriter()
+        PrintWriter writer = new PrintWriter(stringWriter)
+        writer.append('Exception: ')
+        ex.printStackTrace(writer)
+        if (ex instanceof SQLException) {
+            writer.append('Next exception: ')
+            ex.nextException.printStackTrace(writer)
+        }
+        writer.flush()
+        log(ltype, stringWriter.toString())
+    }
+
 	void log(LogType ltype, str) {
 		if (ltype != LogType.PROGRESS) {
 			str = timestamp(ltype) + str

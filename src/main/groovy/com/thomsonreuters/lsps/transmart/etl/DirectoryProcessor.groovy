@@ -149,8 +149,7 @@ class DirectoryProcessor {
                 res = dataProcessor.process(dataDir, studyInfo)
             }
             catch (Exception e) {
-                config.logger.log(LogType.ERROR, "Exception: ${e}")
-                e.printStackTrace();
+                config.logger.log(LogType.ERROR, e)
             }
 
             if (res) {
