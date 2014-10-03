@@ -189,8 +189,8 @@ class VcfFile extends CsvLikeFile implements MetaInfoHeader {
     }
 
     @Override
-    protected def makeEntry(CSVRecord record) {
-        currentEntry.data = super.makeEntry(record)
+    protected def makeEntry(String[] values) {
+        currentEntry.data = super.makeEntry(values)
         return currentEntry
     }
 }
