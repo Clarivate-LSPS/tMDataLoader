@@ -25,7 +25,7 @@ import com.thomsonreuters.lsps.transmart.tools.ProcessLocker
 class CommandLineTool {
 
     static main(args) {
-        def version = "0.9.5"
+        def version = "1.0.0"
 
         def cli = new CliBuilder(usage: 'tm_etl [options] [<data_dir>]')
         cli.with {
