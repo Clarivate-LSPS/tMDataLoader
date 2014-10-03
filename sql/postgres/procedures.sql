@@ -24,4 +24,6 @@ $$;
 \i procedures/I2B2_ADD_ROOT_NODE.sql
 \i procedures/I2B2_LOAD_PROTEOMICS_ANNOT.sql
 \i procedures/I2B2_PROCESS_PROTEOMICS_DATA.sql
+\i procedures/I2B2_LOAD_METABOLOMICS_ANNOT.sql
+\i procedures/I2B2_PROCESS_METABOLOMIC_DATA.sql
 
