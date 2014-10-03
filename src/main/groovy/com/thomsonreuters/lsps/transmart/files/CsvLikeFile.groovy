@@ -62,44 +62,50 @@ class CsvLikeFile implements PrepareIfRequired {
         })
     }
 
-    protected def makeEntry(CSVRecord record) {
-        String[] entry = new String[record.size()]
+    protected def makeEntry(String[] values) {
+        return values
+    }
+
+    protected String[] getRecordValues(CSVRecord record) {
+        String[] values = new String[record.size()]
         for (int i = 0; i < record.size(); i++) {
-            entry[i] = record.get(i)
+            values[i] = record.get(i)
         }
-        return entry
+        return values
     }
 
     def <T> T eachEntry(Closure<T> processEntry) {
         prepareIfRequired()
         withParser { CSVParser parser, lineNumberProducer ->
             def _processEntry = processEntry.maximumNumberOfParameters == 2 ?
-                    { processEntry(makeEntry(it), lineNumberProducer()) } :
-                    { processEntry(makeEntry(it)) }
+                    { processEntry(it, lineNumberProducer()) } :
+                    { processEntry(it) }
             for (CSVRecord record : parser) {
+                String[] values = getRecordValues(record)
                 if (!record.consistent) {
-                    List<String> values = record.iterator().toList()
+                    String prefix = "Line [${lineNumberProducer()}] is inconsistent - "
                     if (values.every { it.isEmpty() }) {
-                        logger.log(LogType.WARNING, "Line [${lineNumberProducer()}] ignored. It is inconsistent, but all values is empty.")
+                        logger.log(LogType.WARNING, prefix + "ignored (all values is empty).")
                         continue
-                    } else if (record.size() > parser.headerMap.size()) {
-                        def extraValues = values.subList(parser.headerMap.size(), values.size())
+                    } else if (values.length > parser.headerMap.size()) {
+                        String[] extraValues = Arrays.copyOfRange(values, parser.headerMap.size(), record.size())
                         if (extraValues.every { it.isEmpty() }) {
-                            logger.log(LogType.WARNING, "Line [${lineNumberProducer()}] is inconsistent - it has extra empty values.")
+                            logger.log(LogType.WARNING, prefix + "it has extra empty values.")
                         } else {
-                            throw new RuntimeException("Line [${lineNumberProducer()}] is inconsistent - it has extra values: ${extraValues}")
+                            throw new RuntimeException(prefix + "it has extra values: ${extraValues}" as String)
                         }
                     } else {
                         def missingColumns = parser.headerMap.keySet() - record.toMap().keySet()
                         if (missingColumns.every { it.isEmpty() }) {
-                            logger.log(LogType.WARNING, "Line [${lineNumberProducer()}] is inconsistent - missing values for untitled columns")
+                            logger.log(LogType.WARNING, prefix + "it has missing values for untitled columns")
                         } else {
-                            def errorMessage = "Line [${lineNumberProducer()}] is inconsistent - ${record.toMap()}, missing columns: ${missingColumns}"
-                            throw new RuntimeException(errorMessage)
+                            logger.log(LogType.WARNING, prefix + "it has missing values for columns ${missingColumns}, assume they are empty")
+                            values = Arrays.copyOf(values, parser.headerMap.size())
+                            Arrays.fill(values, record.size(), values.length, '')
                         }
                     }
                 }
-                _processEntry(record)
+                _processEntry(makeEntry(values))
             }
         }
     }
