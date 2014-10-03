@@ -90,8 +90,13 @@ class CsvLikeFile implements PrepareIfRequired {
                             throw new RuntimeException("Line [${lineNumberProducer()}] is inconsistent - it has extra values: ${extraValues}")
                         }
                     } else {
-                        def errorMessage = "Line [${lineNumberProducer()}] is inconsistent - ${record.toMap()}, missing columns: ${parser.headerMap.keySet() - record.toMap().keySet()}"
-                        throw new RuntimeException(errorMessage)
+                        def missingColumns = parser.headerMap.keySet() - record.toMap().keySet()
+                        if (missingColumns.every { it.isEmpty() }) {
+                            logger.log(LogType.WARNING, "Line [${lineNumberProducer()}] is inconsistent - missing values for untitled columns")
+                        } else {
+                            def errorMessage = "Line [${lineNumberProducer()}] is inconsistent - ${record.toMap()}, missing columns: ${missingColumns}"
+                            throw new RuntimeException(errorMessage)
+                        }
                     }
                 }
                 _processEntry(record)
