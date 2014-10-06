@@ -92,7 +92,7 @@ class CsvLikeFile implements PrepareIfRequired {
                         if (extraValues.every { it.isEmpty() }) {
                             logger.log(LogType.WARNING, prefix + "it has extra empty values.")
                         } else {
-                            throw new RuntimeException(prefix + "it has extra values: ${extraValues}" as String)
+                            throw new RuntimeException(prefix + "it has extra values: ${extraValues} (values: ${record.toMap()})" as String)
                         }
                     } else {
                         def missingColumns = parser.headerMap.keySet() - record.toMap().keySet()
