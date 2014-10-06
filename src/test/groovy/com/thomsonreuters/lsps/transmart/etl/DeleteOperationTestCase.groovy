@@ -7,7 +7,7 @@ import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasNode
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasSample
 import static org.junit.Assert.assertThat
 
-class DeleteOperationTestCase extends ConfigAwareTestCase {
+class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestCase {
     private ExpressionDataProcessor _processorLoad
     private SNPDataProcessor _processorLoadSNP
     private ClinicalDataProcessor _processorLoadClinical
@@ -36,7 +36,7 @@ class DeleteOperationTestCase extends ConfigAwareTestCase {
 
     @Override
     void setUp() {
-        super.setUp()
+        ConfigAwareTestCase.super.setUp()
         runScript('I2B2_DELETE_ALL_DATA.sql')
     }
 

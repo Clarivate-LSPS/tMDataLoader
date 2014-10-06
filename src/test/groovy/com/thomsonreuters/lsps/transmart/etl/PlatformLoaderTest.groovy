@@ -9,7 +9,7 @@ import static org.junit.Assert.assertThat
 /**
  * Created by bondarev on 3/31/14.
  */
-class PlatformLoaderTest extends ConfigAwareTestCase {
+class PlatformLoaderTest extends GroovyTestCase implements ConfigAwareTestCase {
     void testDoLoad() {
         sql.execute("delete from deapp.de_gpl_info where platform = ?", 'TST')
         sql.execute("delete from ${config.controlSchema}.annotation_deapp where gpl_id = ?", 'TST')

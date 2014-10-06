@@ -11,7 +11,7 @@ import static org.junit.Assert.assertThat
 /**
  * Created by bondarev on 2/24/14.
  */
-class ExpressionDataProcessorTest extends ConfigAwareTestCase {
+class ExpressionDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase {
     private ExpressionDataProcessor _processor
 
     String studyName = 'Test Study'
@@ -24,7 +24,7 @@ class ExpressionDataProcessorTest extends ConfigAwareTestCase {
 
     @Override
     void setUp() {
-        super.setUp()
+        ConfigAwareTestCase.super.setUp()
         sql.execute('delete from i2b2demodata.observation_fact where modifier_cd = ?', studyId)
         sql.execute('delete from deapp.de_subject_sample_mapping where trial_name = ?', studyId)
         runScript('I2B2_PROCESS_MRNA_DATA.sql')

@@ -8,7 +8,7 @@ import static org.hamcrest.CoreMatchers.equalTo
 import static org.hamcrest.CoreMatchers.notNullValue
 import static org.junit.Assert.assertThat
 
-class MIRNASeqDataProcessorTest extends ConfigAwareTestCase {
+class MIRNASeqDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase {
     private MIRNADataProcessor _processor
     String studyName = 'Test MirnaSeq Study'
     String studyId = 'MIRNASEQBASED'
@@ -21,7 +21,7 @@ class MIRNASeqDataProcessorTest extends ConfigAwareTestCase {
 
     @Override
     void setUp() {
-        super.setUp()
+        ConfigAwareTestCase.super.setUp()
         sql.execute('delete from i2b2demodata.observation_fact where modifier_cd = ? or sourcesystem_cd = ?', studyId, studyId)
         sql.execute('delete from deapp.de_subject_sample_mapping where trial_name = ?', studyId)
         runScript('I2B2_PROCESS_QPCR_MIRNA_DATA.sql')
