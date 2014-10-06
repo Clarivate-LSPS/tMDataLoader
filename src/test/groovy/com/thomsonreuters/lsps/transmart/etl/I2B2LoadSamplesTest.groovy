@@ -7,13 +7,13 @@ import static org.junit.Assert.assertThat
 /**
  * Created by bondarev on 4/3/14.
  */
-class I2B2LoadSamplesTest extends ConfigAwareTestCase {
+class I2B2LoadSamplesTest extends GroovyTestCase implements ConfigAwareTestCase {
     String trialId = 'GSE_TST_LDR'
     String platform = 'LDR_TST'
 
     @Override
     void setUp() {
-        super.setUp()
+        ConfigAwareTestCase.super.setUp()
         // reload procedure
         runScript('I2B2_LOAD_SAMPLES.sql')
     }

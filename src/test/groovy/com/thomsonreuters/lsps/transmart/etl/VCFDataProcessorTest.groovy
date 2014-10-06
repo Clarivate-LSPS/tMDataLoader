@@ -11,13 +11,13 @@ import static org.junit.Assert.assertThat
 /**
  * Created by bondarev on 4/3/14.
  */
-class VCFDataProcessorTest extends ConfigAwareTestCase {
+class VCFDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase {
     String studyName = 'Test Study'
     String studyId = 'GSE0'
 
     @Override
     void setUp() {
-        super.setUp()
+        ConfigAwareTestCase.super.setUp()
         runScript('I2B2_PROCESS_VCF_DATA.sql')
     }
 

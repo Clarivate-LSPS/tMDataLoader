@@ -11,7 +11,7 @@ import static org.junit.Assert.assertThat
 /**
  * Created by bondarev on 4/3/14.
  */
-class DatabaseTest extends ConfigAwareTestCase {
+class DatabaseTest extends GroovyTestCase implements ConfigAwareTestCase {
     private void assertParse(String jdbcConnectionString, Map info) {
         def db = new Database([jdbcConnectionString: jdbcConnectionString])
         if (info.host.is(null)) {

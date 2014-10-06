@@ -9,11 +9,10 @@ import org.junit.Assume
 /**
  * Created by bondarev on 3/28/14.
  */
-public abstract class ConfigAwareTestCase extends GroovyTestCase {
+public trait ConfigAwareTestCase {
     def config
-    Database database
+    Database _database
 
-    @Override
     void setUp() {
         URL testConfigUrl = getClass().classLoader.getResource('TestConfig.groovy')
         Assume.assumeTrue("No database config was found. Please, copy src/test/resources/TestConfig.groovy.sample " +
@@ -27,7 +26,7 @@ public abstract class ConfigAwareTestCase extends GroovyTestCase {
     private Sql _db
 
     File getDbScriptsDir() {
-        def databaseType = getDatabase().databaseType
+        def databaseType = database.databaseType
         File dir = new File("sql", databaseType.toString().toLowerCase())
         if (databaseType == DatabaseType.Postgres) {
             dir = new File(dir, 'procedures')
@@ -63,13 +62,21 @@ public abstract class ConfigAwareTestCase extends GroovyTestCase {
     }
 
     Database getDatabase() {
-        database ?: (database = new Database(config.db))
+        if (_database.is(null)) {
+            _database = new Database(config.db)
+        }
+        return _database
     }
 
     Sql getDb() {
-        return _db ?: (_db = Sql.newInstance(config.db.jdbcConnectionString,
-                config.db.password, config.db.username,
-                config.db.jdbcDriver))
+        if (_db.is(null)) {
+            _db = Sql.newInstance(
+                    config.db.jdbcConnectionString,
+                    config.db.password,
+                    config.db.username,
+                    config.db.jdbcDriver)
+        }
+        return _db
     }
 
     void callProcedure(String procedureName, Object... params) {

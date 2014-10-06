@@ -10,7 +10,7 @@ import static org.junit.Assert.assertThat
 /**
  * Created by bondarev on 2/24/14.
  */
-class ClinicalDataProcessorTest extends ConfigAwareTestCase {
+class ClinicalDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase {
     private ClinicalDataProcessor _processor
 
     String studyName = 'Test Study'
@@ -18,7 +18,7 @@ class ClinicalDataProcessorTest extends ConfigAwareTestCase {
 
     @Override
     void setUp() {
-        super.setUp()
+        ConfigAwareTestCase.super.setUp()
         runScript('I2B2_LOAD_CLINICAL_DATA.sql')
     }
 
@@ -31,6 +31,10 @@ class ClinicalDataProcessorTest extends ConfigAwareTestCase {
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
         assertThat(db, hasRecord('i2b2demodata.patient_dimension',
                 ['sourcesystem_cd': "${studyId}:HCC827"], [age_in_years_num: 20]))
+    }
+
+    void testItCollectsStatistic() {
+
     }
 
     void testItLoadsData() {

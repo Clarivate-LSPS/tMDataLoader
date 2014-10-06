@@ -8,7 +8,7 @@ import static org.hamcrest.CoreMatchers.equalTo
 import static org.hamcrest.CoreMatchers.notNullValue
 import static org.junit.Assert.assertThat
 
-class ProteinDataProcessorTest extends ConfigAwareTestCase {
+class ProteinDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase {
     private ProteinDataProcessor _processor
     String studyName = 'Test Protein Study'
     String studyId = 'GSE37425'
@@ -20,7 +20,7 @@ class ProteinDataProcessorTest extends ConfigAwareTestCase {
 
     @Override
     void setUp() {
-        super.setUp()
+        ConfigAwareTestCase.super.setUp()
         sql.execute('delete from i2b2demodata.observation_fact where modifier_cd = ? or sourcesystem_cd = ?', studyId, studyId)
         sql.execute('delete from deapp.de_subject_sample_mapping where trial_name = ?', studyId)
         runScript('I2B2_LOAD_PROTEOMICS_ANNOT.sql')

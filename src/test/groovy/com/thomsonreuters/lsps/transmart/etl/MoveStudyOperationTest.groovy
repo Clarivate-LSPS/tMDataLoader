@@ -8,7 +8,7 @@ import static com.thomsonreuters.lsps.transmart.Fixtures.studyDir
 import static org.junit.Assert.assertThat
 import static org.junit.Assert.assertTrue
 
-class MoveStudyOperationTest extends ConfigAwareTestCase {
+class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCase {
     private MoveStudyProcessor _moveStudyProcessor
     private ClinicalDataProcessor _clinicalDataProcessor
     private DeleteDataProcessor _processorDelete
@@ -32,7 +32,7 @@ class MoveStudyOperationTest extends ConfigAwareTestCase {
 
     @Override
     public void setUp() {
-        super.setUp()
+        ConfigAwareTestCase.super.setUp()
         clinicalDataProcessor.process(
                 new File(studyDir(studyName, studyId), "ClinicalDataToUpload"),
                 [name: studyName, node: "Test Studies Move Test\\${studyName}".toString()])
