@@ -20,11 +20,15 @@
 
 package com.thomsonreuters.lsps.transmart.etl
 
+import com.thomsonreuters.lsps.transmart.etl.statistic.StatisticCollector
+import com.thomsonreuters.lsps.transmart.etl.statistic.TableStatistic
+import com.thomsonreuters.lsps.transmart.etl.statistic.VariableType
 import com.thomsonreuters.lsps.transmart.files.CsvLikeFile
 import com.thomsonreuters.lsps.transmart.sql.DatabaseType
 import groovy.sql.Sql
 
 class ClinicalDataProcessor extends DataProcessor {
+    StatisticCollector statistic = new StatisticCollector()
 
     public ClinicalDataProcessor(Object conf) {
         super(conf);
@@ -33,72 +37,79 @@ class ClinicalDataProcessor extends DataProcessor {
     private long processEachRow(File f, fMappings, Closure<List> processRow) {
         def lineNum = 1L
         CsvLikeFile csvFile = new CsvLikeFile(f, '# ')
-        csvFile.eachEntry { String[] data ->
-            def cols = [''] // to support 0-index properly (we use it for empty data values)
-            cols.addAll(Arrays.asList(data))
+        statistic.collectForTable(f.name) { TableStatistic table->
+            table.withRecordStatisticForVariable('SUBJ_ID', VariableType.ID)
+            csvFile.eachEntry { String[] data ->
+                def cols = [''] // to support 0-index properly (we use it for empty data values)
+                cols.addAll(Arrays.asList(data))
 
-            lineNum++
+                lineNum++
 
-            if (cols[fMappings['STUDY_ID']]) {
-                // the line shouldn't be empty
+                if (cols[fMappings['STUDY_ID']]) {
+                    // the line shouldn't be empty
 
-                if (!cols[fMappings['SUBJ_ID']]) {
-                    throw new Exception("SUBJ_ID are not defined at line ${lineNum}")
-                }
-
-                def output = [
-                        study_id       : cols[fMappings['STUDY_ID']],
-                        site_id        : cols[fMappings['SITE_ID']],
-                        subj_id        : cols[fMappings['SUBJ_ID']],
-                        visit_name     : cols[fMappings['VISIT_NAME']],
-                        data_label     : '', // DATA_LABEL
-                        data_value     : '', // DATA_VALUE
-                        category_cd    : '', // CATEGORY_CD
-                        ctrl_vocab_code: ''  // CTRL_VOCAB_CODE - unused
-                ]
-
-                if (fMappings['_DATA']) {
-                    fMappings['_DATA'].each {
-                        v ->
-
-                            def out = output.clone()
-
-                            out['data_value'] = fixColumn(cols[v['COLUMN']])
-                            def cat_cd = v['CATEGORY_CD']
-
-                            if (v['DATA_LABEL_SOURCE'] > 0) {
-                                // ok, the actual data label is in the referenced column
-                                out['data_label'] = fixColumn(cols[v['DATA_LABEL_SOURCE']])
-                                // now need to modify CATEGORY_CD before proceeding
-
-                                // handling DATALABEL in category_cd
-                                if (!cat_cd.contains('DATALABEL')) {
-                                    // do this only if category_cd doesn't contain DATALABEL yet
-                                    if (v['DATA_LABEL_SOURCE_TYPE'] == 'A')
-                                        cat_cd = (cat_cd =~ /^(.+)\+([^\+]+?)$/).replaceFirst('$1+DATALABEL+$2')
-                                    else
-                                        cat_cd = cat_cd + '+DATALABEL'
-                                }
-
-                            } else {
-                                out['data_label'] = fixColumn(v['DATA_LABEL'])
-                            }
-
-                            cat_cd = fixColumn(cat_cd)
-
-                            // VISIT_NAME special handling; do it only when VISITNAME is not in category_cd already
-                            if (!(cat_cd.contains('VISITNAME') || cat_cd.contains('+VISITNFST'))) {
-                                if (config.visitNameFirst) {
-                                    cat_cd = cat_cd + '+VISITNFST'
-                                }
-                            }
-
-                            out['category_cd'] = cat_cd
-
-                            processRow(out)
+                    if (!cols[fMappings['SUBJ_ID']]) {
+                        throw new Exception("SUBJ_ID are not defined at line ${lineNum}")
                     }
-                } else {
-                    processRow(output)
+
+                    def output = [
+                            study_id       : cols[fMappings['STUDY_ID']],
+                            site_id        : cols[fMappings['SITE_ID']],
+                            subj_id        : cols[fMappings['SUBJ_ID']],
+                            visit_name     : cols[fMappings['VISIT_NAME']],
+                            data_label     : '', // DATA_LABEL
+                            data_value     : '', // DATA_VALUE
+                            category_cd    : '', // CATEGORY_CD
+                            ctrl_vocab_code: ''  // CTRL_VOCAB_CODE - unused
+                    ]
+
+                    if (fMappings['_DATA']) {
+                        table.startCollectForRecord()
+                        table.collectVariableValue('SUBJ_ID', output.subj_id)
+                        fMappings['_DATA'].each {
+                            v ->
+
+                                def out = output.clone()
+
+                                out['data_value'] = fixColumn(cols[v['COLUMN']])
+                                def cat_cd = v['CATEGORY_CD']
+
+                                if (v['DATA_LABEL_SOURCE'] > 0) {
+                                    // ok, the actual data label is in the referenced column
+                                    out['data_label'] = fixColumn(cols[v['DATA_LABEL_SOURCE']])
+                                    // now need to modify CATEGORY_CD before proceeding
+
+                                    // handling DATALABEL in category_cd
+                                    if (!cat_cd.contains('DATALABEL')) {
+                                        // do this only if category_cd doesn't contain DATALABEL yet
+                                        if (v['DATA_LABEL_SOURCE_TYPE'] == 'A')
+                                            cat_cd = (cat_cd =~ /^(.+)\+([^\+]+?)$/).replaceFirst('$1+DATALABEL+$2')
+                                        else
+                                            cat_cd = cat_cd + '+DATALABEL'
+                                    }
+
+                                } else {
+                                    out['data_label'] = fixColumn(v['DATA_LABEL'])
+                                }
+
+                                cat_cd = fixColumn(cat_cd)
+
+                                // VISIT_NAME special handling; do it only when VISITNAME is not in category_cd already
+                                if (!(cat_cd.contains('VISITNAME') || cat_cd.contains('+VISITNFST'))) {
+                                    if (config.visitNameFirst) {
+                                        cat_cd = cat_cd + '+VISITNFST'
+                                    }
+                                }
+
+                                out['category_cd'] = cat_cd
+
+                                processRow(out)
+                        }
+                        table.endCollectForRecord()
+                    } else {
+                        processRow(output)
+                        table.collectForRecord(SUBJ_ID: output.subj_id)
+                    }
                 }
             }
         }
@@ -111,7 +122,9 @@ class ClinicalDataProcessor extends DataProcessor {
         // then parse files that are specified there (to allow multiple files per study)
 
         sql.execute("TRUNCATE TABLE ${config.loadSchema}.lt_src_clinical_data" as String)
-        sql.commit()
+        if (!sql.connection.autoCommit) {
+            sql.commit()
+        }
 
         dir.eachFileMatch(~/(?i).+_Mapping_File\.txt/) {
             def mappings = processMappingFile(it)
@@ -121,9 +134,8 @@ class ClinicalDataProcessor extends DataProcessor {
                 throw new Exception("Empty mapping file")
             }
 
-            mappings.each {
-                fName, fMappings ->
-                    this.processFile(sql, new File(dir, fName), fMappings)
+            mappings.each { fName, fMappings ->
+                this.processFile(sql, new File(dir, fName), fMappings)
             }
         }
 
