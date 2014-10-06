@@ -1,5 +1,6 @@
 package com.thomsonreuters.lsps.transmart.etl.statistic
-
+import groovy.transform.stc.ClosureParams
+import groovy.transform.stc.SimpleType
 /**
  * Date: 06.10.2014
  * Time: 14:52
@@ -8,7 +9,7 @@ class StatisticCollector {
     Map<String, TableStatistic> tables = [:]
     TableStatistic currentTable
 
-    def collectForTable(String tableName, Closure closure) {
+    def collectForTable(String tableName, @ClosureParams(value = SimpleType.class, options = 'com.thomsonreuters.lsps.transmart.etl.statistic.TableStatistic') Closure closure) {
         TableStatistic savedTable = currentTable
         try {
             TableStatistic tableStatistic = new TableStatistic()

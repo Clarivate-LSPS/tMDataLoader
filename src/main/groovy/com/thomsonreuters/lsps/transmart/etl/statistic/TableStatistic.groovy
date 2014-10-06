@@ -8,7 +8,7 @@ import com.sun.javaws.exceptions.InvalidArgumentException
  */
 class TableStatistic {
     VariableStatistic idVariable
-    def variables = [:]
+    Map<String, VariableStatistic> variables = [:]
 
     private Map currentVariableValues
 
@@ -46,7 +46,7 @@ class TableStatistic {
         currentVariableValues = null
     }
 
-    def collectForRecord(Map variableValues) {
+    def collectForRecord(Map<String, String> variableValues) {
         String id = variableValues.get(idVariable.name)
         variableValues.each { String name, String value ->
             VariableStatistic var = variables.get(name)

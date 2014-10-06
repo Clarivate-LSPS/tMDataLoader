@@ -6,5 +6,7 @@ package com.thomsonreuters.lsps.transmart.etl.statistic
  */
 enum VariableType {
     ID,
-    Text
+    Text,
+    Categorical,
+    Numerical
 }
