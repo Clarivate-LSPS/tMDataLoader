@@ -66,44 +66,47 @@ class ClinicalDataProcessor extends DataProcessor {
                     if (fMappings['_DATA']) {
                         table.startCollectForRecord()
                         table.collectVariableValue('SUBJ_ID', output.subj_id)
-                        fMappings['_DATA'].each {
-                            v ->
+                        fMappings['_DATA'].each { v ->
+                            def out = output.clone()
+                            int valueColumn = v['COLUMN']
+                            String value = cols[valueColumn]
+                            if (valueColumn > 0) {
+                                table.collectVariableValue(csvFile.header[valueColumn - 1], value)
+                            }
 
-                                def out = output.clone()
+                            out['data_value'] = fixColumn(value)
+                            def cat_cd = v['CATEGORY_CD']
 
-                                out['data_value'] = fixColumn(cols[v['COLUMN']])
-                                def cat_cd = v['CATEGORY_CD']
+                            if (v['DATA_LABEL_SOURCE'] > 0) {
+                                // ok, the actual data label is in the referenced column
+                                out['data_label'] = fixColumn(cols[v['DATA_LABEL_SOURCE']])
+                                // now need to modify CATEGORY_CD before proceeding
 
-                                if (v['DATA_LABEL_SOURCE'] > 0) {
-                                    // ok, the actual data label is in the referenced column
-                                    out['data_label'] = fixColumn(cols[v['DATA_LABEL_SOURCE']])
-                                     // now need to modify CATEGORY_CD before proceeding
-
-                                    // handling DATALABEL in category_cd
-                                    if (!cat_cd.contains('DATALABEL')) {
-                                        // do this only if category_cd doesn't contain DATALABEL yet
-                                        if (v['DATA_LABEL_SOURCE_TYPE'] == 'A')
-                                            cat_cd = (cat_cd =~ /^(.+)\+([^\+]+?)$/).replaceFirst('$1+DATALABEL+$2')
-                                        else
-                                            cat_cd = cat_cd + '+DATALABEL'
-                                    }
-
-                                } else {
-                                    out['data_label'] = fixColumn(v['DATA_LABEL'])
+                                // handling DATALABEL in category_cd
+                                if (!cat_cd.contains('DATALABEL')) {
+                                    // do this only if category_cd doesn't contain DATALABEL yet
+                                    if (v['DATA_LABEL_SOURCE_TYPE'] == 'A')
+                                        cat_cd = (cat_cd =~ /^(.+)\+([^\+]+?)$/).replaceFirst('$1+DATALABEL+$2')
+                                    else
+                                        cat_cd = cat_cd + '+DATALABEL'
                                 }
 
-                                cat_cd = fixColumn(cat_cd)
+                            } else {
+                                out['data_label'] = fixColumn(v['DATA_LABEL'])
+                            }
 
-                                // VISIT_NAME special handling; do it only when VISITNAME is not in category_cd already
-                                if (!(cat_cd.contains('VISITNAME') || cat_cd.contains('+VISITNFST'))) {
-                                    if (config.visitNameFirst) {
-                                        cat_cd = cat_cd + '+VISITNFST'
-                                    }
+                            cat_cd = fixColumn(cat_cd)
+
+                            // VISIT_NAME special handling; do it only when VISITNAME is not in category_cd already
+                            if (!(cat_cd.contains('VISITNAME') || cat_cd.contains('+VISITNFST'))) {
+                                if (config.visitNameFirst) {
+                                    cat_cd = cat_cd + '+VISITNFST'
                                 }
+                            }
 
-                                out['category_cd'] = cat_cd
+                            out['category_cd'] = cat_cd
 
-                                processRow(out)
+                            processRow(out)
                         }
                         table.endCollectForRecord()
                     } else {

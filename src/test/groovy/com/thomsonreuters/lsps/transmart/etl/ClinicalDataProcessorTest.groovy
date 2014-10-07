@@ -53,6 +53,10 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         def subjId = tst001.variables.SUBJ_ID
         subjId.notEmptyValuesCount == 12
         subjId.emptyValuesCount == 0
+
+        def mutantAlleleGenomic = tst001.variables.'Mutant Allele (Genomic)'
+        mutantAlleleGenomic.notEmptyValuesCount == 12
+        mutantAlleleGenomic.emptyValuesCount == 0
     }
 
     void testItLoadsData() {
