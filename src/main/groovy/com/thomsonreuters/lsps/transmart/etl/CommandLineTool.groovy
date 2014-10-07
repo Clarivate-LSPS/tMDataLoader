@@ -92,6 +92,7 @@ class CommandLineTool {
         if (opts?.i) {
             config.isInteractiveMode = true
             println ">>> USING INTERACTIVE MODE"
+            Logger.setInteractiveMode(true)
         }
 
         if (opts?.'secure-study') {
@@ -197,7 +198,7 @@ class CommandLineTool {
             return
         }
 
-        config.logger = new Logger(config)
+        config.logger = new Logger()
 
         config.logger.log("!!! TM_ETL VERSION ${version}")
         config.logger.log("==== STARTED ====")

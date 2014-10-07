@@ -25,12 +25,19 @@ import java.sql.SQLException
 enum LogType { MESSAGE, WARNING, ERROR, DEBUG, PROGRESS }
 
 class Logger {
-	
-	def config
-	
-	Logger(conf) {
-		config = conf
-	}
+    private static boolean interactiveMode
+
+    public static void setInteractiveMode(boolean interactiveMode) {
+        this.interactiveMode = interactiveMode
+    }
+
+    public static boolean isInteractiveMode() {
+        return interactiveMode
+    }
+
+    public static Logger getLogger(Class<?> cls) {
+        return new Logger()
+    }
 	
 	private String timestamp(LogType ltype) {
 		def tm = new Date()
@@ -75,8 +82,9 @@ class Logger {
 			else
 				println str
 		}
-		else if (config.isInteractiveMode)
-			print '\r'+str
+		else if (Logger.isInteractiveMode()) {
+            print '\r' + str
+        }
 	}
 	
 	void log(str) {
