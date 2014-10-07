@@ -36,6 +36,19 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
                 ['sourcesystem_cd': "${studyId}:HCC827"], [age_in_years_num: 20]))
     }
 
+    def 'it should produce SummaryStatistic.txt'() {
+        when:
+        def clinicalDataDir = Fixtures.getClinicalData(studyName, studyId)
+        def expectedFile = new File(clinicalDataDir, 'ExpectedSummaryStatistic.txt')
+        def actualFile = new File(clinicalDataDir, 'SummaryStatistic.txt')
+        actualFile.delete()
+        processor.process(clinicalDataDir,
+                [name: studyName, node: "Test Studies\\${studyName}".toString()])
+        then:
+        actualFile.exists()
+        actualFile.text == expectedFile.text
+    }
+
     def "it should collect statistic"() {
         setup:
         database.withSql { sql ->
