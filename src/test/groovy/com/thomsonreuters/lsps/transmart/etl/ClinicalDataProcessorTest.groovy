@@ -48,7 +48,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         statistic.tables.keySet() as List == ['TST001.txt', 'TST_DEMO.txt']
         def tst001 = statistic.tables.'TST001.txt'
         tst001 != null
-        tst001.variables.keySet() as List == ['SUBJ_ID', ]
+        tst001.variables.keySet() as List == ['SUBJ_ID', 'Mutant Allele (Genomic)', 'Mutant Allele (cDNA)', 'Mutation Type', 'Variant Type']
 
         def subjId = tst001.variables.SUBJ_ID
         subjId.notEmptyValuesCount == 12
