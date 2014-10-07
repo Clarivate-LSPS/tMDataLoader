@@ -1,7 +1,5 @@
 package com.thomsonreuters.lsps.transmart.etl.statistic
 
-import com.sun.javaws.exceptions.InvalidArgumentException
-
 /**
  * Date: 06.10.2014
  * Time: 14:58
@@ -51,7 +49,7 @@ class TableStatistic {
         variableValues.each { String name, String value ->
             VariableStatistic var = variables.get(name)
             if (var.is(null)) {
-                throw new InvalidArgumentException("Unknown variable: ${name}")
+                throw new IllegalArgumentException("Unknown variable: ${name}")
             }
             var.collectValue(id, value)
         }

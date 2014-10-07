@@ -2,6 +2,8 @@ package com.thomsonreuters.lsps.transmart.etl.mappings
 
 import com.thomsonreuters.lsps.transmart.etl.LogType
 import com.thomsonreuters.lsps.transmart.etl.Logger
+import com.thomsonreuters.lsps.transmart.etl.statistic.ValidationRule
+import com.thomsonreuters.lsps.transmart.etl.statistic.VariableType
 import com.thomsonreuters.lsps.transmart.files.CsvLikeFile
 import groovy.transform.stc.ClosureParams
 import groovy.transform.stc.SimpleType
@@ -21,6 +23,8 @@ class ClinicalDataMapping {
         String DATA_LABEL
         int DATA_LABEL_SOURCE
         String DATA_LABEL_SOURCE_TYPE
+        VariableType variableType
+        List<ValidationRule> validationRules
     }
 
     public static final class FileMapping {
@@ -50,6 +54,9 @@ class ClinicalDataMapping {
         logger.log("Mapping file: ${f.name}")
 
         CsvLikeFile mappingFile = new CsvLikeFile(f)
+        Map<String, Integer> columnMapping = (1..<mappingFile.header.length).collectEntries { [mappingFile.header[it], it] }
+        int variableTypeIdx = columnMapping.variable_type ?: -1
+        int validationRulesIdx = columnMapping.validation_rules ?: -1
         mappingFile.eachEntry { cols, lineNum ->
             String fileName = cols[0]
             if (!mappings.containsKey(fileName)) {
@@ -60,6 +67,10 @@ class ClinicalDataMapping {
 
             def dataLabel = cols[3]
             if (dataLabel != 'OMIT' && dataLabel != 'DATA_LABEL') {
+                def variableType = variableTypeIdx >= 0 ?
+                        VariableType.valueOf(cols[variableTypeIdx].capitalize()) :
+                        VariableType.Text
+                def validationRules = validationRulesIdx ? ValidationRule.parseList(cols[validationRulesIdx]) : []
                 if (dataLabel == '\\') {
                     // the actual data label should be taken from a specified column [4]
                     def dataLabelSource = 0
@@ -76,7 +87,9 @@ class ClinicalDataMapping {
                                 CATEGORY_CD           : cols[1],
                                 COLUMN                : cols[2].toInteger(),
                                 DATA_LABEL_SOURCE     : dataLabelSource,
-                                DATA_LABEL_SOURCE_TYPE: dataLabelSourceType
+                                DATA_LABEL_SOURCE_TYPE: dataLabelSourceType,
+                                variableType: variableType,
+                                validationRules: validationRules
                         ))
                     }
                 } else {
