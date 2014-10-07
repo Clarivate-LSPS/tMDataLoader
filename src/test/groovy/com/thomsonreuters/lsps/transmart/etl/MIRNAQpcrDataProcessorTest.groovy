@@ -46,7 +46,7 @@ class MIRNAQpcrDataProcessorTest extends ConfigAwareTestCase {
                 [name: studyName, node: "Test Studies\\${studyName}".toString(), base_datatype: mirnaType])
         assertThat(db, hasSample(studyId, 'GSM918938'))
         assertThat(db, hasPatient('2:S57024').inTrial(studyId))
-        assertThat(db, hasNode("\\Test Studies\\${studyName}\\Biomarker Data\\Test MIRNAqpcr Platform\\Intestine\\").
+        assertThat(db, hasNode("\\Test Studies\\${studyName}\\Biomarker Data\\Test MIRNAqpcr Platform\\Intestine\\Test\\").
                 withPatientCount(2))
 
         assertThat(db, hasRecord('deapp.de_subject_sample_mapping',
