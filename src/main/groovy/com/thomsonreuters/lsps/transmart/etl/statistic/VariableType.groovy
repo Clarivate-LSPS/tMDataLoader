@@ -8,5 +8,6 @@ enum VariableType {
     ID,
     Text,
     Categorical,
-    Numerical
+    Numerical,
+    Date
 }

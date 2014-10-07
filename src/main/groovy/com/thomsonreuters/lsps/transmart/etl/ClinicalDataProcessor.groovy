@@ -143,8 +143,8 @@ class ClinicalDataProcessor extends DataProcessor {
 
     private void addStatisticVariables(TableStatistic table, CsvLikeFile csvFile, fMappings) {
         table.withRecordStatisticForVariable('SUBJ_ID', VariableType.ID)
-        fMappings._DATA?.each { entry ->
-            table.withRecordStatisticForVariable(csvFile.header[(entry.COLUMN as int) - 1], VariableType.Text)
+        fMappings._DATA?.each { ClinicalDataMapping.Entry entry ->
+            table.withRecordStatisticForVariable(csvFile.header[(entry.COLUMN as int) - 1], entry.variableType)
         }
     }
 
