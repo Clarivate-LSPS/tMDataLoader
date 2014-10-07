@@ -37,8 +37,8 @@ class ClinicalDataProcessor extends DataProcessor {
     private long processEachRow(File f, fMappings, Closure<List> processRow) {
         def lineNum = 1L
         CsvLikeFile csvFile = new CsvLikeFile(f, '# ')
-        statistic.collectForTable(f.name) { TableStatistic table->
-            table.withRecordStatisticForVariable('SUBJ_ID', VariableType.ID)
+        statistic.collectForTable(f.name) { table ->
+            addStatisticVariables(table, csvFile, fMappings)
             csvFile.eachEntry { String[] data ->
                 def cols = [''] // to support 0-index properly (we use it for empty data values)
                 cols.addAll(Arrays.asList(data))
@@ -77,7 +77,7 @@ class ClinicalDataProcessor extends DataProcessor {
                                 if (v['DATA_LABEL_SOURCE'] > 0) {
                                     // ok, the actual data label is in the referenced column
                                     out['data_label'] = fixColumn(cols[v['DATA_LABEL_SOURCE']])
-                                    // now need to modify CATEGORY_CD before proceeding
+                                     // now need to modify CATEGORY_CD before proceeding
 
                                     // handling DATALABEL in category_cd
                                     if (!cat_cd.contains('DATALABEL')) {
@@ -142,6 +142,13 @@ class ClinicalDataProcessor extends DataProcessor {
         return trySetStudyId(sql, studyInfo)
     }
 
+    private void addStatisticVariables(TableStatistic table, CsvLikeFile csvFile, fMappings) {
+        table.withRecordStatisticForVariable('SUBJ_ID', VariableType.ID)
+        fMappings._DATA?.each { entry ->
+            table.withRecordStatisticForVariable(csvFile.header[(entry.COLUMN as int) - 1], VariableType.Text)
+        }
+    }
+
     private void processFile(sql, f, fMappings) {
         config.logger.log("Processing ${f.getName()}")
         if (!f.exists()) {
@@ -150,13 +157,13 @@ class ClinicalDataProcessor extends DataProcessor {
         }
 
         if (database?.databaseType == DatabaseType.Postgres) {
-            processFileForPostgres(sql, f, fMappings)
+            processFileForPostgres(f, fMappings)
         } else {
             processFileForGenericDatabase(sql, f, fMappings)
         }
     }
 
-    private void processFileForPostgres(sql, f, fMappings) {
+    private void processFileForPostgres(f, fMappings) {
         DataLoader.start(database, "${config.loadSchema}.lt_src_clinical_data", ['STUDY_ID', 'SITE_ID', 'SUBJECT_ID', 'VISIT_NAME',
                                                                                  'DATA_LABEL', 'DATA_VALUE', 'CATEGORY_CD']) {
             st ->
