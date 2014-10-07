@@ -312,13 +312,13 @@ order by c_fullname
 
 	--	delete existing compound data for study, compound list may change
 	
-	delete bio_data_compound dc
-	where dc.bio_data_id = 
-		 (select x.bio_experiment_id
-		  from bio_experiment x
-			  ,lt_src_study_metadata y
-		  where x.accession = y.study_id
-		    and x.etl_id = 'METADATA:' || y.study_id);
+	delete from bio_data_compound dc 
+    where exists (select dc.bio_data_id
+      from bio_experiment x, lt_src_study_metadata y 
+      where x.accession = y.study_id
+      and x.etl_id = 'METADATA:' || y.study_id
+      and dc.bio_data_id=x.bio_experiment_id)
+  ;
 
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Delete existing data from bio_data_compound',SQL%ROWCOUNT,stepCt,'Done');
@@ -389,13 +389,13 @@ order by c_fullname
 
 	--	delete existing disease data for studies
 	
-	delete bio_data_disease dc
-	where dc.bio_data_id = 
-		 (select x.bio_experiment_id
-		  from bio_experiment x
-			  ,lt_src_study_metadata y
-		  where x.accession = y.study_id
-		    and x.etl_id = 'METADATA:' || y.study_id);
+	delete from bio_data_disease dc 
+    where exists (select dc.bio_data_id
+      from bio_experiment x, lt_src_study_metadata y 
+      where x.accession = y.study_id
+      and x.etl_id = 'METADATA:' || y.study_id
+      and dc.bio_data_id=x.bio_experiment_id)
+  ;
 
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Delete existing data from bio_data_disease',SQL%ROWCOUNT,stepCt,'Done');
@@ -647,16 +647,31 @@ order by c_fullname
 		end loop;
 	end if;
 	
-		--	Create i2b2_tags
+  -- Create i2b2_tags, we only want to delete existing tags that we are currently uploading and we do not
+  -- want to delete any existing tags that may be in the table
 
-	delete from i2b2_tags
-	where upper(tag_type) = 'Trial';
+	delete from i2b2_tags where tag_type = 'Trial';
 	
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Delete existing Trial tags in i2b2_tags',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
 	
-	insert into i2b2_tags
+	-- PP: Some pre-1.1 version systems of tranSMART have Trial as tags_idx=0 and some have tags_idx=1.  There was a change
+  -- in the tranSMART Application source code which refer 0 or 1 depending on which version of tranSMART is used.  The 
+  -- tranSMART Application fails to show MetaData when it doesn't have what it is expecting, to avoid this issue, we will 
+  -- add a row for both 0 and 1.  This duplication does not harm the application.
+  insert into i2b2_tags
+	(path, tag, tag_type, tags_idx)
+	select min(b.c_fullname) as path
+		  ,be.accession as tag
+		  ,'Trial' as tag_type
+		  ,0 as tags_idx
+	from bio_experiment be
+		,i2b2 b
+	where be.accession = b.sourcesystem_cd
+	group by be.accession;
+  
+  insert into i2b2_tags
 	(path, tag, tag_type, tags_idx)
 	select min(b.c_fullname) as path
 		  ,be.accession as tag
@@ -673,8 +688,7 @@ order by c_fullname
 					 
 	--	Insert trial data tags - COMPOUND
 	
-	delete from i2b2_tags t
-	where upper(t.tag_type) = 'COMPOUND';
+  delete from i2b2_tags where tag_type = 'Compound';
 
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Delete existing Compound tags in I2B2METADATA i2b2_tags',SQL%ROWCOUNT,stepCt,'Done');
@@ -703,8 +717,7 @@ order by c_fullname
 					 
 	--	Insert trial data tags - DISEASE
 	
-	delete from i2b2_tags t
-	where upper(t.tag_type) = 'DISEASE';
+  delete from i2b2_tags where tag_type = 'Disease';
 
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Delete existing DISEASE tags in I2B2METADATA i2b2_tags',SQL%ROWCOUNT,stepCt,'Done');
