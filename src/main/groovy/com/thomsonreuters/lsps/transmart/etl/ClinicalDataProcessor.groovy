@@ -20,6 +20,7 @@
 
 package com.thomsonreuters.lsps.transmart.etl
 
+import com.thomsonreuters.lsps.transmart.etl.mappings.ClinicalDataMapping
 import com.thomsonreuters.lsps.transmart.etl.statistic.StatisticCollector
 import com.thomsonreuters.lsps.transmart.etl.statistic.TableStatistic
 import com.thomsonreuters.lsps.transmart.etl.statistic.VariableType
@@ -130,15 +131,10 @@ class ClinicalDataProcessor extends DataProcessor {
         }
 
         dir.eachFileMatch(~/(?i).+_Mapping_File\.txt/) {
-            def mappings = processMappingFile(it)
+            ClinicalDataMapping mapping = ClinicalDataMapping.loadFromFile(it)
 
-            if (mappings.size() <= 0) {
-                config.logger.log(LogType.ERROR, "Empty mappings file!")
-                throw new Exception("Empty mapping file")
-            }
-
-            mappings.each { fName, fMappings ->
-                this.processFile(sql, new File(dir, fName), fMappings)
+            mapping.eachFileMapping { fileMapping ->
+                this.processFile(sql, new File(dir, fileMapping.fileName), fileMapping)
             }
         }
 
@@ -244,70 +240,6 @@ class ClinicalDataProcessor extends DataProcessor {
         }
 
         return true;
-    }
-
-    private Object processMappingFile(f) {
-        def mappings = [:]
-
-        config.logger.log("Mapping file: ${f.name}")
-
-        CsvLikeFile mappingFile = new CsvLikeFile(f as File)
-        mappingFile.eachEntry { cols, lineNum ->
-            if (!mappings[cols[0]]) {
-                mappings[cols[0]] = [
-                        STUDY_ID  : 0,
-                        SITE_ID   : 0,
-                        SUBJ_ID   : 0,
-                        VISIT_NAME: 0,
-                        _DATA     : []
-                        // [ { DATA_LABEL_SOURCE => 1, DATA_LABEL_SOURCE_TYPE => 'A',
-                        // DATA_LABEL => Label, CATEGORY_CD => '', COLUMN => 1 } ] - 1-based column numbers
-                ];
-            }
-
-            def curMapping = mappings[cols[0]]
-
-            def dataLabel = cols[3]
-            if (dataLabel != 'OMIT' && dataLabel != 'DATA_LABEL') {
-                if (dataLabel == '\\') {
-                    // the actual data label should be taken from a specified column [4]
-                    def dataLabelSource = 0
-                    def dataLabelSourceType = ''
-
-                    def m = cols[4] =~ /^(\d+)(A|B){0,1}$/
-                    if (m.size() > 0) {
-                        dataLabelSource = m[0][1].toInteger()
-                        dataLabelSourceType = (m[0][2] in ['A', 'B']) ? m[0][2] : 'A'
-                    }
-
-                    if (cols[1] && cols[2].toInteger() > 0 && dataLabelSource > 0) {
-                        curMapping['_DATA'].add([
-                                CATEGORY_CD           : cols[1],
-                                COLUMN                : cols[2].toInteger(),
-                                DATA_LABEL_SOURCE     : dataLabelSource,
-                                DATA_LABEL_SOURCE_TYPE: dataLabelSourceType
-                        ])
-                    }
-                } else {
-                    if (curMapping.containsKey(dataLabel)) {
-                        curMapping[dataLabel] = cols[2].toInteger()
-                    } else {
-                        if (cols[1] && cols[2].toInteger() > 0) {
-                            curMapping['_DATA'].add([
-                                    DATA_LABEL : dataLabel,
-                                    CATEGORY_CD: cols[1],
-                                    COLUMN     : cols[2].toInteger()
-                            ])
-                        } else {
-                            config.logger.log(LogType.ERROR, "Category or column number is missing for line ${lineNum}")
-                            throw new Exception("Error parsing mapping file")
-                        }
-                    }
-                }
-            }
-        }
-
-        return mappings
     }
 
     private String fixColumn(String s) {
