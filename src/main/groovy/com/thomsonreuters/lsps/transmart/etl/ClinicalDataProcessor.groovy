@@ -137,6 +137,9 @@ class ClinicalDataProcessor extends DataProcessor {
                 this.processFile(sql, new File(dir, fileMapping.fileName), fileMapping)
             }
         }
+        new File(dir, "SummaryStatistic.txt").withWriter { writer ->
+            statistic.printReport(writer)
+        }
 
         return trySetStudyId(sql, studyInfo)
     }

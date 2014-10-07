@@ -1,5 +1,4 @@
 package com.thomsonreuters.lsps.transmart.etl.statistic
-
 /**
  * Date: 06.10.2014
  * Time: 16:39
@@ -9,5 +8,16 @@ enum VariableType {
     Text,
     Categorical,
     Numerical,
-    Date
+    Date;
+
+    public static VariableType tryParse(String variableType, VariableType defaultType) {
+        if (!variableType) {
+            return defaultType
+        }
+        try {
+            return VariableType.valueOf(variableType.capitalize())
+        } catch (Exception ignored) {
+            return defaultType
+        }
+    }
 }
