@@ -12,7 +12,7 @@ import org.apache.commons.csv.CSVRecord
  * Created by bondarev on 3/28/14.
  */
 class CsvLikeFile implements PrepareIfRequired {
-    private static final Logger logger = new Logger([:])
+    private static final Logger logger = Logger.getLogger(CsvLikeFile.class)
 
     File file
     protected String lineComment
