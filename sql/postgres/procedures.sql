@@ -27,4 +27,5 @@ $$;
 \i procedures/I2B2_PROCESS_PROTEOMICS_DATA.sql
 \i procedures/I2B2_LOAD_METABOLOMICS_ANNOT.sql
 \i procedures/I2B2_PROCESS_METABOLOMIC_DATA.sql
+\i procedures/I2B2_PROCESS_QPCR_MIRNA_DATA.sql
 

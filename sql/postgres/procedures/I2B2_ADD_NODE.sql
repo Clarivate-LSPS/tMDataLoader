@@ -3,8 +3,9 @@
 -- DROP FUNCTION i2b2_add_node(character varying, character varying, character varying, numeric);
 
 CREATE OR REPLACE FUNCTION i2b2_add_node(trialid character varying, path character varying, path_name character varying, currentjobid numeric)
-  RETURNS integer AS
-$BODY$
+  RETURNS integer
+  SET search_path FROM CURRENT
+  AS $BODY$
 /*************************************************************************
 * Copyright 2008-2012 Janssen Research & Development, LLC.
 *

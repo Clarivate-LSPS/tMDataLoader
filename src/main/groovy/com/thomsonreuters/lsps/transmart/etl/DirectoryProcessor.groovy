@@ -30,9 +30,10 @@ class DirectoryProcessor {
             RBM       : RBMDataProcessor,
             Meta      : MetaDataProcessor,
             Clinical  : ClinicalDataProcessor,
-            MIRNA_SEQ : MIRNADataProcessor,
-            MIRNA_QPCR: MIRNADataProcessor,
-            Protein   : ProteinDataProcessor,
+            MIRNA_SEQ   : MIRNADataProcessor,
+            MIRNA_QPCR  : MIRNADataProcessor,
+            Protein     : ProteinDataProcessor,
+            Metabolomics: MetabolomicsDataProcessor
     ]
 
     DirectoryProcessor(conf) {

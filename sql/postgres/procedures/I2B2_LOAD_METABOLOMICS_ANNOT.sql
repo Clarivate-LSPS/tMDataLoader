@@ -3,8 +3,9 @@
 -- DROP FUNCTION tm_cz.i2b2_load_metabolomics_annot(numeric);
 
 CREATE OR REPLACE FUNCTION i2b2_load_metabolomics_annot(currentjobid numeric DEFAULT NULL::numeric)
-  RETURNS numeric AS
-$BODY$
+  RETURNS numeric
+  SET search_path FROM CURRENT
+  AS $BODY$
 /*************************************************************************
 *This stored procedure is for ETL to load METABOLOMICS ANNOTATION
 * Date:12/29/2013

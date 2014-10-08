@@ -3,8 +3,9 @@
 -- DROP FUNCTION tm_cz.i2b2_add_root_node(character varying, numeric);
 
 CREATE OR REPLACE FUNCTION i2b2_add_root_node(root_node character varying, currentjobid numeric)
-  RETURNS integer AS
-$BODY$
+  RETURNS integer
+  SET search_path FROM CURRENT
+  AS $BODY$
 /*************************************************************************
 * Copyright 2008-2012 Janssen Research & Development, LLC.
 *
