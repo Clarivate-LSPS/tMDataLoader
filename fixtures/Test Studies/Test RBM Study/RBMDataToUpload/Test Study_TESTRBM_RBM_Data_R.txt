@@ -1,0 +1,5 @@
+id	rid	sampid	plate	visit_code	Analyte (ana_unit)	LDD	avalue	analval	belowLDD	read_low	read_hi	logtrans	outlier
+1	723	AA800N4Q-07	2	bl	Apolipoprotein	0.02	2.5	2.5	0	0	0	0	0
+2	723	AA800N4Q-07	2	bl	Adiponectin	0.00028	0.0034	-2.468521083	0	0	0	1	0
+3	723	AA800N4Q-07	2	bl	Tenascin-C	66	21	21	1	0	0	0	0
+4	723	AA800N4Q-07	2	bl	Sortilin	9.00E-06	0.0038	-2.420216403	0	0	0	1	0
