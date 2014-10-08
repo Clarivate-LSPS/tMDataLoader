@@ -3,8 +3,9 @@
 -- DROP FUNCTION tm_cz.i2b2_process_metabolomic_data(character varying, character varying, character varying, character varying, numeric, character varying, numeric);
 
 CREATE OR REPLACE FUNCTION tm_cz.i2b2_process_metabolomic_data(trial_id character varying, top_node character varying, data_type character varying DEFAULT 'R'::character varying, source_code character varying DEFAULT 'STD'::character varying, log_base numeric DEFAULT 2, secure_study character varying DEFAULT 'N'::character varying, currentjobid numeric DEFAULT (-1))
-  RETURNS numeric AS
-$BODY$
+  RETURNS numeric
+  SET search_path FROM CURRENT
+  AS $BODY$
 
 /*************************************************************************
 

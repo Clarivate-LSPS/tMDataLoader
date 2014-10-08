@@ -263,7 +263,7 @@ BEGIN
 	select (TrialId || ':' || sourceCD)
 		  ,TrialId
 	      ,m.assay_id
-	      ,m.probeset_id 
+	      ,cast(m.probeset_id AS INTEGER)
 		  ,case when dataType = 'R' then m.intensity_value
 				when dataType = 'L' 
 				then m.intensity_value

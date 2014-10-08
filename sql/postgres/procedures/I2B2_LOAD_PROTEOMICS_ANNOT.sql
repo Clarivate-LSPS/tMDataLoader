@@ -1,8 +1,9 @@
---
+﻿--
 -- Name: i2b2_load_proteomics_annot(numeric); Type: FUNCTION; Schema: tm_cz; Owner: -
 --
 CREATE OR REPLACE FUNCTION i2b2_load_proteomics_annot(currentjobid numeric DEFAULT NULL::numeric) RETURNS numeric
     LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path FROM CURRENT
     AS $$
 /*************************************************************************
 *This stored procedure is for ETL to load proteomics ANNOTATION 
