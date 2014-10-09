@@ -1,4 +1,4 @@
-filename	category_cd	col_nbr	data_label	data_label_source	variable_type
+filename	category_cd	col_nbr	data_label	data_label_source	variable_type	validation_rules
 TST001.txt		1	STUDY_ID
 TST001.txt		2	SUBJ_ID
 TST001.txt		3	OMIT
@@ -9,7 +9,7 @@ TST001.txt	Biomarker_Data+Mutations+TST001_(Entrez_ID:_1956)+AA_mutation+Mutatio
 TST001.txt	Biomarker_Data+Mutations+TST001_(Entrez_ID:_1956)+AA_mutation+Variant Type	8	\	4A
 TST_DEMO.txt		1	STUDY_ID
 TST_DEMO.txt		2	SUBJ_ID
-TST_DEMO.txt	Subjects+Demographics	3	Age (AGE)		Numerical
-TST_DEMO.txt	Subjects+Demographics	4	Sex (SEX)		Categorical
+TST_DEMO.txt	Subjects+Demographics	3	"Age (AGE)"		Numerical	Required
+TST_DEMO.txt	Subjects+Demographics	4	"Sex (SEX)"		Categorical	Required
 TST_DEMO.txt	Subjects+Demographics	5	Assessment Date		Date
 TST_DEMO.txt	Subjects+Demographics	6	Language		Text
