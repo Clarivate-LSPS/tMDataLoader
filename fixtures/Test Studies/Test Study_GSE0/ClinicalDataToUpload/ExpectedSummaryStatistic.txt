@@ -6,3 +6,6 @@ TST001.txt	Mutation Type	Text	12	0
 TST001.txt	Variant Type	Text	12	0										
 TST_DEMO.txt	SUBJ_ID	ID	9	0							Yes		OK	
 TST_DEMO.txt	Age In Years	Numerical	9	0	30.555556	20.9	11.5	90.0	23.734843					
+TST_DEMO.txt	Sex	Categorical	8	1						Female: 5, Male: 3				
+TST_DEMO.txt	Assessment Date	Date	9	0										
+TST_DEMO.txt	Language	Text	3	6										
