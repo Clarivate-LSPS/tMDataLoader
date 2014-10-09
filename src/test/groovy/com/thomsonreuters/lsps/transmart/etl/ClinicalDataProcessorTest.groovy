@@ -59,17 +59,36 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         expect:
         statistic != null
         statistic.tables.keySet() as List == ['TST001.txt', 'TST_DEMO.txt']
-        def tst001 = statistic.tables.'TST001.txt'
-        tst001 != null
-        tst001.variables.keySet() as List == ['SUBJ_ID', 'Mutant Allele (Genomic)', 'Mutant Allele (cDNA)', 'Mutation Type', 'Variant Type']
+        def demo = statistic.tables.'TST_DEMO.txt'
+        demo != null
+        demo.variables.keySet() as List == ['SUBJ_ID', 'Age In Years', 'Sex', 'Assessment Date', 'Language']
 
-        def subjId = tst001.variables.SUBJ_ID
-        subjId.notEmptyValuesCount == 12
+        def subjId = demo.variables.SUBJ_ID
+        subjId.notEmptyValuesCount == 9
         subjId.emptyValuesCount == 0
 
-        def mutantAlleleGenomic = tst001.variables.'Mutant Allele (Genomic)'
-        mutantAlleleGenomic.notEmptyValuesCount == 12
-        mutantAlleleGenomic.emptyValuesCount == 0
+        def age = demo.variables.'Age In Years'
+        age.notEmptyValuesCount == 9
+        age.emptyValuesCount == 0
+        age.mean.round(6) == 30.555556
+        age.median == 20.9
+        age.min == 11.5
+        age.max == 90.0
+        age.standardDerivation.round(6) == 23.734843
+
+        def sex = demo.variables.'Sex'
+        sex.notEmptyValuesCount == 8
+        sex.emptyValuesCount == 1
+        sex.factor.counts.Female == 5
+        sex.factor.counts.Male == 3
+
+        def assessmentDate = demo.variables.'Assessment Date'
+        assessmentDate.notEmptyValuesCount == 9
+        assessmentDate.emptyValuesCount == 0
+
+        def language = demo.variables.'Language'
+        language.notEmptyValuesCount == 3
+        language.emptyValuesCount == 6
     }
 
     void testItLoadsData() {
