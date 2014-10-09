@@ -11,7 +11,11 @@ class TableStatistic {
     private Map currentVariableValues
 
     TableStatistic withRecordStatisticForVariable(String name, VariableType variableType) {
-        VariableStatistic variable = new VariableStatistic(name: name, type: variableType)
+        withRecordStatisticForVariable(name, variableType, [])
+    }
+
+    TableStatistic withRecordStatisticForVariable(String name, VariableType variableType, List<ValidationRule> validationRules) {
+        VariableStatistic variable = new VariableStatistic(name, variableType, validationRules)
         if (variableType == VariableType.ID) {
             if (idVariable != null) {
                 throw new UnsupportedOperationException("Can't set ID variable to '${name}'. Another ID variable is already defined ('${idVariable.name}')")
@@ -51,7 +55,7 @@ class TableStatistic {
             if (var.is(null)) {
                 throw new IllegalArgumentException("Unknown variable: ${name}")
             }
-            var.collectValue(id, value)
+            var.collectValue(id, value, variableValues)
         }
     }
 }

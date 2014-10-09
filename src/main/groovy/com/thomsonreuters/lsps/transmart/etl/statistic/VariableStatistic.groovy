@@ -5,8 +5,10 @@ package com.thomsonreuters.lsps.transmart.etl.statistic
  * Time: 14:58
  */
 class VariableStatistic {
-    String name
-    VariableType type
+    final String name
+    final VariableType type
+    final List<ValidationRule> validationRules
+
     Factor factor
     long notEmptyValuesCount
     long totalValuesCount
@@ -14,16 +16,16 @@ class VariableStatistic {
     private List<Double> doubleValues
     private boolean valuesSorted
     double mean, median, min = Double.MAX_VALUE, max = Double.MIN_VALUE, sdBase
+    private List<String> missingDataIds = []
     boolean required
     boolean unique
 
-    void setType(VariableType type) {
-        if (type == this.type) {
-            return
-        }
+    VariableStatistic(String name, VariableType type, List<ValidationRule> validationRules) {
+        this.name = name
         this.type = type
-        this.unique = this.unique || type == VariableType.ID
-        this.required = this.required || type == VariableType.ID
+        this.validationRules = Collections.unmodifiableList(validationRules)
+        this.unique = type == VariableType.ID || validationRules.any { it.type == ValidationRuleType.Unique }
+        this.required = type == VariableType.ID || validationRules.any { it.type == ValidationRuleType.Required }
         if (type == VariableType.Categorical) {
             factor = new Factor()
         } else if (type == VariableType.Numerical) {
@@ -57,10 +59,10 @@ class VariableStatistic {
     }
 
     String getQCMissingData() {
-        required ? (hasMissingData ? "${emptyValuesCount} missing (<id list>)" : 'OK') : ''
+        required ? (hasMissingData ? "${emptyValuesCount} missing (${missingDataIds.collect { "'${it}'" }.join(', ')})" : 'OK') : ''
     }
 
-    void collectValue(String id, String value) {
+    void collectValue(String id, String value, Map<String, String> variableValues) {
         totalValuesCount++
         if (!value.isEmpty()) {
             notEmptyValuesCount++
@@ -72,6 +74,8 @@ class VariableStatistic {
                     collectNumericalValue(value)
                     break
             }
+        } else if (required) {
+            missingDataIds.add(id)
         }
     }
 

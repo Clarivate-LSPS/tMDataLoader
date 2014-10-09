@@ -66,6 +66,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         def subjId = demo.variables.SUBJ_ID
         subjId.notEmptyValuesCount == 9
         subjId.emptyValuesCount == 0
+        subjId.QCMissingData == 'OK'
 
         def age = demo.variables.'Age In Years'
         age.notEmptyValuesCount == 9
@@ -75,20 +76,24 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         age.min == 11.5
         age.max == 90.0
         age.standardDerivation.round(6) == 23.734843
+        age.QCMissingData == 'OK'
 
         def sex = demo.variables.'Sex'
-        sex.notEmptyValuesCount == 8
-        sex.emptyValuesCount == 1
+        sex.notEmptyValuesCount == 7
+        sex.emptyValuesCount == 2
         sex.factor.counts.Female == 5
-        sex.factor.counts.Male == 3
+        sex.factor.counts.Male == 2
+        sex.QCMissingData == '2 missing (\'HCC4006\', \'SW48\')'
 
         def assessmentDate = demo.variables.'Assessment Date'
         assessmentDate.notEmptyValuesCount == 9
         assessmentDate.emptyValuesCount == 0
+        assessmentDate.QCMissingData == ''
 
         def language = demo.variables.'Language'
         language.notEmptyValuesCount == 3
         language.emptyValuesCount == 6
+        language.QCMissingData == ''
     }
 
     void testItLoadsData() {

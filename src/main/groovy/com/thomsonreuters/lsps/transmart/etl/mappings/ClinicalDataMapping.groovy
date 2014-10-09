@@ -70,7 +70,7 @@ class ClinicalDataMapping {
                 def variableType = variableTypeIdx >= 0 ?
                         VariableType.tryParse(cols[variableTypeIdx].capitalize(), VariableType.Text) :
                         VariableType.Text
-                def validationRules = validationRulesIdx ? ValidationRule.parseList(cols[validationRulesIdx]) : []
+                def validationRules = validationRulesIdx >= 0 ? ValidationRule.parseList(cols[validationRulesIdx]) : []
                 if (dataLabel == '\\') {
                     // the actual data label should be taken from a specified column [4]
                     def dataLabelSource = 0
