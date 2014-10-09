@@ -28,4 +28,8 @@ $$;
 \i procedures/I2B2_LOAD_METABOLOMICS_ANNOT.sql
 \i procedures/I2B2_PROCESS_METABOLOMIC_DATA.sql
 \i procedures/I2B2_PROCESS_QPCR_MIRNA_DATA.sql
+\i procedures/I2B2_PROCESS_RNA_SEQ_DATA.sql
 
+alter function tm_cz.i2b2_rna_seq_annotation()
+  set search_path=tm_cz, tm_lz, tm_wz, i2b2demodata, i2b2metadata, deapp, pg_temp;
+alter function tm_cz.i2b2_rna_seq_annotation(bigint) rename to i2b2_rna_seq_annotation_with_param;
