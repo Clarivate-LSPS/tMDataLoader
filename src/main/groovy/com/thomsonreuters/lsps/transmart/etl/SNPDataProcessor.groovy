@@ -84,7 +84,7 @@ class SNPDataProcessor extends DataProcessor {
         config.logger.log(LogType.MESSAGE, "Processing copy number for ${f.getName()}")
         loadFileToTable(sql, f, "${config.loadSchema}.lt_snp_copy_number",
                 ['GSM_NUM', 'SNP_NAME', 'CHROM', 'CHROM_POS', 'COPY_NUMBER']) {
-            [it[0], it[1], it[2], it[3], it[4] as double]
+            [it[0], it[1], it[2], it[3] as long, it[4] as double]
         }
     }
 

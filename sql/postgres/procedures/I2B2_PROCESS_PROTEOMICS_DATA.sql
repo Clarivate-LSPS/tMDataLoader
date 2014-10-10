@@ -1,6 +1,3 @@
---
--- Name: i2b2_process_proteomics_data(character varying, character varying, character varying, character varying, numeric, character varying, numeric); Type: FUNCTION; Schema: tm_cz; Owner: -
---
 CREATE OR REPLACE FUNCTION i2b2_process_proteomics_data(trial_id character varying, top_node character varying, data_type character varying DEFAULT 'R'::character varying, source_cd character varying DEFAULT 'STD'::character varying, log_base numeric DEFAULT 2, secure_study character varying DEFAULT NULL::character varying, currentjobid numeric DEFAULT NULL::numeric) RETURNS numeric
     LANGUAGE plpgsql SECURITY DEFINER
     SET search_path FROM CURRENT
@@ -74,7 +71,7 @@ Declare
 
     uploadI2b2 cursor  is 
     select category_cd,display_value,display_label,display_unit from
-    tm_lz.lt_src_protein_display_mapping;
+    lt_src_protein_display_mapping;
 
 BEGIN
 	TrialID := upper(trial_id);
@@ -112,12 +109,12 @@ BEGIN
   IF(jobID IS NULL or jobID < 1)
   THEN
     newJobFlag := 1; -- True
-    select tm_cz.cz_start_audit(procedureName, databaseName) into jobID;
+    select cz_start_audit(procedureName, databaseName) into jobID;
   END IF;
     	
 	stepCt := 0;
 	stepCt := stepCt + 1;
-	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Starting i2b2_process_proteomics_data',0,stepCt,'Done') into rtnCd;
+	select cz_write_audit(jobId,databaseName,procedureName,'Starting i2b2_process_proteomics_data',0,stepCt,'Done') into rtnCd;
 	
 	--	Get count of records in LT_SRC_PROTEOMICS_SUB_SAM_MAP
 	
@@ -225,8 +222,8 @@ BEGIN
 	set trial_name=upper(trial_name);
 	exception
 	when others then
-		perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 	
@@ -274,8 +271,8 @@ BEGIN
 		) x;
 	exception
 	when others then
-		perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 	
@@ -296,8 +293,8 @@ BEGIN
 		    and x.platform = 'PROTEIN');
 	exception
 	when others then
-		perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 	
@@ -310,8 +307,8 @@ BEGIN
 	where trial_name = TrialId ;
 	exception
 	when others then
-		perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 	
@@ -329,8 +326,8 @@ BEGIN
 	; --Making sure only miRNA data is deleted
 	exception
 	when others then
-		perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 		  
@@ -338,12 +335,12 @@ BEGIN
 	get diagnostics rowCt := ROW_COUNT;
 	select cz_write_audit(jobId,databaseName,procedureName,'Delete trial from DEAPP de_subject_sample_mapping',rowCt,stepCt,'Done') into rtnCd;
 	begin
-	execute('truncate table tm_wz.WT_PROTEOMICS_NODES');
-	execute('truncate table tm_wz.WT_PROTEOMICS_NODE_VALUES');
+	execute('truncate table WT_PROTEOMICS_NODES');
+	execute('truncate table WT_PROTEOMICS_NODE_VALUES');
 	exception
 	when others then
-		perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 
@@ -374,8 +371,8 @@ BEGIN
 	  ;
 	exception
 	when others then
-		perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
       
@@ -405,8 +402,8 @@ BEGIN
 	from  WT_PROTEOMICS_NODE_VALUES;
 	exception
 	when others then
-		perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 		   
@@ -437,8 +434,8 @@ BEGIN
 	from  WT_PROTEOMICS_NODE_VALUES;
 	exception
 	when others then
-		perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 		   
@@ -471,8 +468,8 @@ BEGIN
 	  and attribute_1 is not null;
 	  exception
 	when others then
-		perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 		   
@@ -505,8 +502,8 @@ BEGIN
 	  and attribute_2 is not null;
 	exception
 	when others then
-		perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 		   
@@ -538,8 +535,8 @@ BEGIN
 	where category_cd like '%TISSUETYPE%';
 	exception
 	when others then
-		perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 		   
@@ -551,8 +548,8 @@ BEGIN
 	set node_name=parse_nth_value(leaf_node,length(leaf_node)-length(replace(leaf_node,'\','')),'\');
 	exception
 	when others then
-		perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 		   
@@ -569,7 +566,7 @@ BEGIN
 		stepCt := stepCt + 1;
 		get diagnostics rowCt := ROW_COUNT;
 		if rtnCd > 1 then
-			select cz_write_audit(jobId,databasename,procedurename,'Error while executing tm_cz.i2b2_add_node(' || TrialID || ',' || r_addNodes.leaf_node || ',' || r_addNodes.node_name || ',' || jobId || ')' ,1,stepCt,'ERROR') into rtnCd;
+			select cz_write_audit(jobId,databasename,procedurename,'Error while executing i2b2_add_node(' || TrialID || ',' || r_addNodes.leaf_node || ',' || r_addNodes.node_name || ',' || jobId || ')' ,1,stepCt,'ERROR') into rtnCd;
 			select cz_end_audit (jobId,'FAIL') into rtnCd;
 			return 168;
 		end if;	
@@ -577,7 +574,7 @@ BEGIN
 		select cz_write_audit(jobId,databaseName,procedureName,tText,rowCt,stepCt,'Done') into rtnCd;
 		select i2b2_fill_in_tree(TrialId, r_addNodes.leaf_node, jobID) into rtnCd;
 		if rtnCd > 1 then
-			select cz_write_audit(jobId,databasename,procedurename,'Error while executing tm_cz.i2b2_fill_in_tree(' || TrialID || ',' || r_addNodes.leaf_node || ',' || jobId || ')' ,1,stepCt,'ERROR') into rtnCd;
+			select cz_write_audit(jobId,databasename,procedurename,'Error while executing i2b2_fill_in_tree(' || TrialID || ',' || r_addNodes.leaf_node || ',' || jobId || ')' ,1,stepCt,'ERROR') into rtnCd;
 			select cz_end_audit (jobId,'FAIL') into rtnCd;
 			return 170;
 		end if;	
@@ -592,8 +589,8 @@ BEGIN
 	  and length(b.c_fullname) < length(topNode);
 	exception
 	when others then
-		perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 	  	
@@ -614,8 +611,8 @@ BEGIN
 	  and t.concept_cd is null;
 	  exception
 	when others then
-		perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 	
@@ -765,8 +762,8 @@ BEGIN
 		  and  ln.concept_cd is not null) t;
 	exception
 	when others then
-		perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 
@@ -812,8 +809,8 @@ BEGIN
       and m.platform = 'PROTEIN';
 	exception
 	when others then
-		perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 	
@@ -860,8 +857,8 @@ BEGIN
 	 and m.patient_id != m.sample_id;
     exception
 	when others then
-		perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 	
@@ -875,8 +872,8 @@ BEGIN
 	where t.c_basecode in (select distinct x.concept_cd from WT_PROTEOMICS_NODES x);
 	exception
 	when others then
-		perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
   
@@ -891,8 +888,8 @@ BEGIN
 	   DEAPP.DE_SUBJECT_SAMPLE_MAPPING WHERE SAMPLE_CD NOT IN (SELECT SAMPLE_CD FROM I2B2DEMODATA.SAMPLE_DIMENSION) ;
 	exception
 	when others then
-		perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
     stepCt := stepCt + 1;
@@ -915,12 +912,12 @@ BEGIN
                 <ExcludingUnits></ExcludingUnits><ConvertingUnits><Units></Units><MultiplyingFactor></MultiplyingFactor>
                 </ConvertingUnits></UnitValues><Analysis><Enums /><Counts />
                 <New /></Analysis>'||(select xmlelement(name "SeriesMeta",xmlforest(m.display_value as "Value",m.display_unit as "Unit",m.display_label as "DisplayName")) as hi 
-      from tm_lz.lt_src_protein_display_mapping m where m.category_cd=ul.category_cd)||
+      from lt_src_protein_display_mapping m where m.category_cd=ul.category_cd)||
                 '</ValueMetadata>') where n.c_fullname=(select leaf_node from WT_PROTEOMICS_NODES where category_cd=ul.category_cd and leaf_node=n.c_fullname);
         exception
 	when others then
-		perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
                 end loop;
@@ -939,8 +936,8 @@ BEGIN
 							 and x.concept_code is not null);
 	exception
 	when others then
-		perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 	  
@@ -954,8 +951,8 @@ BEGIN
         where a.c_fullname = substr(topNode,1,instr(topNode,'\',1,3));
         exception
 	when others then
-		perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
         
@@ -994,11 +991,11 @@ BEGIN
 
 --	tag data with probeset_id from reference.probeset_deapp
 	begin
-	execute('truncate table tm_wz.WT_SUBJECT_PROTEOMICS_PROBESET');
+	execute('truncate table WT_SUBJECT_PROTEOMICS_PROBESET');
 	exception
 	when others then
-		perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 	
@@ -1037,8 +1034,8 @@ BEGIN
 
 	exception
 	when others then
-		perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 	
@@ -1099,8 +1096,8 @@ BEGIN
                  and d.peptide=m.probeset;
         exception
 	when others then
-		perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 		stepCt := stepCt + 1;

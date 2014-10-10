@@ -7,7 +7,6 @@ import groovy.sql.Sql
  * Created by bondarev on 4/7/14.
  */
 class SamplesLoader {
-    String loadSchema = "tm_lz"
     String trialId
     List<List> samples = []
 
@@ -23,10 +22,10 @@ class SamplesLoader {
     }
 
     void loadSamples(Sql sql) {
-        sql.execute("delete from ${loadSchema}.lt_src_mrna_subj_samp_map" as String)
+        sql.execute("delete from lt_src_mrna_subj_samp_map" as String)
         sql.withBatch(
                 """
-                INSERT into ${loadSchema}.lt_src_mrna_subj_samp_map
+                INSERT into lt_src_mrna_subj_samp_map
                 (TRIAL_NAME, SITE_ID, SUBJECT_ID, SAMPLE_CD, PLATFORM, TISSUE_TYPE,
                  ATTRIBUTE_1, ATTRIBUTE_2, CATEGORY_CD, SOURCE_CD)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)

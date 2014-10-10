@@ -20,6 +20,8 @@
 
 package com.thomsonreuters.lsps.transmart.etl
 
+import com.thomsonreuters.lsps.transmart.sql.Database
+import com.thomsonreuters.lsps.transmart.sql.DatabaseType
 import com.thomsonreuters.lsps.transmart.tools.ProcessLocker
 
 class CommandLineTool {
@@ -89,6 +91,7 @@ class CommandLineTool {
             return
         }
 
+        def database = new Database(config)
         if (opts?.i) {
             config.isInteractiveMode = true
             println ">>> USING INTERACTIVE MODE"
@@ -136,7 +139,7 @@ class CommandLineTool {
         if (config.controlSchema) {
             println ">>> USING ALTERNATIVE CONTROL SCHEMA: ${config.controlSchema}"
         } else {
-            config.controlSchema = 'tm_cz'
+            config.controlSchema = database.databaseType == DatabaseType.Postgres ? 'tm_dataloader' : 'tm_cz'
         }
 
         if (opts?.'alt-load-schema') {
@@ -146,7 +149,7 @@ class CommandLineTool {
         if (config.loadSchema) {
             println ">>> USING ALTERNATIVE LOAD SCHEMA: ${config.loadSchema}"
         } else {
-            config.loadSchema = 'tm_lz'
+            config.loadSchema = database.databaseType == DatabaseType.Postgres ? 'tm_dataloader' : 'tm_lz'
         }
 
         if (!config?.containsKey('visitNameFirst')) {

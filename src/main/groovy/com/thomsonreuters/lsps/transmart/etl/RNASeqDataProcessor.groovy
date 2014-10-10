@@ -12,8 +12,8 @@ public class RNASeqDataProcessor extends DataProcessor {
 
     @Override
     public boolean processFiles(File dir, Sql sql, Object studyInfo) {
-        sql.execute("TRUNCATE TABLE ${config.loadSchema}.lt_src_rna_seq_subj_samp_map" as String)
-        sql.execute("TRUNCATE TABLE ${config.loadSchema}.lt_src_rna_seq_data" as String)
+        sql.execute("TRUNCATE TABLE lt_src_rna_seq_subj_samp_map" as String)
+        sql.execute("TRUNCATE TABLE lt_src_rna_seq_data" as String)
 
         def platformList = [] as Set
 
@@ -54,10 +54,10 @@ public class RNASeqDataProcessor extends DataProcessor {
                     [studyId, studyNode, studyDataType, jobId]) {}
 
             // Call loading annotation after data processing because we need data from filled
-            // tm_cz.probeset_deapp to load full annotation info
+            // probeset_deapp to load full annotation info
 
             if (studyInfo['runPlatformLoad']) {
-                sql.call("{call " + config.controlSchema + ".i2b2_rna_seq_annotation()}")
+                sql.call("{call " + config.controlSchema + ".i2b2_rna_seq_annotation(?)}", jobId)
             }
         } else {
             config.logger.log(LogType.ERROR, "Study ID or Node or DataType not defined!")
@@ -82,7 +82,7 @@ public class RNASeqDataProcessor extends DataProcessor {
 
         sql.withTransaction {
             sql.withBatch(100, """\
-				INSERT into ${config.loadSchema}.lt_src_rna_seq_subj_samp_map (TRIAL_NAME, SITE_ID,
+				INSERT into lt_src_rna_seq_subj_samp_map (TRIAL_NAME, SITE_ID,
 					SUBJECT_ID, SAMPLE_CD, PLATFORM, TISSUE_TYPE,
 					ATTRIBUTE_1, ATTRIBUTE_2, CATEGORY_CD, SOURCE_CD)
 				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -154,7 +154,7 @@ public class RNASeqDataProcessor extends DataProcessor {
     }
 
     private void processRNASeqFileForPostgres(File f, studyInfo) {
-        DataLoader.start(database, "${config.loadSchema}.lt_src_rna_seq_data", ['TRIAL_NAME', 'PROBESET', 'EXPR_ID', 'INTENSITY_VALUE']) {
+        DataLoader.start(database, "lt_src_rna_seq_data", ['TRIAL_NAME', 'PROBESET', 'EXPR_ID', 'INTENSITY_VALUE']) {
             st ->
                 def lineNum = processEachRow(f, studyInfo) { row ->
                     st.addBatch(row)
@@ -167,7 +167,7 @@ public class RNASeqDataProcessor extends DataProcessor {
         def lineNum = 0
         sql.withTransaction {
             sql.withBatch(1000, """\
-				INSERT into ${config.loadSchema}.lt_src_rna_seq_data (TRIAL_NAME, PROBESET, EXPR_ID, INTENSITY_VALUE)
+				INSERT into lt_src_rna_seq_data (TRIAL_NAME, PROBESET, EXPR_ID, INTENSITY_VALUE)
 				VALUES (?, ?, ?, ?)
 			""") {
                 stmt ->

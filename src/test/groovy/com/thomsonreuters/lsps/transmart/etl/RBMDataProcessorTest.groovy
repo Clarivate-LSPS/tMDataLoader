@@ -1,13 +1,5 @@
 package com.thomsonreuters.lsps.transmart.etl
 
-import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasNode
-import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasPatient
-import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasRecord
-import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasSample
-import static org.hamcrest.CoreMatchers.equalTo
-import static org.hamcrest.CoreMatchers.notNullValue
-import static org.junit.Assert.assertThat
-
 class RBMDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase {
     private RBMDataProcessor _processor
     String studyName = 'Test RBM Study'

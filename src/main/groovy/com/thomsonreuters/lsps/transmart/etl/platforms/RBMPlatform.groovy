@@ -11,7 +11,7 @@ class RBMPlatform extends GenePlatform {
 
     @Override
     void cleanupTempTables(Sql sql) {
-        sql.execute("TRUNCATE TABLE ${config.loadSchema}.lt_src_rbm_annotation" as String)
+        sql.execute("TRUNCATE TABLE lt_src_rbm_annotation" as String)
     }
 
     @Override
@@ -23,7 +23,7 @@ class RBMPlatform extends GenePlatform {
     @Override
     int loadEntries(Sql sql) {
         return loadEachEntry(sql, """
-            INSERT into ${config.loadSchema}.lt_src_rbm_annotation(ANTIGEN_NAME,UNIPROTID,GENE_SYMBOL,GENE_ID,GPL_ID)
+            INSERT into lt_src_rbm_annotation(ANTIGEN_NAME,UNIPROTID,GENE_SYMBOL,GENE_ID,GPL_ID)
             VALUES (?, ?, ?, ?, ?)
         """) { entry ->
             [

@@ -2,7 +2,7 @@
 -- Name: i2b2_rbm_zscore_calc_new(character varying, character varying, character varying, numeric, character varying, bigint, character varying, bigint, character varying); Type: FUNCTION; Schema: tm_cz; Owner: -
 --
 CREATE OR REPLACE FUNCTION i2b2_rbm_zscore_calc_new(trial_id character varying, partition_name character varying, partition_indx character varying, partitionid numeric, run_type character varying DEFAULT 'L'::character varying, currentjobid bigint DEFAULT 0, data_type character varying DEFAULT 'R'::character varying, log_base bigint DEFAULT 2, source_cd character varying DEFAULT NULL::character varying) RETURNS void
-    LANGUAGE plpgsql
+    LANGUAGE plpgsql VOLATILE SECURITY DEFINER
     SET search_path FROM CURRENT
     AS $$
 DECLARE
@@ -74,7 +74,7 @@ BEGIN
 	raise notice 'sqlText= %', sqlText;
 	execute sqlText;
 	stepCt := stepCt + 1;
-	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Create partition ' || partitionName,1,stepCt,'Done') into rtnCd;
+	select cz_write_audit(jobId,databaseName,procedureName,'Create partition ' || partitionName,1,stepCt,'Done') into rtnCd;
 	else
 	sqlText := 'drop index if exists ' || partitionIndx || '_idx1';
 	raise notice 'sqlText= %', sqlText;
@@ -89,12 +89,12 @@ BEGIN
 	raise notice 'sqlText= %', sqlText;
 	execute sqlText;
 	stepCt := stepCt + 1;
-	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Drop indexes on ' || partitionName,1,stepCt,'Done') into rtnCd;
+	select cz_write_audit(jobId,databaseName,procedureName,'Drop indexes on ' || partitionName,1,stepCt,'Done') into rtnCd;
 	sqlText := 'truncate table ' || partitionName;
 	raise notice 'sqlText= %', sqlText;
 	execute sqlText;
 	stepCt := stepCt + 1;
-	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Truncate ' || partitionName,1,stepCt,'Done') into rtnCd;
+	select cz_write_audit(jobId,databaseName,procedureName,'Truncate ' || partitionName,1,stepCt,'Done') into rtnCd;
 	end if;
   
 	stepCt := stepCt + 1;
@@ -104,7 +104,7 @@ BEGIN
 		stepCt := stepCt + 1;
 		select cz_write_audit(jobId,databaseName,procedureName,'Invalid runType passed - procedure exiting'
 ,0,stepCt,'Done') into rtnCd;
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		select cz_end_audit (jobId,'FAIL') into rtnCd;
 		return;
 	end if;
@@ -114,13 +114,13 @@ BEGIN
 
 	if runType = 'L' then
 		select distinct trial_name into stgTrial
-		from tm_wz.WT_SUBJECT_RBM_PROBESET;
+		from WT_SUBJECT_RBM_PROBESET;
 		
 		if stgTrial != TrialId then
 			stepCt := stepCt + 1;
 			select cz_write_audit(jobId,databaseName,procedureName,'TrialId not the same as trial in WT_SUBJECT_RBM_PROBESET - procedure exiting'
 ,0,stepCt,'Done') into rtnCd;
-			select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+			select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 			select cz_end_audit (jobId,'FAIL') into rtnCd;
 			return;
 		end if;
@@ -139,7 +139,7 @@ BEGIN
 			stepCt := stepCt + 1;
 			select cz_write_audit(jobId,databaseName,procedureName,'No data for TrialId in de_subject_rbm_data - procedure exiting'
 ,0,stepCt,'Done') into rtnCd;
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		select cz_end_audit (jobId,'FAIL') into rtnCd;
 		return;
 		end if;
@@ -148,13 +148,13 @@ BEGIN
    
 --	truncate tmp tables
 
-	EXECUTE('truncate table tm_wz.wt_subject_rbm_logs');
-	EXECUTE('truncate table tm_wz.wt_subject_rbm_calcs');
-	EXECUTE('truncate table tm_wz.wt_subject_rbm_med');
+	EXECUTE('truncate table wt_subject_rbm_logs');
+	EXECUTE('truncate table wt_subject_rbm_calcs');
+	EXECUTE('truncate table wt_subject_rbm_med');
 
-	EXECUTE('drop index if exists tm_wz.wt_subject_rbm_logs_i1');		
+	EXECUTE('drop index if exists wt_subject_rbm_logs_i1');
 		
-	EXECUTE('drop index if exists tm_wz.wt_subject_rbm_calcs_i1');
+	EXECUTE('drop index if exists wt_subject_rbm_calcs_i1');
 	
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Truncate work tables in TM_WZ',0,stepCt,'Done') into rtnCd;
@@ -164,7 +164,7 @@ BEGIN
 
 	begin
 		if dataType = 'L' then
-			insert into tm_wz.wt_subject_rbm_logs 
+			insert into wt_subject_rbm_logs
 				(probeset_id
 				,intensity_value
 				,assay_id
@@ -176,12 +176,12 @@ BEGIN
 					  ,assay_id 
 					  ,intensity_value
 					  ,patient_id
-				from tm_wz.wt_subject_rbm_probeset
+				from wt_subject_rbm_probeset
 				where trial_name = TrialId;
 			   
 			--end if;
 		else	
-			insert into tm_wz.wt_subject_rbm_logs 
+			insert into wt_subject_rbm_logs
 				(probeset_id
 				,intensity_value
 				,assay_id
@@ -193,7 +193,7 @@ BEGIN
 					  ,assay_id 
 					  ,CASE WHEN intensity_value <= 0 THEN log(2,(intensity_value + 0.001)) ELSE log(2,intensity_value) END
 					  ,patient_id
-				from tm_wz.wt_subject_rbm_probeset
+				from wt_subject_rbm_probeset
 				where trial_name = TrialId;
 		end if;
 	get diagnostics rowCt := ROW_COUNT;
@@ -202,21 +202,21 @@ BEGIN
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
 		--Handle errors.
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		--End Proc
-		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return;
 	end;
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Loaded data for trial in TM_WZ wt_subject_rbm_logs',rowCt,stepCt,'Done') into rtnCd;
     
-	EXECUTE('create index wt_subject_rbm_logs_i1 on tm_wz.wt_subject_rbm_logs (trial_name, probeset_id) tablespace "indx"');
+	EXECUTE('create index wt_subject_rbm_logs_i1 on wt_subject_rbm_logs (trial_name, probeset_id) tablespace "indx"');
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Create index on TM_WZ wt_subject_rbm_logs',0,stepCt,'Done') into rtnCd;
 		
 --	calculate mean_intensity, median_intensity, and stddev_intensity per experiment, probe
 	begin
-		insert into tm_wz.wt_subject_rbm_calcs
+		insert into wt_subject_rbm_calcs
 		(trial_name
 		,probeset_id
 		,mean_intensity
@@ -228,7 +228,7 @@ BEGIN
 			  ,avg(log_intensity)
 			  ,median(log_intensity)
 			  ,stddev(log_intensity)
-		from tm_wz.wt_subject_rbm_logs d 
+		from wt_subject_rbm_logs d
 		group by d.trial_name 
 				,d.probeset_id;
 	get diagnostics rowCt := ROW_COUNT;
@@ -237,22 +237,22 @@ BEGIN
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
 		--Handle errors.
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		--End Proc
-		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return;
 	end;
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Calculate intensities for trial in TM_WZ wt_subject_rbm_calcs',rowCt,stepCt,'Done') into rtnCd;
 
 
-	EXECUTE('create index wt_subject_rbm_calcs_i1 on tm_wz.wt_subject_rbm_calcs (trial_name, probeset_id) tablespace "indx"');
+	EXECUTE('create index wt_subject_rbm_calcs_i1 on wt_subject_rbm_calcs (trial_name, probeset_id) tablespace "indx"');
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Create index on TM_WZ wt_subject_rbm_calcs',0,stepCt,'Done') into rtnCd;
 		
 -- calculate zscore
 	begin
-		insert into tm_wz.wt_subject_rbm_med 
+		insert into wt_subject_rbm_med
 		(probeset_id
 		,intensity_value
 		,log_intensity
@@ -272,8 +272,8 @@ BEGIN
 			  ,c.median_intensity 
 			  ,(CASE WHEN stddev_intensity=0 THEN 0 ELSE (log_intensity - median_intensity ) / stddev_intensity END)
 			  ,d.patient_id
-		from tm_wz.wt_subject_rbm_logs d 
-			,tm_wz.wt_subject_rbm_calcs c 
+		from wt_subject_rbm_logs d
+			,wt_subject_rbm_calcs c
 		where d.probeset_id = c.probeset_id;
 	get diagnostics rowCt := ROW_COUNT;
 	exception
@@ -281,9 +281,9 @@ BEGIN
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
 		--Handle errors.
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		--End Proc
-		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return;
 	end;
 	stepCt := stepCt + 1;
@@ -312,8 +312,8 @@ BEGIN
               ',(CASE WHEN position(''('' in m.probeset_id) <> 0 THEN trim(substr(m.probeset_id ,instr(m.probeset_id ,''('',-1,1),length(m.probeset_id ))) ELSE m.probeset_id END) ' ||
               ',(CASE WHEN m.zscore < -2.5 THEN -2.5 WHEN m.zscore >  2.5 THEN  2.5 ELSE m.zscore END) ' ||
 			  ',nextval(''deapp.RBM_ANNOTATION_ID'') '||
-	'from tm_wz.wt_subject_rbm_med m ' ||
-        ',tm_wz.wt_subject_rbm_probeset p ' ||
+	'from wt_subject_rbm_med m ' ||
+        ',wt_subject_rbm_probeset p ' ||
         ',deapp.DE_RBM_ANNOTATION a ' ||
         ',deapp.de_subject_sample_mapping d ' ||
         'where  ' ||
@@ -336,14 +336,14 @@ BEGIN
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
 		--Handle errors.
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		--End Proc
-		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return;
 	end;
 
 	stepCt := stepCt + 1;
-	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Inserted data into ' || partitionName,rowCt,stepCt,'Done') into rtnCd;
+	select cz_write_audit(jobId,databaseName,procedureName,'Inserted data into ' || partitionName,rowCt,stepCt,'Done') into rtnCd;
 
 	begin
 	insert into DEAPP.DE_RBM_DATA_ANNOTATION_JOIN
@@ -357,9 +357,9 @@ BEGIN
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
 		--Handle errors.
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		--End Proc
-		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return;
 	end;
 
@@ -387,3 +387,5 @@ END;
  
 $$;
 
+ALTER FUNCTION i2b2_rbm_zscore_calc_new(character varying, character varying, character varying, numeric, character varying, bigint, character varying, bigint, character varying)
+	OWNER TO postgres;

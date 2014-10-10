@@ -15,7 +15,7 @@ class MIRNAPlatform extends GenePlatform {
 
     @Override
     void cleanupTempTables(Sql sql) {
-        sql.execute("TRUNCATE TABLE ${config.loadSchema}.lt_qpcr_mirna_annotation" as String)
+        sql.execute("TRUNCATE TABLE lt_qpcr_mirna_annotation" as String)
     }
 
     @Override
@@ -27,7 +27,7 @@ class MIRNAPlatform extends GenePlatform {
     @Override
     int loadEntries(Sql sql) {
         return loadEachEntry(sql, """
-            INSERT into ${config.loadSchema}.lt_qpcr_mirna_annotation (ID_REF,MIRNA_ID,SN_ID,ORGANISM,GPL_ID)
+            INSERT into lt_qpcr_mirna_annotation (ID_REF,MIRNA_ID,SN_ID,ORGANISM,GPL_ID)
             VALUES (?, ?, ?, ?, ?)
         """) { entry ->
             [

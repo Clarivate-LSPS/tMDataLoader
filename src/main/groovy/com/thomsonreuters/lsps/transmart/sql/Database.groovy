@@ -12,13 +12,27 @@ class Database {
     String host
     int port = -1
 
-    Database(dbConfig) {
-        config = dbConfig
+    Database(config) {
+        this.config = config.db
         parseJdbcConnectionString()
     }
 
     void withSql(Closure block) {
-        Sql.withInstance(config.jdbcConnectionString, config.username, config.password, config.jdbcDriver, block)
+        Sql sql = null
+        try {
+            sql = newSql()
+            block.call(sql)
+        } finally {
+            if (sql != null) sql.close()
+        }
+    }
+
+    Sql newSql() {
+        Sql sql = Sql.newInstance(config.jdbcConnectionString, config.username, config.password, config.jdbcDriver)
+        if (databaseType == DatabaseType.Postgres) {
+            sql.execute("SET SEARCH_PATH=tm_dataloader, tm_cz, tm_lz, tm_wz, i2b2demodata, i2b2metadata, deapp, pg_temp;")
+        }
+        return sql
     }
 
     Process runPsqlCommand(String ... additionalArgs) {

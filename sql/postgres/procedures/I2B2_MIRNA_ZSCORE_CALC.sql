@@ -1,6 +1,3 @@
---
--- Name: i2b2_mirna_zscore_calc(character varying, character varying, numeric, character varying, numeric, character varying); Type: FUNCTION; Schema: tm_cz; Owner: -
---
 CREATE OR REPLACE FUNCTION i2b2_mirna_zscore_calc(trial_id character varying, run_type character varying DEFAULT 'L'::character varying, currentjobid numeric DEFAULT NULL::numeric, data_type character varying DEFAULT 'R'::character varying, log_base numeric DEFAULT 2, source_cd character varying DEFAULT NULL::character varying) RETURNS numeric
     LANGUAGE plpgsql SECURITY DEFINER
     SET search_path FROM CURRENT
@@ -86,17 +83,17 @@ BEGIN
    
 --	truncate tmp tables
 	begin
-		execute ('truncate table tm_wz.WT_SUBJECT_MIRNA_LOGS');
-		execute ('truncate table tm_wz.WT_SUBJECT_MIRNA_CALCS');
-		execute ('truncate table tm_wz.WT_SUBJECT_MIRNA_MED');
+		execute ('truncate table WT_SUBJECT_MIRNA_LOGS');
+		execute ('truncate table WT_SUBJECT_MIRNA_CALCS');
+		execute ('truncate table WT_SUBJECT_MIRNA_MED');
 	exception
 	when others then
-		perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
-	--drop index if exists tm_wz.WT_SUBJECT_MIRNA_LOGS_I1;		
-	--drop index if exists tm_wz.WT_SUBJECT_MIRNA_CALCS_I1;
+	--drop index if exists WT_SUBJECT_MIRNA_LOGS_I1;
+	--drop index if exists WT_SUBJECT_MIRNA_CALCS_I1;
 	
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Truncate work tables in TM_WZ',0,stepCt,'Done') into rtnCd;
@@ -129,8 +126,8 @@ BEGIN
 			where trial_name = TrialId;
 		exception
 		when others then
-			perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-			perform tm_cz.cz_end_audit (jobID, 'FAIL');
+			perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+			perform cz_end_audit (jobID, 'FAIL');
 			return -16;
 		end;
 	else	
@@ -155,8 +152,8 @@ BEGIN
 			where trial_name = TrialId;
 		exception
 		when others then
-			perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-			perform tm_cz.cz_end_audit (jobID, 'FAIL');
+			perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+			perform cz_end_audit (jobID, 'FAIL');
 			return -16;
 		end;
 	end if;
@@ -167,7 +164,7 @@ BEGIN
 
 	
     
-	--execute ('create index WT_SUBJECT_MIRNA_LOGS_I1 on tm_wz.WT_SUBJECT_MIRNA_LOGS (trial_name, probeset_id)');
+	--execute ('create index WT_SUBJECT_MIRNA_LOGS_I1 on WT_SUBJECT_MIRNA_LOGS (trial_name, probeset_id)');
 	stepCt := stepCt + 1;
 	--select cz_write_audit(jobId,databaseName,procedureName,'Create index on TM_WZ WT_SUBJECT_MIRNA_LOGS_I1',0,stepCt,'Done') into rtnCd;
 		
@@ -191,8 +188,8 @@ BEGIN
 			,d.probeset_id;
 	exception
 	when others then
-		perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 	stepCt := stepCt + 1;
@@ -201,7 +198,7 @@ BEGIN
 
 	
 
-	--execute ('create index tm_wz.wt_subject_mirna_calcs_i1 on tm_wz.WT_SUBJECT_MIRNA_CALCS (trial_name, probeset_id) nologging tablespace "INDX"');
+	--execute ('create index wt_subject_mirna_calcs_i1 on WT_SUBJECT_MIRNA_CALCS (trial_name, probeset_id) nologging tablespace "INDX"');
 	--stepCt := stepCt + 1;
 	--cz_write_audit(jobId,databaseName,procedureName,'Create index on TM_WZ WT_SUBJECT_MIRNA_CALCS',0,stepCt,'Done');
 		
@@ -237,8 +234,8 @@ BEGIN
     where d.probeset_id = c.probeset_id;
     	exception
 	when others then
-		perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 	stepCt := stepCt + 1;
@@ -283,8 +280,8 @@ BEGIN
 	from wt_subject_MIRNA_med m;
         exception
 	when others then
-		perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 	stepCt := stepCt + 1;
@@ -293,7 +290,7 @@ BEGIN
 
 	/*
 	if pExists > 0 then
-		perform tm_cz.I2B2_MIRNA_INC_SUB_ZSCORE(TrialId,dataType);
+		perform I2B2_MIRNA_INC_SUB_ZSCORE(TrialId,dataType);
 		stepCt := stepCt + 1;
 		perform cz_write_audit(jobId,databaseName,procedureName,'update zscore in de_subject_MIRNA_data ',0,stepCt,'Done');
 	end if;

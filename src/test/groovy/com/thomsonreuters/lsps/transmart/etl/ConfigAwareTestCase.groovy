@@ -10,6 +10,8 @@ import org.junit.Assume
  * Created by bondarev on 3/28/14.
  */
 public trait ConfigAwareTestCase {
+    private final Logger logger = Logger.getLogger(getClass())
+
     def config
     Database _database
 
@@ -20,8 +22,9 @@ public trait ConfigAwareTestCase {
         Logger.setInteractiveMode(true)
         config = new ConfigSlurper().parse(testConfigUrl)
         config.logger = config.logger ?: Logger.getLogger(getClass())
-        config.controlSchema = config.controlSchema ?: 'tm_cz'
-        config.loadSchema = config.loadSchema ?: 'tm_lz'
+        _database = new Database(config)
+        config.controlSchema = config.controlSchema ?: (_database.databaseType == DatabaseType.Postgres ? 'tm_dataloader' : 'tm_cz')
+        config.loadSchema = config.loadSchema ?: (_database.databaseType == DatabaseType.Postgres ? 'tm_dataloader' : 'tm_lz')
         config.securitySymbol = config.securitySymbol ?: 'N'
     }
     private Sql _db
@@ -46,7 +49,7 @@ public trait ConfigAwareTestCase {
             tmpFile.setWritable(true, false);
             tmpFile.setExecutable(true, false);
             tmpFile.withWriter {
-                it.println("set SEARCH_PATH = ${config.controlSchema}, ${config.loadSchema}, tm_wz, i2b2demodata, i2b2metadata, deapp, pg_temp;")
+                it.println("set SEARCH_PATH = tm_dataloader, tm_cz, tm_lz, tm_wz, i2b2demodata, i2b2metadata, deapp, pg_temp;")
                 it.append(sqlFile.text)
             }
             sqlFile = tmpFile;
@@ -63,19 +66,12 @@ public trait ConfigAwareTestCase {
     }
 
     Database getDatabase() {
-        if (_database.is(null)) {
-            _database = new Database(config.db)
-        }
         return _database
     }
 
     Sql getDb() {
         if (_db.is(null)) {
-            _db = Sql.newInstance(
-                    config.db.jdbcConnectionString,
-                    config.db.password,
-                    config.db.username,
-                    config.db.jdbcDriver)
+            _db = database.newSql()
         }
         return _db
     }
@@ -92,6 +88,14 @@ public trait ConfigAwareTestCase {
         }
     }
 
+    void withErrorLogging(Closure block) {
+        try {
+            block.call()
+        } catch (Exception ex) {
+            logger.log(LogType.ERROR, ex)
+        }
+    }
+
     void withAudit(String jobName, Closure block) {
         database.withSql { Sql sql ->
             def jobId = -1
@@ -99,10 +103,10 @@ public trait ConfigAwareTestCase {
                     [jobName, config.db.username, Sql.NUMERIC]) { jobId = it }
             block.call(jobId)
             def succeed = true
-            sql.eachRow("SELECT * FROM " + config.controlSchema + ".cz_job_audit where job_id=${jobId} order by seq_id") { row ->
+            sql.eachRow("SELECT * FROM cz_job_audit where job_id=${jobId} order by seq_id") { row ->
                 println "-- ${row.step_desc} [${row.step_status} / ${row.records_manipulated} recs / ${row.time_elapsed_secs}s]"
             }
-            sql.eachRow("SELECT * FROM " + config.controlSchema + ".cz_job_error where job_id=${jobId} order by seq_id") {
+            sql.eachRow("SELECT * FROM cz_job_error where job_id=${jobId} order by seq_id") {
                 println "${it.error_message} / ${it.error_stack} / ${it.error_backtrace}"
                 succeed = false
             }

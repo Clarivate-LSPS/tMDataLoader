@@ -1,6 +1,6 @@
--- Function: tm_cz.i2b2_process_rna_seq_data(character varying, character varying, character varying, character varying, numeric, character varying, numeric)
+-- Function: i2b2_process_rna_seq_data(character varying, character varying, character varying, character varying, numeric, character varying, numeric)
 
--- DROP FUNCTION tm_cz.i2b2_process_rna_seq_data(character varying, character varying, character varying, character varying, numeric, character varying, numeric);
+-- DROP FUNCTION i2b2_process_rna_seq_data(character varying, character varying, character varying, character varying, numeric, character varying, numeric);
 
 CREATE OR REPLACE FUNCTION i2b2_process_rna_seq_data(trial_id character varying, top_node character varying, data_type character varying DEFAULT 'R'::character varying, source_code character varying DEFAULT 'STD'::character varying, log_base numeric DEFAULT 2, secure_study character varying DEFAULT NULL::character varying, currentjobid numeric DEFAULT (-1))
   RETURNS numeric AS
@@ -61,7 +61,7 @@ DECLARE
 	addNodes CURSOR FOR
 	SELECT distinct t.leaf_node
           ,t.node_name
-	from  tm_wz.wt_RNA_SEQ_nodes t
+	from  wt_RNA_SEQ_nodes t
 	where not exists
 		 (select 1 from i2b2metadata.i2b2 x
 		  where t.leaf_node = x.c_fullname);
@@ -78,7 +78,7 @@ DECLARE
 
 	uploadI2b2 CURSOR FOR
     select category_cd,display_value,display_label,display_unit from
-    tm_lz.lt_src_rna_display_mapping;
+    lt_src_rna_display_mapping;
 
 BEGIN
 	TrialID := upper(trial_id);
@@ -125,17 +125,17 @@ BEGIN
 	--	Get count of records in lt_src_RNA_SEQ_subj_samp_map
 
 	select count(*) into sCount
-	from tm_lz.lt_src_RNA_SEQ_subj_samp_map;
+	from lt_src_RNA_SEQ_subj_samp_map;
 
 	--	check if all subject_sample map records have a platform, If not, abort run
 
 	select count(*) into pCount
-	from tm_lz.lt_src_RNA_SEQ_subj_samp_map
+	from lt_src_RNA_SEQ_subj_samp_map
 	where coalesce(platform::text, '') = '';
 
 	if pCount > 0 then
 		select cz_write_audit(jobId,databasename,procedurename,'Platform data missing from one or more subject_sample mapping records',1,stepCt,'ERROR') into rtnCd;
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		select cz_end_audit (jobId,'FAIL') into rtnCd;
 		return 161;
 	end if;
@@ -143,12 +143,12 @@ BEGIN
 	--	check if all subject_sample map records have a tissue_type, If not, abort run
 
 	select count(*) into pCount
-	from tm_lz.lt_src_RNA_SEQ_subj_samp_map
+	from lt_src_RNA_SEQ_subj_samp_map
 	where coalesce(tissue_type::text, '') = '';
 
 	if pCount > 0 then
 		select cz_write_audit(jobId,databasename,procedurename,'Tissue Type data missing from one or more subject_sample mapping records',1,stepCt,'ERROR') into rtnCd;
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		select CZ_END_AUDIT (JOBID,'FAIL') into rtnCd;
 		return 162;
 	end if;
@@ -157,7 +157,7 @@ BEGIN
 
 	select count(*) into pCount
 	from (select sample_cd
-		  from tm_lz.lt_src_RNA_SEQ_subj_samp_map
+		  from lt_src_RNA_SEQ_subj_samp_map
 		  group by sample_cd
 		  having count(distinct platform) > 1) as x;
 
@@ -199,7 +199,7 @@ BEGIN
 
 	--	uppercase study_id in lt_src_RNA_SEQ_subj_samp_map in case curator forgot
 	begin
-	update tm_lz.lt_src_RNA_SEQ_subj_samp_map
+	update lt_src_RNA_SEQ_subj_samp_map
 	set trial_name=upper(trial_name);
 	get diagnostics rowCt := ROW_COUNT;
 	exception
@@ -207,9 +207,9 @@ BEGIN
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
 		--Handle errors.
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		--End Proc
-		-- select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		-- select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return -16;
 	end;
 
@@ -261,7 +261,7 @@ BEGIN
 				 0 as age_in_years_num,
 				 null as race_cd,
 				 regexp_replace(TrialId || ':' || coalesce(s.site_id,'') || ':' || s.subject_id,'(::){1,}', ':', 'g') as sourcesystem_cd
-		 from tm_lz.lt_src_RNA_SEQ_subj_samp_map s
+		 from lt_src_RNA_SEQ_subj_samp_map s
 		 where (s.subject_id IS NOT NULL AND s.subject_id::text <> '')
 		   and s.trial_name = TrialID
 		   and s.source_cd = sourceCD
@@ -276,9 +276,9 @@ BEGIN
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
 		--Handle errors.
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		--End Proc
-		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return -16;
 	end;
 
@@ -302,9 +302,9 @@ BEGIN
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
 		--Handle errors.
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		--End Proc
-		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return -16;
 	end;
 
@@ -324,9 +324,9 @@ BEGIN
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
 		--Handle errors.
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		--End Proc
-		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return -16;
 	end;
 
@@ -335,15 +335,15 @@ BEGIN
 
 --	truncate tmp node table
 
-	EXECUTE('truncate table tm_wz.wt_RNA_SEQ_nodes');
+	EXECUTE('truncate table wt_RNA_SEQ_nodes');
 
 --	load temp table with leaf node path, use temp table with distinct sample_type, ATTR2, platform, and title   this was faster than doing subselect
 --	from wt_subject_RNA_sequencing_data
 
-	EXECUTE('truncate table tm_wz.wt_RNA_SEQ_node_values');
+	EXECUTE('truncate table wt_RNA_SEQ_node_values');
 
 	begin
-	insert into tm_wz.wt_RNA_SEQ_node_values
+	insert into wt_RNA_SEQ_node_values
 	(category_cd
 	,platform
 	,tissue_type
@@ -357,7 +357,7 @@ BEGIN
 	               ,a.attribute_1
 				   ,a.attribute_2
 				   ,''--g.title
-    from tm_lz.lt_src_RNA_SEQ_subj_samp_map a
+    from lt_src_RNA_SEQ_subj_samp_map a
 	where a.trial_name = TrialID
 	  and a.source_cd = sourceCD;
 	get diagnostics rowCt := ROW_COUNT;
@@ -366,9 +366,9 @@ BEGIN
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
 		--Handle errors.
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		--End Proc
-		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return -16;
 	end;
 
@@ -376,7 +376,7 @@ BEGIN
 	select cz_write_audit(jobId,databaseName,procedureName,'Insert node values into DEAPP wt_RNA_SEQ_node_values',rowCt,stepCt,'Done') into rtnCd;
 
 	begin
-	insert into tm_wz.wt_RNA_SEQ_nodes
+	insert into wt_RNA_SEQ_nodes
 	(leaf_node
 	,category_cd
 	,platform
@@ -393,16 +393,16 @@ BEGIN
 		  ,attribute_1 as attribute_1
           ,attribute_2 as attribute_2
 		  ,'LEAF'
-	from  tm_wz.wt_RNA_SEQ_node_values;
+	from  wt_RNA_SEQ_node_values;
 	get diagnostics rowCt := ROW_COUNT;
 	exception
 	when others then
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
 		--Handle errors.
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		--End Proc
-		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return -16;
 	end;
 
@@ -411,7 +411,7 @@ BEGIN
 
 	--	insert for platform node so platform concept can be populated
 		begin
-	insert into tm_wz.wt_RNA_SEQ_nodes
+	insert into wt_RNA_SEQ_nodes
 	(leaf_node
 	,category_cd
 	,platform
@@ -421,7 +421,7 @@ BEGIN
 	,node_type
 	)
 	select distinct topNode || regexp_replace(replace(replace(replace(replace(replace(replace(
-	substr(category_cd,1,tm_cz.instr(category_cd,'PLATFORM')+8),'PLATFORM',title),'ATTR1',coalesce(attribute_1,'')),'ATTR2',coalesce(attribute_2,'')),'TISSUETYPE',coalesce(tissue_type,'')),'+','\'),'_',' ') || '\',
+	substr(category_cd,1,instr(category_cd,'PLATFORM')+8),'PLATFORM',title),'ATTR1',coalesce(attribute_1,'')),'ATTR2',coalesce(attribute_2,'')),'TISSUETYPE',coalesce(tissue_type,'')),'+','\'),'_',' ') || '\',
 	'(\\){2,}', '\', 'g')
 		  ,substr(category_cd,1,instr(category_cd,'PLATFORM')+8)
 		  ,platform as platform
@@ -429,16 +429,16 @@ BEGIN
 		  ,case when instr(substr(category_cd,1,instr(category_cd,'PLATFORM')+8),'ATTR1') > 1 then attribute_1 else null end as attribute_1
           ,case when instr(substr(category_cd,1,instr(category_cd,'PLATFORM')+8),'ATTR2') > 1 then attribute_2 else null end as attribute_2
 		  ,'PLATFORM'
-	from  tm_wz.wt_RNA_SEQ_node_values;
+	from  wt_RNA_SEQ_node_values;
 	get diagnostics rowCt := ROW_COUNT;
 	exception
 	when others then
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
 		--Handle errors.
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		--End Proc
-		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return -16;
 	end;
     stepCt := stepCt + 1;
@@ -446,7 +446,7 @@ BEGIN
 
 	--	insert for ATTR1 node so ATTR1 concept can be populated in tissue_type_cd
 	begin
-	insert into tm_wz.wt_RNA_SEQ_nodes
+	insert into wt_RNA_SEQ_nodes
 	(leaf_node
 	,category_cd
 	,platform
@@ -456,7 +456,7 @@ BEGIN
 	,node_type
 	)
 	select distinct topNode || regexp_replace(replace(replace(replace(replace(replace(replace(
-	substr(category_cd,1,tm_cz.instr(category_cd,'ATTR1')+5),'PLATFORM',title),'ATTR1',coalesce(attribute_1,'')),'ATTR2',coalesce(attribute_2,'')),'TISSUETYPE',coalesce(tissue_type,'')),'+','\'),'_',' ') || '\',
+	substr(category_cd,1,instr(category_cd,'ATTR1')+5),'PLATFORM',title),'ATTR1',coalesce(attribute_1,'')),'ATTR2',coalesce(attribute_2,'')),'TISSUETYPE',coalesce(tissue_type,'')),'+','\'),'_',' ') || '\',
 	'(\\){2,}', '\', 'g')
 		  ,substr(category_cd,1,instr(category_cd,'ATTR1')+5)
 		  ,case when instr(substr(category_cd,1,instr(category_cd,'ATTR1')+5),'PLATFORM') > 1 then platform else null end as platform
@@ -464,7 +464,7 @@ BEGIN
 		  ,attribute_1 as attribute_1
           ,case when instr(substr(category_cd,1,instr(category_cd,'ATTR1')+5),'ATTR2') > 1 then attribute_2 else null end as attribute_2
 		  ,'ATTR1'
-	from  tm_wz.wt_RNA_SEQ_node_values
+	from  wt_RNA_SEQ_node_values
 	where category_cd like '%ATTR1%'
 	  and (attribute_1 IS NOT NULL AND attribute_1::text <> '');
 		   get diagnostics rowCt := ROW_COUNT;
@@ -473,9 +473,9 @@ BEGIN
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
 		--Handle errors.
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		--End Proc
-		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return -16;
 	end;
     stepCt := stepCt + 1;
@@ -483,7 +483,7 @@ BEGIN
 
 	--	insert for ATTR2 node so ATTR2 concept can be populated in timepoint_cd
 	begin
-	insert into tm_wz.wt_RNA_SEQ_nodes
+	insert into wt_RNA_SEQ_nodes
 	(leaf_node
 	,category_cd
 	,platform
@@ -493,7 +493,7 @@ BEGIN
 	,node_type
 	)
 	select distinct topNode || regexp_replace(replace(replace(replace(replace(replace(replace(
-		substr(category_cd,1,tm_cz.instr(category_cd,'ATTR2')+5),'PLATFORM',title),'ATTR1',coalesce(attribute_1,'')),'ATTR2',coalesce(attribute_2,'')),'TISSUETYPE',coalesce(tissue_type,'')),'+','\'),'_',' ') || '\',
+		substr(category_cd,1,instr(category_cd,'ATTR2')+5),'PLATFORM',title),'ATTR1',coalesce(attribute_1,'')),'ATTR2',coalesce(attribute_2,'')),'TISSUETYPE',coalesce(tissue_type,'')),'+','\'),'_',' ') || '\',
 		'(\\){2,}', '\', 'g')
 		  ,substr(category_cd,1,instr(category_cd,'ATTR2')+5)
 		  ,case when instr(substr(category_cd,1,instr(category_cd,'ATTR2')+5),'PLATFORM') > 1 then platform else null end as platform
@@ -501,7 +501,7 @@ BEGIN
           ,case when instr(substr(category_cd,1,instr(category_cd,'ATTR2')+5),'ATTR1') > 1 then attribute_1 else null end as attribute_1
 		  ,attribute_2 as attribute_2
 		  ,'ATTR2'
-	from  tm_wz.wt_RNA_SEQ_node_values
+	from  wt_RNA_SEQ_node_values
 	where category_cd like '%ATTR2%'
 	  and (attribute_2 IS NOT NULL AND attribute_2::text <> '');
 	get diagnostics rowCt := ROW_COUNT;
@@ -510,9 +510,9 @@ BEGIN
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
 		--Handle errors.
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		--End Proc
-		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return -16;
 	end;
 
@@ -521,7 +521,7 @@ BEGIN
 
 	--	insert for tissue_type node so sample_type_cd can be populated
 	begin
-	insert into tm_wz.wt_RNA_SEQ_nodes
+	insert into wt_RNA_SEQ_nodes
 	(leaf_node
 	,category_cd
 	,platform
@@ -531,7 +531,7 @@ BEGIN
 	,node_type
 	)
 	select distinct topNode || regexp_replace(replace(replace(replace(replace(replace(replace(
-	substr(category_cd,1,tm_cz.instr(category_cd,'TISSUETYPE')+10),'PLATFORM',title),'ATTR1',coalesce(attribute_1,'')),'ATTR2',coalesce(attribute_2,'')),'TISSUETYPE',coalesce(tissue_type,'')),'+','\'),'_',' ') || '\',
+	substr(category_cd,1,instr(category_cd,'TISSUETYPE')+10),'PLATFORM',title),'ATTR1',coalesce(attribute_1,'')),'ATTR2',coalesce(attribute_2,'')),'TISSUETYPE',coalesce(tissue_type,'')),'+','\'),'_',' ') || '\',
 	'(\\){2,}', '\', 'g')
 		  ,substr(category_cd,1,instr(category_cd,'TISSUETYPE')+10)
 		  ,case when instr(substr(category_cd,1,instr(category_cd,'TISSUETYPE')+10),'PLATFORM') > 1 then platform else null end as platform
@@ -539,7 +539,7 @@ BEGIN
 		  ,case when instr(substr(category_cd,1,instr(category_cd,'TISSUETYPE')+10),'ATTR1') > 1 then attribute_1 else null end as attribute_1
           ,case when instr(substr(category_cd,1,instr(category_cd,'TISSUETYPE')+10),'ATTR2') > 1 then attribute_2 else null end as attribute_2
 		  ,'TISSUETYPE'
-	from  tm_wz.wt_RNA_SEQ_node_values
+	from  wt_RNA_SEQ_node_values
 	where category_cd like '%TISSUETYPE%';
 	get diagnostics rowCt := ROW_COUNT;
 	exception
@@ -547,26 +547,26 @@ BEGIN
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
 		--Handle errors.
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		--End Proc
-		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return -16;
 	end;
     stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Create ATTR2 nodes in wt_RNA_SEQ_nodes',rowCt,stepCt,'Done') into rtnCd;
 
 	begin
-	update tm_wz.wt_RNA_SEQ_nodes
-	set node_name=tm_cz.parse_nth_value(leaf_node,length(leaf_node)-length(replace(leaf_node,'\','')),'\');
+	update wt_RNA_SEQ_nodes
+	set node_name=parse_nth_value(leaf_node,length(leaf_node)-length(replace(leaf_node,'\','')),'\');
 	get diagnostics rowCt := ROW_COUNT;
 	exception
 	when others then
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
 		--Handle errors.
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		--End Proc
-		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return -16;
 	end;
     stepCt := stepCt + 1;
@@ -585,9 +585,9 @@ BEGIN
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
 		--Handle errors.
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		--End Proc
-		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return -16;
 	end;
 		stepCt := stepCt + 1;
@@ -611,9 +611,9 @@ BEGIN
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
 		--Handle errors.
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		--End Proc
-		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return -16;
 	end;
 	stepCt := stepCt + 1;
@@ -621,7 +621,7 @@ BEGIN
 
 --	update concept_cd for nodes, this is done to make the next insert easier
 	begin
-	update tm_wz.wt_RNA_SEQ_nodes t
+	update wt_RNA_SEQ_nodes t
 	set concept_cd=(select c.concept_cd from i2b2demodata.concept_dimension c
 	                where c.concept_path = t.leaf_node
 				   )
@@ -636,9 +636,9 @@ BEGIN
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
 		--Handle errors.
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		--End Proc
-		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return -16;
 	end;
 	stepCt := stepCt + 1;
@@ -741,35 +741,35 @@ BEGIN
 			  ,a.source_cd
 			  ,TrialId as omic_source_study
 			  ,b.patient_num as omic_patient_id
-		from tm_lz.lt_src_RNA_SEQ_subj_samp_map a
+		from lt_src_RNA_SEQ_subj_samp_map a
 		--Joining to Pat_dim to ensure the ID's match. If not I2B2 won't work.
 		inner join i2b2demodata.patient_dimension b
 		  on regexp_replace(TrialID || ':' || coalesce(a.site_id,'') || ':' || a.subject_id,'(::){1,}', ':', 'g') = b.sourcesystem_cd
-		inner join tm_wz.wt_RNA_SEQ_nodes ln
+		inner join wt_RNA_SEQ_nodes ln
 			on a.platform = ln.platform
 			and a.tissue_type = ln.tissue_type
 			and coalesce(a.attribute_1,'@') = coalesce(ln.attribute_1,'@')
 			and coalesce(a.attribute_2,'@') = coalesce(ln.attribute_2,'@')
 			and ln.node_type = 'LEAF'
-		inner join tm_wz.wt_RNA_SEQ_nodes pn
+		inner join wt_RNA_SEQ_nodes pn
 			on a.platform = pn.platform
 			and case when instr(substr(a.category_cd,1,instr(a.category_cd,'PLATFORM')+8),'TISSUETYPE') > 1 then a.tissue_type else '@' end = coalesce(pn.tissue_type,'@')
 			and case when instr(substr(a.category_cd,1,instr(a.category_cd,'PLATFORM')+8),'ATTR1') > 1 then a.attribute_1 else '@' end = coalesce(pn.attribute_1,'@')
 			and case when instr(substr(a.category_cd,1,instr(a.category_cd,'PLATFORM')+8),'ATTR2') > 1 then a.attribute_2 else '@' end = coalesce(pn.attribute_2,'@')
 			and pn.node_type = 'PLATFORM'
-		left outer join tm_wz.wt_RNA_SEQ_nodes ttp
+		left outer join wt_RNA_SEQ_nodes ttp
 			on a.tissue_type = ttp.tissue_type
 			and case when instr(substr(a.category_cd,1,instr(a.category_cd,'TISSUETYPE')+10),'PLATFORM') > 1 then a.platform else '@' end = coalesce(ttp.platform,'@')
 			and case when instr(substr(a.category_cd,1,instr(a.category_cd,'TISSUETYPE')+10),'ATTR1') > 1 then a.attribute_1 else '@' end = coalesce(ttp.attribute_1,'@')
 			and case when instr(substr(a.category_cd,1,instr(a.category_cd,'TISSUETYPE')+10),'ATTR2') > 1 then a.attribute_2 else '@' end = coalesce(ttp.attribute_2,'@')
 			and ttp.node_type = 'TISSUETYPE'
-		left outer join tm_wz.wt_RNA_SEQ_nodes a1
+		left outer join wt_RNA_SEQ_nodes a1
 			on a.attribute_1 = a1.attribute_1
 			and case when instr(substr(a.category_cd,1,instr(a.category_cd,'ATTR1')+5),'PLATFORM') > 1 then a.platform else '@' end = coalesce(a1.platform,'@')
 			and case when instr(substr(a.category_cd,1,instr(a.category_cd,'ATTR1')+5),'TISSUETYPE') > 1 then a.tissue_type else '@' end = coalesce(a1.tissue_type,'@')
 			and case when instr(substr(a.category_cd,1,instr(a.category_cd,'ATTR1')+5),'ATTR2') > 1 then a.attribute_2 else '@' end = coalesce(a1.attribute_2,'@')
 			and a1.node_type = 'ATTR1'
-		left outer join tm_wz.wt_RNA_SEQ_nodes a2
+		left outer join wt_RNA_SEQ_nodes a2
 			on a.attribute_2 = a1.attribute_2
 			and case when instr(substr(a.category_cd,1,instr(a.category_cd,'ATTR2')+5),'PLATFORM') > 1 then a.platform else '@' end = coalesce(a2.platform,'@')
 			and case when instr(substr(a.category_cd,1,instr(a.category_cd,'ATTR2')+5),'TISSUETYPE') > 1 then a.tissue_type else '@' end = coalesce(a2.tissue_type,'@')
@@ -786,9 +786,9 @@ BEGIN
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
 		--Handle errors.
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		--End Proc
-		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return -16;
 	end;
 	stepCt := stepCt + 1;
@@ -832,9 +832,9 @@ BEGIN
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
 		--Handle errors.
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		--End Proc
-		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return -16;
 	end;
     stepCt := stepCt + 1;
@@ -879,9 +879,9 @@ BEGIN
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
 		--Handle errors.
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		--End Proc
-		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return -16;
 	end;
     stepCt := stepCt + 1;
@@ -892,16 +892,16 @@ BEGIN
 
      update i2b2metadata.i2b2 t
     set c_columndatatype = 'T', c_metadataxml = null, c_visualattributes='FA'
-    where t.c_basecode in (select distinct x.concept_cd from tm_wz.wt_RNA_SEQ_nodes x);
+    where t.c_basecode in (select distinct x.concept_cd from wt_RNA_SEQ_nodes x);
 	get diagnostics rowCt := ROW_COUNT;
 	exception
 	when others then
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
 		--Handle errors.
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		--End Proc
-		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return -16;
 	end;
     stepCt := stepCt + 1;
@@ -918,9 +918,9 @@ BEGIN
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
 		--Handle errors.
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		--End Proc
-		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return -16;
 	end;
        stepCt := stepCt + 1;
@@ -941,8 +941,8 @@ BEGIN
                 <ExcludingUnits></ExcludingUnits><ConvertingUnits><Units></Units><MultiplyingFactor></MultiplyingFactor>
                 </ConvertingUnits></UnitValues><Analysis><Enums /><Counts />
                 <New /></Analysis>'||(select xmlelement(name "SeriesMeta",xmlforest(m.display_value as "Value",m.display_unit as "Unit",m.display_label as "DisplayName")) as hi
-      from tm_lz.lt_src_rna_display_mapping m where m.category_cd=ul.category_cd)||
-                '</ValueMetadata>') where n.c_fullname=(select leaf_node from tm_wz.wt_RNA_SEQ_nodes where category_cd=ul.category_cd and leaf_node=n.c_fullname);
+      from lt_src_rna_display_mapping m where m.category_cd=ul.category_cd)||
+                '</ValueMetadata>') where n.c_fullname=(select leaf_node from wt_RNA_SEQ_nodes where category_cd=ul.category_cd and leaf_node=n.c_fullname);
 
                 end loop;
          get diagnostics rowCt := ROW_COUNT;
@@ -951,9 +951,9 @@ BEGIN
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
 		--Handle errors.
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		--End Proc
-		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return -16;
 	end;
     stepCt := stepCt + 1;
@@ -973,9 +973,9 @@ BEGIN
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
 		--Handle errors.
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		--End Proc
-		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return -16;
 	end;
 
@@ -992,9 +992,9 @@ BEGIN
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
 		--Handle errors.
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		--End Proc
-		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return -16;
 	end;
 	stepCt := stepCt + 1;
@@ -1007,8 +1007,8 @@ BEGIN
    platform
    )select distinct s.probeset
                ,m.platform
-            from tm_lz.lt_src_rna_seq_data s,
-                 tm_lz.lt_src_RNA_SEQ_subj_samp_map m
+            from lt_src_rna_seq_data s,
+                 lt_src_RNA_SEQ_subj_samp_map m
                  where s.trial_name=m.trial_name
                    and not exists
 		 (select 1 from probeset_deapp x
@@ -1020,9 +1020,9 @@ BEGIN
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
 		--Handle errors.
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		--End Proc
-		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return -16;
 	end;
     stepCt := stepCt + 1;
@@ -1039,9 +1039,9 @@ BEGIN
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
 		--Handle errors.
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		--End Proc
-		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return -16;
 	end;
 	stepCt := stepCt + 1;
@@ -1059,9 +1059,9 @@ BEGIN
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
 		--Handle errors.
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		--End Proc
-		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return -16;
 	end;
 		stepCt := stepCt + 1;
@@ -1080,9 +1080,9 @@ BEGIN
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
 		--Handle errors.
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		--End Proc
-		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return -16;
 	end;
 	stepCt := stepCt + 1;
@@ -1090,11 +1090,11 @@ BEGIN
 
 --	tag data with probeset_id from reference.probeset_deapp
 
-	EXECUTE ('truncate table tm_wz.wt_subject_rna_probeset');
+	EXECUTE ('truncate table wt_subject_rna_probeset');
 
 	--	note: assay_id represents a unique subject/site/sample
 	begin
-	insert into tm_wz.wt_subject_rna_probeset
+	insert into wt_subject_rna_probeset
 	(probeset_id
 --	,expr_id
 	,intensity_value
@@ -1112,7 +1112,7 @@ BEGIN
 		 ,TrialId as trial_name
 		  ,sd.assay_id
 	from deapp.de_subject_sample_mapping sd
-		,tm_lz.lt_src_RNA_SEQ_data md
+		,lt_src_RNA_SEQ_data md
 		,probeset_deapp gs
 	where sd.sample_cd = md.expr_id
 	  and sd.platform = 'RNA_AFFYMETRIX'
@@ -1120,7 +1120,7 @@ BEGIN
 	  and sd.source_cd = sourceCd
 	and md.probeset = gs.probeset
 	  and (CASE WHEN dataType = 'R' THEN sign(md.intensity_value::numeric) ELSE 1 END) = 1  --	take only >0 for dataType R
-	  and sd.subject_id in (select subject_id from tm_lz.lt_src_rna_seq_subj_samp_map)
+	  and sd.subject_id in (select subject_id from lt_src_rna_seq_subj_samp_map)
 	group by md.probeset
 		  ,sd.patient_id
 		  ,sd.assay_id;
@@ -1130,9 +1130,9 @@ get diagnostics rowCt := ROW_COUNT;
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
 		--Handle errors.
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		--End Proc
-		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return -16;
 	end;
 	pExists := rowCt;
@@ -1163,7 +1163,7 @@ get diagnostics rowCt := ROW_COUNT;
 					then 2.5
 					else intensity_value
 			   end as zscore
-		from tm_wz.wt_subject_rna_probeset
+		from wt_subject_rna_probeset
 		where trial_name = TrialID;
 		get diagnostics rowCt := ROW_COUNT;
 	exception
@@ -1171,9 +1171,9 @@ get diagnostics rowCt := ROW_COUNT;
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
 		--Handle errors.
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		--End Proc
-		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return -16;
 	end;
 		stepCt := stepCt + 1;
@@ -1193,9 +1193,9 @@ get diagnostics rowCt := ROW_COUNT;
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
 		--Handle errors.
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		--End Proc
-		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return -16;
 	end;
 			stepCt := stepCt + 1;
@@ -1218,10 +1218,9 @@ get diagnostics rowCt := ROW_COUNT;
 END;
 
 $BODY$
-  LANGUAGE plpgsql VOLATILE
+  LANGUAGE plpgsql VOLATILE SECURITY DEFINER
   SET search_path FROM CURRENT
   COST 100;
 
-ALTER FUNCTION tm_cz.i2b2_process_rna_seq_data(character varying, character varying, character varying, character varying, numeric, character varying, numeric)
-  OWNER TO tm_cz;
-GRANT EXECUTE ON FUNCTION tm_cz.i2b2_process_rna_seq_data(character varying, character varying, character varying, character varying, numeric, character varying, numeric) TO tm_cz;
+ALTER FUNCTION i2b2_process_rna_seq_data(character varying, character varying, character varying, character varying, numeric, character varying, numeric)
+  OWNER TO postgres;

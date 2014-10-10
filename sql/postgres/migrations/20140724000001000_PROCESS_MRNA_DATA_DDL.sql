@@ -1,27 +1,18 @@
--- Alter types for temp tables to increase calculations speed (float point arithmetic much faster than numeric)
-alter table tm_wz.wt_subject_microarray_logs
-alter column log_intensity type double precision;
+-- Copy tables from tm_wz schema to tm_dataloader schema
+drop table if exists tm_dataloader.wt_subject_mrna_probeset;
+create unlogged table tm_dataloader.wt_subject_mrna_probeset as (select * from tm_wz.wt_subject_mrna_probeset);
 
-alter table tm_wz.wt_subject_microarray_logs
-alter column raw_intensity type double precision;
+drop table if exists tm_dataloader.wt_subject_microarray_logs;
+create unlogged table tm_dataloader.wt_subject_microarray_logs as (select * from tm_wz.wt_subject_microarray_logs);
 
-alter table tm_wz.wt_subject_microarray_calcs
-alter column mean_intensity type double precision;
+drop table if exists tm_dataloader.wt_subject_microarray_calcs;
+create unlogged table tm_dataloader.wt_subject_microarray_calcs as (select * from tm_wz.wt_subject_microarray_calcs);
 
-alter table tm_wz.wt_subject_microarray_calcs
-alter column median_intensity type double precision;
+-- Alter types for working tables to increase calculations speed (float point arithmetic much faster than numeric)
+alter table tm_dataloader.wt_subject_microarray_logs alter column log_intensity type double precision;
+alter table tm_dataloader.wt_subject_microarray_logs alter column raw_intensity type double precision;
 
-alter table tm_wz.wt_subject_microarray_calcs
-alter column stddev_intensity type double precision;
-
-alter table tm_wz.wt_subject_mrna_probeset
-alter column intensity_value type double precision;
-
-create unlogged table tm_wz.wt_subject_mrna_probeset_tmp as (select * from tm_wz.wt_subject_mrna_probeset);
-create unlogged table tm_wz.wt_subject_microarray_logs_tmp as (select * from tm_wz.wt_subject_microarray_logs);
-
-drop table tm_wz.wt_subject_mrna_probeset;
-drop table tm_wz.wt_subject_microarray_logs;
-
-alter table tm_wz.wt_subject_mrna_probeset_tmp rename to wt_subject_mrna_probeset;
-alter table tm_wz.wt_subject_microarray_logs_tmp rename to wt_subject_microarray_logs;
+alter table tm_dataloader.wt_subject_microarray_calcs alter column mean_intensity type double precision;
+alter table tm_dataloader.wt_subject_microarray_calcs alter column median_intensity type double precision;
+alter table tm_dataloader.wt_subject_microarray_calcs alter column stddev_intensity type double precision;
+alter table tm_dataloader.wt_subject_mrna_probeset alter column intensity_value type double precision;

@@ -11,7 +11,7 @@ class ProteinPlatform extends GenePlatform {
 
     @Override
     void cleanupTempTables(Sql sql) {
-        sql.execute("TRUNCATE TABLE ${config.loadSchema}.lt_protein_annotation" as String)
+        sql.execute("TRUNCATE TABLE lt_protein_annotation" as String)
     }
 
     @Override
@@ -23,7 +23,7 @@ class ProteinPlatform extends GenePlatform {
     @Override
     int loadEntries(Sql sql) {
         return loadEachEntry(sql, """
-            INSERT into ${config.loadSchema}.lt_protein_annotation (PEPTIDE,UNIPROT_ID,ORGANISM,GPL_ID)
+            INSERT into lt_protein_annotation (PEPTIDE,UNIPROT_ID,ORGANISM,GPL_ID)
             VALUES (?, ?, ?, ?)
         """) { entry ->
             [
