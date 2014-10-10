@@ -2,8 +2,6 @@
 
 -- DROP FUNCTION i2b2_create_concept_counts(character varying, numeric);
 
-drop function if exists i2b2_create_concept_counts(character varying, numeric);
-
 CREATE OR REPLACE FUNCTION i2b2_create_concept_counts(path character varying, currentjobid numeric DEFAULT (-1), buildTree character varying DEFAULT('Y'))
   RETURNS numeric AS
 $BODY$

@@ -1,10 +1,9 @@
--- Function: tm_cz.i2b2_load_metabolomics_annot(numeric)
+-- Function: i2b2_load_metabolomics_annot(numeric)
 
--- DROP FUNCTION tm_cz.i2b2_load_metabolomics_annot(numeric);
+-- DROP FUNCTION i2b2_load_metabolomics_annot(numeric);
 
 CREATE OR REPLACE FUNCTION i2b2_load_metabolomics_annot(currentjobid numeric DEFAULT NULL::numeric)
   RETURNS numeric
-  SET search_path FROM CURRENT
   AS $BODY$
 /*************************************************************************
 *This stored procedure is for ETL to load METABOLOMICS ANNOTATION
@@ -44,7 +43,24 @@ BEGIN
 
     --    get  id_ref  from external table
 
-	select distinct gpl_id into gplId from tm_lz.lt_metabolomic_annotation;
+	select distinct gpl_id into gplId from lt_metabolomic_annotation;
+
+  --    delete any existing data from de_metabolite_sub_pathways
+
+  begin
+    delete from deapp.de_metabolite_sub_pathways
+    where gpl_id = gplId;
+    exception
+    when others then
+      perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+      perform cz_end_audit (jobID, 'FAIL');
+      return -16;
+  end;
+
+  stepCt := stepCt + 1;
+  get diagnostics rowCt := ROW_COUNT;
+
+  perform cz_write_audit(jobId,databaseName,procedureName,'Delete existing data from de_metabolite_sub_pathways',rowCt,stepCt,'Done');
 
   --    delete any existing data from de_metabolite_super_pathways
 
@@ -53,8 +69,8 @@ BEGIN
     where gpl_id = gplId;
 	exception
 	when others then
-		perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 
@@ -68,8 +84,8 @@ BEGIN
 	delete from deapp.de_metabolite_sub_pathways where gpl_id = gplId;
 	exception
 	when others then
-		perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 
@@ -83,8 +99,8 @@ BEGIN
 	delete from deapp.de_metabolite_sub_pway_metab where not exists (select id from deapp.de_metabolite_sub_pathways where de_metabolite_sub_pathways.id = de_metabolite_sub_pway_metab.sub_pathway_id) ;
 	exception
 	when others then
-		perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 
@@ -99,8 +115,8 @@ BEGIN
         where gpl_id = gplId;
        exception
 	when others then
-		perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 
@@ -125,14 +141,14 @@ BEGIN
     ,trim(d.biochemical_name)
     ,b.primary_external_id
     ,d.hmdb_id
-    from tm_lz.lt_metabolomic_annotation d
+    from lt_metabolomic_annotation d
     left outer join biomart.bio_marker b on b.bio_marker_name = d.biochemical_name
     --,peptide_deapp p
     where d.gpl_id = gplId;
     exception
 	when others then
-		perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 
@@ -152,12 +168,12 @@ BEGIN
         nextval('deapp.metabolite_sup_pth_id')
         ,d.gpl_id
     ,d.super_pathway
-    from (select distinct gpl_id,super_pathway from tm_lz.lt_metabolomic_annotation ) d
+    from (select distinct gpl_id,super_pathway from lt_metabolomic_annotation ) d
     where d.gpl_id = gplId;
 	exception
 	when others then
-		perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 
@@ -180,7 +196,7 @@ BEGIN
     ,trim(d.sub_pathway)
         ,sp.id
     from (select unnest(regexp_split_to_array(sub_pathway, ';')) AS sub_pathway ,gpl_id,super_pathway
-        FROM tm_lz.lt_metabolomic_annotation) as d
+        FROM lt_metabolomic_annotation) as d
     ,deapp.de_metabolite_super_pathways sp
     where
         trim(d.super_pathway) = trim(sp.super_pathway_name)
@@ -188,8 +204,8 @@ BEGIN
         and sp.gpl_id = gplId;
 	exception
 	when others then
-		perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 
@@ -206,15 +222,15 @@ BEGIN
         )
 	   select d.id, sp.id from deapp.de_metabolite_annotation d, deapp.de_metabolite_sub_pathways sp,
 	(select unnest(regexp_split_to_array(sub_pathway, ';')) AS sub_pathway ,biochemical_name, gpl_id
-			FROM tm_lz.lt_metabolomic_annotation) as lma
+			FROM lt_metabolomic_annotation) as lma
 	where trim(lma.biochemical_name) = trim(d.biochemical_name)
 	and trim(lma.sub_pathway) = trim (sp.sub_pathway_name)
 	and d.gpl_id =gplId
 			and lma.gpl_id=gplId;
 		exception
 	when others then
-		perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 
@@ -240,8 +256,8 @@ BEGIN
             and upper(x.bio_marker_type) = 'metabolomic');
     exception
 	when others then
-		perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 
@@ -255,14 +271,14 @@ BEGIN
     (feature_group_name
     ,feature_group_type)
     select distinct t.biochemical_name, 'METABOLOMIC' --ask
-    from tm_lz.lt_metabolomic_annotation t
+    from lt_metabolomic_annotation t
     where not exists
          (select 1 from biomart.mirna_bio_assay_feature_group x
           where t.gpl_id = x.feature_group_name);
 	exception
 	when others then
-		perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 
@@ -279,7 +295,7 @@ BEGIN
     ,bio_marker_id)
     select distinct fg.bio_assay_feature_group_id
           ,coalesce(bgs.bio_marker_id,bgi.bio_marker_id)
-    from tm_lz.lt_metabolomic_annotation t
+    from lt_metabolomic_annotation t
         inner join biomart.mirna_bio_assay_feature_group fg on t.biochemical_name = fg.feature_group_name
         left outer join biomart.mirna_bio_marker bgs on t.biochemical_name = bgs.bio_marker_name
         left outer join biomart.mirna_bio_marker bgi on t.hmdb_id::text= bgi.primary_external_id
@@ -291,8 +307,8 @@ BEGIN
             and coalesce(bgs.bio_marker_id,bgi.bio_marker_id,-1) = x.bio_marker_id);
             exception
 	when others then
-		perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 
@@ -322,8 +338,8 @@ BEGIN
             where subp.gpl_id = gplId;
 exception
 	when others then
-		perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 
@@ -380,8 +396,8 @@ exception
               where supp.gpl_id = gplId;
 			  exception
 	when others then
-		perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 
@@ -420,8 +436,8 @@ exception
             ) as s;
 			exception
 	when others then
-		perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 
@@ -448,8 +464,8 @@ exception
           annotation.hmdb_id IS NULL;
          exception
 	when others then
-		perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 
@@ -463,8 +479,8 @@ exception
         WHERE  annotation.hmdb_id IS NULL;
 		exception
 	when others then
-		perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 
@@ -487,7 +503,8 @@ exception
 END;
 $BODY$
   LANGUAGE plpgsql VOLATILE SECURITY DEFINER
+  SET search_path FROM CURRENT
   COST 100;
-ALTER FUNCTION tm_cz.i2b2_load_metabolomics_annot(numeric)
-  OWNER TO tm_cz;
-GRANT EXECUTE ON FUNCTION tm_cz.i2b2_load_metabolomics_annot(numeric) TO tm_cz;
+
+ALTER FUNCTION i2b2_load_metabolomics_annot(numeric)
+  OWNER TO postgres;

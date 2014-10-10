@@ -11,8 +11,8 @@ public class MetabolomicsDataProcessor extends DataProcessor {
     }
     @Override
     public boolean processFiles(File dir, Sql sql, Object studyInfo) {
-        sql.execute("TRUNCATE TABLE ${config.loadSchema}.lt_src_metabolomic_map" as String)
-        sql.execute("TRUNCATE TABLE ${config.loadSchema}.lt_src_metabolomic_data" as String)
+        sql.execute("TRUNCATE TABLE lt_src_metabolomic_map" as String)
+        sql.execute("TRUNCATE TABLE lt_src_metabolomic_data" as String)
 
         def platformList = [] as Set
 
@@ -50,7 +50,7 @@ public class MetabolomicsDataProcessor extends DataProcessor {
             config.logger.log("Study ID=${studyId}; Node=${studyNode}; Data Type=${studyDataType}")
 
             if (studyInfo['runPlatformLoad']) {
-                sql.call("{call " + config.controlSchema + ".i2b2_load_metabolomics_annot()}")
+                sql.call("{call " + config.controlSchema + ".i2b2_load_metabolomics_annot(?)}", jobId)
             }
 
             sql.call("{call " + config.controlSchema + ".i2b2_process_metabolomic_data (?, ?, ?, null, null, '" + config.securitySymbol + "', ?)}",
@@ -78,7 +78,7 @@ public class MetabolomicsDataProcessor extends DataProcessor {
 
         sql.withTransaction {
             sql.withBatch(100, """\
-				INSERT into ${config.loadSchema}.lt_src_metabolomic_map (TRIAL_NAME, SITE_ID,
+				INSERT into lt_src_metabolomic_map (TRIAL_NAME, SITE_ID,
 					SUBJECT_ID, SAMPLE_CD, PLATFORM, TISSUE_TYPE,
 					ATTRIBUTE_1, ATTRIBUTE_2, CATEGORY_CD, SOURCE_CD)
 				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -150,7 +150,7 @@ public class MetabolomicsDataProcessor extends DataProcessor {
     }
 
     private void processProteinFileForPostgres(File f, studyInfo) {
-        DataLoader.start(database, "${config.loadSchema}.lt_src_metabolomic_data", ['TRIAL_NAME', 'BIOCHEMICAL', 'EXPR_ID', 'INTENSITY_VALUE']) {
+        DataLoader.start(database, "lt_src_metabolomic_data", ['TRIAL_NAME', 'BIOCHEMICAL', 'EXPR_ID', 'INTENSITY_VALUE']) {
             st ->
                 def lineNum = processEachRow(f, studyInfo) { row ->
                     st.addBatch(row)
@@ -163,7 +163,7 @@ public class MetabolomicsDataProcessor extends DataProcessor {
         def lineNum = 0
         sql.withTransaction {
             sql.withBatch(1000, """\
-				INSERT into ${config.loadSchema}.lt_src_metabolomic_data (TRIAL_NAME, BIOCHEMICAL, EXPR_ID, INTENSITY_VALUE)
+				INSERT into lt_src_metabolomic_data (TRIAL_NAME, BIOCHEMICAL, EXPR_ID, INTENSITY_VALUE)
 				VALUES (?, ?, ?, ?)
 			""") {
                 stmt ->

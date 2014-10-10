@@ -26,7 +26,7 @@ class AuditableJobRunner {
     AuditableJobRunner(Sql sql, config) {
         this.sql = sql
         this.config = config
-        this.database = new Database(config.db)
+        this.database = new Database(config)
     }
 
     boolean runJob(String jobName, Closure block) {
@@ -58,7 +58,7 @@ class AuditableJobRunner {
             auditPrinter.printNewMessages(sql)
 
             // figuring out if there are any errors in the error log
-            sql.eachRow("SELECT * FROM " + config.controlSchema + ".cz_job_error where job_id=${jobId} order by seq_id") {
+            sql.eachRow("SELECT * FROM cz_job_error where job_id=${jobId} order by seq_id") {
                 logger.log(LogType.ERROR, "${it.error_message} / ${it.error_stack} / ${it.error_backtrace}")
                 res.set(false)
             }
@@ -89,7 +89,7 @@ class AuditableJobRunner {
         }
 
         void printNewMessages(Sql sql) {
-            def queryText = "SELECT * FROM " + getConfig().controlSchema + ".cz_job_audit WHERE job_id=${jobId} and seq_id>${lastSeqId} order by seq_id"
+            def queryText = "SELECT * FROM cz_job_audit WHERE job_id=${jobId} and seq_id>${lastSeqId} order by seq_id"
             sql.eachRow(queryText) { row ->
                 getLogger().log(LogType.DEBUG, "-- ${row.step_desc} [${row.step_status} / ${row.records_manipulated} recs / ${row.time_elapsed_secs}s]")
                 lastSeqId = row.seq_id

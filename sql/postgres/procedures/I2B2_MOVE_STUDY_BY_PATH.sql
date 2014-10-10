@@ -215,7 +215,7 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
     THEN
     -- create new root in table_access,
       BEGIN
-      select tm_cz.i2b2_add_root_node(new_root_node_name, jobID) into rtnCd;
+      select i2b2_add_root_node(new_root_node_name, jobID) into rtnCd;
       get diagnostics rowCt := ROW_COUNT;
       exception
           when others then
@@ -228,7 +228,7 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
             return -16;
       END;
       stepCt := stepCt + 1;
-		  select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'New root node was added',rowCt,stepCt,'Done') into rtnCd;
+		  select cz_write_audit(jobId,databaseName,procedureName,'New root node was added',rowCt,stepCt,'Done') into rtnCd;
     END IF;
 
     -- check if old root has another child
@@ -447,7 +447,7 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
 
               IF rowsExists = 1
               THEN
-                select tm_cz.i2b2_delete_1_node(current_path) into rtnCd;
+                select i2b2_delete_1_node(current_path) into rtnCd;
                 select cz_write_audit(jobId, databaseName, procedureName,
                                  'Remove empty level: ' || current_path, rowCt, stepCt,
                                  'Done') into rtnCd;

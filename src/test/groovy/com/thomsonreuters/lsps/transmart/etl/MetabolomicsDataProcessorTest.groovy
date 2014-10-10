@@ -58,6 +58,6 @@ class MetabolomicsDataProcessorTest extends GroovyTestCase implements ConfigAwar
                 [trial_name: studyId, gpl_id: platformId, subject_id: 'GSM918965', sample_cd: '14PP'],
                 [platform: 'METABOLOMICS']))
 
-        assertThatSampleIsPresent('14PP', ['PRIVATE:4482': 44703])
+        assertThatSampleIsPresent('14PP', ['HMDB0TEST': 5095])
     }
 }

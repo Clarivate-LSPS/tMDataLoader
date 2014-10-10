@@ -1,6 +1,3 @@
-﻿--
--- Name: i2b2_load_proteomics_annot(numeric); Type: FUNCTION; Schema: tm_cz; Owner: -
---
 CREATE OR REPLACE FUNCTION i2b2_load_proteomics_annot(currentjobid numeric DEFAULT NULL::numeric) RETURNS numeric
     LANGUAGE plpgsql SECURITY DEFINER
     SET search_path FROM CURRENT
@@ -46,7 +43,7 @@ BEGIN
 
 	--	get  id_ref  from external table
 	
-      select distinct gpl_id into gplId from tm_lz.lt_protein_annotation ;
+      select distinct gpl_id into gplId from lt_protein_annotation ;
 
 	stepCt := stepCt + 1;
 	get diagnostics rowCt := ROW_COUNT;
@@ -57,8 +54,8 @@ BEGIN
 		where gpl_id =gplId;
 	exception
 	when others then
-		perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 
@@ -79,7 +76,7 @@ BEGIN
 	--,p.bio_marker_id
 	,d.uniprot_id
 	,coalesce(d.organism,'Homo sapiens')
-	from tm_lz.lt_protein_annotation d
+	from lt_protein_annotation d
 	--,biomart.bio_marker p
 	where d.gpl_id = gplId
         --and p.primary_external_id = d.uniprot_id
@@ -88,8 +85,8 @@ BEGIN
 	  ;
 	exception
 	when others then
-		perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 		
@@ -104,8 +101,8 @@ BEGIN
         where gpl_id = gplId;
         exception
 	when others then
-		perform tm_cz.cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;  
         

@@ -19,15 +19,8 @@
  ******************************************************************/
 
 package com.thomsonreuters.lsps.transmart.etl
-
 import com.thomsonreuters.lsps.transmart.sql.Database
-import com.thomsonreuters.lsps.transmart.sql.DatabaseType
 import groovy.sql.Sql
-
-import java.sql.SQLException
-import java.sql.SQLWarning
-import java.sql.Statement
-import java.util.concurrent.atomic.AtomicReference
 
 abstract class DataProcessor {
     def config
@@ -35,7 +28,7 @@ abstract class DataProcessor {
 
     DataProcessor(conf) {
         config = conf
-        database = config.db ?: new Database(config.db)
+        database = new Database(config)
     }
 
     abstract boolean processFiles(File dir, Sql sql, studyInfo)

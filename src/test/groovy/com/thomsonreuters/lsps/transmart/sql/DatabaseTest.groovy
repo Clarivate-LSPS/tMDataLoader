@@ -13,7 +13,7 @@ import static org.junit.Assert.assertThat
  */
 class DatabaseTest extends GroovyTestCase implements ConfigAwareTestCase {
     private void assertParse(String jdbcConnectionString, Map info) {
-        def db = new Database([jdbcConnectionString: jdbcConnectionString])
+        def db = new Database(db: [jdbcConnectionString: jdbcConnectionString])
         if (info.host.is(null)) {
             assertThat(db.host, nullValue())
         } else {
@@ -28,25 +28,25 @@ class DatabaseTest extends GroovyTestCase implements ConfigAwareTestCase {
     }
 
     void testLocalPostgresConnection() {
-        def db = new Database([jdbcConnectionString: 'jdbc:postgresql:transmart'])
+        def db = new Database(db: [jdbcConnectionString: 'jdbc:postgresql:transmart'])
         assertThat(db.databaseType, equalTo(DatabaseType.Postgres))
         assertThat(db.isLocal(), equalTo(true))
     }
 
     void testRemotePostgresConnection() {
-        def db = new Database([jdbcConnectionString: 'jdbc:postgresql://server/transmart'])
+        def db = new Database(db: [jdbcConnectionString: 'jdbc:postgresql://server/transmart'])
         assertThat(db.databaseType, equalTo(DatabaseType.Postgres))
         assertThat(db.isLocal(), equalTo(false))
     }
 
     void testLocalOracleConnection() {
-        def db = new Database([jdbcConnectionString: 'jdbc:oracle:thin:@:orcl'])
+        def db = new Database(db: [jdbcConnectionString: 'jdbc:oracle:thin:@:orcl'])
         assertThat(db.databaseType, equalTo(DatabaseType.Oracle))
         assertThat(db.isLocal(), equalTo(true))
     }
 
     void testRemoteOracleConnection() {
-        def db = new Database([jdbcConnectionString: 'jdbc:oracle:thin:@server:orcl'])
+        def db = new Database(db: [jdbcConnectionString: 'jdbc:oracle:thin:@server:orcl'])
         assertThat(db.databaseType, equalTo(DatabaseType.Oracle))
         assertThat(db.isLocal(), equalTo(false))
     }
@@ -77,7 +77,7 @@ class DatabaseTest extends GroovyTestCase implements ConfigAwareTestCase {
     void testItRunScript() {
         File sampleScript = File.createTempFile('sample', '.sql')
         sampleScript.deleteOnExit()
-        def db = new Database(config.db)
+        def db = new Database(config)
         db.withSql { Sql sql->
             sql.execute("delete from ${config.loadSchema}.lt_src_mrna_subj_samp_map where trial_name = ?", 'TEST SCRIPT LOAD')
         }

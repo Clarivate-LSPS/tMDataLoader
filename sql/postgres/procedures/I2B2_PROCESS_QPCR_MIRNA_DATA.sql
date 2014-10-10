@@ -1,6 +1,3 @@
---
--- Name: i2b2_process_qpcr_mirna_data(character varying, character varying, character varying, character varying, numeric, character varying, numeric, character varying); Type: FUNCTION; Schema: tm_cz; Owner: -
---
 CREATE OR REPLACE FUNCTION i2b2_process_qpcr_mirna_data(trial_id character varying, top_node character varying, data_type character varying DEFAULT 'R'::character varying, source_cd character varying DEFAULT 'STD'::character varying, log_base numeric DEFAULT 2, secure_study character varying DEFAULT NULL::character varying, currentjobid numeric DEFAULT NULL::numeric, mirna_type character varying DEFAULT NULL::character varying) RETURNS numeric
     LANGUAGE plpgsql SECURITY DEFINER
     SET search_path FROM CURRENT
@@ -78,7 +75,7 @@ Declare
 
     uploadI2b2 cursor for 
     select category_cd,display_value,display_label,display_unit from
-    tm_lz.lt_src_mirna_display_mapping;
+    lt_src_mirna_display_mapping;
 
 
 
@@ -204,7 +201,7 @@ BEGIN
 	where c_name = rootNode;
 	
 	if pExists = 0 then
-		perform tm_cz.i2b2_add_root_node(rootNode, jobId);
+		perform i2b2_add_root_node(rootNode, jobId);
 	end if;
 	
 	select c_hlevel into root_level
@@ -273,8 +270,8 @@ BEGIN
 	when others then
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
-		perform tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 			
@@ -290,8 +287,8 @@ BEGIN
 	when others then
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
-		perform tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 	--	Delete existing observation_fact data, will be repopulated
@@ -308,8 +305,8 @@ BEGIN
 	when others then
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
-		perform tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 	
@@ -325,8 +322,8 @@ BEGIN
 	when others then
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
-		perform tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 
@@ -339,8 +336,8 @@ BEGIN
 	when others then
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
-		perform tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 	  
@@ -348,24 +345,24 @@ BEGIN
 	perform cz_write_audit(jobId,databaseName,procedureName,'Delete trial from DEAPP de_subject_sample_mapping',rowCt,stepCt,'Done');
 
 	begin
-		execute('truncate table tm_wz.WT_QPCR_MIRNA_NODES');
+		execute('truncate table WT_QPCR_MIRNA_NODES');
 	exception
 	when others then
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
-		perform tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 
 	begin
-		execute('truncate table tm_wz.WT_QPCR_MIRNA_NODE_VALUES');
+		execute('truncate table WT_QPCR_MIRNA_NODE_VALUES');
 	exception
 	when others then
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
-		perform tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 
@@ -398,8 +395,8 @@ BEGIN
 	when others then
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
-		perform tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 	
@@ -430,8 +427,8 @@ BEGIN
 	when others then
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
-		perform tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 		   
@@ -467,8 +464,8 @@ BEGIN
 	when others then
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
-		perform tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 	
@@ -499,8 +496,8 @@ BEGIN
 	when others then
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
-		perform tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 		   
@@ -536,8 +533,8 @@ BEGIN
 	when others then
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
-		perform tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 		   
@@ -571,8 +568,8 @@ BEGIN
 	when others then
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
-		perform tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 	 
@@ -586,8 +583,8 @@ BEGIN
 	when others then
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
-		perform tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 	
@@ -612,8 +609,8 @@ BEGIN
 		when others then
 			errorNumber := SQLSTATE;
 			errorMessage := SQLERRM;
-			perform tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
-			perform tm_cz.cz_end_audit (jobID, 'FAIL');
+			perform cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
+			perform cz_end_audit (jobID, 'FAIL');
 			return -16;
 		end;
 
@@ -629,8 +626,8 @@ BEGIN
 	when others then
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
-		perform tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 	
@@ -650,8 +647,8 @@ BEGIN
 	when others then
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
-		perform tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 	
@@ -804,8 +801,8 @@ BEGIN
 	when others then
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
-		perform tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 
@@ -852,8 +849,8 @@ BEGIN
 	when others then
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
-		perform tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
         stepCt := stepCt + 1; get diagnostics rowCt := ROW_COUNT;
@@ -900,8 +897,8 @@ BEGIN
 	when others then
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
-		perform tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 
@@ -917,8 +914,8 @@ BEGIN
 	when others then
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
-		perform tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 		
@@ -934,8 +931,8 @@ BEGIN
 	when others then
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
-		perform tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 
@@ -957,15 +954,15 @@ BEGIN
                 <ExcludingUnits></ExcludingUnits><ConvertingUnits><Units></Units><MultiplyingFactor></MultiplyingFactor>
                 </ConvertingUnits></UnitValues><Analysis><Enums /><Counts />
                 <New /></Analysis>'||(select xmlelement(name "SeriesMeta",xmlforest(m.display_value as "Value",m.display_unit as "Unit",m.display_label as "DisplayName")) as hi 
-      from tm_lz.lt_src_mirna_display_mapping m where m.category_cd=ul.category_cd)||
+      from lt_src_mirna_display_mapping m where m.category_cd=ul.category_cd)||
                 '</ValueMetadata>') where n.c_fullname=(select leaf_node from WT_QPCR_MIRNA_NODES where category_cd=ul.category_cd and leaf_node=n.c_fullname);
      end loop;
       exception
 	when others then
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
-		perform tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 		  
@@ -984,8 +981,8 @@ BEGIN
 	when others then
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
-		perform tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 
@@ -1000,8 +997,8 @@ BEGIN
 	when others then
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
-		perform tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
         
@@ -1036,8 +1033,8 @@ BEGIN
 	when others then
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
-		perform tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;  	
 
@@ -1049,8 +1046,8 @@ BEGIN
 	when others then
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
-		perform tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 	stepCt := stepCt + 1; get diagnostics rowCt := ROW_COUNT;
@@ -1059,7 +1056,7 @@ BEGIN
 --	tag data with probeset_id from reference.probeset_deapp
 
 	begin
-	execute ('truncate table tm_wz.WT_SUBJECT_MIRNA_PROBESET');
+	execute ('truncate table WT_SUBJECT_MIRNA_PROBESET');
 	
 	--	note: assay_id represents a unique subject/site/sample
 
@@ -1095,8 +1092,8 @@ BEGIN
 	when others then
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
-		perform tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage);
-		perform tm_cz.cz_end_audit (jobID, 'FAIL');
+		perform cz_error_handler (jobID, procedureName, errorNumber, errorMessage);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 		  
@@ -1149,8 +1146,8 @@ BEGIN
 		when others then
 			errorNumber := SQLSTATE;
 			errorMessage := SQLERRM;
-			perform tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage);
-			perform tm_cz.cz_end_audit (jobID, 'FAIL');
+			perform cz_error_handler (jobID, procedureName, errorNumber, errorMessage);
+			perform cz_end_audit (jobID, 'FAIL');
 			return -16;
 		end;	
 	else
@@ -1171,8 +1168,8 @@ BEGIN
 			when others then
 				errorNumber := SQLSTATE;
 				errorMessage := SQLERRM;
-				perform tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
-				perform tm_cz.cz_end_audit (jobID, 'FAIL');
+				perform cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
+				perform cz_end_audit (jobID, 'FAIL');
 				return -16;
 			end;
 		end if;

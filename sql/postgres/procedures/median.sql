@@ -40,10 +40,15 @@ LANGUAGE 'sql'
 SET search_path FROM CURRENT
 IMMUTABLE;
 
-DROP AGGREGATE IF EXISTS median(double precision);
-CREATE AGGREGATE median(double precision) (
-SFUNC=array_append,
-STYPE=double precision[],
-FINALFUNC=_final_median,
-INITCOND='{}'
-);
+DO $$
+BEGIN
+  CREATE AGGREGATE median(double precision) (
+    SFUNC=array_append,
+    STYPE=double precision[],
+    FINALFUNC=_final_median,
+    INITCOND='{}'
+  );
+EXCEPTION
+  WHEN duplicate_function THEN RAISE NOTICE 'Aggregate median is already exists';
+END;
+$$

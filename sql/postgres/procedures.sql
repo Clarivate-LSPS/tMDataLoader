@@ -1,7 +1,7 @@
 DO $$
 begin
 if current_schema() = 'public' then
-  set SEARCH_PATH = tm_cz, tm_lz, tm_wz, i2b2demodata, i2b2metadata, deapp, pg_temp;
+  set SEARCH_PATH = tm_dataloader, tm_cz, tm_lz, tm_wz, i2b2demodata, i2b2metadata, deapp, pg_temp;
 end if;
 end;
 $$;
@@ -14,6 +14,7 @@ $$;
 \i procedures/I2B2_DELETE_1_NODE.sql
 \i procedures/I2B2_LOAD_SECURITY_DATA.sql
 \i procedures/I2B2_LOAD_SAMPLES.sql
+\i procedures/I2B2_LOAD_ANNOTATION_DEAPP.sql
 \i procedures/I2B2_PROCESS_MRNA_DATA.sql
 \i procedures/I2B2_MIRNA_ZSCORE_CALC.sql
 \i procedures/I2B2_CREATE_FULL_TREE.sql
@@ -26,14 +27,11 @@ $$;
 \i procedures/I2B2_LOAD_PROTEOMICS_ANNOT.sql
 \i procedures/I2B2_PROCESS_PROTEOMICS_DATA.sql
 \i procedures/I2B2_LOAD_METABOLOMICS_ANNOT.sql
+\i procedures/I2B2_METABOLOMICS_ZSCORE_CALC.sql
 \i procedures/I2B2_PROCESS_METABOLOMIC_DATA.sql
 \i procedures/I2B2_PROCESS_QPCR_MIRNA_DATA.sql
 \i procedures/I2B2_PROCESS_RNA_SEQ_DATA.sql
 \i procedures/I2B2_LOAD_RBM_DATA.sql
+\i procedures/I2B2_LOAD_RBM_ANNOTATION.sql
 \i procedures/I2B2_RBM_ZSCORE_CALC_NEW.sql
-
-alter function tm_cz.i2b2_rna_seq_annotation()
-  set search_path=tm_cz, tm_lz, tm_wz, i2b2demodata, i2b2metadata, deapp, pg_temp;
-alter function tm_cz.i2b2_rna_seq_annotation(bigint) rename to i2b2_rna_seq_annotation_with_param;
-alter function tm_cz.i2b2_load_rbm_annotation(bigint)
-  set search_path=tm_cz, tm_lz, tm_wz, i2b2demodata, i2b2metadata, deapp, pg_temp;
+\i procedures/I2B2_RNA_SEQ_ANNOTATION.sql

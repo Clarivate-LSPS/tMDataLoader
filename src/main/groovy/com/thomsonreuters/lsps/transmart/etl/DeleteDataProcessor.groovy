@@ -22,7 +22,6 @@ class DeleteDataProcessor extends DataOperationProcessor {
         def path = data.path?.toString()
         if (trialId || path) {
             sql.call("{call " + config.controlSchema + "." + getProcedureName() + "(?,?,?)}", [trialId, path, jobId])
-            //sql.rows("SELECT tm_cz.i2b2_load_clinical_data(?,?,?,?,?)", [ studyId, studyNode, config.securitySymbol, 'N', jobId ])
         } else {
             config.logger.log(LogType.ERROR, "Study ID or Node not defined!")
             return false;

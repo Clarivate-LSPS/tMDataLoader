@@ -11,7 +11,7 @@ class RNASeqPlatform extends GenePlatform {
 
     @Override
     void cleanupTempTables(Sql sql) {
-        sql.execute("TRUNCATE TABLE ${config.loadSchema}.lt_rnaseq_annotation" as String)
+        sql.execute("TRUNCATE TABLE lt_rnaseq_annotation" as String)
     }
 
     @Override
@@ -23,7 +23,7 @@ class RNASeqPlatform extends GenePlatform {
     @Override
     int loadEntries(Sql sql) {
         return loadEachEntry(sql, """
-            INSERT into ${config.loadSchema}.lt_rnaseq_annotation (TRANSCRIPT_ID,GENE_SYMBOL,ORGANISM)
+            INSERT into lt_rnaseq_annotation (TRANSCRIPT_ID,GENE_SYMBOL,ORGANISM)
             VALUES (?, ?, ?)
         """) { entry ->
             [

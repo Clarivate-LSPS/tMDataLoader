@@ -1,6 +1,6 @@
--- Function: tm_cz.i2b2_add_root_node(character varying, numeric)
+-- Function: i2b2_add_root_node(character varying, numeric)
 
--- DROP FUNCTION tm_cz.i2b2_add_root_node(character varying, numeric);
+-- DROP FUNCTION i2b2_add_root_node(character varying, numeric);
 
 CREATE OR REPLACE FUNCTION i2b2_add_root_node(root_node character varying, currentjobid numeric)
   RETURNS integer
@@ -56,11 +56,11 @@ Begin
 	IF(jobID IS NULL or jobID < 1)
 	THEN
 		newJobFlag := 1; -- True
-		select tm_cz.cz_start_audit (procedureName, databaseName) into jobId;
+		select cz_start_audit (procedureName, databaseName) into jobId;
 	END IF;
 
 	stepCt := stepCt + 1;
-	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Start ' || procedureName,0,stepCt,'Done') into rtnCd;
+	select cz_write_audit(jobId,databaseName,procedureName,'Start ' || procedureName,0,stepCt,'Done') into rtnCd;
 
 	begin
 
@@ -118,7 +118,7 @@ Begin
 	get diagnostics rowCt := ROW_COUNT;
 
 	stepCt := stepCt + 1;
-	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Insert to table_access',rowCt,stepCt,'Done') into rtnCd;
+	select cz_write_audit(jobId,databaseName,procedureName,'Insert to table_access',rowCt,stepCt,'Done') into rtnCd;
 
 	--	insert root_node into i2b2
 
@@ -184,7 +184,7 @@ Begin
 	get diagnostics rowCt := ROW_COUNT;
 
 	stepCt := stepCt + 1;
-	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Insert root_node ' || rootNode || ' to i2b2',rowCt,stepCt,'Done') into rtnCd;
+	select cz_write_audit(jobId,databaseName,procedureName,'Insert root_node ' || rootNode || ' to i2b2',rowCt,stepCt,'Done') into rtnCd;
 
 	--	insert root_node into i2b2
 
@@ -252,17 +252,17 @@ Begin
 	get diagnostics rowCt := ROW_COUNT;
 
 	stepCt := stepCt + 1;
-	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Insert root_node ' || rootNode || ' to i2b2_secure',rowCt,stepCt,'Done') into rtnCd;
+	select cz_write_audit(jobId,databaseName,procedureName,'Insert root_node ' || rootNode || ' to i2b2_secure',rowCt,stepCt,'Done') into rtnCd;
 
 	end;
 
 	stepCt := stepCt + 1;
-	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'End ' || procedureName,0,stepCt,'Done') into rtnCD;
+	select cz_write_audit(jobId,databaseName,procedureName,'End ' || procedureName,0,stepCt,'Done') into rtnCD;
 
 	--Cleanup OVERALL JOB if this proc is being run standalone
 	IF newJobFlag = 1
 	THEN
-		select tm_cz.cz_end_audit (jobID, 'SUCCESS') into rtnCd;
+		select cz_end_audit (jobID, 'SUCCESS') into rtnCd;
 	END IF;
 
 	return 1;
@@ -272,18 +272,17 @@ Begin
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
 		--Handle errors.
-		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		--End Proc
-		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return -16;
 
 END;
 
 $BODY$
   LANGUAGE plpgsql VOLATILE SECURITY DEFINER
+	SET search_path FROM CURRENT
   COST 100;
-ALTER FUNCTION tm_cz.i2b2_add_root_node(character varying, numeric) SET search_path=tm_cz, i2b2metadata, pg_temp;
 
-ALTER FUNCTION tm_cz.i2b2_add_root_node(character varying, numeric)
-  OWNER TO tm_cz;
-GRANT EXECUTE ON FUNCTION tm_cz.i2b2_add_root_node(character varying, numeric) TO tm_cz;
+ALTER FUNCTION i2b2_add_root_node(character varying, numeric)
+  OWNER TO postgres;

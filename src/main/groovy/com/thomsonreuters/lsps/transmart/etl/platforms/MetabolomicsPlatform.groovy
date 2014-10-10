@@ -11,7 +11,7 @@ class MetabolomicsPlatform extends GenePlatform {
 
     @Override
     void cleanupTempTables(Sql sql) {
-        sql.execute("TRUNCATE TABLE ${config.loadSchema}.lt_metabolomic_annotation" as String)
+        sql.execute("TRUNCATE TABLE lt_metabolomic_annotation" as String)
     }
 
     @Override
@@ -23,7 +23,7 @@ class MetabolomicsPlatform extends GenePlatform {
     @Override
     int loadEntries(Sql sql) {
         return loadEachEntry(sql, """
-            INSERT into ${config.loadSchema}.lt_metabolomic_annotation (BIOCHEMICAL_NAME,HMDB_ID,SUPER_PATHWAY,SUB_PATHWAY, GPL_ID)
+            INSERT into lt_metabolomic_annotation (BIOCHEMICAL_NAME,HMDB_ID,SUPER_PATHWAY,SUB_PATHWAY, GPL_ID)
             VALUES (?, ?, ?, ?, ?)
         """) { entry ->
             [
