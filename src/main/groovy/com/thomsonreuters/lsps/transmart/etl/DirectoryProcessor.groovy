@@ -33,7 +33,8 @@ class DirectoryProcessor {
             MIRNA_SEQ   : MIRNADataProcessor,
             MIRNA_QPCR  : MIRNADataProcessor,
             Protein     : ProteinDataProcessor,
-            Metabolomics: MetabolomicsDataProcessor
+            Metabolomics: MetabolomicsDataProcessor,
+            RNASeq      : RNASeqDataProcessor,
     ]
 
     DirectoryProcessor(conf) {

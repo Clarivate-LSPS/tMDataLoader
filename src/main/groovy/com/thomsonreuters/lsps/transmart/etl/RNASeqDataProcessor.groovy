@@ -9,6 +9,7 @@ public class RNASeqDataProcessor extends DataProcessor {
     public RNASeqDataProcessor(Object conf) {
         super(conf);
     }
+
     @Override
     public boolean processFiles(File dir, Sql sql, Object studyInfo) {
         sql.execute("TRUNCATE TABLE ${config.loadSchema}.lt_src_rna_seq_subj_samp_map" as String)
@@ -49,12 +50,15 @@ public class RNASeqDataProcessor extends DataProcessor {
         if (studyId && studyNode && studyDataType) {
             config.logger.log("Study ID=${studyId}; Node=${studyNode}; Data Type=${studyDataType}")
 
+            sql.call("{call " + config.controlSchema + ".i2b2_process_rna_seq_data (?, ?, ?, null, null, '" + config.securitySymbol + "', ?)}",
+                    [studyId, studyNode, studyDataType, jobId]) {}
+
+            // Call loading annotation after data processing because we need data from filled
+            // tm_cz.probeset_deapp to load full annotation info
+
             if (studyInfo['runPlatformLoad']) {
                 sql.call("{call " + config.controlSchema + ".i2b2_rna_seq_annotation()}")
             }
-
-            sql.call("{call " + config.controlSchema + ".i2b2_process_rna_seq_data (?, ?, ?, null, null, '" + config.securitySymbol + "', ?)}",
-                    [studyId, studyNode, studyDataType, jobId]) {}
         } else {
             config.logger.log(LogType.ERROR, "Study ID or Node or DataType not defined!")
             return false;
