@@ -1,214 +1,204 @@
-/*************************************************************************
- * tranSMART Data Loader - ETL tool for tranSMART
- * 
- * Copyright 2012-2013 Thomson Reuters
- * 
- * This product includes software developed at Thomson Reuters
- * 
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License 
- * as published by the Free Software  
- * Foundation, either version 3 of the License, or (at your option) any later version, along with the following terms:
- * 1.	You may convey a work based on this program in accordance with section 5, provided that you retain the above notices.
- * 2.	You may convey verbatim copies of this program code as you receive it, in any medium, provided that you retain the above notices.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS    * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
- * 
- * You should have received a copy of the GNU General Public License along with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
- *
- ******************************************************************/
-
 package com.thomsonreuters.lsps.transmart.etl
 
+import com.thomsonreuters.lsps.transmart.etl.platforms.RBMPlatform
+import com.thomsonreuters.lsps.transmart.files.CsvLikeFile
+import com.thomsonreuters.lsps.transmart.sql.DatabaseType;
 import groovy.sql.Sql
 
-import java.io.File;
+public class RBMDataProcessor extends DataProcessor {
+    public RBMDataProcessor(Object conf) {
+        super(conf);
+    }
 
-class RBMDataProcessor extends DataProcessor {
+    @Override
+    public boolean processFiles(File dir, Sql sql, Object studyInfo) {
+        sql.execute("TRUNCATE TABLE ${config.loadSchema}.lt_src_rbm_subj_samp_map" as String)
+        sql.execute("TRUNCATE TABLE ${config.loadSchema}.lt_src_rbm_data" as String)
 
-	public RBMDataProcessor(Object conf) {
-		super(conf);
-		// TODO Auto-generated constructor stub
-	}
+        def platformList = [] as Set
 
-	@Override
-	public boolean processFiles(File dir, Sql sql, Object studyInfo) {
-		sql.execute('TRUNCATE TABLE stg_rbm_antigen_gene')
-		sql.execute('TRUNCATE TABLE stg_subject_rbm_data')
-		
-		// process antigen mappings first
-		dir.eachFileMatch(~/(?i).+_Antigen_Gene_Mapping(_File)*\.txt/) {
-			processMappingFile(it, sql, studyInfo)
-		}
-		
-		// process RBM data
-		dir.eachFileMatch(~/(?i).+_RBM_Data\.txt/) {
-			processRBMFile(it, sql, studyInfo)
-		}
-		
-		return true
-	}
-	
-	private void processMappingFile(File f, Sql sql, Object studyInfo) {
-		def lineNum = 0
-		
-		config.logger.log("Processing Antigen mapping file ${f.name}")
-		
-		sql.withTransaction {
-			sql.withBatch(100, """\
-					INSERT into stg_rbm_antigen_gene (antigen_name, gene_symbol, gene_id)
-					VALUES (?, ?, ?)
-					""") {
-				stmt ->
-			
-				f.splitEachLine("\t") {
-					cols ->
-					
-					lineNum++
-					
-					if (lineNum > 1 && cols[0]) {
-						// not interested in header or empty line
-						stmt.addBatch(cols)
-					}
-				}
-			}
-		}
-		
-		config.logger.log("Processed ${lineNum} lines")
-	}
-	
-	private void processRBMFile(File f, Sql sql, Object studyInfo) {
-		def lineNum = 0
-		def header_mappings = [:]
-		def header_antigen = [:]
-		
-		config.logger.log("Processing RBM data: ${f.name}")
-		
-		sql.withTransaction {
-			sql.withBatch(100, """\
-					INSERT INTO stg_subject_rbm_data
-					(trial_name, antigen_name, value_text, timepoint, assay_id, sample_id, subject_id, site_id)
-					VALUES
-					(:study_id, :antigen_name, :value_text, :visit_name, :assay_id, :sample_id, :subject_id, :site_id)
-					""") {
-				stmt ->
-			
-				f.splitEachLine("\t") {
-					cols ->
-					
-					lineNum++
-					
-					if (lineNum == 1) {
-						// header
-						def resetDataStart = true
-						
-						cols.eachWithIndex {
-							val, i ->
-							
-							if (val ==~ /(?i)study_id/) { header_mappings['study_id'] = i; resetDataStart = true; }
-							else if (val ==~ /(?i)subject_id/) { header_mappings['subject_id'] = i; resetDataStart = true; }
-							else if (val ==~ /(?i)sample_id/) { header_mappings['sample_id'] = i; resetDataStart = true; }
-							else if (val ==~ /(?i)visit_name/) { header_mappings['visit_name'] = i; resetDataStart = true; }
-							else if (val ==~ /(?i)site_id/) { header_mappings['site_id'] = i; resetDataStart = true; }
-							else if (val ==~ /(?i)assay_id/) { header_mappings['assay_id'] = i; resetDataStart = true; }
-							else {
-								if (! header_mappings['_DATA_START_COL'] && resetDataStart) {
-									header_mappings['_DATA_START_COL'] = i
-									resetDataStart = false
-								}
-								
-								header_antigen[i] = val // we could do it simpler, but then we wouldn't be able to track unknown columns
-							}
-						}
-						
-						if (! (
-							header_mappings.containsKey('study_id')
-							&& header_mappings.containsKey('subject_id')
-						) ) {
-							throw new Exception("Study ID and Subject ID columns are not defined")					
-						}
-						
-						if (! header_mappings['_DATA_START_COL'])
-							throw new Exception("Can't determine start of data columns")
-					
-					}
-					else {
-						// data line
-						def out = [:]
-						['study_id', 'subject_id', 'sample_id', 'visit_name', 'site_id', 'assay_id'].each {
-							out[it] = getColumnValue(cols, header_mappings, it)
-						}
-						
-						(header_mappings['_DATA_START_COL']..cols.size()-1).each {
-							out['antigen_name'] = header_antigen[it]
-							out['value_text'] = cols[it]
-							stmt.addBatch(out)
-						}
-					}
-				}
-			}
-		}
-		
-		// OK, now we need to retrieve studyID & node
-		def rows = sql.rows("select trial_name, count(*) as cnt from stg_subject_rbm_data group by trial_name")
-		def rsize = rows.size()
-		
-		if (rsize > 0) {
-			if (rsize == 1) {
-				def studyId = rows[0].trial_name
-				if (studyId) {
-					studyInfo['id'] = studyId
-				}
-				else {
-					throw new Exception("Study ID is null!")
-				}
-			}
-			else {
-				throw new Exception("Multiple StudyIDs are detected!")
-			}
-		}
-		else {
-			throw new Exception("Study ID is not specified!")
-		}
-		
-		config.logger.log("Processed ${lineNum} lines")
-	}
+        dir.eachFileMatch(~/(?i).+_Subject_Sample_Mapping_File(_GPL\d+)*\.txt/) {
+            platformList.addAll(processMappingFile(it, sql, studyInfo))
+        }
 
-	@Override
-	public boolean runStoredProcedures(Object jobId, Sql sql, Object studyInfo) {
-		def studyId = studyInfo['id']
-		def studyNode = studyInfo['node']
-		if (studyId && studyNode) {
-			config.logger.log("Study ID=${studyId}; Node=${studyNode}")
-			sql.call("{CALL i2b2_process_rbm_data($studyId,$jobId)}")
-		}
-		else {
-			config.logger.log(LogType.ERROR, "Study ID or Node not defined!")
-			return false;
-		}
-		
-		return true;
-	}
+        platformList = platformList.toList()
 
-	@Override
-	public String getProcedureName() {
-		return "I2B2_PROCESS_RBM_DATA";
-	}
-	
-	private String getColumnValue(cols, header_mappings, String label) {
-		if (header_mappings.containsKey(label))
-			return fixColumn(cols[header_mappings[label]])
-		else
-			return null
-	}
-	
-	private String fixColumn(String s) {
-		if ( s == null ) return '';
-		
-		def res = s.trim()
-		res = (res =~ /(?s)^\"(.+)\"$/).replaceFirst('$1')
-	
-		return res
-	}
+        if (platformList.size() > 0) {
+            loadPlatforms(dir, sql, platformList, studyInfo)
 
+            dir.eachFileMatch(~/(?i).+_RBM_Data_[RLTZ](_GPL\d+)*\.txt/) {
+                processRBMFile(it, sql, studyInfo)
+            }
+        } else {
+            throw new Exception("No platforms defined")
+        }
+
+        return true;
+    }
+
+    @Override
+    public boolean runStoredProcedures(Object jobId, Sql sql, Object studyInfo) {
+        def studyId = studyInfo['id']
+        def studyNode = studyInfo['node']
+        def studyDataType = studyInfo['datatype']
+
+        if (studyDataType == 'T' && !config.useT) {
+            config.logger.log("Original DataType='T', but using 'Z' instead (workaround); use -t option to alter this behavior")
+            studyDataType = 'Z' // temporary workaround due to a bug in Transmart
+        }
+
+        if (studyId && studyNode && studyDataType) {
+            config.logger.log("Study ID=${studyId}; Node=${studyNode}; Data Type=${studyDataType}")
+
+            if (studyInfo['runPlatformLoad']) {
+                sql.call("{call " + config.controlSchema + ".i2b2_load_rbm_annotation()}")
+            }
+
+            sql.call("{call " + config.controlSchema + ".i2b2_load_rbm_data (?, ?, ?, null, null, '" + config.securitySymbol + "', ?)}",
+                    [studyId, studyNode, studyDataType, jobId]) {}
+        } else {
+            config.logger.log(LogType.ERROR, "Study ID or Node or DataType not defined!")
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public String getProcedureName() {
+        return "I2B2_LOAD_RBM_DATA";
+    }
+
+    private List processMappingFile(File f, Sql sql, studyInfo) {
+        def platformList = [] as Set
+        def studyIdList = [] as Set
+
+        config.logger.log("Mapping file: ${f.name}")
+
+        int lineNum = 0
+        def mappingFile = new CsvLikeFile(f)
+
+        sql.withTransaction {
+            sql.withBatch(100, """\
+				INSERT into ${config.loadSchema}.lt_src_rbm_subj_samp_map (TRIAL_NAME, SITE_ID,
+					SUBJECT_ID, SAMPLE_CD, PLATFORM, TISSUE_TYPE,
+					ATTRIBUTE_1, ATTRIBUTE_2, CATEGORY_CD, SOURCE_CD)
+				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		""") { stmt ->
+                mappingFile.eachEntry { cols ->
+                    lineNum++
+                    // cols: 0:study_id, 1:site_id, 2:subject_id, 3:sample_cd, 4:platform, 5:tissuetype, 6:attr1, 7:attr2, 8:category_cd
+
+                    if (!(cols[2] && cols[3] && cols[4] && cols[8]))
+                        throw new Exception("Incorrect mapping file: mandatory columns not defined")
+
+                    platformList << cols[4]
+                    studyIdList << cols[0]
+
+                    stmt.addBatch(cols)
+                }
+            }
+        }
+
+        studyIdList = studyIdList.toList()
+        platformList = platformList.toList()
+
+        sql.commit()
+        config.logger.log("Processed ${lineNum} rows")
+
+        if (studyIdList.size() > 0) {
+            if (studyIdList.size() > 1) {
+                throw new Exception("Multiple studies in one mapping file")
+            } else {
+                def studyId = studyIdList[0]
+                if (studyInfo['id'] && studyId != studyInfo['id']) {
+                    throw new Exception("Study ID doesn't match clinical data")
+                } else {
+                    studyInfo['id'] = studyId
+                }
+            }
+        }
+
+        return platformList
+    }
+
+    private void loadPlatforms(File dir, Sql sql, List platformList, studyInfo) {
+        platformList.each { String platform ->
+            def rbmPlatform = new RBMPlatform(new File(dir, "${platform}.txt"), platform, config)
+            rbmPlatform.load(sql, studyInfo)
+        }
+    }
+
+    private void processRBMFile(File f, Sql sql, studyInfo) {
+        config.logger.log("Processing ${f.name}")
+
+        // retrieve data type
+        def m = f.name =~ /(?i)RBM_Data_([RLTZ])/
+        if (m[0]) {
+            def dataType = m[0][1]
+            if (studyInfo['datatype']) {
+                if (studyInfo['datatype'] != dataType)
+                    throw new Exception("Multiple data types in one study are not supported")
+            } else {
+                studyInfo['datatype'] = dataType
+            }
+        }
+
+        if (database?.databaseType == DatabaseType.Postgres) {
+            processRBMFileForPostgres(f, studyInfo)
+        } else {
+            processRBMFileForGeneric(f, sql, studyInfo)
+        }
+    }
+
+    private void processRBMFileForPostgres(File f, studyInfo) {
+        DataLoader.start(database, "${config.loadSchema}.lt_src_rbm_data", ['TRIAL_ID', 'SAMPLE_ID', 'ANALYTE', 'AVALUE']) {
+            st ->
+                def lineNum = processEachRow(f, studyInfo) { row ->
+                    st.addBatch(row)
+                }
+                config.logger.log("Processed ${lineNum} rows")
+        }
+    }
+
+    private void processRBMFileForGeneric(File f, Sql sql, studyInfo) {
+        def lineNum = 0
+        sql.withTransaction {
+            sql.withBatch(1000, """\
+				INSERT into ${config.loadSchema}.lt_src_rbm_data (TRIAL_ID, SAMPLE_ID, ANALYTE, AVALUE)
+				VALUES (?, ?, ?, ?)
+			""") {
+                stmt ->
+                    lineNum = processEachRow f, studyInfo, { row -> stmt.addBatch(row) }
+            }
+        }
+
+        sql.commit()
+        config.logger.log(LogType.PROGRESS, "")
+        config.logger.log("Processed ${lineNum} rows")
+    }
+
+    private long processEachRow(File f, studyInfo, Closure<List> processRow) {
+        def row = [studyInfo.id as String, null, null, null]
+        def lineNum = 0
+        def dataFile = new CsvLikeFile(f)
+        def header = dataFile.header
+        if (header[2].toUpperCase() != 'SAMPID' && !header[5].toUpperCase().contains('ANALYTE')
+                && header[7].toUpperCase() != 'AVALUE') {
+            throw new Exception("Incorrect RBM data file")
+        }
+        dataFile.eachEntry { cols ->
+            lineNum++;
+
+            config.logger.log(LogType.PROGRESS, "[${lineNum}]")
+            row[1] = cols[2]
+            row[2] = cols[5]
+            row[3] = cols[7]
+            if (row[1] && row[2] && row[3]) {
+                processRow(row)
+            }
+
+        }
+        config.logger.log(LogType.PROGRESS, "")
+        return lineNum
+    }
 }

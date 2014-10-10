@@ -29,7 +29,11 @@ $$;
 \i procedures/I2B2_PROCESS_METABOLOMIC_DATA.sql
 \i procedures/I2B2_PROCESS_QPCR_MIRNA_DATA.sql
 \i procedures/I2B2_PROCESS_RNA_SEQ_DATA.sql
+\i procedures/I2B2_LOAD_RBM_DATA.sql
+\i procedures/I2B2_RBM_ZSCORE_CALC_NEW.sql
 
 alter function tm_cz.i2b2_rna_seq_annotation()
   set search_path=tm_cz, tm_lz, tm_wz, i2b2demodata, i2b2metadata, deapp, pg_temp;
 alter function tm_cz.i2b2_rna_seq_annotation(bigint) rename to i2b2_rna_seq_annotation_with_param;
+alter function tm_cz.i2b2_load_rbm_annotation(bigint)
+  set search_path=tm_cz, tm_lz, tm_wz, i2b2demodata, i2b2metadata, deapp, pg_temp;
