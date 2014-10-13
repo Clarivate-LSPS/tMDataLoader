@@ -13,7 +13,7 @@ class GexPlatform extends GenePlatform {
 
     @Override
     public void cleanupTempTables(Sql sql) {
-        sql.execute("TRUNCATE TABLE ${config.loadSchema}.lt_src_deapp_annot" as String)
+        sql.execute("TRUNCATE TABLE lt_src_deapp_annot" as String)
     }
 
     @Override
@@ -26,7 +26,7 @@ class GexPlatform extends GenePlatform {
     @Override
     public int loadEntries(Sql sql) {
         return loadEachEntry(sql, """
-            INSERT into ${config.loadSchema}.lt_src_deapp_annot (GPL_ID,PROBE_ID,GENE_SYMBOL,GENE_ID,ORGANISM)
+            INSERT into lt_src_deapp_annot (GPL_ID,PROBE_ID,GENE_SYMBOL,GENE_ID,ORGANISM)
             VALUES (?, ?, ?, ?, ?)
         """) { entry ->
             [
