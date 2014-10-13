@@ -105,9 +105,7 @@ You can run it with "-h" option to get a list of all available options:
                                                stored procedure (expert       
                                                option)                        
         --alt-control-schema <schema>          Name of alternative control    
-                                               schema (TM_CZ) - expert option 
-        --alt-load-schema <schema>             Name of alternative load    
-                                               schema (TM_LZ) - expert option                                               
+                                               schema (TM_CZ) - expert option
      -c,--config <config>                      Configuration filename         
         --data-value-first                     Put VISIT NAME after the data  
                                                value (default behavior, use to
@@ -144,10 +142,6 @@ IMPORTANT! If your machine doesn't have a direct connection to the internet and 
     $ java -Dhttp.proxyHost=webproxy.host.com -Dhttp.proxyPort=80 -jar ./tm_etl.jar
 
 Refer to JVM documentation for more information on these options.
-
-IMPORTANT! If you are using Oracle db you should download driver (http://www.oracle.com/technetwork/database/enterprise-edition/jdbc-10201-088211.html) and add it to class path to executable tm_etl.jar:
-
-    java -classpath "[path_to_driver]ojdbc14.jar" -jar tm_etl.jar [options]
 
 After processing is complete, the study folders and subfolders will be renamed according to the following principle:
 

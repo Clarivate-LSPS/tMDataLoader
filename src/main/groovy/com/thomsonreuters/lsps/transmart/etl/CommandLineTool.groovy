@@ -42,7 +42,6 @@ class CommandLineTool {
             _ longOpt: 'highlight-clinical-data', 'Highlight studies with clinical data'
             _ longOpt: 'alt-clinical-proc', args: 1, argName: 'proc_name', 'Name of alternative clinical stored procedure (expert option)'
             _ longOpt: 'alt-control-schema', args: 1, argName: 'schema', 'Name of alternative control schema (TM_CZ) - expert option'
-            _ longOpt: 'alt-load-schema', args: 1, argName: 'schema', 'Name of alternative load schema (TM_LZ) - expert option'
             _ longOpt: 'secure-study', 'Make study securable'
             _ longOpt: 'visit-name-first', 'Put VISIT_NAME before the data value'
             _ longOpt: 'data-value-first', 'Put VISIT NAME after the data value (default behavior, use to override non-standard config)'
@@ -140,16 +139,6 @@ class CommandLineTool {
             println ">>> USING ALTERNATIVE CONTROL SCHEMA: ${config.controlSchema}"
         } else {
             config.controlSchema = database.databaseType == DatabaseType.Postgres ? 'tm_dataloader' : 'tm_cz'
-        }
-
-        if (opts?.'alt-load-schema') {
-            config.loadSchema = opts?.'alt-load-schema'
-        }
-
-        if (config.loadSchema) {
-            println ">>> USING ALTERNATIVE LOAD SCHEMA: ${config.loadSchema}"
-        } else {
-            config.loadSchema = database.databaseType == DatabaseType.Postgres ? 'tm_dataloader' : 'tm_lz'
         }
 
         if (!config?.containsKey('visitNameFirst')) {

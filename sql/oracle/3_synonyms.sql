@@ -9,6 +9,7 @@ create or replace synonym "&TM_CZ_SCHEMA".lt_src_study_metadata for "&TM_LZ_SCHE
 create or replace synonym "&TM_CZ_SCHEMA".lt_src_mrna_subj_samp_map for "&TM_LZ_SCHEMA".lt_src_mrna_subj_samp_map;
 create or replace synonym "&TM_CZ_SCHEMA".lt_snp_copy_number for "&TM_LZ_SCHEMA".lt_snp_copy_number;
 create or replace synonym "&TM_CZ_SCHEMA".lt_snp_calls_by_gsm for "&TM_LZ_SCHEMA".lt_snp_calls_by_gsm;
+create or replace synonym "&TM_CZ_SCHEMA".lt_snp_gene_map for "&TM_LZ_SCHEMA".lt_snp_gene_map;
 create or replace synonym "&TM_CZ_SCHEMA".lt_src_proteomics_sub_sam_map for "&TM_LZ_SCHEMA".lt_src_proteomics_sub_sam_map;
 create or replace synonym "&TM_CZ_SCHEMA".lt_src_proteomics_data for "&TM_LZ_SCHEMA".lt_src_proteomics_data;
 create or replace synonym "&TM_CZ_SCHEMA".lt_protein_annotation for "&TM_LZ_SCHEMA".lt_protein_annotation;

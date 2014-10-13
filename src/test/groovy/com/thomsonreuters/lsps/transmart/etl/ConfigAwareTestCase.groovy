@@ -24,7 +24,6 @@ public trait ConfigAwareTestCase {
         config.logger = config.logger ?: Logger.getLogger(getClass())
         _database = new Database(config)
         config.controlSchema = config.controlSchema ?: (_database.databaseType == DatabaseType.Postgres ? 'tm_dataloader' : 'tm_cz')
-        config.loadSchema = config.loadSchema ?: (_database.databaseType == DatabaseType.Postgres ? 'tm_dataloader' : 'tm_lz')
         config.securitySymbol = config.securitySymbol ?: 'N'
     }
     private Sql _db
