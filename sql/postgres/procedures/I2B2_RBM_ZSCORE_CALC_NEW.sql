@@ -292,12 +292,12 @@ BEGIN
 	
 	-- insert into de_subject_rbm_data when dataType is T (transformed)
 
-	
+  begin
 	sqlText := 'insert into ' || partitionName || 
 	'(partition_id, trial_name, antigen_name, patient_id, gene_symbol, gene_id, assay_id ' ||
         ',concept_cd, value, normalized_value, unit, zscore, id) ' ||
 	'select ' || partitioniD::text || ', ''' || TrialId || '''' ||
-              ',trim(substr(m.probeset_id,1,instr(m.probeset_id,''('')-1)) ' ||
+              ',(CASE WHEN position(''('' in m.probeset_id) <> 0 THEN trim(substr(m.probeset_id,1,instr(m.probeset_id,''('')-1)) ELSE m.probeset_id END)' ||
               ',m.patient_id ' ||
               ',a.gene_symbol  ' ||
               ',a.gene_id::integer  ' ||
@@ -309,7 +309,7 @@ BEGIN
 				'then case when ''' || logBase || ''' = -1 then null else power( ''' || logBase || ''' , m.log_intensity)::numeric end ' ||
 				'else null ' ||
 				'end,4) as normalized_value ' ||
-              ',trim(substr(m.probeset_id ,instr(m.probeset_id ,''('',-1,1),length(m.probeset_id ))) ' ||
+              ',(CASE WHEN position(''('' in m.probeset_id) <> 0 THEN trim(substr(m.probeset_id ,instr(m.probeset_id ,''('',-1,1),length(m.probeset_id ))) ELSE m.probeset_id END) ' ||
               ',(CASE WHEN m.zscore < -2.5 THEN -2.5 WHEN m.zscore >  2.5 THEN  2.5 ELSE m.zscore END) ' ||
 			  ',nextval(''deapp.RBM_ANNOTATION_ID'') '||
 	'from tm_wz.wt_subject_rbm_med m ' ||
@@ -317,7 +317,7 @@ BEGIN
         ',deapp.DE_RBM_ANNOTATION a ' ||
         ',deapp.de_subject_sample_mapping d ' ||
         'where  ' ||
-        'trim(substr(p.probeset,1,instr(p.probeset,''('')-1)) =trim(a.antigen_name)  ' ||
+        '(CASE WHEN position(''('' in p.probeset) <> 0 THEN trim(substr(p.probeset,1,instr(p.probeset,''('')-1)) ELSE p.probeset END) = trim(a.antigen_name)' ||
       'and   d.subject_id=p.subject_id ' ||
         'and p.platform=a.gpl_id ' ||
         'and m.assay_id=p.assay_id ' ||
@@ -331,14 +331,51 @@ BEGIN
 	raise notice 'sqlText= %', sqlText;
 	execute sqlText;
 	get diagnostics rowCt := ROW_COUNT;
+	exception
+	when others then
+		errorNumber := SQLSTATE;
+		errorMessage := SQLERRM;
+		--Handle errors.
+		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		--End Proc
+		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		return;
+	end;
+
 	stepCt := stepCt + 1;
 	select tm_cz.cz_write_audit(jobId,databaseName,procedureName,'Inserted data into ' || partitionName,rowCt,stepCt,'Done') into rtnCd;
 
+	begin
 	insert into DEAPP.DE_RBM_DATA_ANNOTATION_JOIN
 	select d.id, ann.id from deapp.de_subject_rbm_data d
 	inner join deapp.de_rbm_annotation ann on ann.antigen_name = d.antigen_name
 	inner join deapp.de_subject_sample_mapping ssm on ssm.assay_id = d.assay_id and ann.gpl_id = ssm.gpl_id
 	where not exists( select * from deapp.de_rbm_data_annotation_join j where j.data_id = d.id AND j.annotation_id = ann.id );
+  get diagnostics rowCt := ROW_COUNT;
+	exception
+	when others then
+		errorNumber := SQLSTATE;
+		errorMessage := SQLERRM;
+		--Handle errors.
+		select tm_cz.cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		--End Proc
+		select tm_cz.cz_end_audit (jobID, 'FAIL') into rtnCd;
+		return;
+	end;
+
+	-- create indexes on partition
+	sqlText := ' create index ' || partitionIndx || '_idx1 on ' || partitionName || ' using btree (partition_id) tablespace indx';
+	raise notice 'sqlText= %', sqlText;
+	execute sqlText;
+	sqlText := ' create index ' || partitionIndx || '_idx2 on ' || partitionName || ' using btree (assay_id) tablespace indx';
+	raise notice 'sqlText= %', sqlText;
+	execute sqlText;
+	sqlText := ' create index ' || partitionIndx || '_idx3 on ' || partitionName || ' using btree (antigen_name) tablespace indx';
+	raise notice 'sqlText= %', sqlText;
+	execute sqlText;
+	sqlText := ' create index ' || partitionIndx || '_idx4 on ' || partitionName || ' using btree (assay_id, antigen_name) tablespace indx';
+	raise notice 'sqlText= %', sqlText;
+	execute sqlText;
     
     ---Cleanup OVERALL JOB if this proc is being run standalone
   IF newJobFlag = 1
