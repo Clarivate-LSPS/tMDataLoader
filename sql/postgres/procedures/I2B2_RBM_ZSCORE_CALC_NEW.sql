@@ -346,6 +346,9 @@ BEGIN
 	select cz_write_audit(jobId,databaseName,procedureName,'Inserted data into ' || partitionName,rowCt,stepCt,'Done') into rtnCd;
 
 	begin
+		-- FIXME: Drop constraint (and don't recover, because it don't work with inherited tables)
+    ALTER TABLE deapp.de_rbm_data_annotation_join DROP CONSTRAINT IF EXISTS de_rbm_data_ann_jn_data_id_fk;
+
 	insert into DEAPP.DE_RBM_DATA_ANNOTATION_JOIN
 	select d.id, ann.id from deapp.de_subject_rbm_data d
 	inner join deapp.de_rbm_annotation ann on ann.antigen_name = d.antigen_name
