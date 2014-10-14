@@ -30,7 +30,12 @@ class Database {
     Sql newSql() {
         Sql sql = Sql.newInstance(config.jdbcConnectionString, config.username, config.password, config.jdbcDriver)
         if (databaseType == DatabaseType.Postgres) {
-            sql.execute("SET SEARCH_PATH=tm_dataloader, tm_cz, tm_lz, tm_wz, i2b2demodata, i2b2metadata, deapp, pg_temp;")
+            def schemas = 'tm_cz, tm_lz, tm_wz, i2b2demodata, i2b2metadata, deapp, pg_temp'
+            def controlSchema = config.controlSchema ? config.controlSchema : 'tm_dataloader'
+            if (controlSchema.toLowerCase() != 'tm_cz') {
+                schemas = "${controlSchema}, ${schemas}"
+            }
+            sql.execute("SET SEARCH_PATH=${Sql.expand(schemas)};")
         }
         return sql
     }
