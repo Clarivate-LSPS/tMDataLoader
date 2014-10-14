@@ -1,12 +1,10 @@
 package com.thomsonreuters.lsps.transmart.etl
 
 import com.thomsonreuters.lsps.transmart.sql.DatabaseType
-import org.junit.Ignore
 
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasNode
 import static com.thomsonreuters.lsps.transmart.Fixtures.studyDir
 import static org.junit.Assert.assertThat
-import static org.junit.Assert.assertTrue
 
 class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCase {
     private MoveStudyProcessor _moveStudyProcessor
@@ -41,30 +39,27 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
 
     void testMoveStudyInOneRootNode() {
         def newPath = "\\Test Studies Move Test\\Test Study Update\\"
-        def input = ['old_path': oldPath,
-                     'new_path': newPath];
-        moveStudyProcessor.process(input)
 
-        assertPathsExisting(newPath, oldPath)
+        moveStudy(oldPath, newPath)
+
+        assertMovement(oldPath, newPath)
         removeStudy(newPath)
     }
 
     void testMoveStudyWithCreatingNewRoot() {
         def newPath = "\\Test Studies Move Test Update\\Test Study Update\\"
-        def input = ['old_path': oldPath,
-                     'new_path': newPath];
-        moveStudyProcessor.process(input)
 
-        assertPathsExisting(newPath, oldPath)
+        moveStudy(oldPath, newPath)
+
+        assertMovement(oldPath, newPath)
         assertRootNodeExisting(newPath)
         removeStudy(newPath)
     }
 
     void testMoveStudyWithCreatingNewLevel() {
         def newPath = "\\Test Studies Move Test\\New Level\\Test Study\\"
-        def input = ['old_path': oldPath,
-                     'new_path': newPath];
-        moveStudyProcessor.process(input)
+
+        moveStudy(oldPath, newPath)
 
         assertNewLevelIsAdded(newPath)
         assertConceptCounts(newPath)
@@ -77,14 +72,10 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
 
     void testMoveStudyWithDeletingNewLevel() {
         def newPath = "\\Test Studies Move Test\\New Level\\Test Study\\"
-        def input = ['old_path': oldPath,
-                     'new_path': newPath];
-        moveStudyProcessor.process(input)
-
         def newPathShort = "\\Test Studies Move Test\\Test Study\\"
-        input = ['old_path': newPath,
-                 'new_path': newPathShort];
-        moveStudyProcessor.process(input)
+
+        moveStudy(oldPath, newPath)
+        moveStudy(newPath, newPathShort)
 
         assertNewLevelWasDeleted(newPath)
         removeStudy(newPathShort)
@@ -93,21 +84,16 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
     void testMoveStudyWithoutTrailingSlash() {
         def oldPathWoSlash = oldPath.substring(0, oldPath.length() - 1);
         def newPathWoSlash = "\\Test Studies Move Test\\Test Study Wo Slash"
-        def input = ['old_path': oldPathWoSlash,
-                     'new_path': newPathWoSlash];
-        moveStudyProcessor.process(input)
-        assertPathsExisting(newPathWoSlash, oldPathWoSlash)
-
         def newPath = "\\Test Studies Move Test\\Test Study With Slash\\"
-        input = ['old_path': newPathWoSlash,
-                 'new_path': newPath];
-        moveStudyProcessor.process(input)
-        assertPathsExisting(newPath, newPathWoSlash)
 
-        input = ['old_path': newPath,
-                 'new_path': newPathWoSlash];
-        moveStudyProcessor.process(input)
-        assertPathsExisting(newPathWoSlash, newPath)
+        moveStudy(oldPathWoSlash, newPathWoSlash)
+        assertMovement(oldPathWoSlash, newPathWoSlash)
+
+        moveStudy(newPathWoSlash, newPath)
+        assertMovement(newPathWoSlash, newPath)
+
+        moveStudy(newPath, newPathWoSlash)
+        assertMovement(newPath, newPathWoSlash)
 
         removeStudy(newPathWoSlash)
     }
@@ -149,7 +135,7 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
         def input = ['old_path': oldPath,
                      'new_path': path1];
         moveStudyProcessor.process(input)
-        assertPathsExisting(path1, oldPath)
+        assertMovement(oldPath, path1)
 
         def path2 = "\\Test Studies Move Test\\A\\B\\Another Test Study"
         clinicalDataProcessor.process(
@@ -161,16 +147,16 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
                  'new_path': path3];
         moveStudyProcessor.process(input)
 
-        assertPathsExisting(path3, path2)
-        assertPathsExisting(path1, path2)
+        assertMovement(path2, path3)
+        assertMovement(path2, path1)
 
         def path4 = "\\Test Studies Move Test\\A\\C\\Test Study"
         input = ['old_path': path1,
                  'new_path': path4];
         moveStudyProcessor.process(input)
 
-        assertPathsExisting(path3, path1)
-        assertPathsExisting(path4, path1)
+        assertMovement(path1, path3)
+        assertMovement(path1, path4)
 
         removeStudy(path3)
         removeStudy(path4)
@@ -184,8 +170,8 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
                             'i2b2metadata.i2b2_secure' : 'c_fullname', 'i2b2demodata.concept_counts': 'parent_concept_path']
 
 
-        checkPaths(tablesToAttr, 'New root node was not added to ', newRootNode, 1);
-        checkPaths(tablesToAttr, 'Old root node was not updated in ', oldRootNode, 0);
+        checkPaths(tablesToAttr, "New root node (${newRootNode}) was not added to ", newRootNode, 1);
+        checkPaths(tablesToAttr, "Old root node (${oldRootNode}) was not updated in ", oldRootNode, 0);
     }
 
     def assertNewLevelIsAdded(String newPath) {
@@ -208,14 +194,15 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
 
     }
 
-    private void assertPathsExisting(String newPath, String oldPath) {
+    private void assertMovement(String oldPath, String newPath) {
         def tablesToAttr = ['i2b2metadata.i2b2'             : 'c_fullname',
-                            'i2b2demodata.concept_dimension': 'concept_path', 'i2b2demodata.concept_counts': 'concept_path']
+                            'i2b2demodata.concept_dimension': 'concept_path',
+                            'i2b2demodata.concept_counts': 'concept_path']
 
         checkPaths(tablesToAttr, 'New paths were not added to ', newPath, 1);
         checkChildNodes(tablesToAttr, 'Child nodes was not added to ', newPath)
         if (oldPath != null) {
-            checkPaths(tablesToAttr, 'Old paths were not updated in ', oldPath, 0);
+            checkPaths(tablesToAttr, "Old path (${oldPath}) were not updated in ", oldPath, 0);
         }
     }
 
@@ -238,9 +225,13 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
         }
     }
 
+    private void moveStudy(oldPath, newPath) {
+        removeStudy(newPath)
+        moveStudyProcessor.process(old_path: oldPath, new_path: newPath)
+    }
+
     private void removeStudy(pathToRemove) {
         def input = ['id': null, 'path': pathToRemove];
         processorDelete.process(input);
     }
-
 }
