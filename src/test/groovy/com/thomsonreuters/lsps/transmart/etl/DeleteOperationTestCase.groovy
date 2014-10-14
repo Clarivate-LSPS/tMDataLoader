@@ -66,7 +66,7 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
 
     }
 
-    void assertThatDataDeletedFromDeVariantSubSum(inpData){
+    void assertThatDataDeletedFromDeVariantSubSum(inpData) {
         String trialId = inpData['id'].toString();
         def sample = sql.firstRow('select VARIANT_SUBJECT_SUMMARY_ID from deapp.de_variant_subject_summary where assay_id in (\n' +
                 'select assay_id\n' +
@@ -76,29 +76,27 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
         assertThat(sample, IsNull.nullValue())
     }
 
-    void assertThatTopNodeDelete(String pathTopNode, isDelete){
+    void assertThatTopNodeDelete(String pathTopNode, isDelete) {
         Integer i2b2CountExpect = (isDelete ? 0 : 1);
         def i2b2Count = sql.firstRow('select count(*) from i2b2metadata.i2b2 where c_fullname = ?', pathTopNode)
-        assertEquals(i2b2Count[0] as Integer, i2b2CountExpect)
+        assertEquals(i2b2CountExpect, i2b2Count[0] as Integer)
 
         def i2b2SecureCount = sql.firstRow('select count(*) from i2b2metadata.i2b2_secure where c_fullname = ?', pathTopNode)
-        assertEquals(i2b2SecureCount[0] as Integer, i2b2CountExpect)
+        assertEquals(i2b2CountExpect, i2b2SecureCount[0] as Integer)
 
         def tableAccessCount = sql.firstRow('select count(*) from i2b2metadata.table_access where c_fullname = ?', pathTopNode)
-        assertEquals(tableAccessCount[0] as Integer, i2b2CountExpect)
+        assertEquals(i2b2CountExpect, tableAccessCount[0] as Integer)
     }
 
-    void assertThatSubTopNodeDelete(String pathTopNode, isDelete){
+    void assertThatSubTopNodeDelete(String pathTopNode, isDelete) {
         Integer i2b2CountExpect = (isDelete ? 0 : 1);
         def i2b2Count = sql.firstRow('select count(*) from i2b2metadata.i2b2 where c_fullname = ?', pathTopNode)
-        assertEquals(i2b2Count[0] as Integer, i2b2CountExpect)
+        assertEquals(i2b2CountExpect, i2b2Count[0] as Integer)
 
-        def i2b2SecureCount = sql.firstRow('select count(*) from i2b2metadata.i2b2_secure where c_fullname = ?', pathTopNode)
-        assertEquals(i2b2SecureCount[0] as Integer, i2b2CountExpect)
-        Integer index =pathTopNode.indexOf('\\');
-        pathTopNode=pathTopNode.substring(index, pathTopNode.indexOf('\\', index+1)+1);
+        Integer index = pathTopNode.indexOf('\\');
+        pathTopNode = pathTopNode.substring(index, pathTopNode.indexOf('\\', index + 1) + 1);
         def tableAccessCount = sql.firstRow('select count(*) from i2b2metadata.table_access where c_fullname = ?', pathTopNode)
-        assertEquals(tableAccessCount[0] as Integer, i2b2CountExpect)
+        assertEquals(i2b2CountExpect, tableAccessCount[0] as Integer)
     }
     /**
      * Remove data by Id and don't understand full path to study.
@@ -111,7 +109,7 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
         assertThat(sql, hasNode(studyPath))
         processorDelete.process('id': studyId, 'path': null);
 
-        def testData = ['id'  : studyId, 'path': studyPath];
+        def testData = ['id': studyId, 'path': studyPath];
         assertThatDataDeleted(testData, true);
     }
 
@@ -124,20 +122,21 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
         assertThat(sql, hasSample(studyId, 'TST1000000719'))
         assertThat(sql, hasNode(studyPath))
         processorDelete.process(id: null, path: studyPath)
-        def testData = ['id'  : studyId, 'path': studyPath]
+        def testData = ['id': studyId, 'path': studyPath]
         assertThatDataDeleted(testData, true);
     }
 
     /*
      * Check slash in the end of path name to remove
      */
+
     void testDeleteDataByNameWOSlash() {
         expressionDataProcessor.process(
                 new File("fixtures/Test Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
         assertThat(sql, hasSample(studyId, 'TST1000000719'))
         def inpData = ['id'  : null,
-                'path': "\\Test Studies\\${studyName}"];
+                       'path': "\\Test Studies\\${studyName}"];
         processorDelete.process(inpData);
 
         def testData = [
@@ -146,7 +145,6 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
 
         assertThatDataDeleted(testData, true);
     }
-
 
     /**
      * Remove data by trial Id and full path study.
@@ -166,52 +164,51 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
         assertThatDataDeleted(testData, true);
     }
 
-    void testIdDeleteTopNode(){
+    void testItDeleteTopNode() {
         expressionDataProcessor.process(
                 new File("fixtures/Test Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
-                [name: studyName, node: "Test Studies\\${studyName}".toString()])
+                [name: studyName, node: "Delete Operation Test\\${studyName}".toString()])
         assertThat(sql, hasSample(studyId, 'TST1000000719'))
         def inpData = ['id'  : studyId,
-                'path': "\\Test Studies\\${studyName}\\"];
+                       'path': "\\Delete Operation Test\\${studyName}\\"];
         processorDelete.process(inpData);
 
-        assertThatTopNodeDelete("\\Test Studies\\", true)
+        assertThatTopNodeDelete("\\Delete Operation Test\\", true)
     }
 
-    void testItNotDeleteTopNode(){
+    void testItNotDeleteTopNode() {
         expressionDataProcessor.process(
                 new File("fixtures/Test Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
-                [name: studyName, node: "Test Studies\\${studyName}_1".toString()])
+                [name: studyName, node: "Delete Operation Test\\${studyName}_1".toString()])
         expressionDataProcessor.process(
                 new File("fixtures/Test Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
-                [name: studyName, node: "Test Studies\\${studyName}_2".toString()])
+                [name: studyName, node: "Delete Operation Test\\${studyName}_2".toString()])
         assertThat(sql, hasSample(studyId, 'TST1000000719'))
         def inpData = ['id'  : studyId,
-                'path': "\\Test Studies\\${studyName}_2\\"];
+                       'path': "\\Delete Operation Test\\${studyName}_2\\"];
         processorDelete.process(inpData);
 
-        assertThatTopNodeDelete("\\Test Studies\\", false)
+        assertThatTopNodeDelete("\\Delete Operation Test\\", false)
 
-        inpData = ['id'  : studyId,
-                'path': "\\Test Studies\\${studyName}_1\\"];
+        inpData = ['id': studyId, 'path': "\\Delete Operation Test\\${studyName}_1\\"];
         processorDelete.process(inpData);
-        assertThatTopNodeDelete("\\Test Studies\\", true)
+        assertThatTopNodeDelete("\\Delete Operation Test\\", true)
 
     }
 
-    void testItDeleteSNPData(){
+    void testItDeleteSNPData() {
         processorLoadSNP.process(
                 new File("fixtures/Test Studies/${studyNameSNP}_${studyId}/SNPDataToUpload"),
                 [name: studyName, node: "\\Test Studies\\${studyNameSNP}".toString()])
         def inpData = ['id'  : studyId,
-                'path': "\\Test Studies\\${studyNameSNP}\\SNP\\"];
+                       'path': "\\Test Studies\\${studyNameSNP}\\SNP\\"];
         processorDelete.process(inpData);
 
 
         assertThatTopNodeDelete("\\Test Studies\\Test Studies_1\\", true);
     }
 
-    void testItDeleteSubNode(){
+    void testItDeleteSubNode() {
         expressionDataProcessor.process(
                 new File("fixtures/Test Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
@@ -220,72 +217,67 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
 
         def inpData = ['id'  : studyId,
-                'path': "\\Test Studies\\${studyName}\\SNP\\"];
+                       'path': "\\Test Studies\\${studyName}\\SNP\\"];
         processorDelete.process(inpData);
 
         assertThatTopNodeDelete("\\Test Studies\\", false);
     }
 
-    void testItDeleteClinicalData(){
-        String conceptPath = "\\Test Studies\\${studyNameClinical}\\"
+    void testItDeleteClinicalData() {
+        String conceptPath = "\\Delete Operation Test\\${studyNameClinical}\\"
         String conceptPathForPatient = conceptPath + "Biomarker Data\\Mutations\\TST001 (Entrez ID: 1956)\\AA mutation\\"
 
         processorLoadClinical.process(
                 new File("fixtures/Test Studies/${studyNameClinical}_${studyId}/ClinicalDataToUpload"),
-                [name: studyNameClinical, node: "\\Test Studies\\${studyNameClinical}\\".toString()])
+                [name: studyNameClinical, node: "\\Delete Operation Test\\${studyNameClinical}\\".toString()])
 
         def inpData = ['id'  : null,
-                'path': "\\Test Studies\\${studyNameClinical}\\"];
+                       'path': "\\Delete Operation Test\\${studyNameClinical}\\"];
         processorDelete.process(inpData);
 
-        assertThatTopNodeDelete("\\Test Studies\\", true);
+        assertThatTopNodeDelete("\\Delete Operation Test\\", true);
     }
 
-    void testItDeleteSubNodeClinicalData(){
-        String conceptPath = "\\Test Studies\\${studyNameClinical}\\"
-        String conceptPathForPatient = conceptPath + "Biomarker Data\\Mutations\\TST001 (Entrez ID: 1956)\\AA mutation\\"
-
+    void testItDeleteSubNodeClinicalData() {
         processorLoadClinical.process(
                 new File("fixtures/Test Studies/${studyNameClinical}_${studyId}/ClinicalDataToUpload"),
                 [name: studyNameClinical, node: "Test Studies\\${studyNameClinical}".toString()])
 
         def inpData = ['id'  : null,
-                'path': "\\Test Studies\\${studyNameClinical}\\Biomarker Data\\Mutations\\TST001 (Entrez ID: 1956)\\AA mutation\\T790M\\"];
+                       'path': "\\Test Studies\\${studyNameClinical}\\Biomarker Data\\Mutations\\TST001 (Entrez ID: 1956)\\AA mutation\\T790M\\"];
         processorDelete.process(inpData);
 
         assertThatTopNodeDelete("\\Test Studies\\", false);
     }
 
-    void testItDeleteVCFData(){
+    void testItDeleteVCFData() {
         assertTrue(dataProcessor.process(Fixtures.vcfData, [name: studyName, node: $/Test Studies\${studyName}_VCF/$]))
 
         def inpData = ['id'  : 'GSE0',
-                'path': "\\Test Studies\\${studyName}_VCF\\"];
+                       'path': "\\Test Studies\\${studyName}_VCF\\"];
         processorDelete.process(inpData);
 
         assertThatDataDeleted(inpData, true)
         assertThatDataDeletedFromDeVariantSubSum(inpData)
     }
 
-    void testItDeleteTopEmptyNode()
-    {
+    void testItDeleteTopEmptyNode() {
         expressionDataProcessor.process(
                 new File("fixtures/Test Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
-                [name: studyName, node: "Test Studies\\Test Study\\${studyName}_1".toString()])
+                [name: studyName, node: "Delete Operation Test\\Test Study\\${studyName}_1".toString()])
         expressionDataProcessor.process(
                 new File("fixtures/Test Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
-                [name: studyName, node: "Test Studies\\Test Study\\${studyName}_2".toString()])
+                [name: studyName, node: "Delete Operation Test\\Test Study\\${studyName}_2".toString()])
         assertThat(sql, hasSample(studyId, 'TST1000000719'))
-        def inpData = ['id'  : studyId,
-                'path': "\\Test Studies\\Test Study\\${studyName}_2\\"];
+
+        def inpData = [id: studyId, path: "\\Delete Operation Test\\Test Study\\${studyName}_2\\"];
         processorDelete.process(inpData);
 
-        assertThatSubTopNodeDelete("\\Test Studies\\Test Study\\",false)
+        assertThatSubTopNodeDelete("\\Delete Operation Test\\Test Study\\", false)
 
-        inpData = ['id'  : studyId,
-                'path': "\\Test Studies\\Test Study\\${studyName}_1\\"];
+        inpData = [id: studyId, path: "\\Delete Operation Test\\Test Study\\${studyName}_1\\"];
         processorDelete.process(inpData);
-        assertThatSubTopNodeDelete("\\Test Studies\\Test Study\\", true)
-        assertThatTopNodeDelete("\\Test Studies\\", true)
+        assertThatSubTopNodeDelete("\\Delete Operation Test\\Test Study\\", true)
+        assertThatTopNodeDelete("\\Delete Operation Test\\", true)
     }
 }
