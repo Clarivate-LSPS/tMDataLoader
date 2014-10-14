@@ -72,11 +72,11 @@ NEW! Starting with version 0.8, nested folders are supported - see below.
 				MetaData
 				SNPData
 				MetabolomicsData
-                MIRNA_QPCRData
-                MIRNA_SEQData
-                ProteinData
-                RBMData
-                RNASeqData
+        MIRNA_QPCRData
+        MIRNA_SEQData
+        ProteinData
+        RBMData
+        RNASeqData
 			Multiple Sclerosis_Goertsches_GSE24427
 				ClinicalDataToUpload <-- both ClinicalData and ClinicalDataToUpload are fine
 				ExpressionDataToUpload <-- same for this one
@@ -96,11 +96,11 @@ NEW! Starting with version 0.8, nested folders are supported - see below.
 					MetaData
 					SNPData
 					MetabolomicsData
-                    MIRNA_QPCRData
-                    MIRNA_SEQData
-                    ProteinData
-                    RBMData
-                    RNASeqData
+          MIRNA_QPCRData
+          MIRNA_SEQData
+          ProteinData
+          RBMData
+          RNASeqData
 		_MetaData <-- you can put metadata here if it contains metadata for several studies. Each .txt file will be processed.
 			
 Basically, the first level of the directory defines the top category in the Dataset Explorer tree.
