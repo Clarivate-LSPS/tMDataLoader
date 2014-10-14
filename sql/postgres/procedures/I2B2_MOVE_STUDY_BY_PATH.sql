@@ -60,13 +60,13 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
       select cz_start_audit (procedureName, databaseName) into jobID;
     END IF;
 
-    stepCt := 0;
-    stepCt := stepCt + 1;
-    tText := 'Start i2b2_move_study_by_path from ' || old_path || ' to ' || new_path;
-    select cz_write_audit(jobId,databaseName,procedureName,tText,0,stepCt,'Done') into rtnCd;
-
     old_path := trim(old_path_in);
     new_path := trim(new_path_in);
+
+    stepCt := 0;
+    stepCt := stepCt + 1;
+    tText := 'Start i2b2_move_study_by_path from ' || coalesce(old_path, '<NULL>') || ' to ' || coalesce(new_path, '<NULL>');
+    select cz_write_audit(jobId,databaseName,procedureName,tText,0,stepCt,'Done') into rtnCd;
 
     IF old_path = null or new_path = null
       or old_path = '' or new_path = ''
@@ -136,7 +136,7 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
     IF rowsExists > 0 and substringPos = 0
     THEN
       stepCt := stepCt + 1;
-      select cz_write_audit(jobId,databaseName,procedureName,'Please select new study target path',0,stepCt,'Done') into rtnCd;
+      select cz_write_audit(jobId,databaseName,procedureName,'Study target path is already exists',0,stepCt,'Done') into rtnCd;
       select cz_error_handler (jobID, procedureName, '-1', 'Application raised error') into rtnCd;
       select cz_end_audit (jobID, 'FAIL') into rtnCd;
       return -16;
