@@ -30,6 +30,7 @@ $$;
 \i procedures/I2B2_METABOLOMICS_ZSCORE_CALC.sql
 \i procedures/I2B2_PROCESS_METABOLOMIC_DATA.sql
 \i procedures/I2B2_PROCESS_QPCR_MIRNA_DATA.sql
+\i procedures/I2B2_LOAD_MIRNA_ANNOT_DEAPP.sql
 \i procedures/I2B2_PROCESS_RNA_SEQ_DATA.sql
 \i procedures/I2B2_LOAD_RBM_DATA.sql
 \i procedures/I2B2_LOAD_RBM_ANNOTATION.sql
