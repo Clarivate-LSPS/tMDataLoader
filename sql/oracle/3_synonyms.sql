@@ -4,7 +4,7 @@ define TM_LZ_SCHEMA=TM_LZ;
 define TM_WZ_SCHEMA=TM_WZ;
 
 create or replace synonym "&TM_CZ_SCHEMA".lt_src_deapp_annot for "&TM_LZ_SCHEMA".lt_src_deapp_annot;
-create or replace synonym "&TM_CZ_SCHEMA".lz_src_clinical_data for "&TM_LZ_SCHEMA".lz_src_clinical_data;
+create or replace synonym "&TM_CZ_SCHEMA".lt_src_clinical_data for "&TM_LZ_SCHEMA".lt_src_clinical_data;
 create or replace synonym "&TM_CZ_SCHEMA".lt_src_study_metadata for "&TM_LZ_SCHEMA".lt_src_study_metadata;
 create or replace synonym "&TM_CZ_SCHEMA".lt_src_mrna_subj_samp_map for "&TM_LZ_SCHEMA".lt_src_mrna_subj_samp_map;
 create or replace synonym "&TM_CZ_SCHEMA".lt_snp_copy_number for "&TM_LZ_SCHEMA".lt_snp_copy_number;
