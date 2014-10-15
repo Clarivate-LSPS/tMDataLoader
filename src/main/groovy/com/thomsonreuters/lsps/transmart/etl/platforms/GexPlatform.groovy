@@ -13,7 +13,7 @@ class GexPlatform extends GenePlatform {
 
     @Override
     public void cleanupTempTables(Sql sql) {
-        sql.execute("TRUNCATE TABLE lt_src_deapp_annot" as String)
+        sql.execute("DELETE FROM lt_src_deapp_annot" as String)
     }
 
     @Override
