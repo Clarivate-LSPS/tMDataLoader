@@ -33,8 +33,8 @@ class ExpressionDataProcessor extends DataProcessor {
 
     @Override
     public boolean processFiles(File dir, Sql sql, Object studyInfo) {
-        sql.execute("TRUNCATE TABLE lt_src_mrna_subj_samp_map" as String)
-        sql.execute("TRUNCATE TABLE lt_src_mrna_data" as String)
+        sql.execute("DELETE FROM lt_src_mrna_subj_samp_map" as String)
+        sql.execute("DELETE FROM lt_src_mrna_data" as String)
 
         def platformList = [] as Set
 

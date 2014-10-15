@@ -32,11 +32,11 @@ class SNPDataProcessor extends DataProcessor {
 
     @Override
     public boolean processFiles(File dir, Sql sql, Object studyInfo) {
-        sql.execute("TRUNCATE TABLE lt_src_mrna_subj_samp_map" as String)
-        sql.execute("TRUNCATE TABLE lt_src_mrna_data" as String)
+        sql.execute("DELETE FROM lt_src_mrna_subj_samp_map" as String)
+        sql.execute("DELETE FROM lt_src_mrna_data" as String)
 
-        sql.execute("TRUNCATE TABLE lt_snp_calls_by_gsm" as String)
-        sql.execute("TRUNCATE TABLE lt_snp_copy_number" as String)
+        sql.execute("DELETE FROM lt_snp_calls_by_gsm" as String)
+        sql.execute("DELETE FROM lt_snp_copy_number" as String)
 
         def platformList = [] as Set
 
@@ -201,7 +201,7 @@ class SNPDataProcessor extends DataProcessor {
 
     private void loadSNPGeneMap(Sql sql, File platformFile) {
         config.logger.log('Loading SNP Gene Map')
-        sql.execute("truncate table lt_snp_gene_map" as String)
+        sql.execute("delete from lt_snp_gene_map" as String)
         config.logger.log('Processing platform file')
         sql.withBatch(500, "insert into lt_snp_gene_map (snp_name, entrez_gene_id) values (?, ?)") { st ->
             PlatformProcessor.eachPlatformEntry(platformFile, config.logger) { entry ->

@@ -74,3 +74,9 @@ grant alter any index to "&TM_CZ_SCHEMA";
 grant select on i2b2metadata.i2b2_id_seq to "&TM_CZ_SCHEMA";
 grant select on i2b2demodata.concept_id to "&TM_CZ_SCHEMA";
 grant select on i2b2demodata.seq_patient_num to "&TM_CZ_SCHEMA";
+
+grant execute on tm_cz.i2b2_load_clinical_data to "&TM_CZ_SCHEMA";
+grant execute on tm_cz.i2b2_create_full_tree to "&TM_CZ_SCHEMA";
+grant execute on tm_cz.i2b2_create_concept_counts to "&TM_CZ_SCHEMA";
+
+grant analyze any to "&TM_CZ_SCHEMA";
