@@ -13,6 +13,11 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
     private ClinicalDataProcessor _processorLoadClinical
     private DeleteDataProcessor _processorDelete
     private VCFDataProcessor _processorLoadVCF
+    private ProteinDataProcessor _processorLoadProtein
+    private MIRNADataProcessor _processorLoadMIRNA
+    private MetabolomicsDataProcessor _processorLoadMetabolomics
+    private RBMDataProcessor _processorLoadRBM
+    private RNASeqDataProcessor _processorLoadRNASeq
 
     VCFDataProcessor getDataProcessor() {
         _processorLoadVCF ?: (_processorLoadVCF = new VCFDataProcessor(config))
@@ -32,6 +37,26 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
 
     ClinicalDataProcessor getProcessorLoadClinical() {
         _processorLoadClinical ?: (_processorLoadClinical = new ClinicalDataProcessor(config))
+    }
+
+    ProteinDataProcessor getProteinDataProcessor() {
+        _processorLoadProtein ?: (_processorLoadProtein = new ProteinDataProcessor(config))
+    }
+
+    MIRNADataProcessor getMirnaDataProcessor() {
+        _processorLoadMIRNA ?: (_processorLoadMIRNA = new MIRNADataProcessor(config))
+    }
+
+    MetabolomicsDataProcessor getMetabolomicsDataProcessor() {
+        _processorLoadMetabolomics ?: (_processorLoadMetabolomics = new MetabolomicsDataProcessor(config))
+    }
+
+    RBMDataProcessor getRBMDataProcessor() {
+        _processorLoadRBM ?: (_processorLoadRBM = new RBMDataProcessor(config))
+    }
+
+    RNASeqDataProcessor getRNASeqProcessor() {
+        _processorLoadRNASeq ?: (_processorLoadRNASeq = new RNASeqDataProcessor(config))
     }
 
     @Override
@@ -97,6 +122,11 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
         pathTopNode = pathTopNode.substring(index, pathTopNode.indexOf('\\', index + 1) + 1);
         def tableAccessCount = sql.firstRow('select count(*) from i2b2metadata.table_access where c_fullname = ?', pathTopNode)
         assertEquals(i2b2CountExpect, tableAccessCount[0] as Integer)
+    }
+
+    void assertRecordsWasDeleted(tableName, trialId) {
+        def count = sql.firstRow('select count(*) from ' + tableName + ' where trial_name = ?', trialId)
+        assertEquals(0, count[0] as Integer)
     }
     /**
      * Remove data by Id and don't understand full path to study.
@@ -279,5 +309,100 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
         processorDelete.process(inpData);
         assertThatSubTopNodeDelete("\\Delete Operation Test\\Test Study\\", true)
         assertThatTopNodeDelete("\\Delete Operation Test\\", true)
+    }
+
+    void testItDeletesProteinData() {
+        def proteinStudyName = 'Test Protein Study'
+        def proteinStudyId = 'GSE37425'
+
+        proteinDataProcessor.process(
+                new File("fixtures/Test Studies/${proteinStudyName}/ProteinDataToUpload"),
+                [name: proteinStudyName, node: "Test Studies\\${proteinStudyName}".toString()])
+
+        def inpData = ['id'  : proteinStudyId,
+                       'path': "\\Test Studies\\${proteinStudyName}\\"];
+        processorDelete.process(inpData);
+
+        assertThatTopNodeDelete("\\Test Studies\\${proteinStudyName}\\", true);
+        assertRecordsWasDeleted('deapp.de_subject_protein_data', proteinStudyId);
+    }
+
+    void testItDeletesMIRNAData() {
+        def mirnaStudyName = 'Test MirnaQpcr Study'
+        def mirnaStudyId = 'TEST005'
+        def mirnaType = 'MIRNA_QPCR'
+
+        mirnaDataProcessor.process(
+                new File("fixtures/Test Studies/${mirnaStudyName}/MIRNA_QPCRDataToUpload"),
+                [name: mirnaStudyName, node: "Test Studies\\${mirnaStudyName}".toString(), base_datatype: mirnaType])
+
+        def inpData = ['id'  : mirnaStudyId,
+                       'path': "\\Test Studies\\${mirnaStudyName}\\"];
+        processorDelete.process(inpData);
+
+        assertThatTopNodeDelete("\\Test Studies\\${mirnaStudyName}\\", true);
+        assertRecordsWasDeleted('deapp.de_subject_mirna_data', mirnaStudyId);
+
+        mirnaStudyName = 'Test MirnaSeq Study'
+        mirnaStudyId = 'MIRNASEQBASED'
+        mirnaType = 'MIRNA_SEQ'
+
+        mirnaDataProcessor.process(
+                new File("fixtures/Test Studies/${mirnaStudyName}/MIRNA_SEQDataToUpload"),
+                [name: mirnaStudyName, node: "Test Studies\\${mirnaStudyName}".toString(), base_datatype: mirnaType])
+        inpData = ['id'  : mirnaStudyId,
+                   'path': "\\Test Studies\\${mirnaStudyName}\\"];
+        processorDelete.process(inpData);
+
+        assertThatTopNodeDelete("\\Test Studies\\${mirnaStudyName}\\", true);
+        assertRecordsWasDeleted('deapp.de_subject_mirna_data', mirnaStudyId);
+    }
+
+    void testItDeletesMetabolomicsData() {
+        def metStudyName = 'Test Metabolomics Study'
+        def metStudyId = 'GSE37427'
+
+        metabolomicsDataProcessor.process(
+                new File("fixtures/Test Studies/${metStudyName}/MetabolomicsDataToUpload"),
+                [name: metStudyName, node: "Test Studies\\${metStudyName}".toString()])
+
+        def inpData = ['id'  : metStudyId,
+                   'path': "\\Test Studies\\${metStudyName}\\"];
+        processorDelete.process(inpData);
+
+        assertThatTopNodeDelete("\\Test Studies\\${metStudyName}\\", true);
+        assertRecordsWasDeleted('deapp.de_subject_metabolomics_data', metStudyId);
+    }
+
+    void testItDeletesRBMData() {
+        def rbmStudyName = 'Test RBM Study'
+        def rbmStudyId = 'TESTRBM'
+
+        RBMDataProcessor.process(
+                new File("fixtures/Test Studies/${rbmStudyName}/RBMDataToUpload"),
+                [name: rbmStudyName, node: "Test Studies\\${rbmStudyName}".toString()])
+
+        def inpData = ['id'  : rbmStudyId,
+                       'path': "\\Test Studies\\${rbmStudyName}\\"];
+        processorDelete.process(inpData);
+
+        assertThatTopNodeDelete("\\Test Studies\\${rbmStudyName}\\", true);
+        assertRecordsWasDeleted('deapp.de_subject_rbm_data', rbmStudyId);
+    }
+
+    void testItDeletesRNASeqData() {
+        def rnaStudyName = 'Test RNASeq Study'
+        def rnaStudyId = 'GSE_A_37424'
+
+        RNASeqProcessor.process(
+                new File("fixtures/Test Studies/${rnaStudyName}/RNASeqDataToUpload"),
+                [name: rnaStudyName, node: "Test Studies\\${rnaStudyName}".toString()])
+
+        def inpData = ['id'  : rnaStudyId,
+                       'path': "\\Test Studies\\${rnaStudyName}\\"];
+        processorDelete.process(inpData);
+
+        assertThatTopNodeDelete("\\Test Studies\\${rnaStudyName}\\", true);
+        assertRecordsWasDeleted('deapp.de_subject_rna_data', rnaStudyId);
     }
 }

@@ -215,27 +215,8 @@ BEGIN
 		select cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from deapp de_subject_microarray_data',rowCt,stepCt,'Done') into rtnCd;
 		/*commit;*/
 
-		delete from deapp.de_subject_sample_mapping where
-		  assay_id in (
-			select dssm.assay_id from
-			  lt_src_mrna_subj_samp_map ltssm
-			  left join
-			  deapp.de_subject_sample_mapping dssm
-			  on
-			  dssm.trial_name     = ltssm.trial_name
-			  and dssm.gpl_id     = ltssm.platform
-			  and dssm.subject_id = ltssm.subject_id
-			  and dssm.sample_cd  = ltssm.sample_cd
-			where
-			  dssm.trial_name = trialID
-			  and coalesce(dssm.source_cd,'STD') = sourceCd);
-
-		stepCt := stepCt + 1;
-		get diagnostics rowCt := ROW_COUNT;
-		select cz_write_audit(jobId,databaseName,procedureName,'Delete trial from DEAPP de_subject_sample_mapping',rowCt,stepCt,'Done') into rtnCd;
-
-		/*commit;*/
-
+		delete from deapp.de_subject_sample_mapping dssm
+    where dssm.trial_name = trialID and coalesce(dssm.source_cd,'STD') = sourceCd;
 
 		stepCt := stepCt + 1;
 		get diagnostics rowCt := ROW_COUNT;
@@ -257,6 +238,42 @@ BEGIN
 		get diagnostics rowCt := ROW_COUNT;
 		select cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from I2B2DEMODATA patient_trial',rowCt,stepCt,'Done') into rtnCd;
 		/*commit;*/
+
+		-- delete protein data
+    delete from deapp.de_subject_protein_data
+    where trial_name = trialId;
+    stepCt := stepCt + 1;
+		get diagnostics rowCt := ROW_COUNT;
+		select cz_write_audit(jobId,databaseName,procedureName,'Delete protein data for trial from DEAPP de_subject_protein_data',rowCt,stepCt,'Done') into rtnCd;
+
+		-- delete MIRNA data
+    delete from deapp.de_subject_mirna_data
+    where trial_name = trialId;
+    stepCt := stepCt + 1;
+		get diagnostics rowCt := ROW_COUNT;
+		select cz_write_audit(jobId,databaseName,procedureName,'Delete MIRNA data for trial from DEAPP de_subject_mirna_data',rowCt,stepCt,'Done') into rtnCd;
+
+		-- delete metabolomics data
+    delete from deapp.de_subject_metabolomics_data
+    where trial_name = trialId;
+    stepCt := stepCt + 1;
+		get diagnostics rowCt := ROW_COUNT;
+		select cz_write_audit(jobId,databaseName,procedureName,'Delete metabolomics data for trial from DEAPP de_subject_metabolomics_data',rowCt,stepCt,'Done') into rtnCd;
+
+		-- delete RBM data
+    delete from deapp.de_subject_rbm_data
+    where trial_name = trialId;
+    stepCt := stepCt + 1;
+		get diagnostics rowCt := ROW_COUNT;
+		select cz_write_audit(jobId,databaseName,procedureName,'Delete RBM data for trial from DEAPP de_subject_rbm_data',rowCt,stepCt,'Done') into rtnCd;
+
+		-- delete RBM data
+    delete from deapp.de_subject_rna_data
+    where trial_name = trialId;
+    stepCt := stepCt + 1;
+		get diagnostics rowCt := ROW_COUNT;
+		select cz_write_audit(jobId,databaseName,procedureName,'Delete RNASeq data for trial from DEAPP de_subject_rbm_data',rowCt,stepCt,'Done') into rtnCd;
+
 	end if;
 
 	/*Check and delete top node, if removed node is last*/
