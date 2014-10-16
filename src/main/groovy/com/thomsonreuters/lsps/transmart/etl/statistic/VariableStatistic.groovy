@@ -67,6 +67,10 @@ class VariableStatistic {
         return emptyValuesCount > 0
     }
 
+    boolean getHasRangeChecks() {
+        return rangeValidationRules != null && !rangeValidationRules.empty
+    }
+
     boolean getRequired() {
         return requiredRule != null
     }
