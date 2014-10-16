@@ -59,27 +59,34 @@ class ValidationRule {
         if (validationRule.toLowerCase().equals('required')) {
             return new ValidationRule(ValidationRuleType.Required, validationRule)
         }
-        ValueRange<String> valueRange
-        valueRangeFactory.each { pattern, creator ->
+        ValueRange<String> valueRange = null
+        for (def entry : valueRangeFactory.entrySet()) {
+            Pattern pattern = entry.key
+            Closure<ValueRange> creator = entry.value
             Matcher matcher = pattern.matcher(validationRule)
             if (matcher.find()) {
-                valueRange = creator(matcher)
+                try {
+                    valueRange = creator(matcher)
+                    break
+                } catch(Exception ignored) {
+                }
             }
         }
-        if (valueRange) {
-            //TODO: cast range to specific type
-            ValueRange<Double> targetRange = new ValueRange<Double>()
-            if (valueRange.from) {
-                targetRange.from = Double.parseDouble(valueRange.from)
-                targetRange.includeFrom = valueRange.includeFrom
-            }
-            if (valueRange.to) {
-                targetRange.to = Double.parseDouble(valueRange.to)
-                targetRange.includeTo = valueRange.includeTo
-            }
-            return new RangeValidationRule(validationRule, targetRange)
+        if (!valueRange) {
+            logger.log(LogType.WARNING, "Can't parse validation rule: '${validationRule}', ignored")
+            return null
         }
-        logger.log(LogType.WARNING, "Can't parse validation rule: '${validationRule}', ignored")
-        return null
+
+        //TODO: cast range to specific type
+        ValueRange<Double> targetRange = new ValueRange<Double>()
+        if (valueRange.from) {
+            targetRange.from = Double.parseDouble(valueRange.from)
+            targetRange.includeFrom = valueRange.includeFrom
+        }
+        if (valueRange.to) {
+            targetRange.to = Double.parseDouble(valueRange.to)
+            targetRange.includeTo = valueRange.includeTo
+        }
+        return new RangeValidationRule(validationRule, targetRange)
     }
 }

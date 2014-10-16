@@ -45,6 +45,7 @@ Declare
 	pExists			integer;
 	rtnCode			integer;
 	tText			varchar(2000);
+	recreateIndexes boolean;
 
 	addNodes CURSOR is
 	select DISTINCT leaf_node, node_name
@@ -1079,48 +1080,26 @@ BEGIN
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Delete clinical data for study from observation_fact',rowCt,stepCt,'Done') into rtnCd;
 
-	DROP INDEX IF EXISTS fact_modifier_patient;
-	DROP INDEX IF EXISTS idx_ob_fact_2;
-	DROP INDEX IF EXISTS idx_ob_fact_1;
-	stepCt := stepCt + 1;
-	select cz_write_audit(jobId,databaseName,procedureName,'Drop observation facts indexes',0,stepCt,'Done') into rtnCd;
-
-	--Insert into observation_fact
 	begin
-	insert into i2b2demodata.observation_fact
-	(encounter_num,
-     patient_num,
-     concept_cd,
-     start_date,
-     modifier_cd,
-     valtype_cd,
-     tval_char,
-     nval_num,
-     sourcesystem_cd,
-     import_date,
-     valueflag_cd,
-     provider_id,
-     location_cd,
-     instance_num
-	)
-	select distinct c.patient_num,
-		   c.patient_num,
-		   i.c_basecode,
-		   current_timestamp,
-		   a.study_id,
-		   a.data_type,
-		   case when a.data_type = 'T' then a.data_value
+	create temporary table tmp_observation_facts without oids as
+	select distinct c.patient_num as encounter_num,
+		  c.patient_num,
+		  i.c_basecode,
+		  current_timestamp as start_date,
+		  a.study_id,
+		  a.data_type,
+		  case when a.data_type = 'T' then a.data_value
 				else 'E'  --Stands for Equals for numeric types
-				end,
-		   case when a.data_type = 'N' then a.data_value::numeric
+				end as tval_char,
+		  case when a.data_type = 'N' then a.data_value::numeric
 				else null --Null for text types
-				end,
-		   a.study_id,
-		   current_timestamp,
-		   '@',
-		   '@',
-		   '@',
-                   0
+				end as nval_num,
+		  a.study_id as sourcesystem_cd,
+		  current_timestamp as import_date,
+		  '@' as valueflag_cd,
+		  '@' as provider_cd,
+		  '@' as location_cd,
+			0 as instance_num
 	from wrk_clinical_data a
 		,i2b2demodata.patient_dimension c
 		,wt_trial_nodes t
@@ -1143,6 +1122,53 @@ BEGIN
 			where (SUBSTR(x.leaf_node, 1, INSTR(x.leaf_node, '\', -2))) = t.leaf_node
 		)
 	  and a.data_value is not null AND NOT (a.data_type = 'N' AND a.data_value = '');
+	get diagnostics rowCt := ROW_COUNT;
+	stepCt := stepCt + 1;
+	select cz_write_audit(jobId,databaseName,procedureName,'Collect observation facts',rowCt,stepCt,'Done') into rtnCd;
+
+	exception
+	when others then
+		errorNumber := SQLSTATE;
+		errorMessage := SQLERRM;
+		--Handle errors.
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		--End Proc
+		select cz_end_audit (jobID, 'FAIL') into rtnCd;
+		return -16;
+	end;
+
+	recreateIndexes := TRUE;
+	if rowCt < 200 then
+		recreateIndexes := FALSE;
+	end if;
+
+	if recreateIndexes = TRUE then
+		DROP INDEX IF EXISTS fact_modifier_patient;
+		DROP INDEX IF EXISTS idx_ob_fact_2;
+		DROP INDEX IF EXISTS idx_ob_fact_1;
+		stepCt := stepCt + 1;
+		select cz_write_audit(jobId,databaseName,procedureName,'Drop observation facts indexes',0,stepCt,'Done') into rtnCd;
+	end if;
+
+	--Insert into observation_fact
+	begin
+	insert into i2b2demodata.observation_fact
+	(encounter_num,
+     patient_num,
+     concept_cd,
+     start_date,
+     modifier_cd,
+     valtype_cd,
+     tval_char,
+     nval_num,
+     sourcesystem_cd,
+     import_date,
+     valueflag_cd,
+     provider_id,
+     location_cd,
+     instance_num
+	)
+	select * from tmp_observation_facts;
 
 	get diagnostics rowCt := ROW_COUNT;
 	exception
@@ -1164,32 +1190,33 @@ BEGIN
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Create i2b2 full tree', 0, stepCt,'Done') into rtnCd;
 
-	CREATE INDEX fact_modifier_patient ON i2b2demodata.observation_fact(modifier_cd, patient_num) tablespace indx;
-	stepCt := stepCt + 1;
-	select cz_write_audit(jobId,databaseName,procedureName,'Create fact_modifier_patient index', 0, stepCt,'Done') into rtnCd;
+	if recreateIndexes = TRUE then
+		CREATE INDEX fact_modifier_patient ON i2b2demodata.observation_fact(modifier_cd, patient_num) tablespace indx;
+		stepCt := stepCt + 1;
+		select cz_write_audit(jobId,databaseName,procedureName,'Create fact_modifier_patient index', 0, stepCt,'Done') into rtnCd;
 
-	CREATE INDEX idx_ob_fact_2 ON observation_fact (concept_cd,patient_num,encounter_num) tablespace indx;
-	stepCt := stepCt + 1;
-	select cz_write_audit(jobId,databaseName,procedureName,'Create idx_ob_fact_2 index', 0, stepCt,'Done') into rtnCd;
+		CREATE INDEX idx_ob_fact_2 ON observation_fact (concept_cd,patient_num,encounter_num) tablespace indx;
+		stepCt := stepCt + 1;
+		select cz_write_audit(jobId,databaseName,procedureName,'Create idx_ob_fact_2 index', 0, stepCt,'Done') into rtnCd;
 
-	CREATE INDEX idx_ob_fact_1 ON observation_fact (concept_cd) tablespace indx;
-	stepCt := stepCt + 1;
-	select cz_write_audit(jobId,databaseName,procedureName,'Create idx_ob_fact_1 index', 0, stepCt,'Done') into rtnCd;
+		CREATE INDEX idx_ob_fact_1 ON observation_fact (concept_cd) tablespace indx;
+		stepCt := stepCt + 1;
+		select cz_write_audit(jobId,databaseName,procedureName,'Create idx_ob_fact_1 index', 0, stepCt,'Done') into rtnCd;
+	end if;
 
 
-   DELETE FROM i2b2_load_path_with_count;
+  DELETE FROM i2b2_load_path_with_count;
 
-   insert into i2b2_load_path_with_count
-   select p.c_fullname, count(*)
-				 from i2b2metadata.i2b2 p
-					--,i2b2metadata.i2b2 c
-					,I2B2_LOAD_TREE_FULL tree
-				 where p.c_fullname like topNode || '%' escape '`'
-				   --and c.c_fullname like p.c_fullname || '%'
-					and p.RECORD_ID = tree.IDROOT
-					--and c.rowid = tree.IDCHILD
-				 group by P.C_FULLNAME;
-
+  insert into i2b2_load_path_with_count
+  select p.c_fullname, count(*)
+	from i2b2metadata.i2b2 p
+		--,i2b2metadata.i2b2 c
+		,I2B2_LOAD_TREE_FULL tree
+	where p.c_fullname like topNode || '%' escape '`'
+		--and c.c_fullname like p.c_fullname || '%'
+		and p.RECORD_ID = tree.IDROOT
+		--and c.rowid = tree.IDCHILD
+		group by P.C_FULLNAME;
 
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Create i2b2 full tree counts', 0, stepCt,'Done') into rtnCd;
