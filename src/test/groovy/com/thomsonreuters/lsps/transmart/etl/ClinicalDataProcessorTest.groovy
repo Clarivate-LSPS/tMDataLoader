@@ -99,13 +99,13 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assessmentDate.notEmptyValuesCount == 9
         assessmentDate.emptyValuesCount == 0
         !assessmentDate.required
-        assessmentDate.missingValueIds == []
+        assessmentDate.missingValueIds == null
 
         def language = demo.variables.'Language'
         language.notEmptyValuesCount == 3
         language.emptyValuesCount == 6
         !language.required
-        language.missingValueIds == []
+        language.missingValueIds == null
     }
 
     void testItLoadsData() {
