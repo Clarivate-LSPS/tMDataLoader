@@ -240,39 +240,71 @@ BEGIN
 		/*commit;*/
 
 		-- delete protein data
-    delete from deapp.de_subject_protein_data
-    where trial_name = trialId;
-    stepCt := stepCt + 1;
-		get diagnostics rowCt := ROW_COUNT;
-		select cz_write_audit(jobId,databaseName,procedureName,'Delete protein data for trial from DEAPP de_subject_protein_data',rowCt,stepCt,'Done') into rtnCd;
+		begin
+      delete from deapp.de_subject_protein_data
+      where trial_name = trialId;
+
+      exception when undefined_table then
+         select cz_write_audit(jobId,databaseName,procedureName,'Table de_subject_protein_data is not defined.',0,stepCt,'Warning') into rtnCd;
+
+      stepCt := stepCt + 1;
+      get diagnostics rowCt := ROW_COUNT;
+      select cz_write_audit(jobId,databaseName,procedureName,'Delete protein data for trial from DEAPP de_subject_protein_data',rowCt,stepCt,'Done') into rtnCd;
+		end;
+
+
 
 		-- delete MIRNA data
-    delete from deapp.de_subject_mirna_data
-    where trial_name = trialId;
-    stepCt := stepCt + 1;
-		get diagnostics rowCt := ROW_COUNT;
-		select cz_write_audit(jobId,databaseName,procedureName,'Delete MIRNA data for trial from DEAPP de_subject_mirna_data',rowCt,stepCt,'Done') into rtnCd;
+		begin
+      delete from deapp.de_subject_mirna_data
+      where trial_name = trialId;
+
+      exception when undefined_table then
+         select cz_write_audit(jobId,databaseName,procedureName,'Table de_subject_mirna_data is not defined.',0,stepCt,'Warning') into rtnCd;
+
+      stepCt := stepCt + 1;
+      get diagnostics rowCt := ROW_COUNT;
+      select cz_write_audit(jobId,databaseName,procedureName,'Delete MIRNA data for trial from DEAPP de_subject_mirna_data',rowCt,stepCt,'Done') into rtnCd;
+    end;
 
 		-- delete metabolomics data
-    delete from deapp.de_subject_metabolomics_data
-    where trial_name = trialId;
-    stepCt := stepCt + 1;
-		get diagnostics rowCt := ROW_COUNT;
-		select cz_write_audit(jobId,databaseName,procedureName,'Delete metabolomics data for trial from DEAPP de_subject_metabolomics_data',rowCt,stepCt,'Done') into rtnCd;
+		begin
+      delete from deapp.de_subject_metabolomics_data
+      where trial_name = trialId;
+
+      exception when undefined_table then
+         select cz_write_audit(jobId,databaseName,procedureName,'Table de_subject_metabolomics_data is not defined.',0,stepCt,'Warning') into rtnCd;
+
+      stepCt := stepCt + 1;
+      get diagnostics rowCt := ROW_COUNT;
+      select cz_write_audit(jobId,databaseName,procedureName,'Delete metabolomics data for trial from DEAPP de_subject_metabolomics_data',rowCt,stepCt,'Done') into rtnCd;
+    end;
 
 		-- delete RBM data
-    delete from deapp.de_subject_rbm_data
-    where trial_name = trialId;
-    stepCt := stepCt + 1;
-		get diagnostics rowCt := ROW_COUNT;
-		select cz_write_audit(jobId,databaseName,procedureName,'Delete RBM data for trial from DEAPP de_subject_rbm_data',rowCt,stepCt,'Done') into rtnCd;
+		begin
+      delete from deapp.de_subject_rbm_data
+      where trial_name = trialId;
+
+      exception when undefined_table then
+         select cz_write_audit(jobId,databaseName,procedureName,'Table de_subject_rbm_data is not defined.',0,stepCt,'Warning') into rtnCd;
+
+      stepCt := stepCt + 1;
+      get diagnostics rowCt := ROW_COUNT;
+      select cz_write_audit(jobId,databaseName,procedureName,'Delete RBM data for trial from DEAPP de_subject_rbm_data',rowCt,stepCt,'Done') into rtnCd;
+    end;
 
 		-- delete RBM data
-    delete from deapp.de_subject_rna_data
-    where trial_name = trialId;
-    stepCt := stepCt + 1;
-		get diagnostics rowCt := ROW_COUNT;
-		select cz_write_audit(jobId,databaseName,procedureName,'Delete RNASeq data for trial from DEAPP de_subject_rbm_data',rowCt,stepCt,'Done') into rtnCd;
+		begin
+      delete from deapp.de_subject_rna_data
+      where trial_name = trialId;
+
+      exception when undefined_table then
+         select cz_write_audit(jobId,databaseName,procedureName,'Table de_subject_rna_data is not defined.',0,stepCt,'Warning') into rtnCd;
+
+      stepCt := stepCt + 1;
+      get diagnostics rowCt := ROW_COUNT;
+      select cz_write_audit(jobId,databaseName,procedureName,'Delete RNASeq data for trial from DEAPP de_subject_rbm_data',rowCt,stepCt,'Done') into rtnCd;
+    end;
 
 	end if;
 
