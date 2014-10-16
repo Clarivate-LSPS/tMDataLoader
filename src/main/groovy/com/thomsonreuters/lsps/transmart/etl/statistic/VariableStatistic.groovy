@@ -15,21 +15,30 @@ class VariableStatistic {
     private double prevMean, prevSDBase
     private List<Double> doubleValues
     private boolean valuesSorted
+    private List<RangeValidationRule> rangeValidationRules;
+    private ValidationRule requiredRule;
     double mean, median, min = Double.MAX_VALUE, max = Double.MIN_VALUE, sdBase
-    private List<String> missingDataIds = []
-    boolean required
+    private Map<ValidationRule, List<String>> violatedRules = [:]
     boolean unique
 
     VariableStatistic(String name, VariableType type, List<ValidationRule> validationRules) {
         this.name = name
         this.type = type
         this.validationRules = Collections.unmodifiableList(validationRules)
-        this.unique = type == VariableType.ID || validationRules.any { it.type == ValidationRuleType.Unique }
-        this.required = type == VariableType.ID || validationRules.any { it.type == ValidationRuleType.Required }
+        requiredRule = validationRules.find { it.type == ValidationRuleType.Required }
+        this.unique = validationRules.any { it.type == ValidationRuleType.Unique }
+        if (type == VariableType.ID) {
+            if (!requiredRule) {
+                requiredRule = new ValidationRule(ValidationRuleType.Required, "ID is required")
+            }
+            this.unique = true
+        }
+
         if (type == VariableType.Categorical) {
             factor = new Factor()
         } else if (type == VariableType.Numerical) {
             doubleValues = []
+            this.rangeValidationRules = validationRules.findAll { it.type == ValidationRuleType.RangeCheck }
         }
     }
 
@@ -58,8 +67,21 @@ class VariableStatistic {
         return emptyValuesCount > 0
     }
 
+    boolean getRequired() {
+        return requiredRule != null
+    }
+
+    List<String> getMissingValueIds() {
+        violatedRules[requiredRule] ?: []
+    }
+
+    Map<String, List<String>> getViolatedRangeChecks() {
+        violatedRules.findAll { it.key.type == ValidationRuleType.RangeCheck }.
+                collectEntries { rule, ids -> [rule.description, ids] }
+    }
+
     String getQCMissingData() {
-        required ? (hasMissingData ? "${emptyValuesCount} missing (${missingDataIds.collect { "'${it}'" }.join(', ')})" : 'OK') : ''
+        required ? (hasMissingData ? "${emptyValuesCount} missing (${missingValueIds.collect { "'${it}'" }.join(', ')})" : 'OK') : ''
     }
 
     void collectValue(String id, String value, Map<String, String> variableValues) {
@@ -71,11 +93,13 @@ class VariableStatistic {
                     collectCategoricalValue(value)
                     break
                 case VariableType.Numerical:
-                    collectNumericalValue(value)
+                    double doubleValue = Double.parseDouble(value)
+                    checkValueInRange(id, doubleValue)
+                    collectNumericalValue(doubleValue)
                     break
             }
         } else if (required) {
-            missingDataIds.add(id)
+            addRuleViolation(requiredRule, id)
         }
     }
 
@@ -83,8 +107,15 @@ class VariableStatistic {
         factor.addValue(value)
     }
 
-    private void collectNumericalValue(String value) {
-        double doubleValue = Double.parseDouble(value)
+    private void checkValueInRange(String id, double value) {
+        rangeValidationRules.each {
+            if (!it.range.contains(value)) {
+                addRuleViolation(it, id)
+            }
+        }
+    }
+
+    private void collectNumericalValue(double doubleValue) {
         doubleValues.add(doubleValue)
         valuesSorted = false
         mean = prevMean + (doubleValue - prevMean) / notEmptyValuesCount
@@ -97,6 +128,14 @@ class VariableStatistic {
         }
         prevMean = mean
         prevSDBase = sdBase
+    }
+
+    private void addRuleViolation(ValidationRule rule, String id) {
+        List<String> ids = violatedRules.get(rule)
+        if (ids.is(null)) {
+            violatedRules.put(rule, ids = [])
+        }
+        ids.add(id)
     }
 
     @Override

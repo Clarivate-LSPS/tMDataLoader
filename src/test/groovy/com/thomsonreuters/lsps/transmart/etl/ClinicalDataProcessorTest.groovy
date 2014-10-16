@@ -66,7 +66,8 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         def subjId = demo.variables.SUBJ_ID
         subjId.notEmptyValuesCount == 9
         subjId.emptyValuesCount == 0
-        subjId.QCMissingData == 'OK'
+        subjId.required
+        subjId.missingValueIds == []
 
         def age = demo.variables.'Age In Years'
         age.notEmptyValuesCount == 9
@@ -76,24 +77,35 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         age.min == 11.5
         age.max == 90.0
         age.standardDerivation.round(6) == 23.734843
-        age.QCMissingData == 'OK'
+        age.required
+        age.missingValueIds == []
+        age.violatedRangeChecks == [
+                'Greater than 30': ['HCC2935', 'HCC4006', 'HCC827', 'NCIH3255', 'PC14', 'SW48'],
+                'Greater than or equal to 20': ['NCIH3255', 'SW48'],
+                'Lesser than 50': ['SKMEL28'],
+                'Lesser than or equal to 20': ['HCC4006', 'HCC827', 'NCIH1650', 'NCIH1975', 'PC14', 'SKMEL28']
+        ]
 
         def sex = demo.variables.'Sex'
         sex.notEmptyValuesCount == 7
         sex.emptyValuesCount == 2
         sex.factor.counts.Female == 5
         sex.factor.counts.Male == 2
-        sex.QCMissingData == '2 missing (\'HCC4006\', \'SW48\')'
+        sex.required
+        sex.missingValueIds == ['HCC4006', 'SW48']
+        sex.violatedRangeChecks == [:]
 
         def assessmentDate = demo.variables.'Assessment Date'
         assessmentDate.notEmptyValuesCount == 9
         assessmentDate.emptyValuesCount == 0
-        assessmentDate.QCMissingData == ''
+        !assessmentDate.required
+        assessmentDate.missingValueIds == []
 
         def language = demo.variables.'Language'
         language.notEmptyValuesCount == 3
         language.emptyValuesCount == 6
-        language.QCMissingData == ''
+        !language.required
+        language.missingValueIds == []
     }
 
     void testItLoadsData() {
