@@ -43,6 +43,31 @@ class StatisticCollector {
         currentTable.collectForRecord(variableValues)
     }
 
+    private String idList(ids) {
+        ids.collect { "'${it}'" }.join(', ')
+    }
+
+    private String getQCMissingData(VariableStatistic var) {
+        if (var.required) {
+            var.hasMissingData ? "${var.emptyValuesCount} missing (${idList(var.missingValueIds)})" : 'OK'
+        } else {
+            ''
+        }
+    }
+
+    private String getQCRangeCheck(VariableStatistic var) {
+        if (var.hasRangeChecks) {
+            def violatedRangeChecks = var.violatedRangeChecks
+            if (violatedRangeChecks) {
+                "Range checks failed: ${violatedRangeChecks.collect { desc, ids -> "${desc} (${idList(ids)})" }.join('; ')}"
+            } else {
+                'OK'
+            }
+        } else {
+            ''
+        }
+    }
+
     void printReport(Appendable out) {
         CSVFormat format = CSVFormat.TDF.withRecordSeparator(System.getProperty("line.separator")).
                 withHeader('Table', 'Variable', 'Variable Type', 'N', 'null', 'Mean', 'Median', 'Min', 'Max', 'SD', 'Count', 'Required', 'Validation rule', 'QC missing data', 'QC data range')
@@ -74,12 +99,8 @@ class StatisticCollector {
                 }
                 printer.print(var.required ? 'Yes' : '')
                 printer.print('')
-                if (var.required) {
-                    printer.print(var.hasMissingData ? "${var.emptyValuesCount} missing (${var.missingValueIds.collect { "'${it}'" }.join(', ')})" : 'OK')
-                } else {
-                    printer.print('')
-                }
-                printer.print('')
+                printer.print(getQCMissingData(var))
+                printer.print(getQCRangeCheck(var))
                 printer.println()
             }
         }
