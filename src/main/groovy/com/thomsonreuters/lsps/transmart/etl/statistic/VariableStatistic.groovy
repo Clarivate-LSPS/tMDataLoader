@@ -72,16 +72,12 @@ class VariableStatistic {
     }
 
     List<String> getMissingValueIds() {
-        violatedRules[requiredRule] ?: []
+        if (required) violatedRules[requiredRule] ?: []
     }
 
     Map<String, List<String>> getViolatedRangeChecks() {
         violatedRules.findAll { it.key.type == ValidationRuleType.RangeCheck }.
                 collectEntries { rule, ids -> [rule.description, ids] }
-    }
-
-    String getQCMissingData() {
-        required ? (hasMissingData ? "${emptyValuesCount} missing (${missingValueIds.collect { "'${it}'" }.join(', ')})" : 'OK') : ''
     }
 
     void collectValue(String id, String value, Map<String, String> variableValues) {

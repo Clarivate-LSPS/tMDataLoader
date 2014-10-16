@@ -23,14 +23,14 @@ class StatisticCollectorTest extends Specification {
         then:
         statistic.tables.TEST != null
         Map<String, VariableStatistic> vars = statistic.tables.TEST.variables
-        [vars.id.name, vars.id.type, vars.id.emptyValuesCount, vars.id.notEmptyValuesCount, vars.id.QCMissingData] ==
-                ['id', VariableType.ID, 0, 3, 'OK']
-        [vars.txt.name, vars.txt.type, vars.txt.emptyValuesCount, vars.txt.notEmptyValuesCount, vars.txt.QCMissingData] ==
-                ['txt', VariableType.Text, 0, 3, '']
-        [vars.cat.name, vars.cat.type, vars.cat.emptyValuesCount, vars.cat.notEmptyValuesCount, vars.cat.QCMissingData, vars.cat.factor] ==
-                ['cat', VariableType.Categorical, 0, 3, '', new Factor(cat1: 2, cat2: 1)]
-        [vars.num.name, vars.num.type, vars.num.emptyValuesCount, vars.num.notEmptyValuesCount, vars.num.QCMissingData,
+        [vars.id.name, vars.id.type, vars.id.emptyValuesCount, vars.id.notEmptyValuesCount, vars.id.required, vars.id.missingValueIds] ==
+                ['id', VariableType.ID, 0, 3, true, []]
+        [vars.txt.name, vars.txt.type, vars.txt.emptyValuesCount, vars.txt.notEmptyValuesCount, vars.txt.required, vars.txt.missingValueIds] ==
+                ['txt', VariableType.Text, 0, 3, false, null]
+        [vars.cat.name, vars.cat.type, vars.cat.emptyValuesCount, vars.cat.notEmptyValuesCount, vars.cat.required, vars.cat.missingValueIds, vars.cat.factor] ==
+                ['cat', VariableType.Categorical, 0, 3, false, null, new Factor(cat1: 2, cat2: 1)]
+        [vars.num.name, vars.num.type, vars.num.emptyValuesCount, vars.num.notEmptyValuesCount, vars.num.required, vars.num.missingValueIds,
          vars.num.mean, vars.num.median, vars.num.min, vars.num.max, Math.round(vars.num.standardDerivation * 1000) / 1000] ==
-                ['num', VariableType.Numerical, 0, 3, '', 40.0, 50.0, 10.0, 60.0, 26.458]
+                ['num', VariableType.Numerical, 0, 3, false, null, 40.0, 50.0, 10.0, 60.0, 26.458]
     }
 }

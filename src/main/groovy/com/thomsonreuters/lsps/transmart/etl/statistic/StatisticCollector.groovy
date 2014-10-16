@@ -74,7 +74,11 @@ class StatisticCollector {
                 }
                 printer.print(var.required ? 'Yes' : '')
                 printer.print('')
-                printer.print(var.getQCMissingData())
+                if (var.required) {
+                    printer.print(var.hasMissingData ? "${var.emptyValuesCount} missing (${var.missingValueIds.collect { "'${it}'" }.join(', ')})" : 'OK')
+                } else {
+                    printer.print('')
+                }
                 printer.print('')
                 printer.println()
             }
