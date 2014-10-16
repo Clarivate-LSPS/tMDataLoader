@@ -15,7 +15,7 @@ class ValueRange<T extends Comparable<T>> {
         if (!from.is(null)) {
             contained = includeFrom ? value.compareTo(from) >= 0 : value.compareTo(from) > 0
         }
-        if (!to.is(null)) {
+        if (contained && !to.is(null)) {
             contained = includeTo ? value.compareTo(to) <= 0 : value.compareTo(to) < 0
         }
         return contained

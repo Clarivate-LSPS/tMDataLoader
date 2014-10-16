@@ -42,7 +42,7 @@ class ValidationRule {
     private static final Pattern lesserThanOrEqualTo = Pattern.compile(/^(?:lesser than or equal to\s+|<=)\s*(.+)$/,
             Pattern.CASE_INSENSITIVE)
     private static final Pattern lesserThan = Pattern.compile(/^(?:lesser than\s+|<)\s*(.+)$/, Pattern.CASE_INSENSITIVE)
-    private static final Pattern between = Pattern.compile(/^between\s+(.+?)\s+to\s+(.+)$/)
+    private static final Pattern between = Pattern.compile(/^between\s+(.+?)\s+to\s+(.+)$/, Pattern.CASE_INSENSITIVE)
     private static final Pattern range = Pattern.compile(/^(.+?)-(.+)$/)
 
     private static final Map<Pattern, Closure<ValueRange<String>>> valueRangeFactory = [
