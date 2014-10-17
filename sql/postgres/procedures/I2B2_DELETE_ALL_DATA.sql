@@ -215,14 +215,9 @@ BEGIN
 		select cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from deapp de_subject_microarray_data',rowCt,stepCt,'Done') into rtnCd;
 		/*commit;*/
 
-		delete from deapp.de_subject_sample_mapping dssm
-    where dssm.trial_name = trialID and coalesce(dssm.source_cd,'STD') = sourceCd;
+		--	drop partition if it exists for expression data
+    select i2b2_delete_partition(trialId, 'MRNA_AFFYMETRIX', 'de_subject_microarray_data', 'deapp', sourceCd, jobId) into rtnCd;
 
-		stepCt := stepCt + 1;
-		get diagnostics rowCt := ROW_COUNT;
-		select cz_write_audit(jobId,databaseName,procedureName,'Delete trial from DEAPP de_subject_sample_mapping',rowCt,stepCt,'Done') into rtnCd;
-
-		/*commit;*/
 		--	delete patient data
 
 		delete from i2b2demodata.patient_dimension
@@ -271,6 +266,9 @@ BEGIN
       get diagnostics rowCt := ROW_COUNT;
       select cz_write_audit(jobId,databaseName,procedureName,'Delete metabolomics data for trial from DEAPP de_subject_metabolomics_data',rowCt,stepCt,'Done') into rtnCd;
 
+      --	drop partition if it exists
+      select i2b2_delete_partition(trialId, 'METABOLOMICS', 'de_subject_metabolomics_data', 'deapp', sourceCd, jobId) into rtnCd;
+
       exception when undefined_table then
          select cz_write_audit(jobId,databaseName,procedureName,'Table de_subject_metabolomics_data is not defined.',0,stepCt,'Warning') into rtnCd;
     end;
@@ -283,6 +281,9 @@ BEGIN
       get diagnostics rowCt := ROW_COUNT;
       select cz_write_audit(jobId,databaseName,procedureName,'Delete RBM data for trial from DEAPP de_subject_rbm_data',rowCt,stepCt,'Done') into rtnCd;
 
+      --	drop partition if it exists
+      select i2b2_delete_partition(trialId, 'RBM', 'de_subject_rbm_data', 'deapp', sourceCd, jobId) into rtnCd;
+
       exception when undefined_table then
          select cz_write_audit(jobId,databaseName,procedureName,'Table de_subject_rbm_data is not defined.',0,stepCt,'Warning') into rtnCd;
     end;
@@ -292,14 +293,23 @@ BEGIN
       delete from deapp.de_subject_rna_data
       where trial_name = trialId;
 
-      exception when undefined_table then
-         select cz_write_audit(jobId,databaseName,procedureName,'Table de_subject_rna_data is not defined.',0,stepCt,'Warning') into rtnCd;
-
       stepCt := stepCt + 1;
       get diagnostics rowCt := ROW_COUNT;
       select cz_write_audit(jobId,databaseName,procedureName,'Delete RNASeq data for trial from DEAPP de_subject_rbm_data',rowCt,stepCt,'Done') into rtnCd;
+
+      --	drop partition if it exists
+      select i2b2_delete_partition(trialId, 'RNA_AFFYMETRIX', 'de_subject_rna_data', 'deapp', sourceCd, jobId) into rtnCd;
+
+      exception when undefined_table then
+          select cz_write_audit(jobId,databaseName,procedureName,'Table de_subject_rna_data is not defined.',0,stepCt,'Warning') into rtnCd;
     end;
 
+    delete from deapp.de_subject_sample_mapping dssm
+    where dssm.trial_name = trialID and coalesce(dssm.source_cd,'STD') = sourceCd;
+
+		stepCt := stepCt + 1;
+		get diagnostics rowCt := ROW_COUNT;
+		select cz_write_audit(jobId,databaseName,procedureName,'Delete trial from DEAPP de_subject_sample_mapping',rowCt,stepCt,'Done') into rtnCd;
 	end if;
 
 	/*Check and delete top node, if removed node is last*/

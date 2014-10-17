@@ -62,6 +62,7 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
     @Override
     void setUp() {
         ConfigAwareTestCase.super.setUp()
+        runScript('I2B2_DELETE_PARTITION.sql')
         runScript('I2B2_DELETE_ALL_DATA.sql')
     }
 
