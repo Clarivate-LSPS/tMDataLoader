@@ -36,3 +36,4 @@ $$;
 \i procedures/I2B2_LOAD_RBM_ANNOTATION.sql
 \i procedures/I2B2_RBM_ZSCORE_CALC_NEW.sql
 \i procedures/I2B2_RNA_SEQ_ANNOTATION.sql
+\i procedures/I2B2_DELETE_PARTITION.sql
