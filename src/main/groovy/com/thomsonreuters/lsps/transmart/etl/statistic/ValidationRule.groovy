@@ -36,6 +36,7 @@ class ValidationRule {
         return rules
     }
 
+    private static final Pattern whenCondition = Pattern.compile(/^\s*(.*)\s*,\s+when\s+(.*)\s*$/)
     private static final Pattern greaterThanOrEqualTo = Pattern.compile(/^(?:greater than or equal to\s+|>=)\s*(.+)$/,
             Pattern.CASE_INSENSITIVE)
     private static final Pattern greaterThan = Pattern.compile(/^(?:greater than\s+|>)\s*(.+)$/, Pattern.CASE_INSENSITIVE)
@@ -54,8 +55,14 @@ class ValidationRule {
             (range)               : { Matcher m -> new ValueRange<>(from: m.group(1), to: m.group(2)) },
     ]
 
-    public static ValidationRule parse(String validationRule) {
-        validationRule = validationRule.trim()
+    public static ValidationRule parse(String sentence) {
+        String validationRuleWithCondition = sentence.trim()
+        Matcher matcher = whenCondition.matcher(validationRuleWithCondition)
+        String validationRule, condition
+        (validationRule, condition) = matcher.find() ? [matcher.group(1), matcher.group(2)] : [validationRuleWithCondition, null]
+        if (condition != null) {
+            logger.log(LogType.WARNING, "!!!Conditions is not supported yet!!! Condition ignored: '${condition}'")
+        }
         if (validationRule.toLowerCase().equals('required')) {
             return new ValidationRule(ValidationRuleType.Required, validationRule)
         }
@@ -63,7 +70,7 @@ class ValidationRule {
         for (def entry : valueRangeFactory.entrySet()) {
             Pattern pattern = entry.key
             Closure<ValueRange> creator = entry.value
-            Matcher matcher = pattern.matcher(validationRule)
+            matcher = pattern.matcher(validationRule)
             if (matcher.find()) {
                 try {
                     valueRange = creator(matcher)
@@ -79,14 +86,19 @@ class ValidationRule {
 
         //TODO: cast range to specific type
         ValueRange<Double> targetRange = new ValueRange<Double>()
-        if (valueRange.from) {
-            targetRange.from = Double.parseDouble(valueRange.from)
-            targetRange.includeFrom = valueRange.includeFrom
+        try {
+            if (valueRange.from) {
+                targetRange.from = Double.parseDouble(valueRange.from)
+                targetRange.includeFrom = valueRange.includeFrom
+            }
+            if (valueRange.to) {
+                targetRange.to = Double.parseDouble(valueRange.to)
+                targetRange.includeTo = valueRange.includeTo
+            }
+            return new RangeValidationRule(validationRule, targetRange)
+        } catch (NumberFormatException ex) {
+            logger.log(LogType.WARNING, "Can't parse validation rule: '${validationRule}, invalid format '${ex.message}', ignored")
+            return null
         }
-        if (valueRange.to) {
-            targetRange.to = Double.parseDouble(valueRange.to)
-            targetRange.includeTo = valueRange.includeTo
-        }
-        return new RangeValidationRule(validationRule, targetRange)
     }
 }
