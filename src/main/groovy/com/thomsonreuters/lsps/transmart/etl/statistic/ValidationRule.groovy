@@ -137,7 +137,7 @@ class ValidationRule {
             }
         }
         if (validationRule.toLowerCase().equals('required')) {
-            return new ValidationRule(ValidationRuleType.Required, validationRule, conditionField, ruleCondition)
+            return new ValidationRule(ValidationRuleType.Required, sentence, conditionField, ruleCondition)
         }
         ValueRange<String> valueRange = parseValueRange(validationRule)
         if (!valueRange) {
@@ -147,7 +147,7 @@ class ValidationRule {
 
         //TODO: cast range to specific type
         try {
-            return new RangeValidationRule(validationRule, convertValueRange(valueRange, Double.&parseDouble), conditionField, ruleCondition)
+            return new RangeValidationRule(sentence, convertValueRange(valueRange, Double.&parseDouble), conditionField, ruleCondition)
         } catch (NumberFormatException ex) {
             logger.log(LogType.WARNING, "Can't parse validation rule: '${sentence}, invalid format '${ex.message}', ignored")
             return null

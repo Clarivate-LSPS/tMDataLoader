@@ -82,7 +82,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         age.violatedRangeChecks == [
                 '30-50'                      : ['HCC2935', 'HCC4006', 'HCC827', 'NCIH3255', 'PC14', 'SKMEL28', 'SW48'],
                 'Between 30 to 50'           : ['HCC2935', 'HCC4006', 'HCC827', 'NCIH3255', 'PC14', 'SKMEL28', 'SW48'],
-                'Greater than 30'            : ['HCC2935', 'HCC4006', 'HCC827', 'NCIH3255', 'PC14', 'SW48'],
+                'Greater than 30'            : ['HCC827', 'NCIH3255'],
                 '>30'                        : ['HCC2935', 'HCC4006', 'HCC827', 'NCIH3255', 'PC14', 'SW48'],
                 'Greater than or equal to 20': ['NCIH3255', 'SW48'],
                 '>=20'                       : ['NCIH3255', 'SW48'],
