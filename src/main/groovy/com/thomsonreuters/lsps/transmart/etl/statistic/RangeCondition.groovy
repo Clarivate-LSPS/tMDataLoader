@@ -12,7 +12,13 @@ class RangeCondition<T extends Comparable<T>> extends ValidationRuleCondition {
         this.range = range
         T sample = range.from ?: range.to
         if (sample instanceof Double) {
-            parseValue = (Closure<T>) Double.&parseDouble
+            parseValue = { String val ->
+                try {
+                    (Closure<T>) Double.parseDouble(val)
+                } catch (NumberFormatException ignored) {
+                    null
+                }
+            }
         } else {
             parseValue = Closure.IDENTITY
         }
@@ -20,6 +26,7 @@ class RangeCondition<T extends Comparable<T>> extends ValidationRuleCondition {
 
     @Override
     boolean check(String value) {
-        return range.contains(parseValue(value))
+        T parsedValue = parseValue(value)
+        return !parsedValue.is(null) && range.contains(parsedValue)
     }
 }

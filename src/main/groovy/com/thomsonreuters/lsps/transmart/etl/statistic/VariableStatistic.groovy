@@ -84,6 +84,17 @@ class VariableStatistic {
                 collectEntries { rule, ids -> [rule.description, ids] }
     }
 
+    private boolean isRuleApplicable(ValidationRule rule, Map<String, String> variableValues) {
+        if (rule.conditionField.is(null)) {
+            return true
+        }
+        String value = variableValues.get(rule.conditionField)
+        if (value.is(null)) {
+            value = ''
+        }
+        return rule.condition.check(value)
+    }
+
     void collectValue(String id, String value, Map<String, String> variableValues) {
         totalValuesCount++
         if (!value.isEmpty()) {
@@ -94,11 +105,11 @@ class VariableStatistic {
                     break
                 case VariableType.Numerical:
                     double doubleValue = Double.parseDouble(value)
-                    checkValueInRange(id, doubleValue)
+                    checkValueInRange(id, doubleValue, variableValues)
                     collectNumericalValue(doubleValue)
                     break
             }
-        } else if (required) {
+        } else if (required && isRuleApplicable(requiredRule, variableValues)) {
             addRuleViolation(requiredRule, id)
         }
     }
@@ -107,9 +118,9 @@ class VariableStatistic {
         factor.addValue(value)
     }
 
-    private void checkValueInRange(String id, double value) {
+    private void checkValueInRange(String id, double value, Map<String, String> variableValues) {
         rangeValidationRules.each {
-            if (!it.range.contains(value)) {
+            if (isRuleApplicable(it, variableValues) && !it.range.contains(value)) {
                 addRuleViolation(it, id)
             }
         }
