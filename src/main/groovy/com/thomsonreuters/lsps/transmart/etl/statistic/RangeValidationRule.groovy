@@ -7,8 +7,8 @@ package com.thomsonreuters.lsps.transmart.etl.statistic
 class RangeValidationRule<T extends Comparable<T>> extends ValidationRule {
     ValueRange<T> range
 
-    RangeValidationRule(String description, ValueRange<T> range) {
-        super(ValidationRuleType.RangeCheck, description)
+    RangeValidationRule(String description, ValueRange<T> range, String conditionField, ValidationRuleCondition condition) {
+        super(ValidationRuleType.RangeCheck, description, conditionField, condition)
         this.range = range
     }
 }
