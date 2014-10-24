@@ -12,7 +12,7 @@ import java.sql.Types
 class SqlMethods {
     private static Object prepareValue(Object value) {
         if (value.is(null)) {
-            return Types.NULL
+            return null
         }
         switch (value.class) {
             case GString:
