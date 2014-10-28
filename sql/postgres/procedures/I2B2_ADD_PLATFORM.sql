@@ -13,25 +13,32 @@ CREATE OR REPLACE FUNCTION I2B2_ADD_PLATFORM(
     rtnCd         NUMERIC;
 
   BEGIN
-    jobID := currentjobid;
     databaseName := current_schema();
     procedureName := 'I2B2_ADD_PLATFORM';
 
     stepCt := 0;
+
+    SELECT CASE
+      WHEN COALESCE(currentjobid, -1) < 1
+      THEN cz_start_audit(procedureName, databaseName)
+      ELSE currentjobid END
+      INTO jobID;
+
     stepCt := stepCt + 1;
-    PERFORM cz_write_audit(jobId, databaseName, procedureName, 'Starting i2b2_load_samples', 0, stepCt, 'Done');
-
-    SELECT cz_start_audit(procedureName, databaseName)
-    INTO jobID
-    WHERE jobID IS NULL OR jobID < 1;
-
+    PERFORM cz_write_audit(jobId, databaseName, procedureName, 'Starting ' || procedureName || ' for ' || gpl_id, 0, stepCt, 'Done');
 
     INSERT INTO deapp.de_gpl_info (platform, title, organism, annotation_date, marker_type, genome_build, release_nbr)
     VALUES
       (gpl_id, "name", organism, current_timestamp, marker_type, genome_build, release_nbr);
+    get diagnostics rowCt := ROW_COUNT;
 
-    PERFORM cz_end_audit(jobID, 'SUCCESS')
-    WHERE currentjobid IS NULL OR currentjobid <> jobID;
+    stepCt := stepCt + 1;
+    PERFORM cz_write_audit(jobId, databaseName, procedureName, 'Add platform ' || gpl_id, rowCt, stepCt, 'Done');
+
+    stepCt := stepCt + 1;
+    PERFORM cz_write_audit(jobId, databaseName, procedureName, 'End ' || procedureName, 0, stepCt, 'Done');
+
+    PERFORM cz_end_audit(jobID, 'SUCCESS') WHERE COALESCE(currentjobid, -1) <> jobID;
 
     RETURN 1;
 
