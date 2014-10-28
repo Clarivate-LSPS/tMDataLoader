@@ -5,9 +5,9 @@ db {
     username = 'postgres'
     password = 'postgres'
 }
-//*/
+/*/
 
-//* Oracle config
+// Oracle config
 db {
     jdbcConnectionString = 'jdbc:oracle:thin:@localhost:1521:ORCL'
     username = 'tm_cz'

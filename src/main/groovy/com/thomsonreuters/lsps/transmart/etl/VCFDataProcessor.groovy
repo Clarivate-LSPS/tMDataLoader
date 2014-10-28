@@ -182,7 +182,7 @@ class VCFDataProcessor extends DataProcessor {
                                  idx, intValue, floatValue, textValue])
                 }
             } else {
-                logger.log(LogType.WARNING, "Field with value=" + it.value + ' wont be added to deapp.de_variant_population_data' +
+                logger.log(LogType.WARNING, "Field with value=" + it.value + ' won\'t be added to deapp.de_variant_population_data ' +
                         'because it does not have description in INFO part in file header.')
             }
         }
