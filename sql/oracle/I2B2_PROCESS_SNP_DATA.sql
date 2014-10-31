@@ -901,6 +901,22 @@ BEGIN
 	cz_write_audit(jobId,databaseName,procedureName,'Insert into de_snp_copy_number',0,stepCt,'Done');
   	COMMIT;
 
+  insert into deapp.de_subject_snp_dataset
+  (dataset_name, concept_cd, platform_name, trial_name, patient_num, subject_id, sample_type)
+  select
+    trial_name||'_'||subject_id||'_'||concept_code as dataset_name,
+    concept_code as concept_cd,
+    gpl_id as platform_name,
+    trial_name,
+    patient_id as patient_num,
+    subject_id,
+    sample_type
+  from deapp.de_subject_sample_mapping
+  where trial_name = TrialID;
+
+  stepCt := stepCt + 1;
+	cz_write_audit(jobId,databaseName,procedureName,'Insert into de_subject_snp_dataset',0,stepCt,'Done');
+  COMMIT;
 	
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'End i2b2_process_snp_data',0,stepCt,'Done');
