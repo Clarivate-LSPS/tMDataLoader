@@ -275,6 +275,11 @@ BEGIN
 		commit;
 	end if;
 
+  delete from deapp.de_subject_snp_dataset
+  where trial = trialId;
+  stepCt := stepCt + 1;
+  cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from DE_SUBJECT_SNP_DATASET',SQL%ROWCOUNT,stepCt,'Done');
+  commit;
 
 	/*Check and delete top node, if remove node is last*/
   stepCt := stepCt + 1;
