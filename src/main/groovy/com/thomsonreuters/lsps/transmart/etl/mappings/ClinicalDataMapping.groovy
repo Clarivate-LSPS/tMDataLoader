@@ -33,6 +33,7 @@ class ClinicalDataMapping {
         int SITE_ID
         int SUBJ_ID
         int VISIT_NAME
+        int SAMPLE_ID
         List<Entry> _DATA = []
     }
 
