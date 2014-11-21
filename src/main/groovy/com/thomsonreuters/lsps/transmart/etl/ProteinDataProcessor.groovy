@@ -9,10 +9,11 @@ public class ProteinDataProcessor extends DataProcessor {
     public ProteinDataProcessor(Object conf) {
         super(conf);
     }
+
     @Override
     public boolean processFiles(File dir, Sql sql, Object studyInfo) {
-        sql.execute("TRUNCATE TABLE lt_src_proteomics_sub_sam_map" as String)
-        sql.execute("TRUNCATE TABLE lt_src_proteomics_data" as String)
+        sql.execute("DELETE FROM lt_src_proteomics_sub_sam_map" as String)
+        sql.execute("DELETE FROM lt_src_proteomics_data" as String)
 
         def platformList = [] as Set
 

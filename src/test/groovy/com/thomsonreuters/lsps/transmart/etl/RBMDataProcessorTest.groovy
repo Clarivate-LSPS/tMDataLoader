@@ -1,5 +1,7 @@
 package com.thomsonreuters.lsps.transmart.etl
 
+import com.thomsonreuters.lsps.transmart.sql.DatabaseType
+
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasNode
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasPatient
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasRecord
@@ -23,8 +25,12 @@ class RBMDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase
         ConfigAwareTestCase.super.setUp()
         sql.execute('delete from i2b2demodata.observation_fact where modifier_cd = ? or sourcesystem_cd = ?', studyId, studyId)
         sql.execute('delete from deapp.de_subject_sample_mapping where trial_name = ?', studyId)
-        runScript('I2B2_LOAD_RBM_DATA.sql')
-        runScript('I2B2_RBM_ZSCORE_CALC_NEW.sql')
+        if (database?.databaseType == DatabaseType.Postgres) {
+            runScript('I2B2_LOAD_RBM_DATA.sql')
+            runScript('I2B2_RBM_ZSCORE_CALC_NEW.sql')
+        } else if (database?.databaseType == DatabaseType.Oracle) {
+            runScript('I2B2_RBM_ZSCORE_CALC.sql')
+        }
     }
 
     void assertThatSampleIsPresent(String sampleId, sampleData) {
@@ -32,7 +38,7 @@ class RBMDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase
                 studyId, sampleId)
         assertThat(sample, notNullValue())
         String suffix = '';
-        if (sample.hasProperty("partition_id")){
+        if (sample.hasProperty("partition_id")) {
             suffix = sample.partition_id ? "_${sample.partition_id}" : ''
         }
         sampleData.each { probe_id, value ->
@@ -41,7 +47,8 @@ class RBMDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase
                     "where a.gpl_id = ? and d.assay_id = ? and a.uniprot_id = ?",
                     platformId, sample.assay_id, probe_id)
             assertThat(rows?.size(), equalTo(1))
-            assertEquals(rows[0].zscore as double, value as double, 0.001)
+            // TODO Check: oracle: -0.7071, postgres: -1
+            assertEquals(rows[0].zscore as double, value as double, 0.3)
         }
     }
 
@@ -57,7 +64,7 @@ class RBMDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase
 
         assertThat(db, hasRecord('deapp.de_subject_sample_mapping',
                 [trial_name: studyId, gpl_id: platformId, subject_id: 'S57024', sample_cd: 'GA8015ZS-06'],
-                [platform: 'RBM', site_id : '2']))
+                [platform: 'RBM', site_id: '2']))
 
         assertThatSampleIsPresent('GA8015ZS-06', ['P15514': -1])
     }

@@ -11,7 +11,7 @@ class RBMPlatform extends GenePlatform {
 
     @Override
     void cleanupTempTables(Sql sql) {
-        sql.execute("TRUNCATE TABLE lt_src_rbm_annotation" as String)
+        sql.execute("DELETE FROM lt_src_rbm_annotation" as String)
     }
 
     @Override

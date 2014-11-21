@@ -12,8 +12,8 @@ public class RNASeqDataProcessor extends DataProcessor {
 
     @Override
     public boolean processFiles(File dir, Sql sql, Object studyInfo) {
-        sql.execute("TRUNCATE TABLE lt_src_rna_seq_subj_samp_map" as String)
-        sql.execute("TRUNCATE TABLE lt_src_rna_seq_data" as String)
+        sql.execute("DELETE FROM lt_src_rna_seq_subj_samp_map" as String)
+        sql.execute("DELETE FROM lt_src_rna_seq_data" as String)
 
         def platformList = [] as Set
 
@@ -50,14 +50,14 @@ public class RNASeqDataProcessor extends DataProcessor {
         if (studyId && studyNode && studyDataType) {
             config.logger.log("Study ID=${studyId}; Node=${studyNode}; Data Type=${studyDataType}")
 
-            sql.call("{call " + config.controlSchema + ".i2b2_process_rna_seq_data (?, ?, ?, null, null, '" + config.securitySymbol + "', ?)}",
-                    [studyId, studyNode, studyDataType, jobId]) {}
+            sql.call("{call " + config.controlSchema + ".i2b2_process_rna_seq_data (?, ?, ?, null, null, '" + config.securitySymbol + "', ?, ?)}",
+                    [studyId, studyNode, studyDataType, jobId, Sql.NUMERIC]) {}
 
             // Call loading annotation after data processing because we need data from filled
             // probeset_deapp to load full annotation info
 
             if (studyInfo['runPlatformLoad']) {
-                sql.call("{call " + config.controlSchema + ".i2b2_rna_seq_annotation(?)}", jobId)
+                sql.call("{call " + config.controlSchema + ".i2b2_rna_seq_annotation(?, ?)}", [Sql.NUMERIC, jobId])
             }
         } else {
             config.logger.log(LogType.ERROR, "Study ID or Node or DataType not defined!")

@@ -12,8 +12,8 @@ public class RBMDataProcessor extends DataProcessor {
 
     @Override
     public boolean processFiles(File dir, Sql sql, Object studyInfo) {
-        sql.execute("TRUNCATE TABLE lt_src_rbm_subj_samp_map" as String)
-        sql.execute("TRUNCATE TABLE lt_src_rbm_data" as String)
+        sql.execute("DELETE FROM lt_src_rbm_subj_samp_map" as String)
+        sql.execute("DELETE FROM lt_src_rbm_data" as String)
 
         def platformList = [] as Set
 
@@ -54,8 +54,8 @@ public class RBMDataProcessor extends DataProcessor {
                 sql.call("{call " + config.controlSchema + ".i2b2_load_rbm_annotation()}")
             }
 
-            sql.call("{call " + config.controlSchema + ".i2b2_load_rbm_data (?, ?, ?, null, null, '" + config.securitySymbol + "', ?)}",
-                    [studyId, studyNode, studyDataType, jobId]) {}
+            sql.call("{call " + config.controlSchema + ".i2b2_load_rbm_data (?, ?, ?, null, null, '" + config.securitySymbol + "', ?, ?)}",
+                    [studyId, studyNode, studyDataType, jobId, Sql.NUMERIC]) {}
         } else {
             config.logger.log(LogType.ERROR, "Study ID or Node or DataType not defined!")
             return false;
