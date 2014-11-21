@@ -269,14 +269,14 @@ BEGIN
 		commit;
 		
 		delete from patient_trial
-		where trial=  trialId;
+		where trial = trialId;
 		stepCt := stepCt + 1;
 		cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from I2B2DEMODATA patient_trial',SQL%ROWCOUNT,stepCt,'Done');
 		commit;
 	end if;
 
   delete from deapp.de_subject_snp_dataset
-  where trial = trialId;
+  where trial_name = trialId;
   stepCt := stepCt + 1;
   cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from DE_SUBJECT_SNP_DATASET',SQL%ROWCOUNT,stepCt,'Done');
   commit;
