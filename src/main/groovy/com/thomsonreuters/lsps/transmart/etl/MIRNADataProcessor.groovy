@@ -9,10 +9,11 @@ public class MIRNADataProcessor extends DataProcessor {
     public MIRNADataProcessor(Object conf) {
         super(conf);
     }
+
     @Override
     public boolean processFiles(File dir, Sql sql, Object studyInfo) {
-        sql.execute("TRUNCATE TABLE lt_src_mirna_subj_samp_map" as String)
-        sql.execute("TRUNCATE TABLE lt_src_qpcr_mirna_data" as String)
+        sql.execute("DELETE FROM lt_src_mirna_subj_samp_map" as String)
+        sql.execute("DELETE FROM lt_src_qpcr_mirna_data" as String)
 
         def platformList = [] as Set
 
@@ -55,7 +56,7 @@ public class MIRNADataProcessor extends DataProcessor {
             }
 
             sql.call("{call " + config.controlSchema + ".i2b2_process_qpcr_mirna_data (?, ?, ?, null, null, '" + config.securitySymbol + "', ?, ?, ?)}",
-                    [studyId, studyNode, studyDataType, jobId, Sql.NUMERIC, mirnaType]) {}
+                    [studyId, studyNode, studyDataType, jobId, mirnaType, Sql.NUMERIC]) {}
         } else {
             config.logger.log(LogType.ERROR, "Study ID or Node or DataType not defined!")
             return false;
