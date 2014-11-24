@@ -1,0 +1,13 @@
+#PLATFORM_ID: HDD999
+#PLATFORM_TITLE: Test Serial HDD Platform
+#SPECIES: Homo Sapiens
+GPL_ID	Probe_ID	Gene_Symbol	Gene_ID	Organism
+HDD999	226161_at	DDR1	780	"Homo Sapiens"
+HDD999	220950_s_at	DDR1	780	"Homo Sapiens"
+HDD999	221356_x_at	DDR1	780	"Homo Sapiens"
+HDD999	202259_s_at	DDR1	780	"Homo Sapiens"
+HDD999	219944_at	DDR1	780	"Homo Sapiens"
+HDD999	240272_at	DDR1	780	"Homo Sapiens"
+HDD999	222347_at	DDR1	780	"Homo Sapiens"
+HDD999	1552320_a_at	DDR1	780	"Homo Sapiens"
+HDD999	203248_at	DDR1	780	"Homo Sapiens"
