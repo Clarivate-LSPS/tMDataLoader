@@ -1,5 +1,5 @@
-create or replace 
-PROCEDURE "I2B2_DELETE_ALL_DATA" 
+create or replace
+PROCEDURE "I2B2_DELETE_ALL_DATA"
 (
   trial_id VARCHAR2 := null
  ,path_string varchar2 :=null
@@ -18,7 +18,7 @@ AS
   TrialType 	VARCHAR2(250);
   sourceCD  	sourceCDs;
   pathStrings tVarCh2;
-  
+
   --Audit variables
   newJobFlag INTEGER(1);
   trialCount INTEGER(1);
@@ -27,6 +27,7 @@ AS
   topNodeCount integer(8);
   isExistTopNode integer(1);
   countSourceCD integer(8);
+  rowsExists  INT;
   topNode	VARCHAR(500 BYTE);
   databaseName VARCHAR(100);
   procedureName VARCHAR(100);
@@ -65,7 +66,7 @@ BEGIN
 			from DEAPP.de_subject_sample_mapping where concept_code in (
 				select concept_cd from I2B2DEMODATA.concept_dimension where concept_path like path_string || '%'
 			);
-	ELSIF ( trialCount = 0 ) THEN  
+	ELSIF ( trialCount = 0 ) THEN
 		TrialId := null;
 	else
 		raise more_trial;
@@ -107,45 +108,45 @@ BEGIN
 
 
   select count(parent_concept_path) into topNodeCount
-    from I2B2DEMODATA.concept_counts 
-    where 
+    from I2B2DEMODATA.concept_counts
+    where
     concept_path = pathString;
-    
+
   if (topNodeCount > 0) then
     select parent_concept_path into topNode
-      from I2B2DEMODATA.concept_counts 
-      where 
+      from I2B2DEMODATA.concept_counts
+      where
       concept_path = pathString;
-  else 
+  else
     topNode := SUBSTR(pathString,0,instr(pathString,'\',2));
   end if;
 
-  
+
   stepCt := 0;
 
   if pathString != ''  or pathString != '%'
-  then 
+  then
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Starting I2B2_DELETE_ALL_DATA '||topNode,0,stepCt,'Done');
-	
+
 	--	delete all i2b2 nodes
-	
+
 	i2b2_delete_all_nodes(pathString,jobId);
-  
+
   --	delete any table_access data
-  delete from table_access 
+  delete from table_access
   where c_fullname like pathString || '%';
-	
+
 	--	delete any i2b2_tag data
-	
+
 	delete from i2b2_tags
 	where path like pathString || '%';
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from I2B2METADATA i2b2_tags',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
-	
+
 	--	delete clinical data
-	if (trialId is not NUll) 
+	if (trialId is not NUll)
 	then
 		delete from lz_src_clinical_data
 		where study_id = trialId;
@@ -251,28 +252,71 @@ BEGIN
       cz_write_audit(jobId,databaseName,procedureName,'Delete trial from DEAPP de_subject_sample_mapping',SQL%ROWCOUNT,stepCt,'Done');
 
       commit;
-
-
-      stepCt := stepCt + 1;
-      cz_write_audit(jobId,databaseName,procedureName,'Delete trial from DEAPP de_subject_sample_mapping',SQL%ROWCOUNT,stepCt,'Done');
-
-      commit;
-
       end loop;
     end if;
 		--	delete patient data
-		
+
 		delete from patient_dimension
 		where sourcesystem_cd like trialId || ':%';
 		stepCt := stepCt + 1;
 		cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from I2B2DEMODATA patient_dimension',SQL%ROWCOUNT,stepCt,'Done');
 		commit;
-		
+
 		delete from patient_trial
 		where trial = trialId;
 		stepCt := stepCt + 1;
 		cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from I2B2DEMODATA patient_trial',SQL%ROWCOUNT,stepCt,'Done');
 		commit;
+
+    -- delete protein data
+    select count(*) into rowsExists from tab where tname='DE_SUBJECT_PROTEIN_DATA';
+    if rowsExists > 0 then
+      delete from deapp.de_subject_protein_data
+      where trial_name = trialId;
+      stepCt := stepCt + 1;
+      cz_write_audit(jobId,databaseName,procedureName,'Delete protein data for trial from DEAPP de_subject_protein_data',SQL%ROWCOUNT,stepCt,'Done');
+      commit;
+    end if;
+
+    -- delete MIRNA data
+    select count(*) into rowsExists from tab where tname='DE_SUBJECT_MIRNA_DATA';
+    if rowsExists > 0 then
+      delete from deapp.de_subject_mirna_data
+      where trial_name = trialId;
+      stepCt := stepCt + 1;
+      cz_write_audit(jobId,databaseName,procedureName,'Delete MIRNA data for trial from DEAPP de_subject_mirna_data',SQL%ROWCOUNT,stepCt,'Done');
+      commit;
+    end if;
+
+    -- delete metabolomics data
+    select count(*) into rowsExists from tab where tname='DE_SUBJECT_METABOLOMICS_DATA';
+    if rowsExists > 0 then
+      delete from deapp.de_subject_metabolomics_data
+      where trial_name = trialId;
+      stepCt := stepCt + 1;
+      cz_write_audit(jobId,databaseName,procedureName,'Delete metabolomics data for trial from DEAPP de_subject_metabolomics_data',SQL%ROWCOUNT,stepCt,'Done');
+      commit;
+    end if;
+
+    -- delete rbm data
+    select count(*) into rowsExists from tab where tname='DE_SUBJECT_RBM_DATA';
+    if rowsExists > 0 then
+      delete from deapp.de_subject_rbm_data
+      where trial_name = trialId;
+      stepCt := stepCt + 1;
+      cz_write_audit(jobId,databaseName,procedureName,'Delete RBM data for trial from DEAPP de_subject_rbm_data',SQL%ROWCOUNT,stepCt,'Done');
+      commit;
+    end if;
+
+    -- delete rna data
+    select count(*) into rowsExists from tab where tname='DE_SUBJECT_RNA_DATA';
+    if rowsExists > 0 then
+      delete from deapp.de_subject_rna_data
+      where trial_name = trialId;
+      stepCt := stepCt + 1;
+      cz_write_audit(jobId,databaseName,procedureName,'Delete RNASeq data for trial from DEAPP de_subject_rbm_data',SQL%ROWCOUNT,stepCt,'Done');
+      commit;
+    end if;
 	end if;
 
   delete from deapp.de_subject_snp_dataset
@@ -306,7 +350,7 @@ BEGIN
   end if;
 
   end if;
-  
+
     ---Cleanup OVERALL JOB if this proc is being run standalone
   IF newJobFlag = 1
   THEN
@@ -314,11 +358,11 @@ BEGIN
   END IF;
 
   EXCEPTION
-  WHEN more_trial then 
+  WHEN more_trial then
 	cz_write_audit(jobId,databasename,procedurename,'Please select right path to study',1,stepCt,'ERROR');
 	cz_error_handler(jobid,procedurename);
 	cz_end_audit (jobId,'FAIL');
-  WHEN more_path then 
+  WHEN more_path then
 	cz_write_audit(jobId,databasename,procedurename,'Please select right trial to study',1,stepCt,'ERROR');
 	cz_error_handler(jobid,procedurename);
 	cz_end_audit (jobId,'FAIL');
@@ -328,7 +372,5 @@ BEGIN
     cz_error_handler (jobID, procedureName);
     --End Proc
     cz_end_audit (jobID, 'FAIL');
-  
+
 END;
-/
-exit;

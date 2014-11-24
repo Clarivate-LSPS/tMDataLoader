@@ -1,6 +1,7 @@
 package com.thomsonreuters.lsps.transmart.etl
 
 import com.thomsonreuters.lsps.transmart.Fixtures
+import com.thomsonreuters.lsps.transmart.sql.DatabaseType
 import org.hamcrest.core.IsNull
 
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasNode
@@ -62,7 +63,9 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
     @Override
     void setUp() {
         ConfigAwareTestCase.super.setUp()
-        runScript('I2B2_DELETE_PARTITION.sql')
+        if (database?.databaseType == DatabaseType.Postgres) {
+            runScript('I2B2_DELETE_PARTITION.sql')
+        }
         runScript('I2B2_DELETE_ALL_DATA.sql')
     }
 
@@ -368,7 +371,7 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
                 [name: metStudyName, node: "Test Studies\\${metStudyName}".toString()])
 
         def inpData = ['id'  : metStudyId,
-                   'path': "\\Test Studies\\${metStudyName}\\"];
+                       'path': "\\Test Studies\\${metStudyName}\\"];
         processorDelete.process(inpData);
 
         assertThatTopNodeDelete("\\Test Studies\\${metStudyName}\\", true);
