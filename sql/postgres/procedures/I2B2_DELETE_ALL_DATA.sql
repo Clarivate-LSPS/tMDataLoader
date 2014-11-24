@@ -313,7 +313,7 @@ BEGIN
 	end if;
 
   delete from deapp.de_subject_snp_dataset
-	where trial = trialId;
+	where trial_name = trialId;
 
 	stepCt := stepCt + 1;
   get diagnostics rowCt := ROW_COUNT;
