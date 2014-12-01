@@ -9,14 +9,14 @@ import static org.junit.Assert.assertThat
  * Created by bondarev on 2/24/14.
  */
 class SerialHDDDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase {
-    private ExpressionDataProcessor _processor
+    private SerialHDDDataProcessor _processor
 
     String studyName = 'Test SerialHDD Study'
     String studyId = 'BSI201RICERCA'
     String platformId = 'HDD999'
 
-    ExpressionDataProcessor getProcessor() {
-        _processor ?: (_processor = new ExpressionDataProcessor(config))
+    SerialHDDDataProcessor getProcessor() {
+        _processor ?: (_processor = new SerialHDDDataProcessor(config))
     }
 
     @Override
@@ -25,6 +25,7 @@ class SerialHDDDataProcessorTest extends GroovyTestCase implements ConfigAwareTe
         sql.execute('delete from i2b2demodata.observation_fact where modifier_cd = ?', studyId)
         sql.execute('delete from deapp.de_subject_sample_mapping where trial_name = ?', studyId)
         runScript('I2B2_PROCESS_MRNA_DATA.sql')
+        runScript('I2B2_PROCESS_SERIAL_HDD_DATA.sql')
         runScript('I2B2_LOAD_SAMPLES.sql')
     }
 
