@@ -89,7 +89,7 @@ class ExpressionDataProcessor extends DataProcessor {
         return "I2B2_PROCESS_MRNA_DATA";
     }
 
-    private List processMappingFile(File f, Sql sql, studyInfo) {
+    List processMappingFile(File f, Sql sql, studyInfo) {
         def platformList = [] as Set
         def studyIdList = [] as Set
 
@@ -142,14 +142,14 @@ class ExpressionDataProcessor extends DataProcessor {
         return platformList
     }
 
-    private void loadPlatforms(File dir, Sql sql, List platformList, studyInfo) {
+    void loadPlatforms(File dir, Sql sql, List platformList, studyInfo) {
         platformList.each { String platform ->
             def gexPlatform = new GexPlatform(new File(dir, "${platform}.txt"), platform, config)
             gexPlatform.load(sql, studyInfo)
         }
     }
 
-    private void processExpressionFile(File f, Sql sql, studyInfo) {
+    void processExpressionFile(File f, Sql sql, studyInfo) {
         config.logger.log("Processing ${f.name}")
 
         // retrieve data type
@@ -171,7 +171,7 @@ class ExpressionDataProcessor extends DataProcessor {
         }
     }
 
-    private void processExpressionFileForPostgres(File f, studyInfo) {
+    void processExpressionFileForPostgres(File f, studyInfo) {
         DataLoader.start(database, "lt_src_mrna_data", ['TRIAL_NAME', 'PROBESET', 'EXPR_ID', 'INTENSITY_VALUE']) {
             st ->
                 def lineNum = processEachRow(f, studyInfo) { row ->
@@ -181,7 +181,7 @@ class ExpressionDataProcessor extends DataProcessor {
         }
     }
 
-    private void processExpressionFileForGeneric(File f, Sql sql, studyInfo) {
+    void processExpressionFileForGeneric(File f, Sql sql, studyInfo) {
         def lineNum = 0
         sql.withTransaction {
             sql.withBatch(1000, """\
@@ -198,7 +198,7 @@ class ExpressionDataProcessor extends DataProcessor {
         config.logger.log("Processed ${lineNum} rows")
     }
 
-    private long processEachRow(File f, studyInfo, Closure<List> processRow) {
+    long processEachRow(File f, studyInfo, Closure<List> processRow) {
         def row = [studyInfo.id as String, null, null, null]
         def lineNum = 0
         def dataFile = new CsvLikeFile(f)
