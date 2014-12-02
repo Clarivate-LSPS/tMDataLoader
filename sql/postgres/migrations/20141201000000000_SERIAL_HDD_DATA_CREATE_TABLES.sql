@@ -6,8 +6,7 @@ IF NOT EXISTS (select 1 from pg_tables where schemaname = 'tm_dataloader' and ta
       STUDY_ID character varying(50) NOT NULL,
       CATEGORY_CD character varying(2000) NOT NULL,
       C_METADATAXML text NOT NULL
-  )
-  TABLESPACE "tm_dataloader";
+  );
 END IF;
 
 END;
