@@ -72,16 +72,24 @@ class SerialHDDDataProcessor extends ExpressionDataProcessor {
     }
 
     private boolean loadSerialMetadata(File dir, Sql sql, Object studyInfo) {
+        def metadataFiles = [] as Set
+
         dir.eachFileMatch(~/(?i).+_Sample_Dimensions_Mapping.txt/) {
             studyInfo['runSerialHDDLoad'] = true
+            def fileName = it.name
 
-            config.logger.log("Processing ${it.name}")
+            config.logger.log("Processing ${fileName}")
+            metadataFiles.add(fileName)
 
             if (database?.databaseType == DatabaseType.Postgres) {
                 processDimensionsMappingFileForPostgres(it, studyInfo)
             } else {
                 processDimensionsMappingFileForGeneric(it, sql, studyInfo)
             }
+        }
+
+        if (metadataFiles.isEmpty()) {
+            throw new Exception("File with sample dimensions mapping was not found in ${dir.getAbsolutePath()}!")
         }
     }
 

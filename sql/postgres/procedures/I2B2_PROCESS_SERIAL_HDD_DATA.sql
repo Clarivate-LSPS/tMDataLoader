@@ -38,6 +38,24 @@ BEGIN
 
 	begin
 
+		update lt_src_mrna_xml_data
+		set study_id=upper(study_id);
+
+	get diagnostics rowCt := ROW_COUNT;
+	exception
+	when others then
+		errorNumber := SQLSTATE;
+		errorMessage := SQLERRM;
+		perform cz_error_handler (jobID, procedureName, errorNumber, errorMessage);
+		perform cz_end_audit (jobID, 'FAIL');
+		return -16;
+	end;
+
+	stepCt := stepCt + 1;
+	select cz_write_audit(jobId,databaseName,procedureName,'Uppercase study_id in lt_src_mrna_xml_data',rowCt,stepCt,'Done') into rtnCd;
+
+	begin
+
 		update i2b2metadata.i2b2 ib set c_metadataxml = mxd.c_metadataxml
 		from (select study_id, category_cd, c_metadataxml from lt_src_mrna_xml_data) mxd
 		where ib.c_name = mxd.category_cd and ib.sourcesystem_cd = mxd.study_id;
@@ -56,6 +74,49 @@ BEGIN
 
 	stepCt := stepCt + 1; get diagnostics rowCt := ROW_COUNT;
 	perform cz_write_audit(jobId,databaseName,procedureName,'Update records in i2b2metadata.i2b2',pCount,stepCt,'Done');
+
+	begin
+
+		insert into i2b2demodata.sample_dimension (sample_cd)
+		select distinct sample_cd from lt_src_mrna_subj_samp_map where trial_name = studyid
+		and not exists (select sample_cd from i2b2demodata.sample_dimension where sample_cd = sample_cd);
+
+		exception
+		when others then
+			errorNumber := SQLSTATE;
+			errorMessage := SQLERRM;
+			perform cz_error_handler (jobID, procedureName, errorNumber, errorMessage);
+			perform cz_end_audit (jobID, 'FAIL');
+			return -16;
+	end;
+
+	get diagnostics rowCt := ROW_COUNT;
+	pCount := rowCt;
+
+	stepCt := stepCt + 1; get diagnostics rowCt := ROW_COUNT;
+	perform cz_write_audit(jobId,databaseName,procedureName,'Insert records into i2b2demodata.sample_dimension',pCount,stepCt,'Done');
+
+	begin
+
+		update i2b2demodata.observation_fact obf set sample_cd = sm.sample_cd
+		from (select patient_id, sample_cd from deapp.de_subject_sample_mapping) sm
+		where obf.patient_num = sm.patient_id and obf.sourcesystem_cd = studyid;
+
+		exception
+		when others then
+			errorNumber := SQLSTATE;
+			errorMessage := SQLERRM;
+			perform cz_error_handler (jobID, procedureName, errorNumber, errorMessage);
+			perform cz_end_audit (jobID, 'FAIL');
+			return -16;
+	end;
+
+	get diagnostics rowCt := ROW_COUNT;
+	pCount := rowCt;
+
+	stepCt := stepCt + 1; get diagnostics rowCt := ROW_COUNT;
+	perform cz_write_audit(jobId,databaseName,procedureName,'Update sample codes in i2b2demodata.observation_fact',pCount,stepCt,'Done');
+
 	
 	stepCt := stepCt + 1;
 	perform cz_write_audit(jobId,databaseName,procedureName,'End i2b2_process_serial_hdd_data',0,stepCt,'Done');
