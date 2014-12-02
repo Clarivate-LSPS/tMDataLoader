@@ -35,6 +35,7 @@ class DirectoryProcessor {
             Protein     : ProteinDataProcessor,
             Metabolomics: MetabolomicsDataProcessor,
             RNASeq      : RNASeqDataProcessor,
+            SerialHDD   : SerialHDDDataProcessor,
     ]
 
     DirectoryProcessor(conf) {
