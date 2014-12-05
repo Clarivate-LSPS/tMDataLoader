@@ -25,6 +25,7 @@ create or replace synonym "&TM_CZ_SCHEMA".lt_rnaseq_annotation for "&TM_LZ_SCHEM
 create or replace synonym "&TM_CZ_SCHEMA".lt_src_rbm_subj_samp_map for "&TM_LZ_SCHEMA".lt_src_rbm_subj_samp_map;
 create or replace synonym "&TM_CZ_SCHEMA".lt_src_rbm_data for "&TM_LZ_SCHEMA".lt_src_rbm_data;
 create or replace synonym "&TM_CZ_SCHEMA".lt_src_rbm_annotation for "&TM_LZ_SCHEMA".lt_src_rbm_annotation;
+create or replace synonym "&TM_CZ_SCHEMA".lt_src_mrna_xml_data for "&TM_LZ_SCHEMA".lt_src_mrna_xml_data;
 
 create or replace synonym "&TM_CZ_SCHEMA".i2b2_load_path for "&TM_WZ_SCHEMA".i2b2_load_path;
 create or replace synonym "&TM_CZ_SCHEMA".i2b2_load_path_with_count for "&TM_WZ_SCHEMA".i2b2_load_path_with_count;

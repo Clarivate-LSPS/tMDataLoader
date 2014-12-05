@@ -27,6 +27,8 @@ import groovy.sql.Sql
 
 class ExpressionDataProcessor extends DataProcessor {
 
+    public static final String DEFAULT_TISSUE_TYPE = 'Blood'
+
     public ExpressionDataProcessor(Object conf) {
         super(conf);
     }
@@ -114,6 +116,12 @@ class ExpressionDataProcessor extends DataProcessor {
 
                     platformList << cols[4]
                     studyIdList << cols[0]
+
+                    // Loading default value if tissue_type is empty
+                    String tissueType = cols[5]
+                    if (tissueType == null || tissueType.isEmpty()) {
+                        cols[5] = DEFAULT_TISSUE_TYPE
+                    }
 
                     stmt.addBatch(cols)
                 }
