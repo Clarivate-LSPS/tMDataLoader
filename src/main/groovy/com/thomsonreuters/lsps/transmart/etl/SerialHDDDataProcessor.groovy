@@ -108,7 +108,7 @@ class SerialHDDDataProcessor extends ExpressionDataProcessor {
         sql.withTransaction {
             sql.withBatch(1000, """\
 				INSERT into lt_src_mrna_xml_data (STUDY_ID, CATEGORY_CD, C_METADATAXML)
-				VALUES(?, ?, ?)
+				VALUES (?, ?, ?)
 			""") {
                 stmt ->
                     lineNum = processEachMappingRow f, studyInfo, { row -> stmt.addBatch(row) }
@@ -144,7 +144,7 @@ class SerialHDDDataProcessor extends ExpressionDataProcessor {
                             </SeriesMeta>
                     </ValueMetadata>"""
             row[1] = category_cd
-            row[2] = xml
+            row[2] = xml.toString()
             processRow(row)
         }
         config.logger.log(LogType.PROGRESS, "")

@@ -1,5 +1,7 @@
 package com.thomsonreuters.lsps.transmart.etl
 
+import com.thomsonreuters.lsps.transmart.sql.DatabaseType
+
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.*
 import static org.hamcrest.CoreMatchers.equalTo
 import static org.hamcrest.CoreMatchers.notNullValue
@@ -23,7 +25,9 @@ class SerialHDDDataProcessorTest extends GroovyTestCase implements ConfigAwareTe
         sql.execute('delete from deapp.de_subject_sample_mapping where trial_name = ?', studyId)
         runScript('I2B2_PROCESS_MRNA_DATA.sql')
         runScript('I2B2_PROCESS_SERIAL_HDD_DATA.sql')
-        runScript('I2B2_LOAD_SAMPLES.sql')
+        if (database?.databaseType == DatabaseType.Postgres) {
+            runScript('I2B2_LOAD_SAMPLES.sql')
+        }
     }
 
     void assertThatSampleIsPresent(String sampleId, sampleData) {
@@ -46,9 +50,9 @@ class SerialHDDDataProcessorTest extends GroovyTestCase implements ConfigAwareTe
 
     void assertThatSampleCdIsLoaded(String studyId, String sampleCd, String conceptPath) {
         def sourcesystemCd = studyId + ":" + sampleCd
-        def rows = sql.rows("select of.sample_cd from i2b2demodata.observation_fact of " +
-                "inner join i2b2demodata.patient_dimension pd on of.patient_num = pd.patient_num " +
-                "inner join i2b2demodata.concept_dimension cd on of.concept_cd = cd.concept_cd " +
+        def rows = sql.rows("select obf.sample_cd from i2b2demodata.observation_fact obf " +
+                "inner join i2b2demodata.patient_dimension pd on obf.patient_num = pd.patient_num " +
+                "inner join i2b2demodata.concept_dimension cd on obf.concept_cd = cd.concept_cd " +
                 "where pd.sourcesystem_cd = ? and cd.concept_path = ?", sourcesystemCd, conceptPath)
         assertThat(rows?.size(), equalTo(1))
         assertEquals(rows[0].sample_cd, sampleCd)

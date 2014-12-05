@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION i2b2_process_serial_hdd_data(studyid character varying, currentjobid numeric DEFAULT NULL::numeric) RETURNS numeric
+CREATE OR REPLACE FUNCTION i2b2_process_serial_hdd_data(studyIdInput character varying, currentjobid numeric DEFAULT NULL::numeric) RETURNS numeric
     LANGUAGE plpgsql SECURITY DEFINER
     SET search_path FROM CURRENT
     AS $$
@@ -7,6 +7,7 @@ Declare
 	newJobFlag NUMERIC(1);
 	databaseName character varying(100);
 	procedureName character varying(100);
+	studyId character varying(100);
 	jobID numeric(18,0); 
 	stepCt numeric(18,0); 
 	gplId	character varying(100);
@@ -24,6 +25,8 @@ BEGIN
 
 	databaseName := current_schema();
 	procedureName := 'I2B2_PROCESS_SERIAL_HDD_DATA';
+
+	studyId := upper(studyIdInput);
 
 	--Audit JOB Initialization
 	--If Job ID does not exist, then this is a single procedure run and we need to create it
@@ -78,8 +81,8 @@ BEGIN
 	begin
 
 		insert into i2b2demodata.sample_dimension (sample_cd)
-		select distinct sample_cd from lt_src_mrna_subj_samp_map where trial_name = studyid
-		and not exists (select sample_cd from i2b2demodata.sample_dimension where sample_cd = sample_cd);
+		select distinct sample_cd from lt_src_mrna_subj_samp_map ssm where ssm.trial_name = studyId
+		and not exists (select sample_cd from i2b2demodata.sample_dimension sd where sd.sample_cd = ssm.sample_cd);
 
 		exception
 		when others then
@@ -100,7 +103,7 @@ BEGIN
 
 		update i2b2demodata.observation_fact obf set sample_cd = sm.sample_cd
 		from (select patient_id, sample_cd from deapp.de_subject_sample_mapping) sm
-		where obf.patient_num = sm.patient_id and obf.sourcesystem_cd = studyid;
+		where obf.patient_num = sm.patient_id and obf.sourcesystem_cd = studyId;
 
 		exception
 		when others then
