@@ -16,6 +16,10 @@ class ProteinDataProcessorTest extends GroovyTestCase implements ConfigAwareTest
     String studyId = 'GSE37425'
     String platformId = 'RBM999'
 
+    String platformIdWithoutPeptide = 'RBM888'
+    String studyIdWithoutPeptide = 'GSE374251'
+    String studyNameWithoutPeptide = 'Test Protein Study 2'
+
     ProteinDataProcessor getProcessor() {
         _processor ?: (_processor = new ProteinDataProcessor(config))
     }
@@ -31,16 +35,16 @@ class ProteinDataProcessorTest extends GroovyTestCase implements ConfigAwareTest
         }
     }
 
-    void assertThatSampleIsPresent(String sampleId, sampleData) {
+    void assertThatSampleIsPresent(String sampleId, sampleData, currentStudyId, currentPlatformId) {
         def sample = sql.firstRow('select * from deapp.de_subject_sample_mapping where trial_name = ? and sample_cd = ?',
-                studyId, sampleId)
+                currentStudyId, sampleId)
         assertThat(sample, notNullValue())
 
         sampleData.each { gene_symbol, value ->
             def rows = sql.rows("select d.zscore from deapp.de_subject_protein_data d " +
                     "inner join deapp.de_protein_annotation a on d.protein_annotation_id = a.id " +
                     "where a.gpl_id = ? and d.assay_id = ? and d.gene_symbol = ?",
-                    platformId, sample.assay_id, gene_symbol)
+                    currentPlatformId, sample.assay_id, gene_symbol)
             assertThat(rows?.size(), equalTo(1))
             assertEquals(rows[0].zscore as double, value as double, 0.001)
         }
@@ -64,6 +68,30 @@ class ProteinDataProcessorTest extends GroovyTestCase implements ConfigAwareTest
                 [trial_name: studyId, subject_id: 'GSM918946', gene_symbol: 'P50440'],
                 [component: 'RPPGFSPFR(QTF-2)']))
 
-        assertThatSampleIsPresent('P50440', ['O00231': 0.02146])
+        assertThatSampleIsPresent('P50440', ['O00231': 0.02146], studyId, platformId)
+    }
+
+    void testItLoadsDataWithoutPeptide() {
+        processor.process(
+                new File("fixtures/Test Studies/${studyNameWithoutPeptide}/ProteinDataToUpload"),
+                [name: studyNameWithoutPeptide, node: "Test Studies\\${studyNameWithoutPeptide}".toString()])
+        assertThat(db, hasSample(studyIdWithoutPeptide, 'P504401'))
+        assertThat(db, hasPatient('GSM9189451').inTrial(studyIdWithoutPeptide))
+        assertThat(db, hasNode("\\Test Studies\\${studyNameWithoutPeptide}\\Biomarker Data\\Test Protein Platform 2\\").
+                withPatientCount(5))
+
+        assertThat(db, hasRecord('deapp.de_subject_sample_mapping',
+                [trial_name: studyIdWithoutPeptide, gpl_id: platformIdWithoutPeptide, subject_id: 'GSM9189441', sample_cd: 'P504401'],
+                [platform: 'PROTEIN']))
+
+        assertThat(db, hasRecord('deapp.de_subject_sample_mapping',
+                [trial_name: studyIdWithoutPeptide, gpl_id: platformIdWithoutPeptide, subject_id: 'GSM9189441', sample_cd: 'P504401'],
+                [platform: 'PROTEIN']))
+
+        assertThat(db, hasRecord('deapp.de_subject_protein_data',
+                [trial_name: studyIdWithoutPeptide, subject_id: 'GSM9189461', gene_symbol: 'P026471'],
+                [component: 'P026471']))
+
+        assertThatSampleIsPresent('P504401', ['O002311': 0.02146], studyIdWithoutPeptide, platformIdWithoutPeptide)
     }
 }
