@@ -1,0 +1,9 @@
+#PLATFORM_ID: RBM888
+#PLATFORM_TITLE: Test Protein Platform 2
+#SPECIES: Homo Sapiens 2
+majority_protein_id	organism	gpl_id
+P516591	Human	RBM888
+O002311	Human	RBM888
+P504401	Human	RBM888
+P378021	Human	RBM888
+P026471	Human	RBM888
