@@ -1,5 +1,7 @@
 package com.thomsonreuters.lsps.transmart.etl
 
+import com.thomsonreuters.lsps.transmart.sql.DatabaseType
+
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasNode
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasPatient
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasRecord
@@ -23,8 +25,10 @@ class MetabolomicsDataProcessorTest extends GroovyTestCase implements ConfigAwar
         ConfigAwareTestCase.super.setUp()
         sql.execute('delete from i2b2demodata.observation_fact where modifier_cd = ? or sourcesystem_cd = ?', studyId, studyId)
         sql.execute('delete from deapp.de_subject_sample_mapping where trial_name = ?', studyId)
-        runScript('I2B2_LOAD_METABOLOMICS_ANNOT.sql')
-        runScript('I2B2_PROCESS_METABOLOMIC_DATA.sql')
+        if (database?.databaseType == DatabaseType.Postgres) {
+            runScript('I2B2_LOAD_METABOLOMICS_ANNOT.sql')
+            runScript('I2B2_PROCESS_METABOLOMIC_DATA.sql')
+        }
     }
 
     void assertThatSampleIsPresent(String sampleId, sampleData) {
@@ -32,7 +36,7 @@ class MetabolomicsDataProcessorTest extends GroovyTestCase implements ConfigAwar
                 studyId, sampleId)
         assertThat(sample, notNullValue())
         String suffix = '';
-        if (sample.hasProperty("partition_id")){
+        if (sample.hasProperty("partition_id")) {
             suffix = sample.partition_id ? "_${sample.partition_id}" : ''
         }
         sampleData.each { probe_id, value ->

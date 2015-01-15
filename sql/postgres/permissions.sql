@@ -10,6 +10,7 @@ grant truncate, select, insert, delete on tm_dataloader.lt_src_deapp_annot to tm
 grant truncate, select, insert, delete on tm_dataloader.lt_snp_gene_map to tm_dataloader;
 grant truncate, select, insert, delete on tm_dataloader.lt_snp_calls_by_gsm to tm_dataloader;
 grant truncate, select, insert, delete on tm_dataloader.lt_snp_copy_number to tm_dataloader;
+grant truncate, select, insert, delete on tm_dataloader.lt_src_mrna_xml_data to tm_dataloader;
 -- grant insert, delete, select on deapp.de_snp_gene_map to tm_dataloader;
 -- grant insert, delete, select on deapp.de_snp_calls_by_gsm to tm_dataloader;
 -- grant insert, delete, select on deapp.de_snp_copy_number to tm_dataloader;

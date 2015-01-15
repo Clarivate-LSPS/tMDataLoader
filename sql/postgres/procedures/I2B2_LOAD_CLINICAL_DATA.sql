@@ -184,6 +184,7 @@ BEGIN
 	,data_value
 	,category_cd
 	,ctrl_vocab_code
+	,sample_cd
 	)
 	select study_id
 		  ,site_id
@@ -193,6 +194,7 @@ BEGIN
 		  ,data_value
 		  ,category_cd
 		  ,ctrl_vocab_code
+		  ,sample_cd
 	from lt_src_clinical_data;
 	exception
 	when others then
@@ -1099,7 +1101,8 @@ BEGIN
 		  '@' as valueflag_cd,
 		  '@' as provider_cd,
 		  '@' as location_cd,
-			0 as instance_num
+			0 as instance_num,
+			sample_cd as sample_cd
 	from wrk_clinical_data a
 		,i2b2demodata.patient_dimension c
 		,wt_trial_nodes t
@@ -1166,7 +1169,8 @@ BEGIN
      valueflag_cd,
      provider_id,
      location_cd,
-     instance_num
+     instance_num,
+     sample_cd
 	)
 	select * from tmp_observation_facts;
 

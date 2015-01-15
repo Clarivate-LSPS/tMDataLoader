@@ -58,6 +58,7 @@ class ClinicalDataProcessor extends DataProcessor {
                             site_id        : cols[fMappings['SITE_ID']],
                             subj_id        : cols[fMappings['SUBJ_ID']],
                             visit_name     : cols[fMappings['VISIT_NAME']],
+                            sample_cd      : cols[fMappings['SAMPLE_ID']],
                             data_label     : '', // DATA_LABEL
                             data_value     : '', // DATA_VALUE
                             category_cd    : '', // CATEGORY_CD
@@ -167,11 +168,11 @@ class ClinicalDataProcessor extends DataProcessor {
 
     private void processFileForPostgres(f, fMappings) {
         DataLoader.start(database, "lt_src_clinical_data", ['STUDY_ID', 'SITE_ID', 'SUBJECT_ID', 'VISIT_NAME',
-                                                                                 'DATA_LABEL', 'DATA_VALUE', 'CATEGORY_CD']) {
+                                                                                 'DATA_LABEL', 'DATA_VALUE', 'CATEGORY_CD', 'SAMPLE_CD']) {
             st ->
                 def lineNum = processEachRow(f, fMappings) { row ->
                     st.addBatch([row.study_id, row.site_id, row.subj_id, row.visit_name, row.data_label,
-                                 row.data_value, row.category_cd])
+                                 row.data_value, row.category_cd, row.sample_cd])
                 }
                 config.logger.log("Processed ${lineNum} rows")
         }
@@ -183,9 +184,9 @@ class ClinicalDataProcessor extends DataProcessor {
         sql.withTransaction {
             sql.withBatch(100, """\
 					INSERT into lt_src_clinical_data
-										(STUDY_ID, SITE_ID, SUBJECT_ID, VISIT_NAME, DATA_LABEL, DATA_VALUE, CATEGORY_CD)
+										(STUDY_ID, SITE_ID, SUBJECT_ID, VISIT_NAME, DATA_LABEL, DATA_VALUE, CATEGORY_CD, SAMPLE_CD)
 									VALUES (:study_id, :site_id, :subj_id, :visit_name,
-										:data_label, :data_value, :category_cd)
+										:data_label, :data_value, :category_cd, :sample_cd)
 					""") {
                 stmt ->
                     lineNum = processEachRow f, fMappings, {

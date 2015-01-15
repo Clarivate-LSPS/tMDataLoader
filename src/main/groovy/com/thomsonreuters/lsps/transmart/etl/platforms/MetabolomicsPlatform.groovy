@@ -11,7 +11,7 @@ class MetabolomicsPlatform extends GenePlatform {
 
     @Override
     void cleanupTempTables(Sql sql) {
-        sql.execute("TRUNCATE TABLE lt_metabolomic_annotation" as String)
+        sql.execute("DELETE FROM lt_metabolomic_annotation" as String)
     }
 
     @Override

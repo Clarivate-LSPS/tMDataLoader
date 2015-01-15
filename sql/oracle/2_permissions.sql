@@ -53,6 +53,7 @@ grant select, insert, update, delete on "&TM_LZ_SCHEMA".lt_snp_gene_map to "&TM_
 grant select, insert, update, delete on "&TM_LZ_SCHEMA".lz_src_clinical_data to "&TM_CZ_SCHEMA";
 grant select, insert, update, delete on "&TM_LZ_SCHEMA".lt_src_study_metadata to "&TM_CZ_SCHEMA";
 grant select, insert, update, delete on "&TM_LZ_SCHEMA".lt_src_mrna_subj_samp_map to "&TM_CZ_SCHEMA";
+grant select, insert, update, delete on "&TM_LZ_SCHEMA".lt_src_mrna_xml_data to "&TM_CZ_SCHEMA";
 
 grant select, insert, update, delete on "&TM_WZ_SCHEMA".wt_mrna_nodes to "&TM_CZ_SCHEMA";
 grant select, insert, update, delete on "&TM_WZ_SCHEMA".wt_mrna_node_values to "&TM_CZ_SCHEMA";
