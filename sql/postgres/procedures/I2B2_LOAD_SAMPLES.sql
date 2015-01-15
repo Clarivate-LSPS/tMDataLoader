@@ -895,9 +895,9 @@ BEGIN
 	if scount <> pCount then
 		stepCt := stepCt + 1;
 		select cz_write_audit(jobId,databaseName,procedureName,'Not all records in lt_src_mrna_subj_samp_map inserted/updated in de_subject_sample_mapping',0,stepCt,'Done') into rtnCd;
-		select cz_error_handler (jobID, procedureName, '-1', 'Application raised error') into rtnCd;
-		select cz_end_audit (jobID, 'FAIL') into rtnCd;
-		return -16;
+-- 		select cz_error_handler (jobID, procedureName, '-1', 'Application raised error') into rtnCd;
+-- 		select cz_end_audit (jobID, 'FAIL') into rtnCd;
+-- 		return -16;
 	end if;
 	--	Insert records for subjects into observation_fact
 	begin

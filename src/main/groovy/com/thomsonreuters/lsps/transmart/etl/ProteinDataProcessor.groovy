@@ -6,13 +6,16 @@ import com.thomsonreuters.lsps.transmart.sql.DatabaseType;
 import groovy.sql.Sql
 
 public class ProteinDataProcessor extends DataProcessor {
+    private int havePeptide = 1 // 1 - if peptide is defined, 0 - else
+
     public ProteinDataProcessor(Object conf) {
         super(conf);
     }
+
     @Override
     public boolean processFiles(File dir, Sql sql, Object studyInfo) {
-        sql.execute("TRUNCATE TABLE lt_src_proteomics_sub_sam_map" as String)
-        sql.execute("TRUNCATE TABLE lt_src_proteomics_data" as String)
+        sql.execute("DELETE FROM lt_src_proteomics_sub_sam_map" as String)
+        sql.execute("DELETE FROM lt_src_proteomics_data" as String)
 
         def platformList = [] as Set
 
@@ -181,8 +184,11 @@ public class ProteinDataProcessor extends DataProcessor {
         def lineNum = 0
         def dataFile = new CsvLikeFile(f)
         def header = dataFile.header
-        if (header[0].toUpperCase() != 'PEPTIDE' && header[1].toUpperCase() != 'MAJORITY PROTEIN IDS') {
+        /*if (header[0].toUpperCase() != 'PEPTIDE' && header[1].toUpperCase() != 'MAJORITY PROTEIN IDS') {
             throw new Exception("Incorrect protein data file")
+        } */
+        if (header[0].toUpperCase() != 'PEPTIDE'){
+            havePeptide = 0;
         }
         dataFile.eachEntry { cols ->
             lineNum++;
@@ -192,7 +198,7 @@ public class ProteinDataProcessor extends DataProcessor {
             cols.eachWithIndex { val, i ->
                 // skip first and second column
                 // rows should have intensity assigned to them, otherwise not interested
-                if (i > 1 && val) {
+                if (i > havePeptide && val) {
                     row[2] = header[i] as String
                     row[3] = val
                     processRow(row)

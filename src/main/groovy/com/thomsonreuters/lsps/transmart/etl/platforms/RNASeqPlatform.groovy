@@ -11,7 +11,7 @@ class RNASeqPlatform extends GenePlatform {
 
     @Override
     void cleanupTempTables(Sql sql) {
-        sql.execute("TRUNCATE TABLE lt_rnaseq_annotation" as String)
+        sql.execute("DELETE FROM lt_rnaseq_annotation" as String)
     }
 
     @Override

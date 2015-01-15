@@ -41,6 +41,7 @@ DECLARE
   logBase		bigint;
   pCount		integer;
   sCount		integer;
+  my_platform varchar(200);
   tablespaceName	varchar(200);
   v_bio_experiment_id	bigint;
    partitioniD	numeric(18,0);
@@ -264,7 +265,7 @@ BEGIN
 		 from lt_src_RNA_SEQ_subj_samp_map s
 		 where (s.subject_id IS NOT NULL AND s.subject_id::text <> '')
 		   and s.trial_name = TrialID
-		   and s.source_cd = sourceCD
+		   and coalesce(s.source_cd,'STD') = sourceCD
 		   and not exists
 			  (select 1 from i2b2demodata.patient_dimension x
 			   where x.sourcesystem_cd =
@@ -359,7 +360,7 @@ BEGIN
 				   ,''--g.title
     from lt_src_RNA_SEQ_subj_samp_map a
 	where a.trial_name = TrialID
-	  and a.source_cd = sourceCD;
+	  and coalesce(a.source_cd,'STD') = sourceCD;
 	get diagnostics rowCt := ROW_COUNT;
 	exception
 	when others then
@@ -778,7 +779,7 @@ BEGIN
 		left outer join i2b2demodata.patient_dimension sid
 			on regexp_replace(TrialID || ':' || coalesce(a.site_id,'') || ':' || a.subject_id,'(::){1,}', ':','g') = sid.sourcesystem_cd
 		where a.trial_name = TrialID
-		  and a.source_cd = sourceCD
+		  and coalesce(a.source_cd,'STD') = sourceCD
 		  and  (ln.concept_cd IS NOT NULL AND ln.concept_cd::text <> '')) as t;
 	get diagnostics rowCt := ROW_COUNT;
 	exception
@@ -824,7 +825,7 @@ BEGIN
                   ,1
     from  deapp.de_subject_sample_mapping m
     where m.trial_name = TrialID
-	  and m.source_cd = sourceCD
+	  and coalesce(m.source_cd,'STD') = sourceCD
       and m.platform = 'RNA_AFFYMETRIX';
 	  get diagnostics rowCt := ROW_COUNT;
 	exception
@@ -870,7 +871,7 @@ BEGIN
                   ,1
     from  deapp.de_subject_sample_mapping m
     where m.trial_name = TrialID
-	  and m.source_cd = sourceCd
+	  and coalesce(m.source_cd,'STD') = sourceCd
       and m.platform = 'RNA_AFFYMETRIX'
 	  and m.patient_id != m.sample_id;
 	  get diagnostics rowCt := ROW_COUNT;
@@ -1001,19 +1002,22 @@ BEGIN
     select cz_write_audit(jobId,databaseName,procedureName,'Update visual attributes for study node in I2B2METADATA i2b2',rowCt,stepCt,'Done') into rtnCd;
 
 	begin
+	select platform into my_platform from lt_src_RNA_SEQ_subj_samp_map
+	where trial_name = TrialId limit 1;
+
    insert into probeset_deapp
    (
    probeset,
    platform
-   )select distinct s.probeset
-               ,m.platform
-            from lt_src_rna_seq_data s,
-                 lt_src_RNA_SEQ_subj_samp_map m
-                 where s.trial_name=m.trial_name
+   )
+	select distinct s.probeset
+               ,my_platform
+            from tm_lz.lt_src_rna_seq_data s
+                 where s.trial_name=TrialId
                    and not exists
-		 (select 1 from probeset_deapp x
-		  where m.platform = x.platform
-		    and s.probeset = x.probeset);
+   (select 1 from tm_cz.probeset_deapp x
+    where my_platform = x.platform
+      and s.probeset = x.probeset);
     get diagnostics rowCt := ROW_COUNT;
 	exception
 	when others then
@@ -1117,7 +1121,7 @@ BEGIN
 	where sd.sample_cd = md.expr_id
 	  and sd.platform = 'RNA_AFFYMETRIX'
 	  and sd.trial_name = TrialId
-	  and sd.source_cd = sourceCd
+	  and coalesce(sd.source_cd,'STD') = sourceCd
 	and md.probeset = gs.probeset
 	  and (CASE WHEN dataType = 'R' THEN sign(md.intensity_value::numeric) ELSE 1 END) = 1  --	take only >0 for dataType R
 	  and sd.subject_id in (select subject_id from lt_src_rna_seq_subj_samp_map)

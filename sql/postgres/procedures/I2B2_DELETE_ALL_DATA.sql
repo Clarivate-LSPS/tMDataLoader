@@ -312,6 +312,13 @@ BEGIN
 		select cz_write_audit(jobId,databaseName,procedureName,'Delete trial from DEAPP de_subject_sample_mapping',rowCt,stepCt,'Done') into rtnCd;
 	end if;
 
+  delete from deapp.de_subject_snp_dataset
+	where trial_name = trialId;
+
+	stepCt := stepCt + 1;
+  get diagnostics rowCt := ROW_COUNT;
+  select cz_write_audit(jobId,databaseName,procedureName,'Delete SNP data for trial from DE_SUBJECT_SNP_DATASET',rowCt,stepCt,'Done') into rtnCd;
+
 	/*Check and delete top node, if removed node is last*/
     stepCt := stepCt + 1;
     select cz_write_audit(jobId,databaseName,procedureName,'Check and delete top node '||topNode||' if removed node is last',0,stepCt,'Done') into rtnCd;

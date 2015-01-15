@@ -15,7 +15,7 @@ class MIRNAPlatform extends GenePlatform {
 
     @Override
     void cleanupTempTables(Sql sql) {
-        sql.execute("TRUNCATE TABLE lt_qpcr_mirna_annotation" as String)
+        sql.execute("DELETE FROM lt_qpcr_mirna_annotation" as String)
     }
 
     @Override

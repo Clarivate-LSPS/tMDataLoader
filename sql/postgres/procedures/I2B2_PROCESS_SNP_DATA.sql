@@ -132,6 +132,23 @@ BEGIN
   stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Fill de_snp_copy_number',rowCt,stepCt,'Done') into rtnCd;
 
+  insert into deapp.de_subject_snp_dataset
+  (dataset_name, concept_cd, platform_name, trial_name, patient_num, subject_id, sample_type)
+  select
+    trial_name||'_'||subject_id||'_'||concept_code as dataset_name,
+    concept_code as concept_cd,
+    gpl_id as platform_name,
+    trial_name,
+    patient_id as patient_num,
+    subject_id,
+    sample_type
+  from deapp.de_subject_sample_mapping
+  where trial_name = TrialID;
+
+  get diagnostics rowCt := ROW_COUNT;
+  stepCt := stepCt + 1;
+	select cz_write_audit(jobId,databaseName,procedureName,'Fill de_subject_snp_dataset',rowCt,stepCt,'Done') into rtnCd;
+
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'End i2b2_process_snp_data',0,stepCt,'Done') into rtnCd;
 
