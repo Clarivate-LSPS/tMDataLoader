@@ -1,6 +1,7 @@
 package com.thomsonreuters.lsps.transmart.sql
 
 import groovy.sql.Sql
+import org.codehaus.groovy.control.io.NullWriter
 
 /**
  * Created by bondarev on 4/3/14.
@@ -10,11 +11,16 @@ class Database {
     DatabaseType databaseType = DatabaseType.Unknown
     String database
     String host
+    String controlSchema
     int port = -1
 
     Database(config) {
         this.config = config.db
         parseJdbcConnectionString()
+        this.controlSchema = config.controlSchema
+        if (!this.controlSchema) {
+            this.controlSchema = databaseType == DatabaseType.Postgres ? 'tm_dataloader' : 'TM_CZ'
+        }
     }
 
     void withSql(Closure block) {
@@ -27,9 +33,8 @@ class Database {
         }
     }
 
-    String getSearchPath() {
+    private String getSearchPath() {
         def schemas = 'tm_cz, tm_lz, tm_wz, i2b2demodata, i2b2metadata, deapp, pg_temp'
-        def controlSchema = config.controlSchema ? config.controlSchema : 'tm_dataloader'
         if (controlSchema.toLowerCase() != 'tm_cz') {
             schemas = "${controlSchema}, ${schemas}"
         }
@@ -45,40 +50,80 @@ class Database {
     }
 
     Process runPsqlCommand(String ... additionalArgs) {
+        return runPsqlCommand(null, additionalArgs)
+    }
+
+    Process runPsqlCommand(File dir, String ... additionalArgs) {
         def env = System.getenv().entrySet().collect { "${it.key}=${it.value}" }
         env << "PGPASSWORD=${config.password}"
         def cmd = ['psql', '-h', host, '-U', config.username, '-d', database]
         cmd.addAll(additionalArgs)
-        return Runtime.runtime.exec(cmd as String[], env as String[])
+        return Runtime.runtime.exec(cmd as String[], env as String[], dir)
     }
 
     private File prepareScript(File sqlFile) {
         File tmpDir = new File("tmp")
-        tmpDir.mkdirs();
+        tmpDir.mkdirs()
+        tmpDir.deleteOnExit()
 
         File tmpFile = File.createTempFile("script", ".sql", tmpDir)
         tmpFile.deleteOnExit();
         tmpFile.setReadable(true, false);
         tmpFile.setWritable(true, false);
         tmpFile.setExecutable(true, false);
+        String content = sqlFile.text
         tmpFile.withWriter {
             if (databaseType == DatabaseType.Postgres) {
                 it.println("set SEARCH_PATH = ${searchPath};")
-                it.append(sqlFile.text)
+                it.append(content)
             } else if (databaseType == DatabaseType.Oracle) {
-                it.println(sqlFile.text)
-                it.append("/" + System.lineSeparator() + "exit;")
+                it.println("ALTER SESSION SET CURRENT_SCHEMA=${controlSchema};")
+                it.println('/')
+                it.println(content)
+                it.println('/')
+                it.println("exit;")
             }
         }
         return tmpFile;
     }
 
-    Process runScript(File script) {
+    private class MulticastAppendable implements Appendable {
+        private Appendable first;
+        private Appendable second;
+
+        MulticastAppendable(Appendable first, Appendable second) {
+            this.first = first
+            this.second = second
+        }
+
+        @Override
+        Appendable append(CharSequence csq) throws IOException {
+            first.append(csq)
+            second.append(csq)
+            return this
+        }
+
+        @Override
+        Appendable append(CharSequence csq, int start, int end) throws IOException {
+            first.append(csq, start, end)
+            second.append(csq, start, end)
+            return this
+        }
+
+        @Override
+        Appendable append(char c) throws IOException {
+            first.append(c)
+            second.append(c)
+            return this
+        }
+    }
+
+    Process runScript(File script, boolean showOutput=false) {
         Process runner
         File preparedScript = prepareScript(script)
         switch (databaseType) {
             case DatabaseType.Postgres:
-                runner = runPsqlCommand('-f', preparedScript.path)
+                runner = runPsqlCommand(script.parentFile, '-f', preparedScript.absolutePath)
                 break
             case DatabaseType.Oracle:
                 def command = "sqlplus -l ${config.username}/${config.password}@${host}:${port}/${database} @${preparedScript.absolutePath}"
@@ -87,14 +132,19 @@ class Database {
             default:
                 throw new UnsupportedOperationException("Can't run script for database: ${databaseType}")
         }
+
+        StringBuffer err = new StringBuffer()
+        Appendable stdout = showOutput ? System.out : NullWriter.DEFAULT
+        Appendable stderr = showOutput ? new MulticastAppendable(System.err, err) : err
+        runner.consumeProcessOutput(stdout, stderr)
+
         runner.waitFor()
         if (runner.exitValue() != 0) {
             throw new RuntimeException(runner.errorStream.text)
         }
 
-        String errors = runner.err.text
-        if (errors) {
-            println(errors)
+        if (err.length() > 0) {
+            println(err.toString())
         }
 
         return runner

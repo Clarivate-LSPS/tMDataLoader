@@ -1,6 +1,10 @@
 CREATE OR REPLACE PROCEDURE "I2B2_ADD_PLATFORM"(
-  gpl_id       varchar2, name varchar2, organism varchar2, marker_type varchar2,
-  genome_build varchar2 := NULL, release_nbr varchar2 := NULL,
+  gpl_id       varchar2,
+  name varchar2,
+  organism varchar2,
+  marker_type varchar2,
+  genome_build varchar2 := NULL,
+  release_nbr varchar2 := NULL,
   currentjobid NUMBER := -1)
 AS
     newJobFlag 	INTEGER(1);
@@ -33,7 +37,7 @@ BEGIN
 
     INSERT INTO deapp.de_gpl_info (platform, title, organism, annotation_date, marker_type, genome_build, release_nbr)
     VALUES
-      (gpl_id, "name", organism, current_timestamp, marker_type, genome_build, release_nbr);
+      (gpl_id, name, organism, current_timestamp, marker_type, genome_build, release_nbr);
     COMMIT;
 
     cz_write_audit(jobId, databaseName, procedureName, 'Add platform ' || gpl_id, SQL%ROWCOUNT, stepCt, 'Done');
