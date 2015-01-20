@@ -17,8 +17,9 @@ class Database {
     Database(config) {
         this.config = config.db
         parseJdbcConnectionString()
-        this.controlSchema = config.controlSchema
-        if (!this.controlSchema) {
+        if (config.controlSchema) {
+            this.controlSchema = config.controlSchema
+        } else {
             this.controlSchema = databaseType == DatabaseType.Postgres ? 'tm_dataloader' : 'TM_CZ'
         }
     }
