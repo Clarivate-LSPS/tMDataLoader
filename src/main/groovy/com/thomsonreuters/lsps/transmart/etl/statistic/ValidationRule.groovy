@@ -36,7 +36,7 @@ class ValidationRule {
         }
         def tokenizer = new StringTokenizer(validationRules, ';')
         while (tokenizer.hasMoreTokens()) {
-            ValidationRule rule = parse(tokenizer.nextToken())
+            ValidationRule rule = parse(tokenizer.nextToken().trim())
             if (rule) {
                 rules.add(rule)
             }
