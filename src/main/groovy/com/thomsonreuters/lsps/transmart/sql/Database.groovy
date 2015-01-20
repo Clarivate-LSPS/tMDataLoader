@@ -27,15 +27,19 @@ class Database {
         }
     }
 
+    String getSearchPath() {
+        def schemas = 'tm_cz, tm_lz, tm_wz, i2b2demodata, i2b2metadata, deapp, pg_temp'
+        def controlSchema = config.controlSchema ? config.controlSchema : 'tm_dataloader'
+        if (controlSchema.toLowerCase() != 'tm_cz') {
+            schemas = "${controlSchema}, ${schemas}"
+        }
+        return schemas
+    }
+
     Sql newSql() {
         Sql sql = Sql.newInstance(config.jdbcConnectionString, config.username, config.password, config.jdbcDriver)
         if (databaseType == DatabaseType.Postgres) {
-            def schemas = 'tm_cz, tm_lz, tm_wz, i2b2demodata, i2b2metadata, deapp, pg_temp'
-            def controlSchema = config.controlSchema ? config.controlSchema : 'tm_dataloader'
-            if (controlSchema.toLowerCase() != 'tm_cz') {
-                schemas = "${controlSchema}, ${schemas}"
-            }
-            sql.execute("SET SEARCH_PATH=${Sql.expand(schemas)};")
+            sql.execute("SET SEARCH_PATH=${Sql.expand(searchPath)};")
         }
         return sql
     }
@@ -48,14 +52,36 @@ class Database {
         return Runtime.runtime.exec(cmd as String[], env as String[])
     }
 
+    private File prepareScript(File sqlFile) {
+        File tmpDir = new File("tmp")
+        tmpDir.mkdirs();
+
+        File tmpFile = File.createTempFile("script", ".sql", tmpDir)
+        tmpFile.deleteOnExit();
+        tmpFile.setReadable(true, false);
+        tmpFile.setWritable(true, false);
+        tmpFile.setExecutable(true, false);
+        tmpFile.withWriter {
+            if (databaseType == DatabaseType.Postgres) {
+                it.println("set SEARCH_PATH = ${searchPath};")
+                it.append(sqlFile.text)
+            } else if (databaseType == DatabaseType.Oracle) {
+                it.println(sqlFile.text)
+                it.append("/" + System.lineSeparator() + "exit;")
+            }
+        }
+        return tmpFile;
+    }
+
     Process runScript(File script) {
         Process runner
+        File preparedScript = prepareScript(script)
         switch (databaseType) {
             case DatabaseType.Postgres:
-                runner = runPsqlCommand('-f', script.path)
+                runner = runPsqlCommand('-f', preparedScript.path)
                 break
             case DatabaseType.Oracle:
-                def command = "sqlplus -l ${config.username}/${config.password}@${host}:${port}/${database} @${script.absolutePath}"
+                def command = "sqlplus -l ${config.username}/${config.password}@${host}:${port}/${database} @${preparedScript.absolutePath}"
                 runner = Runtime.runtime.exec(command)
                 break
             default:
@@ -65,6 +91,12 @@ class Database {
         if (runner.exitValue() != 0) {
             throw new RuntimeException(runner.errorStream.text)
         }
+
+        String errors = runner.err.text
+        if (errors) {
+            println(errors)
+        }
+
         return runner
     }
 
