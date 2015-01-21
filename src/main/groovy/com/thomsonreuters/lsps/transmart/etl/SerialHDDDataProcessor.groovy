@@ -137,6 +137,7 @@ class SerialHDDDataProcessor extends ExpressionDataProcessor {
             category_cd = cols[0].replace('_', ' ')
             xml = """<?xml version="1.0"?>
                         <ValueMetadata>
+                            <Oktousevalues>Y</Oktousevalues>
                             <SeriesMeta>
                                 <Value>${cols[1]}</Value>
                                 <Unit>${cols[2]}</Unit>
