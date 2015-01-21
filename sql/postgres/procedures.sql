@@ -37,4 +37,5 @@ $$;
 \i procedures/I2B2_RBM_ZSCORE_CALC_NEW.sql
 \i procedures/I2B2_RNA_SEQ_ANNOTATION.sql
 \i procedures/I2B2_DELETE_PARTITION.sql
+\i procedures/I2B2_ADD_PLATFORM.sql
 \i procedures/I2B2_PROCESS_SERIAL_HDD_DATA.sql

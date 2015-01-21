@@ -18,7 +18,13 @@ class VCFDataProcessor extends DataProcessor {
     private void loadMappingFile(File mappingFile, studyInfo) {
         def csv = new CsvLikeFile(mappingFile, '#')
         if (!studyInfo.id) {
-            studyInfo.id = (csv as MetaInfoHeader).metaInfo.STUDY_ID
+            def metaInfo = (csv as MetaInfoHeader).metaInfo
+            studyInfo.id = metaInfo.STUDY_ID
+            studyInfo.genomeBuild = metaInfo.GENOME_BUILD
+            studyInfo.platformId = metaInfo.PLATFORM_ID ?:
+                    (studyInfo.genomeBuild ? "VCF_${studyInfo.genomeBuild}".toString() : 'VCF')
+            studyInfo.platformName = metaInfo.PLATFORM_NAME ?: studyInfo.platformId
+            studyInfo.species = metaInfo.SPECIES ?: 'Homo Sapiens'
         }
         def sampleMapping = [:]
         csv.eachEntry {
@@ -32,7 +38,7 @@ class VCFDataProcessor extends DataProcessor {
     private void cleanupVcfTrialData(Sql sql, String trialId) {
         boolean autoCommitMode = sql.connection.autoCommit
         sql.connection.autoCommit = false
-        def dataSetIds = sql.rows('select distinct dataset_id from deapp.de_variant_subject_summary vss, deapp.de_subject_sample_mapping sm where sm.assay_id = vss.assay_id and trial_name = ?', trialId)
+        def dataSetIds = sql.rows('SELECT DISTINCT dataset_id FROM deapp.de_variant_subject_summary vss, deapp.de_subject_sample_mapping sm WHERE sm.assay_id = vss.assay_id AND trial_name = ?', trialId)
         dataSetIds*.dataset_id.each { dataSetId ->
             deleteDataSet(sql, dataSetId)
         }
@@ -41,12 +47,12 @@ class VCFDataProcessor extends DataProcessor {
     }
 
     private void deleteDataSet(Sql sql, dataSetId) {
-        sql.execute('delete from deapp.de_variant_population_data where dataset_id = ?', dataSetId)
-        sql.execute('delete from deapp.de_variant_population_info where dataset_id = ?', dataSetId)
-        sql.execute('delete from deapp.de_variant_subject_summary where dataset_id = ?', dataSetId)
-        sql.execute('delete from deapp.de_variant_subject_detail where dataset_id = ?', dataSetId)
-        sql.execute('delete from deapp.de_variant_subject_idx where dataset_id = ?', dataSetId)
-        sql.execute('delete from deapp.de_variant_dataset where dataset_id = ?', dataSetId)
+        sql.execute('DELETE FROM deapp.de_variant_population_data WHERE dataset_id = ?', dataSetId)
+        sql.execute('DELETE FROM deapp.de_variant_population_info WHERE dataset_id = ?', dataSetId)
+        sql.execute('DELETE FROM deapp.de_variant_subject_summary WHERE dataset_id = ?', dataSetId)
+        sql.execute('DELETE FROM deapp.de_variant_subject_detail WHERE dataset_id = ?', dataSetId)
+        sql.execute('DELETE FROM deapp.de_variant_subject_idx WHERE dataset_id = ?', dataSetId)
+        sql.execute('DELETE FROM deapp.de_variant_dataset WHERE dataset_id = ?', dataSetId)
     }
 
     @Override
@@ -110,7 +116,8 @@ class VCFDataProcessor extends DataProcessor {
                 logger.log(LogType.DEBUG, "Loading samples: ${vcfFile.samples.size()}")
                 vcfFile.samples.eachWithIndex { sample, idx ->
                     st.addBatch([dataSetId, sample, idx + 1])
-                    samplesLoader.addSample("VCF+${vcfName}", sampleMapping[sample] as String, sample, '', sourceCd: sourceCd)
+                    samplesLoader.addSample("VCF+${vcfName}", sampleMapping[sample], sample, studyInfo.platformId,
+                            sourceCd: sourceCd)
                 }
             }
 
@@ -175,7 +182,7 @@ class VCFDataProcessor extends DataProcessor {
                                  idx, intValue, floatValue, textValue])
                 }
             } else {
-                logger.log(LogType.WARNING, "Field with value=" + it.value + ' wont be added to deapp.de_variant_population_data' +
+                logger.log(LogType.WARNING, "Field with value=" + it.value + ' won\'t be added to deapp.de_variant_population_data ' +
                         'because it does not have description in INFO part in file header.')
             }
         }
@@ -242,15 +249,29 @@ class VCFDataProcessor extends DataProcessor {
         ])
     }
 
+    private void loadPlatform(jobId, Sql sql, studyInfo) {
+        String markerType = 'Gene Expression'
+        boolean loaded = sql.rows('select 1 from deapp.de_gpl_info where platform = ?', studyInfo.platformId as String)
+                .asBoolean()
+        if (!loaded) {
+            use(SqlMethods) {
+                sql.callProcedure("${config.controlSchema}.i2b2_add_platform",
+                        studyInfo.platformId, studyInfo.platformName, studyInfo.species, markerType,
+                        studyInfo.genomeBuild, null, jobId)
+            }
+        }
+    }
+
     @Override
-    boolean runStoredProcedures(Object jobId, Sql sql, Object studyInfo) {
+    boolean runStoredProcedures(jobId, Sql sql, studyInfo) {
         def studyId = studyInfo['id']
         def studyNode = studyInfo['node']
         def sources = studyInfo['sources']
         if (studyId && studyNode) {
+            loadPlatform(jobId, sql, studyInfo)
             use(SqlMethods) {
                 sources.each { source ->
-                sql.callProcedure("${config.controlSchema}.i2b2_process_vcf_data",
+                    sql.callProcedure("${config.controlSchema}.i2b2_process_vcf_data",
                             studyId, studyNode, source, config.securitySymbol, jobId)
                 }
             }
