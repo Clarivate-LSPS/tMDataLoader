@@ -44,11 +44,6 @@ public class ProteinDataProcessor extends DataProcessor {
         def studyNode = studyInfo['node']
         def studyDataType = studyInfo['datatype']
 
-        if (studyDataType == 'T' && !config.useT) {
-            config.logger.log("Original DataType='T', but using 'Z' instead (workaround); use -t option to alter this behavior")
-            studyDataType = 'Z' // temporary workaround due to a bug in Transmart
-        }
-
         if (studyId && studyNode && studyDataType) {
             config.logger.log("Study ID=${studyId}; Node=${studyNode}; Data Type=${studyDataType}")
 
@@ -134,7 +129,7 @@ public class ProteinDataProcessor extends DataProcessor {
         config.logger.log("Processing ${f.name}")
 
         // retrieve data type
-        def m = f.name =~ /(?i)PROTEIN_Data_([RLTZ])/
+        def m = f.name =~ /(?i)PROTEIN_Data_([RLT])/
         if (m[0]) {
             def dataType = m[0][1]
             if (studyInfo['datatype']) {
