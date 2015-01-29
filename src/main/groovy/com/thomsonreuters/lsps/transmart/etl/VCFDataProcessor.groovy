@@ -35,10 +35,10 @@ class VCFDataProcessor extends DataProcessor {
         studyInfo.sampleMapping = sampleMapping
     }
 
-    private void cleanupVcfTrialData(Sql sql, String trialId) {
+    private void cleanupVcfTrialData(Sql sql, String trialId, String sourceCd) {
         boolean autoCommitMode = sql.connection.autoCommit
         sql.connection.autoCommit = false
-        def dataSetIds = sql.rows('SELECT DISTINCT dataset_id FROM deapp.de_variant_subject_summary vss, deapp.de_subject_sample_mapping sm WHERE sm.assay_id = vss.assay_id AND trial_name = ?', trialId)
+        def dataSetIds = sql.rows('SELECT DISTINCT dataset_id FROM deapp.de_variant_subject_summary vss, deapp.de_subject_sample_mapping sm WHERE sm.assay_id = vss.assay_id AND trial_name = ? AND source_cd = ?', trialId, sourceCd)
         dataSetIds*.dataset_id.each { dataSetId ->
             deleteDataSet(sql, dataSetId)
         }
@@ -65,7 +65,6 @@ class VCFDataProcessor extends DataProcessor {
         loadMappingFile(mappingFile, studyInfo)
 
         String studyId = studyInfo.id as String
-        cleanupVcfTrialData(sql, studyId)
         def samplesLoader = new SamplesLoader(studyId)
         studyInfo.sources = []
         def files = []
@@ -80,6 +79,7 @@ class VCFDataProcessor extends DataProcessor {
     def createDataSet(Sql sql, trialId, sourceCd) {
         use(SqlMethods) {
             String dataSetId = "${trialId}:${sourceCd}"
+            cleanupVcfTrialData(sql, trialId, sourceCd)
             deleteDataSet(sql, dataSetId)
             logger.log(LogType.DEBUG, 'Loading study information into deapp.de_variant_dataset')
             sql.insertRecord('deapp.de_variant_dataset',

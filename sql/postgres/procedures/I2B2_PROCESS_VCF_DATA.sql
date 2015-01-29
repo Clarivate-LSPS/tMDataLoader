@@ -40,16 +40,20 @@ Declare
 
 	TrialID			varchar(100);
 	sourceCd		varchar(50);
+	datasetId		varchar(160);
 
 	res numeric;
 BEGIN
 	TrialID := upper(trial_id);
+	sourceCd := upper(coalesce(source_cd,'STD'));
+	datasetId := trial_id || ':' || sourceCd;
 
 	--Set Audit Parameters
 	newJobFlag := 0; -- False (Default)
 	jobID := currentJobID;
 	databaseName := current_schema();
 	procedureName := 'i2b2_process_vcf_data';
+
 
 	--Audit JOB Initialization
 	--If Job ID does not exist, then this is a single procedure run and we need to create it
@@ -64,8 +68,6 @@ BEGIN
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Starting i2b2_process_vcf_data',0,stepCt,'Done') into rtnCd;
 
-	sourceCd := upper(coalesce(source_cd,'STD'));
-
 	select I2B2_LOAD_SAMPLES(trial_id, top_node, 'VCF', sourceCd, secure_study, jobID) into res;
 	if res < 0 then
 	  return res;
@@ -74,7 +76,9 @@ BEGIN
 	update deapp.de_variant_subject_summary v
 	set assay_id = sm.assay_id
 	from deapp.de_subject_sample_mapping sm
-	where sm.platform = 'VCF' and sm.trial_name = TrialID and sm.sample_cd = v.subject_id;
+	where sm.platform = 'VCF' and sm.trial_name = TrialID and sm.source_cd = sourceCd
+		and v.dataset_id = datasetId
+		and sm.sample_cd = v.subject_id;
 
   get diagnostics rowCt := ROW_COUNT;
 	stepCt := stepCt + 1;

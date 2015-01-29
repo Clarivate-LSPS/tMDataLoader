@@ -180,8 +180,8 @@ class VCFDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase
 
     void testItLoadsMultipleVcfFiles() {
         def gplId = 'VCF'
-        assertThat(db, hasPlatform(gplId, gplId, 'VCF', organism: 'Homo Sapiens'))
         assertTrue(dataProcessor.process(Fixtures.multipleVcfData, [name: studyName, node: $/Test Studies\${studyName}/$]))
+        assertThat(db, hasPlatform(gplId, gplId, 'VCF', organism: 'Homo Sapiens'))
         assertThat(db, hasNode("\\Test Studies\\${studyName}\\VCF\\VCFTest1\\").withPatientCount(1))
         assertThat(db, hasNode("\\Test Studies\\${studyName}\\VCF\\VCFTest2\\").withPatientCount(1))
         assertThat(db, hasSample(studyId, 'VCF_TST001', platform: 'VCF'))
