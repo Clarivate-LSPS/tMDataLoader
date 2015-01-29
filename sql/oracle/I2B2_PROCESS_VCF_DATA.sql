@@ -632,7 +632,7 @@ BEGIN
 			  ,observation_fact xf
 		  where xf.concept_cd = xd.concept_cd
 		  group by xd.concept_Cd
-		  having Max(xf.valtype_cd) = 'T');
+		  having Max(xf.valtype_cd) = 'N');
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Update c_columndatatype and c_metadataxml for numeric data types in I2B2METADATA i2b2',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
