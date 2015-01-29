@@ -48,6 +48,7 @@ Declare
 	study_name		varchar(100);
 	sourceCd		varchar(50);
 	secureStudy		varchar(1);
+	markerType  varchar(100);
 
 	tText			varchar(1000);
 	pExists			numeric;
@@ -154,14 +155,19 @@ BEGIN
 		return -16;
 	end if;
 
-	--	check if entry in deapp.de_gpl_info for every Gene Expression platform, if not, abort run
+	markerType := case
+		when platform_type = 'VCF' then 'VCF'
+		else 'GENE EXPRESSION'
+	end;
+
+	--	check if entry in deapp.de_gpl_info for every platform, if not, abort run
 
 	select count(*) into pCount
 	from lt_src_mrna_subj_samp_map sm
 	where coalesce(sm.platform, '') <> '' and not exists
 		 (select 1 from deapp.de_gpl_info gi
-		  where sm.platform = gi.platform
-		    and gi.marker_type = 'Gene Expression'
+			where sm.platform = gi.platform
+			and upper(gi.marker_type) = markerType
 			and gi.title is not null);
 
 	if pCount > 0 then
@@ -372,7 +378,7 @@ BEGIN
 				   ,g.title
     from lt_src_mrna_subj_samp_map a
     left join deapp.de_gpl_info g
-    on a.platform = g.platform and upper(g.marker_type) = 'GENE EXPRESSION'
+    on a.platform = g.platform and upper(g.marker_type) = markerType
 	where a.trial_name = TrialID
 	  and a.source_cd = sourceCD;
 	get diagnostics rowCt := ROW_COUNT;
