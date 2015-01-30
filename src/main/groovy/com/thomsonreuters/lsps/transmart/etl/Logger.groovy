@@ -66,7 +66,7 @@ class Logger {
         PrintWriter writer = new PrintWriter(stringWriter)
         writer.append('Exception: ')
         ex.printStackTrace(writer)
-        if (ex instanceof SQLException) {
+        if (ex instanceof SQLException && ex.nextException != null) {
             writer.append('Next exception: ')
             ex.nextException.printStackTrace(writer)
         }
