@@ -131,7 +131,7 @@ class VcfFile extends CsvLikeFile implements MetaInfoHeader {
             }
             infoString.split(';').collectEntries {
                 def parts = it.split('=', 2)
-                [infoFields[parts[0]], parts[1].split(',', -1)]
+                [infoFields[parts[0]] ?: new InfoField(id: parts[0]), parts[1].split(',', -1)]
             }
         }
     }
