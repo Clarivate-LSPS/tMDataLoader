@@ -30,20 +30,19 @@ class CsvDataLoader extends DataLoader {
     }
 
     @Override
-    def withBatch(Closure block) {
+    long withBatch(Closure block) {
         String command = "COPY ${tableName}"
         if (columnNames) {
             command += "(${columnNames.join(', ')})"
         }
         command += " FROM STDIN WITH (FORMAT CSV, DELIMITER '\t')"
         database.withSql { sql->
-            OutputStream out = org.postgresql.copy.PGCopyOutputStream.newInstance([sql.connection, command as String] as Object[])
+            def out = org.postgresql.copy.PGCopyOutputStream.newInstance([sql.connection, command as String] as Object[])
             def printer = new PrintWriter(out)
-            def result = block.call(new BatchWriter(printer))
+            block.call(new BatchWriter(printer))
             printer.println "\\."
             printer.flush()
-            printer.close()
-            return result
+            return out.endCopy()
         }
     }
 }

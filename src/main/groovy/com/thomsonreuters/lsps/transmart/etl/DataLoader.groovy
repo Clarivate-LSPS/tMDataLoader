@@ -11,18 +11,20 @@ abstract class DataLoader {
     CharSequence tableName
     Collection<? extends CharSequence> columnNames
 
-    static def start(Database database, CharSequence tableName, Collection<CharSequence> columnNames, Closure block) {
+    static long start(Database database, CharSequence tableName, Collection<CharSequence> columnNames, Closure block) {
         columnNames = columnNames.collect { "\"${it}\"" }
         //FIXME: find better solution
         if (database.databaseType == DatabaseType.Postgres) {
             columnNames = columnNames*.toLowerCase()
         }
+        DataLoader dataLoader
         if (database.databaseType == DatabaseType.Postgres) {
-            new CsvDataLoader(database: database, tableName: tableName, columnNames: columnNames).withBatch(block)
+            dataLoader = new CsvDataLoader(database: database, tableName: tableName, columnNames: columnNames)
         } else {
-            new SqlDataLoader(database: database, tableName: tableName, columnNames: columnNames).withBatch(block)
+            dataLoader = new SqlDataLoader(database: database, tableName: tableName, columnNames: columnNames)
         }
+        return dataLoader.withBatch(block)
     }
 
-    abstract def withBatch(Closure block);
+    abstract long withBatch(Closure block);
 }

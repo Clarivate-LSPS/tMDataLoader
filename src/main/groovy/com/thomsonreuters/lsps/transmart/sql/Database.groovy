@@ -24,7 +24,7 @@ class Database {
         }
     }
 
-    void withSql(Closure block) {
+    def withSql(Closure block) {
         Sql sql = null
         try {
             sql = newSql()
