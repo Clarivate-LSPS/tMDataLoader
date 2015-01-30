@@ -3,6 +3,8 @@ package com.thomsonreuters.lsps.transmart.etl
 import org.apache.commons.csv.CSVFormat
 import org.apache.commons.csv.CSVPrinter
 
+import java.nio.charset.Charset
+
 /**
  * Created by bondarev on 4/21/14.
  */
@@ -10,7 +12,7 @@ class CsvDataLoader extends DataLoader {
     private static class BatchWriter {
         private CSVPrinter printer
 
-        BatchWriter(PrintWriter out) {
+        BatchWriter(Appendable out) {
             printer = new CSVPrinter(out, CSVFormat.TDF.withRecordSeparator(System.getProperty("line.separator")))
         }
 
@@ -38,9 +40,8 @@ class CsvDataLoader extends DataLoader {
         command += " FROM STDIN WITH (FORMAT CSV, DELIMITER '\t')"
         database.withSql { sql->
             def out = org.postgresql.copy.PGCopyOutputStream.newInstance([sql.connection, command as String] as Object[])
-            def printer = new PrintWriter(out)
+            def printer = new OutputStreamWriter(out)
             block.call(new BatchWriter(printer))
-            printer.println "\\."
             printer.flush()
             return out.endCopy()
         }
