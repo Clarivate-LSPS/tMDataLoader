@@ -112,7 +112,8 @@ class VCFDataProcessor extends DataProcessor {
         String dataSetId = createDataSet(sql, studyInfo.id, sourceCd)
         logger.log(LogType.MESSAGE, "Processing file ${inputFile.getName()}")
         use(SqlMethods) {
-            DataLoader.start(database, 'deapp.de_variant_subject_idx', ['DATASET_ID', 'SUBJECT_ID', 'POSITION']) { st ->
+            long siRecords, piRecords, sdRecords, ssRecords, pdRecords
+            siRecords = DataLoader.start(database, 'deapp.de_variant_subject_idx', ['DATASET_ID', 'SUBJECT_ID', 'POSITION']) { st ->
                 logger.log(LogType.DEBUG, "Loading samples: ${vcfFile.samples.size()}")
                 vcfFile.samples.eachWithIndex { sample, idx ->
                     st.addBatch([dataSetId, sample, idx + 1])
@@ -122,7 +123,7 @@ class VCFDataProcessor extends DataProcessor {
             }
 
             logger.log(LogType.DEBUG, 'Loading population info')
-            DataLoader.start(database, 'deapp.de_variant_population_info',
+            piRecords = DataLoader.start(database, 'deapp.de_variant_population_info',
                     ['DATASET_ID', 'INFO_NAME', 'DESCRIPTION', 'TYPE', 'NUMBER']) { populationInfo ->
                 vcfFile.infoFields.values().each {
                     populationInfo.addBatch([dataSetId, it.id, it.description, it.type, it.number])
@@ -131,13 +132,13 @@ class VCFDataProcessor extends DataProcessor {
 
             logger.log(LogType.DEBUG, 'Loading subject summary, subject detail & population data')
             int lineNumber = 0
-            DataLoader.start(database, 'deapp.de_variant_subject_detail',
+            sdRecords = DataLoader.start(database, 'deapp.de_variant_subject_detail',
                     ['DATASET_ID', 'RS_ID', 'CHR', 'POS', 'REF', 'ALT', 'QUAL',
                      'FILTER', 'INFO', 'FORMAT', 'VARIANT_VALUE']) { subjectDetail ->
-                DataLoader.start(database, 'deapp.de_variant_subject_summary',
+                ssRecords = DataLoader.start(database, 'deapp.de_variant_subject_summary',
                         ['DATASET_ID', 'SUBJECT_ID', 'RS_ID', 'CHR', 'POS', 'VARIANT', 'VARIANT_FORMAT', 'VARIANT_TYPE',
                          'REFERENCE', 'ALLELE1', 'ALLELE2']) { subjectSummary ->
-                    DataLoader.start(database, 'deapp.de_variant_population_data',
+                    pdRecords = DataLoader.start(database, 'deapp.de_variant_population_data',
                             ['DATASET_ID', 'CHR', 'POS', 'INFO_NAME', 'INFO_INDEX',
                              'INTEGER_VALUE', 'FLOAT_VALUE', 'TEXT_VALUE']) { populationData ->
                         vcfFile.eachEntry { VcfFile.Entry entry ->
@@ -151,6 +152,7 @@ class VCFDataProcessor extends DataProcessor {
                 }
             }
             logger.log(LogType.PROGRESS, '')
+            logger.log(LogType.MESSAGE, "File ${inputFile.name} loaded. Added records: subject index - ${siRecords}, population info - ${piRecords},  subject detail - ${sdRecords}, subject summary - ${ssRecords}, population data - ${pdRecords}")
         }
         return true
     }

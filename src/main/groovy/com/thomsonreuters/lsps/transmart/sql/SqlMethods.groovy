@@ -48,10 +48,13 @@ class SqlMethods {
         firstRow("select * from ${tableName} where ${conditions.join(' and ')}", values)
     }
 
-    def insertRecords(CharSequence tableName, Collection<CharSequence> columns, Closure block) {
+    long insertRecords(CharSequence tableName, Collection<CharSequence> columns, Closure block) {
+        long records = 0
         withBatch(200, buildInsertCommand(tableName, columns)) { st ->
             block.call(st)
+            records++
         }
+        return records
     }
 
     def insertRecord(Map<CharSequence, Object> attrs, CharSequence tableName) {
