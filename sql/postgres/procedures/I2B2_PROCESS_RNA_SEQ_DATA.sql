@@ -357,7 +357,7 @@ BEGIN
 				   ,coalesce(a.tissue_type,'Unspecified Tissue Type')
 	               ,a.attribute_1
 				   ,a.attribute_2
-				   ,''--g.title
+				   ,a.platform
     from lt_src_RNA_SEQ_subj_samp_map a
 	where a.trial_name = TrialID
 	  and coalesce(a.source_cd,'STD') = sourceCD;
