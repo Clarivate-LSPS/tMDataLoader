@@ -10,6 +10,7 @@ cli.with {
     h longOpt: 'help', 'Show usage information'
     u longOpt: 'user', args: 1, argName: '<user>', 'Database user'
     p longOpt: 'password', args: 1, argName: '<password>', 'Database user password'
+    'P' longOpt: 'procedures-only', 'Run only procedures scripts'
 }
 
 def opts = cli.parse(args)
@@ -25,6 +26,8 @@ if (!opts?.'jdbc-url') {
     return
 }
 
+proceduresOnly = opts?.'procedures-only' as boolean
+
 
 def Database = Class.forName('com.thomsonreuters.lsps.transmart.sql.Database', true, loader)
 def database = Database.newInstance([
@@ -35,32 +38,30 @@ def database = Database.newInstance([
         ]
 ])
 
-def runScripts(database, File dir) {
-    File lstFile = new File(dir, 'scripts.lst')
-    File[] files
-    if (lstFile.exists()) {
-        files = lstFile.readLines().collect { new File(dir, it) }
-    } else {
-        files = dir.listFiles(new FileFilter() {
-            @Override
-            boolean accept(File pathname) {
-                return pathname.isFile()
-            }
-        })
+List<File> getScripts(File lstFile, List<String> defaultScripts) {
+    List<String> scripts = lstFile.exists() ? lstFile.readLines() : defaultScripts
+    return scripts.collect { new File(lstFile.parentFile, it) }
+}
+
+def runScripts(database, File dir, boolean proceduresOnly = false) {
+    List<File> scripts = []
+    if (!proceduresOnly) {
+        scripts.addAll(getScripts(new File(dir, 'scripts.lst'), ['migrations.sql', 'permissions.sql']))
     }
-    files.each {
+    scripts.addAll(getScripts(new File(dir, 'procedures.lst'), ['procedures.sql']))
+    scripts.each {
         println("Running script: ${it.name}...")
         database.runScript(it, true)
     }
-    println("Completed: ${files.length} scripts executed")
+    println("Completed: ${scripts.size()} scripts executed")
 }
 
 switch (database.databaseType.toString()) {
     case 'Postgres':
-        runScripts(database, new File(sqlDir, 'postgres'))
+        runScripts(database, new File(sqlDir, 'postgres'), proceduresOnly)
         break;
     case 'Oracle':
-        runScripts(database, new File(sqlDir, 'oracle'))
+        runScripts(database, new File(sqlDir, 'oracle'), proceduresOnly)
         break;
     default:
         System.err.println("Invalid database config")

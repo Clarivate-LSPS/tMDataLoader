@@ -16,6 +16,10 @@ class SqlMatchers {
         return new HasSample(props, studyId, sampleId)
     }
 
+    public static HasRecord hasPlatform(Map<String, Object> props = [:], String platform, String title, String markerType) {
+        return new HasRecord('deapp.de_gpl_info', ['PLATFORM': platform], props + ['TITLE': title, 'MARKER_TYPE': markerType])
+    }
+
     public static HasRecord hasRecord(Map<CharSequence, Object> keyAttrs = [:], CharSequence tableName) {
         return new HasRecord(tableName, keyAttrs, [:])
     }

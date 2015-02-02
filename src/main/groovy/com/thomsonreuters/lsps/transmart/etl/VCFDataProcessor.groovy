@@ -250,7 +250,7 @@ class VCFDataProcessor extends DataProcessor {
     }
 
     private void loadPlatform(jobId, Sql sql, studyInfo) {
-        String markerType = 'Gene Expression'
+        String markerType = 'VCF'
         boolean loaded = sql.rows('select 1 from deapp.de_gpl_info where platform = ?', studyInfo.platformId as String)
                 .asBoolean()
         if (!loaded) {
