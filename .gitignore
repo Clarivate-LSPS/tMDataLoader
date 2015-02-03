@@ -5,6 +5,7 @@
 /target
 /build
 /tmp
+/sql/tmp
 *.iml
 /tm_etl.jar
 SummaryStatistic.txt
