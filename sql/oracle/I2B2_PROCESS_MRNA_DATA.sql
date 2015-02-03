@@ -315,20 +315,10 @@ BEGIN
 	cz_write_audit(jobId,databaseName,procedureName,'Delete data from observation_fact',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
 
-	select count(*) into dataParitioned
-    from all_tables
-    where table_name = 'DE_SUBJECT_MICROARRAY_DATA'
-    and partitioned = 'YES';
-
-  select count(*)
-		into pExists
-		from all_tab_partitions
-		where table_name = 'DE_SUBJECT_MICROARRAY_DATA'
-		and partition_name = TrialId || ':' || sourceCd;
-
+	i2b2_add_partition('DEAPP', 'DE_SUBJECT_MICROARRAY_DATA', TrialId || ':' || sourceCd, job_id=>jobId, ret_code=>dataParitioned);
 
 	--	dataset is not partitioned so must delete
-	if dataParitioned = 0 or pExists <> 0  then
+	if dataParitioned <> 1 then
     delete from de_subject_microarray_data
     where trial_source = TrialId || ':' || sourceCd
     and assay_id in (
@@ -350,37 +340,6 @@ BEGIN
     cz_write_audit(jobId,databaseName,procedureName,'Delete data from de_subject_microarray_data',SQL%ROWCOUNT,stepCt,'Done');
     commit;
 
-  end if;
-
-	if dataParitioned <> 0 and pExists = 0 then
-		  --	Create partition in de_subject_microarray_data if it doesn't exist else truncate partition
-			--	needed to add partition to de_subject_microarray_data
-			sqlText := 'alter table deapp.de_subject_microarray_data add PARTITION "' || TrialID || ':' || sourceCd || '"  VALUES (' || '''' || TrialID || ':' || sourceCd || '''' || ') ' ||
-						   'NOLOGGING COMPRESS ';
-			execute immediate(sqlText);
-			stepCt := stepCt + 1;
-			cz_write_audit(jobId,databaseName,procedureName,'Adding partition to de_subject_microarray_data',0,stepCt,'Done');
-
-      sqlText := 'alter index deapp.de_microarray_data_idx1 rebuild PARTITION "' || TrialID || ':' || sourceCd || '"';
-      execute immediate(sqlText);
-      stepCt := stepCt + 1;
-      cz_write_audit(jobId,databaseName,procedureName,'Rebuilding 1 of 4 de_subject_microarray_data partition indexes',0,stepCt,'Done');
-      
-      sqlText := 'alter index deapp.de_microarray_data_idx2 rebuild PARTITION "' || TrialID || ':' || sourceCd || '"';
-      execute immediate(sqlText);
-      stepCt := stepCt + 1;
-      cz_write_audit(jobId,databaseName,procedureName,'Rebuilding 2 of 4 de_subject_microarray_data partition indexes',0,stepCt,'Done');
-      
-      sqlText := 'alter index deapp.de_microarray_data_idx3 rebuild PARTITION "' || TrialID || ':' || sourceCd || '"';
-      execute immediate(sqlText);
-      stepCt := stepCt + 1;
-      cz_write_audit(jobId,databaseName,procedureName,'Rebuilding 3 of 4 de_subject_microarray_data partition indexes',0,stepCt,'Done');
-      
-      sqlText := 'alter index deapp.de_microarray_data_idx4 rebuild PARTITION "' || TrialID || ':' || sourceCd || '"';
-      execute immediate(sqlText);
-      stepCt := stepCt + 1;
-      cz_write_audit(jobId,databaseName,procedureName,'Rebuilding 4 of 4 de_subject_microarray_data partition indexes',0,stepCt,'Done');	
-  
   end if;
 
 	--	Cleanup any existing data in de_subject_sample_mapping.
