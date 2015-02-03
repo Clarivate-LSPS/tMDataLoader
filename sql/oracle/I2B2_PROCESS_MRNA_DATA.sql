@@ -78,6 +78,7 @@ AS
   pCount		integer;
   sCount		integer;
   tablespaceName	varchar2(200);
+  nbrRecs 	number;
 
     --Audit variables
   newJobFlag INTEGER(1);
@@ -988,6 +989,18 @@ BEGIN
 	--	insert into de_subject_microarray_data when dataType is T (transformed)
 
 	if dataType = 'T' then
+		select count(*) into nbrRecs
+		from wt_subject_mrna_probeset;
+
+		if nbrRecs > 10000000 then
+			i2b2_mrna_index_maint('DROP','',jobId);
+			stepCt := stepCt + 1;
+			cz_write_audit(jobId,databaseName,procedureName,'Drop indexes on DEAPP de_subject_microarray_data',0,stepCt,'Done');
+		else
+			stepCt := stepCt + 1;
+			cz_write_audit(jobId,databaseName,procedureName,'Less than 10M records, index drop bypassed',0,stepCt,'Done');
+		end if;
+
 		insert into de_subject_microarray_data
 		(trial_source
 		,probeset_id
@@ -1017,10 +1030,28 @@ BEGIN
 		cz_write_audit(jobId,databaseName,procedureName,'Insert transformed into DEAPP de_subject_microarray_data',SQL%ROWCOUNT,stepCt,'Done');
 
 		commit;
+
+		i2b2_mrna_index_maint('ADD',null,jobId);
+		stepCt := stepCt + 1;
+		cz_write_audit(jobId,databaseName,procedureName,'Add indexes on DEAPP de_subject_microarray_data',0,stepCt,'Done');
+
+		commit;
 	else
     --	insert into de_subject_microarray_data when dataType is T (transformed)
 
     if dataType = 'Z' then
+			select count(*) into nbrRecs
+			from wt_subject_mrna_probeset;
+
+			if nbrRecs > 10000000 then
+				i2b2_mrna_index_maint('DROP','',jobId);
+				stepCt := stepCt + 1;
+				cz_write_audit(jobId,databaseName,procedureName,'Drop indexes on DEAPP de_subject_microarray_data',0,stepCt,'Done');
+			else
+				stepCt := stepCt + 1;
+				cz_write_audit(jobId,databaseName,procedureName,'Less than 10M records, index drop bypassed',0,stepCt,'Done');
+			end if;
+
       insert into de_subject_microarray_data
       (trial_source
       ,probeset_id
@@ -1052,6 +1083,12 @@ BEGIN
       cz_write_audit(jobId,databaseName,procedureName,'Insert transformed (workaround) into DEAPP de_subject_microarray_data',SQL%ROWCOUNT,stepCt,'Done');
 
       commit;
+
+      i2b2_mrna_index_maint('ADD',null,jobId);
+			stepCt := stepCt + 1;
+			cz_write_audit(jobId,databaseName,procedureName,'Add indexes on DEAPP de_subject_microarray_data',0,stepCt,'Done');
+
+			commit;
     else
     --	Calculate ZScores and insert data into de_subject_microarray_data.  The 'L' parameter indicates that the gene expression data will be selected from
     --	wt_subject_mrna_probeset as part of a Load.
