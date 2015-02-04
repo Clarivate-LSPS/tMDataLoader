@@ -315,10 +315,22 @@ BEGIN
 	cz_write_audit(jobId,databaseName,procedureName,'Delete data from observation_fact',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
 
-	I2B2_ADD_LV_PARTITION('DEAPP', 'DE_SUBJECT_MICROARRAY_DATA', TrialId || ':' || sourceCd, job_id=>jobId, ret_code=>dataParitioned);
+	-- Check for partial upload (already has samples not containing in loading set)
+	SELECT count(dssm.assay_id) INTO pCount
+	FROM
+		deapp.de_subject_sample_mapping dssm
+		LEFT JOIN lt_src_mrna_subj_samp_map ltssm
+			ON dssm.trial_name = ltssm.trial_name
+				 AND dssm.gpl_id = ltssm.platform
+				 AND dssm.subject_id = ltssm.subject_id
+				 AND dssm.sample_cd = ltssm.sample_cd
+	WHERE
+		dssm.trial_name = TrialId
+		AND nvl(dssm.source_cd, 'STD') = sourceCd
+		AND ltssm.subject_id is NULL;
 
-	--	dataset is not partitioned so must delete
-	if dataParitioned <> 1 then
+	-- Should delete only mapped samples
+	if pCount > 0 then
     delete from de_subject_microarray_data
     where trial_source = TrialId || ':' || sourceCd
     and assay_id in (
@@ -337,10 +349,13 @@ BEGIN
     );
 
     stepCt := stepCt + 1;
-    cz_write_audit(jobId,databaseName,procedureName,'Delete data from de_subject_microarray_data',SQL%ROWCOUNT,stepCt,'Done');
+    cz_write_audit(jobId,databaseName,procedureName,'Partially delete data from de_subject_microarray_data',SQL%ROWCOUNT,stepCt,'Done');
     commit;
-
+	else
+		I2B2_DELETE_LV_PARTITION('DEAPP', 'DE_SUBJECT_MICROARRAY_DATA', 'TRIAL_SOURCE', TrialId || ':' || sourceCd, job_id=>jobId, ret_code=>dataParitioned);
   end if;
+
+	I2B2_ADD_LV_PARTITION('DEAPP', 'DE_SUBJECT_MICROARRAY_DATA', TrialId || ':' || sourceCd, job_id=>jobId, ret_code=>dataParitioned);
 
 	--	Cleanup any existing data in de_subject_sample_mapping.
 
