@@ -19,9 +19,9 @@ class SNPDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase
     @Override
     void setUp() {
         ConfigAwareTestCase.super.setUp()
-        sql.execute('delete from i2b2demodata.observation_fact where modifier_cd = ?', studyId)
-        sql.execute('delete from deapp.de_subject_sample_mapping where trial_name = ?', studyId)
         runScript('I2B2_PROCESS_SNP_DATA.sql')
+        new DeleteDataProcessor(config).process(['id'  : studyId,
+                                                 'path': "\\Test Studies\\${studyName}\\SNP\\"])
     }
 
     SNPDataProcessor getProcessor() {
