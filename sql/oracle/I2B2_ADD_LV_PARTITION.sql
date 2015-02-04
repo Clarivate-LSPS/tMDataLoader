@@ -1,4 +1,4 @@
-CREATE OR REPLACE PROCEDURE "I2B2_ADD_PARTITION"(
+CREATE OR REPLACE PROCEDURE "I2B2_ADD_LV_PARTITION"(
 	tbl_owner       VARCHAR2,
 	tbl_name        VARCHAR2,
 	val             VARCHAR2,
@@ -7,7 +7,7 @@ CREATE OR REPLACE PROCEDURE "I2B2_ADD_PARTITION"(
 	job_id          NUMBER := -1,
 	ret_code OUT    NUMBER)
 AS
--- Helper procedure for partition adding
+-- Helper procedure for list value partition adding
 -- It add partition only if partitioning enabled and partition not yet exists
 -- Params:
 --   tbl_owner 	- owner of table, schema

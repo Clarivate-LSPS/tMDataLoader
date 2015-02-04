@@ -315,7 +315,7 @@ BEGIN
 	cz_write_audit(jobId,databaseName,procedureName,'Delete data from observation_fact',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
 
-	i2b2_add_partition('DEAPP', 'DE_SUBJECT_MICROARRAY_DATA', TrialId || ':' || sourceCd, job_id=>jobId, ret_code=>dataParitioned);
+	I2B2_ADD_LV_PARTITION('DEAPP', 'DE_SUBJECT_MICROARRAY_DATA', TrialId || ':' || sourceCd, job_id=>jobId, ret_code=>dataParitioned);
 
 	--	dataset is not partitioned so must delete
 	if dataParitioned <> 1 then
