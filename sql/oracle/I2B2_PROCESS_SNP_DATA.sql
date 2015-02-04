@@ -77,6 +77,11 @@ AS
   procedureName VARCHAR(100);
   jobID number(18,0);
   stepCt number(18,0);
+
+  -- Local variables
+  callsPartitioned NUMBER;
+	cnPartitioned NUMBER;
+	res NUMBER;
   
   --unmapped_patients exception;
   missing_platform	exception;
@@ -296,60 +301,108 @@ BEGIN
 	cz_write_audit(jobId,databaseName,procedureName,'Delete data from observation_fact',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
 
-	delete from deapp.de_snp_calls_by_gsm
-	where patient_num in (
-	  select dssm.omic_patient_id
-	  from lt_src_mrna_subj_samp_map ltssm
-      inner join deapp.de_subject_sample_mapping dssm
-      on dssm.trial_name     = ltssm.trial_name
-        and dssm.gpl_id     = ltssm.platform
-        and dssm.subject_id = ltssm.subject_id
-        and dssm.sample_cd  = ltssm.sample_cd
-    where
-      dssm.trial_name = TrialID
-      and nvl(dssm.source_cd,'STD') = sourceCd
-      and dssm.platform = 'SNP'
-	);
+	SELECT count(*)
+		INTO callsPartitioned
+		FROM all_tables
+		WHERE table_name = 'DE_SNP_CALLS_BY_GSM'
+					AND owner = 'DEAPP'
+					AND partitioned = 'YES';
 
-	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Truncated de_snp_calls_by_gsm',0,stepCt,'Done');
-  	COMMIT;
+	SELECT count(*)
+	INTO cnPartitioned
+	FROM all_tables
+	WHERE table_name = 'DE_SNP_COPY_NUMBER'
+				AND owner = 'DEAPP'
+				AND partitioned = 'YES';
 
-	delete from deapp.de_snp_copy_number
-	where patient_num in (
-	  select dssm.omic_patient_id
-	  from lt_src_mrna_subj_samp_map ltssm
-      inner join deapp.de_subject_sample_mapping dssm
-      on dssm.trial_name     = ltssm.trial_name
-        and dssm.gpl_id     = ltssm.platform
-        and dssm.subject_id = ltssm.subject_id
-        and dssm.sample_cd  = ltssm.sample_cd
-    where
-      dssm.trial_name = TrialID
-      and nvl(dssm.source_cd,'STD') = sourceCd
-      and dssm.platform = 'SNP'
-	);
+	IF cnPartitioned <> 0 OR callsPartitioned <> 0
+	THEN
+		FOR patient IN (SELECT dssm.omic_patient_id AS patient_num
+											FROM lt_src_mrna_subj_samp_map ltssm
+												INNER JOIN deapp.de_subject_sample_mapping dssm
+													ON dssm.trial_name = ltssm.trial_name
+														 AND dssm.gpl_id = ltssm.platform
+														 AND dssm.subject_id = ltssm.subject_id
+														 AND dssm.sample_cd = ltssm.sample_cd
+											WHERE
+												dssm.trial_name = TrialID
+												AND nvl(dssm.source_cd, 'STD') = sourceCD
+												AND dssm.platform = 'SNP')
+		LOOP
+			IF callsPartitioned <> 0
+			THEN
+				i2b2_delete_lv_partition('DEAPP', 'DE_SNP_CALLS_BY_GSM', 'PATIENT_NUM', patient.patient_num,
+																 job_id=>jobId, rebuild_indexes=>0, ret_code=>res);
+			END IF;
+			IF cnPartitioned <> 0
+			THEN
+				i2b2_delete_lv_partition('DEAPP', 'DE_SNP_COPY_NUMBER', 'PATIENT_NUM', patient.patient_num,
+																 job_id=>jobId, rebuild_indexes=>0, ret_code=>res);
+			END IF;
+		END LOOP;
+	END IF;
 
-	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Truncated de_snp_copy_number',0,stepCt,'Done');
-  	COMMIT;
+	IF callsPartitioned = 0 THEN
+		delete from deapp.de_snp_calls_by_gsm
+		where patient_num in (
+			select dssm.omic_patient_id
+			from lt_src_mrna_subj_samp_map ltssm
+				inner join deapp.de_subject_sample_mapping dssm
+				on dssm.trial_name     = ltssm.trial_name
+					and dssm.gpl_id     = ltssm.platform
+					and dssm.subject_id = ltssm.subject_id
+					and dssm.sample_cd  = ltssm.sample_cd
+			where
+				dssm.trial_name = TrialID
+				and nvl(dssm.source_cd,'STD') = sourceCd
+				and dssm.platform = 'SNP'
+		);
 
-	--	Cleanup any existing data in de_subject_sample_mapping.  
-  delete from de_subject_sample_mapping where
-  assay_id in (
-    select dssm.assay_id from 
-      lt_src_mrna_subj_samp_map ltssm
-      inner join deapp.de_subject_sample_mapping dssm
-      on dssm.trial_name     = ltssm.trial_name
-        and dssm.gpl_id     = ltssm.platform
-        and dssm.subject_id = ltssm.subject_id
-        and dssm.sample_cd  = ltssm.sample_cd
-    where 
-      dssm.trial_name = TrialID
-      and nvl(dssm.source_cd,'STD') = sourceCd
-      and dssm.platform = 'SNP'
-  );
-  
+		stepCt := stepCt + 1;
+		cz_write_audit(jobId,databaseName,procedureName,'Delete from de_snp_calls_by_gsm',SQL%ROWCOUNT,stepCt,'Done');
+		COMMIT;
+	END IF;
+
+	IF callsPartitioned = 0
+	THEN
+		delete from deapp.de_snp_copy_number
+		where patient_num in (
+			select dssm.omic_patient_id
+			from lt_src_mrna_subj_samp_map ltssm
+				inner join deapp.de_subject_sample_mapping dssm
+					on dssm.trial_name     = ltssm.trial_name
+						 and dssm.gpl_id     = ltssm.platform
+						 and dssm.subject_id = ltssm.subject_id
+						 and dssm.sample_cd  = ltssm.sample_cd
+			where
+				dssm.trial_name = TrialID
+				and nvl(dssm.source_cd,'STD') = sourceCd
+				and dssm.platform = 'SNP'
+		);
+
+		stepCt := stepCt + 1;
+		cz_write_audit(jobId,databaseName,procedureName,'Delete from de_snp_copy_number',SQL%ROWCOUNT,stepCt,'Done');
+		COMMIT;
+	END IF;
+
+	--	Cleanup any existing data in de_subject_sample_mapping.
+	DELETE FROM de_subject_sample_mapping
+	WHERE
+		assay_id IN (
+			SELECT dssm.assay_id
+			FROM
+				lt_src_mrna_subj_samp_map ltssm
+				INNER JOIN deapp.de_subject_sample_mapping dssm
+					ON dssm.trial_name = ltssm.trial_name
+						 AND dssm.gpl_id = ltssm.platform
+						 AND dssm.subject_id = ltssm.subject_id
+						 AND dssm.sample_cd = ltssm.sample_cd
+			WHERE
+				dssm.trial_name = TrialID
+				AND nvl(dssm.source_cd, 'STD') = sourceCd
+				AND dssm.platform = 'SNP'
+		);
+
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Delete trial from DEAPP de_subject_sample_mapping',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
@@ -886,30 +939,67 @@ BEGIN
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Load security data',0,stepCt,'Done');
   	COMMIT;
-	
-	insert into deapp.DE_SNP_CALLS_BY_GSM
-	(gsm_num, snp_name, snp_calls, patient_num) 
-	select ltscbg.gsm_num, ltscbg.snp_name, ltscbg.snp_calls, sm.omic_patient_id from 
-		lt_snp_calls_by_gsm ltscbg
-		inner join deapp.de_subject_sample_mapping sm
-		on sm.sample_cd = ltscbg.gsm_num
-		where sm.trial_name = TrialID;
+
+	IF callsPartitioned <> 0 or cnPartitioned <> 0
+	THEN
+		FOR patient IN (SELECT dssm.omic_patient_id AS patient_num
+										FROM deapp.de_subject_sample_mapping dssm
+										WHERE dssm.trial_name = TrialID
+													AND nvl(dssm.source_cd, 'STD') = sourceCd
+													AND dssm.platform = 'SNP')
+		LOOP
+			IF callsPartitioned <> 0
+			THEN
+				i2b2_add_lv_partition('DEAPP', 'DE_SNP_CALLS_BY_GSM', patient.patient_num,
+															job_id=>jobId, rebuild_indexes=>0, ret_code=>res);
+			END IF;
+			IF cnPartitioned <> 0
+			THEN
+				i2b2_add_lv_partition('DEAPP', 'DE_SNP_COPY_NUMBER', patient.patient_num,
+															job_id=>jobId, rebuild_indexes=>0, ret_code=>res);
+			END IF;
+		END LOOP;
+	END IF;
+
+	I2B2_UNUSABLE_GLOBAL_INDEXES('DEAPP', 'DE_SNP_CALLS_BY_GSM', job_id=>jobID);
+
+	INSERT INTO deapp.DE_SNP_CALLS_BY_GSM
+	(gsm_num, snp_name, snp_calls, patient_num)
+		SELECT
+			ltscbg.gsm_num,
+			ltscbg.snp_name,
+			ltscbg.snp_calls,
+			sm.omic_patient_id
+		FROM lt_snp_calls_by_gsm ltscbg
+			INNER JOIN deapp.de_subject_sample_mapping sm
+				ON sm.sample_cd = ltscbg.gsm_num
+		WHERE sm.trial_name = TrialID
+					AND nvl(sm.source_cd, 'STD') = sourceCd
+					AND sm.platform = 'SNP';
 
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Insert into de_snp_calls_by_gsm',0,stepCt,'Done');
   	COMMIT;
 
-  	insert into deapp.DE_SNP_COPY_NUMBER
+	I2B2_REBUILD_GLOBAL_INDEXES('DEAPP', 'DE_SNP_CALLS_BY_GSM', job_id=>jobID);
+
+	I2B2_UNUSABLE_GLOBAL_INDEXES('DEAPP', 'DE_SNP_COPY_NUMBER', job_id=>jobID);
+
+	insert into deapp.DE_SNP_COPY_NUMBER
 	(snp_name, chrom, chrom_pos, copy_number, patient_num)
 	select lscn.snp_name, lscn.chrom, lscn.chrom_pos, power(2, lscn.copy_number) as copy_number, sm.omic_patient_id as patient_num from
 		LT_SNP_COPY_NUMBER lscn
 		inner join deapp.de_subject_sample_mapping sm
 		on sm.sample_cd = lscn.gsm_num
-		where sm.trial_name = TrialID;
+		where sm.trial_name = TrialID
+					AND nvl(sm.source_cd, 'STD') = sourceCd
+					AND sm.platform = 'SNP';
 
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Insert into de_snp_copy_number',0,stepCt,'Done');
   	COMMIT;
+
+	I2B2_REBUILD_GLOBAL_INDEXES('DEAPP', 'DE_SNP_COPY_NUMBER', job_id=>jobID);
 
   insert into deapp.de_subject_snp_dataset
   (dataset_name, concept_cd, platform_name, trial_name, patient_num, subject_id, sample_type)
@@ -922,7 +1012,9 @@ BEGIN
     subject_id,
     sample_type
   from deapp.de_subject_sample_mapping
-  where trial_name = TrialID;
+  where trial_name = TrialID
+				AND nvl(source_cd, 'STD') = sourceCd
+				AND platform = 'SNP';
 
   stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Insert into de_subject_snp_dataset',0,stepCt,'Done');
@@ -976,5 +1068,3 @@ BEGIN
 		cz_end_audit (jobID, 'FAIL');
 		select 16 into rtn_code from dual;
 END;
-/
-exit;
