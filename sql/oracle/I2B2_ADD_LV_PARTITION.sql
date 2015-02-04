@@ -36,6 +36,7 @@ AS
 
 	dataPartitioned NUMBER;
 	partitionExists NUMBER;
+	useCompression  NUMBER;
 
 	BEGIN
 		stepCt := 0;
@@ -102,13 +103,24 @@ AS
 
 		IF dataPartitioned <> 0 AND partitionExists = 0
 		THEN
+			useCompression := 0;
+
+			SELECT 0
+			INTO useCompression
+			FROM all_tab_partitions
+			WHERE table_name = 'DE_SNP_CALLS_BY_GSM'
+						AND table_OWNER = 'DEAPP'
+						AND COMPRESSION = 'DISABLED'
+						AND ROWNUM = 1;
+
 			sqlText := 'ALTER TABLE ' || qualifiedName || ' ADD PARTITION "' || partitionName || '" ' ||
 								 'VALUES (''' || REPLACE(val, '''', '''''') || ''') ' ||
-								 'NOLOGGING COMPRESS ';
+								 'NOLOGGING' || (CASE WHEN useCompression = 1 THEN ' COMPRESS'
+																 ELSE '' END);
 			EXECUTE IMMEDIATE (sqlText);
 
 			stepCt := stepCt + 1;
-			cz_write_audit(jobId, databaseName, procedureName, 'Add partition to ' || qualifiedName, 0, stepCt, 'Done');
+			cz_write_audit(jobId, databaseName, procedureName, 'Add partition "' || partitionName || '" to ' || qualifiedName, 0, stepCt, 'Done');
 
 			IF rebuild_indexes <> 0
 			THEN
@@ -118,7 +130,9 @@ AS
 				FROM all_indexes
 				WHERE table_name = tbl_name AND table_owner = tbl_owner AND status <> 'VALID';
 
-				FOR idx IN ( SELECT '"' || "OWNER" || '"."' || index_name || '"' AS index_name, partitioned
+				FOR idx IN ( SELECT
+											 '"' || "OWNER" || '"."' || index_name || '"' AS index_name,
+											 partitioned
 										 FROM all_indexes
 										 WHERE table_name = tbl_name AND table_owner = tbl_owner AND status <> 'VALID')
 				LOOP
