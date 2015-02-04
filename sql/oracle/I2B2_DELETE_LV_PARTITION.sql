@@ -1,25 +1,30 @@
-CREATE OR REPLACE PROCEDURE "I2B2_ADD_LV_PARTITION"(
+CREATE OR REPLACE PROCEDURE "I2B2_DELETE_LV_PARTITION"(
 	tbl_owner       VARCHAR2,
 	tbl_name        VARCHAR2,
+  part_col_name   VARCHAR2,
 	val             VARCHAR2,
 	part_name       VARCHAR2 := NULL,
+  drop_partition  INTEGER := 0,
 	rebuild_indexes INTEGER := 1,
 	job_id          NUMBER := -1,
 	ret_code OUT    NUMBER)
 AS
 -- Helper procedure for list value partition adding
--- It add partition only if partitioning enabled and partition not yet exists
+-- It drop/truncate partition if partitioning enabled and partition exists
+-- If partitioning is not enabled then it used DELETE operator and part_col_name for filtering
 -- Params:
 --   tbl_owner 	- owner of table, schema
 --   tbl_name 	- table name
+--   part_col_name - partitioned column name (used in case if partitioning is not enabled as filter column for delete operation)
 --	 val				- value for partition
 --	 part_name	- partition name (default: val)
+--   drop_partition  - 1: drop partition, 0: truncate only (default: 0)
 --	 rebuild_indexes - 1: rebuild indexes for partition after adding, 0: do not rebuild (default: 1)
 --	 job_id			- current job id (by default starts new job)
 -- Return codes (ret_code):
---   -1	- table without partitioning (do nothing)
---   0	- partition for this value already exists (do nothing)
---	 1  - partition created
+--  -1	- table without partitioning (use DELETE operator)
+--   0	- partition for this value doesn't exists (do nothing)
+--	 1  - partition droped/truncated
 
 	newJobFlag      INTEGER(1);
 
@@ -73,9 +78,12 @@ AS
 					AND partitioned = 'YES';
 		IF dataPartitioned = 0
 		THEN
+      sqlText := 'DELETE FROM ' || qualifiedName || ' WHERE "' || part_col_name || '" = ''' || REPLACE(val, '''', '''''') || '''';
+      EXECUTE IMMEDIATE 'BEGIN ' || sqlText || '; :x := SQL%ROWCOUNT; END;' USING OUT cnt;
+    
 			stepCt := stepCt + 1;
 			cz_write_audit(jobId, databaseName, procedureName,
-										 'Partitioning is not available for ' || qualifiedName || '. Skip.', 0,
+										 'Partitioning is not available for ' || qualifiedName || '. Use DELETE operator.', cnt,
 										 stepCt, 'Done');
 			COMMIT;
 
@@ -87,49 +95,43 @@ AS
 		FROM all_tab_partitions
 		WHERE table_name = tbl_name
 					AND table_owner = tbl_owner
-					AND partition_name = partitionName;
+					AND partition_name = partitionName;            
 
-		IF partitionExists <> 0
+		IF partitionExists = 0
 		THEN
 			stepCt := stepCt + 1;
 			cz_write_audit(jobId, databaseName, procedureName,
-										 'Partition by ' || partitionName || ' already exists for ' || qualifiedName || '. Skip.', 0,
+										 'Partition by ' || partitionName || ' doesn''t exists for ' || qualifiedName || '. Skip.', 0,
 										 stepCt, 'Done');
 			COMMIT;
 
 			ret_code := 0;
 		END IF;
 
-		IF dataPartitioned <> 0 AND partitionExists = 0
+		IF dataPartitioned <> 0 AND partitionExists <> 0
 		THEN
-			sqlText := 'ALTER TABLE ' || qualifiedName || ' ADD PARTITION "' || partitionName || '" ' ||
-								 'VALUES (''' || REPLACE(val, '''', '''''') || ''') ' ||
-								 'NOLOGGING COMPRESS ';
+			sqlText := 'ALTER TABLE ' || qualifiedName || ' ' || CASE WHEN drop_partition <> 0 THEN 'DROP' ELSE 'TRUNCATE' END || ' PARTITION "' || partitionName || '"';
 			EXECUTE IMMEDIATE (sqlText);
 
 			stepCt := stepCt + 1;
-			cz_write_audit(jobId, databaseName, procedureName, 'Add partition to ' || qualifiedName, 0, stepCt, 'Done');
-
+			cz_write_audit(jobId, databaseName, procedureName, CASE WHEN drop_partition <> 0 THEN 'Drop' ELSE 'Truncate' END || ' partition for ' || qualifiedName, 0, stepCt, 'Done');
+			
 			IF rebuild_indexes <> 0
 			THEN
-				n := 0;
-				SELECT count(*)
-				INTO cnt
-				FROM all_indexes
-				WHERE table_name = tbl_name AND table_owner = tbl_owner AND status <> 'VALID';
+        n := 0;
+        SELECT count(*)
+        INTO cnt
+        FROM all_indexes
+        WHERE table_name = tbl_name AND table_owner = tbl_owner AND status = 'UNUSABLE';
 
-				FOR idx IN ( SELECT '"' || "OWNER" || '"."' || index_name || '"' AS index_name, partitioned
+      	-- Update only global indexes, local will be updated automatically
+				FOR idx IN ( SELECT '"' || "OWNER" || '"."' || index_name || '"' AS index_name
 										 FROM all_indexes
-										 WHERE table_name = tbl_name AND table_owner = tbl_owner AND status <> 'VALID')
+										 WHERE table_name = tbl_name AND table_owner = tbl_owner AND status = 'UNUSABLE')
 				LOOP
 					n := n + 1;
 
-					IF idx.partitioned = 'YES'
-					THEN
-						sqlText := 'ALTER INDEX ' || idx.index_name || ' REBUILD PARTITION "' || partitionName || '"';
-					ELSE
-						sqlText := 'ALTER INDEX ' || idx.index_name || ' REBUILD';
-					END IF;
+					sqlText := 'ALTER INDEX ' || idx.index_name || ' REBUILD';
 					EXECUTE IMMEDIATE sqlText;
 
 					stepCt := stepCt + 1;
