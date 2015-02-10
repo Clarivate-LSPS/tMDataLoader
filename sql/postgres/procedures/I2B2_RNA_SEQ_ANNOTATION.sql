@@ -44,7 +44,7 @@ BEGIN
 	end if;
 
 	begin
-		insert into deapp.DE_RNASEQ_ANNOTATION
+		/*insert into deapp.DE_RNASEQ_ANNOTATION
 		(
 			GPL_ID
 			,TRANSCRIPT_ID
@@ -64,8 +64,34 @@ BEGIN
 				,biomart.bio_marker b
 				,probeset_deapp pd
 			where b.bio_marker_name=a.gene_symbol
-						and a.transcript_id =pd.probeset;
-		get diagnostics rowCt := ROW_COUNT;
+						and a.transcript_id =pd.probeset;*/
+		insert into deapp.DE_RNASEQ_ANNOTATION
+    (
+    TRANSCRIPT_ID
+      ,GPL_ID
+       ,GENE_SYMBOL
+     ,GENE_ID
+     ,ORGANISM
+    -- ,PROBESET_ID
+       )
+       select distinct (a.transcript_id)
+         --,g.platform
+         ,null
+             ,a.gene_symbol
+             ,null--b.primary_external_id
+             ,a.organism
+            -- ,null
+             --,pd.probeset_id
+             from LT_RNASEQ_ANNOTATION a
+                 --,(select platform from de_gpl_info where marker_type='RNASEQ') g
+                 -- ,bio_marker b
+                --  ,probeset_deapp pd
+                   where ---b.bio_marker_name=a.gene_symbol
+                  --and a.transcript_id =pd.probeset
+                 --  and
+                   a.transcript_id not in (select distinct transcript_id from deapp.DE_RNASEQ_ANNOTATION);
+                   ---update gene_id from bio_marker  table
+ 	get diagnostics rowCt := ROW_COUNT;
 		exception
 		when others then
 			errorNumber := SQLSTATE;
@@ -77,6 +103,22 @@ BEGIN
 			return -16;
 	end;
 
+  begin
+
+    update deapp.DE_RNASEQ_ANNOTATION a set GENE_ID=(select primary_external_id from biomart.bio_marker b where
+     b.bio_marker_name=a.gene_symbol limit 1)
+                                   where a.GENE_ID is null;
+     get diagnostics rowCt := ROW_COUNT;
+		exception
+		when others then
+			errorNumber := SQLSTATE;
+			errorMessage := SQLERRM;
+			--Handle errors.
+			select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+			--End Proc
+			select cz_end_audit (jobID, 'FAIL') into rtnCd;
+			return -16;
+  end;
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Insert new probesets into antigen_deapp',rowCt,stepCt,'Done') into rtnCd;
 
