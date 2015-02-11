@@ -10,7 +10,7 @@ missing_platform	exception;
 newJobFlag INTEGER(1);
 databaseName VARCHAR(100);
 procedureName VARCHAR(100);
-gpl_id VARCHAR(100);
+--gpl_id VARCHAR(100);
 jobID number(18,0);
 stepCt number(18,0);
 BEGIN
@@ -35,7 +35,7 @@ BEGIN
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Starting i2b2_rna_seq_annotation',0,stepCt,'Done');
 
-      select platform into gpl_id from de_gpl_info where marker_type='RNASEQ';
+      --select platform into gpl_id from de_gpl_info where marker_type='RNASEQ';
 
  insert into DE_RNASEQ_ANNOTATION 
  (
@@ -48,7 +48,7 @@ BEGIN
     )
     select distinct (a.transcript_id)
       --,g.platform
-      ,gpl_id
+      ,null
           ,a.gene_symbol
           ,null--b.primary_external_id
           ,a.organism
