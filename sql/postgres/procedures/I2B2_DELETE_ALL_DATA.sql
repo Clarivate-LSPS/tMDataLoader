@@ -196,8 +196,8 @@ BEGIN
 		--	drop partition if it exists for expression data
     select i2b2_delete_partition(trialId, 'MRNA_AFFYMETRIX', 'de_subject_microarray_data', 'deapp', sourceCd, jobId) into rtnCd;
 
-		delete from deapp.de_subject_microarray_data
-		where trial_name = trialId and coalesce(dssm.source_cd,'STD') = sourceCd;
+		delete from deapp.de_subject_microarray_data dssm
+		where trial_name = trialId;
 
 		stepCt := stepCt + 1;
 		get diagnostics rowCt := ROW_COUNT;
