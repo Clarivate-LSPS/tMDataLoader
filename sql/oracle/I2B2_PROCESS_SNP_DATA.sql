@@ -1,6 +1,7 @@
 SET DEFINE ON;
 
 DEFINE TM_WZ_SCHEMA='TM_WZ';
+DEFINE TM_LZ_SCHEMA='TM_LZ';
 
 --------------------------------------------------------
 --  File created - Tuesday-November-05-2013   
@@ -61,12 +62,14 @@ AS
   sourceCd		varchar2(50);
   secureStudy	varchar2(1);
 
+	dataType		varchar2(10);
   sqlText		varchar2(1000);
   tText			varchar2(1000);
   gplTitle		varchar2(1000);
   pExists		number;
   sampleCt		number;
   idxExists 	number;
+	logBase		number;
   pCount		integer;
   sCount		integer;
   tablespaceName	varchar2(200);
@@ -81,6 +84,7 @@ AS
   -- Local variables
   callsPartitioned NUMBER;
 	cnPartitioned NUMBER;
+	dataPartitioned NUMBER;
 	res NUMBER;
   
   --unmapped_patients exception;
@@ -115,6 +119,18 @@ AS
 BEGIN
 	TrialID := upper(trial_id);
 	secureStudy := upper(secure_study);
+
+	if data_type is null then
+		dataType := 'R';
+	else
+		if data_type in ('R','T','L','Z') then
+			dataType := data_type;
+		else
+			dataType := 'R';
+		end if;
+	end if;
+
+	logBase := log_base;
 
 	if (secureStudy not in ('Y','N') ) then
 		secureStudy := 'Y';
@@ -406,7 +422,49 @@ BEGIN
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Delete trial from DEAPP de_subject_sample_mapping',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
-  
+
+	-- Check for partial upload (already has samples not containing in loading set)
+	SELECT count(dssm.assay_id) INTO pCount
+	FROM
+		deapp.de_subject_sample_mapping dssm
+		LEFT JOIN lt_src_mrna_subj_samp_map ltssm
+			ON dssm.trial_name = ltssm.trial_name
+				 AND dssm.gpl_id = ltssm.platform
+				 AND dssm.subject_id = ltssm.subject_id
+				 AND dssm.sample_cd = ltssm.sample_cd
+	WHERE
+		dssm.trial_name = TrialId
+		AND nvl(dssm.source_cd, 'STD') = sourceCd
+		AND ltssm.subject_id is NULL;
+
+	-- Should delete only mapped samples
+	if pCount > 0 then
+		delete from de_subject_microarray_data
+		where trial_source = TrialId || ':' || sourceCd
+					and assay_id in (
+			select dssm.assay_id from
+				lt_src_mrna_subj_samp_map ltssm
+				left join
+				deapp.de_subject_sample_mapping dssm
+					on
+						dssm.trial_name = ltssm.trial_name
+						and dssm.gpl_id = ltssm.platform
+						and dssm.subject_id = ltssm.subject_id
+						and dssm.sample_cd  = ltssm.sample_cd
+			where
+				dssm.trial_name = TrialId
+				and nvl(dssm.source_cd,'STD') = sourceCd
+		);
+
+		stepCt := stepCt + 1;
+		cz_write_audit(jobId,databaseName,procedureName,'Partially delete data from de_subject_microarray_data',SQL%ROWCOUNT,stepCt,'Done');
+		commit;
+	else
+		I2B2_DELETE_LV_PARTITION('DEAPP', 'DE_SUBJECT_MICROARRAY_DATA', 'TRIAL_SOURCE', TrialId || ':' || sourceCd, job_id=>jobId, ret_code=>dataPartitioned);
+	end if;
+
+	I2B2_ADD_LV_PARTITION('DEAPP', 'DE_SUBJECT_MICROARRAY_DATA', TrialId || ':' || sourceCd, job_id=>jobId, ret_code=>dataPartitioned);
+
   -- Cleanup any existing data in de_subject_snp_dataset
   delete from deapp.de_subject_snp_dataset
   where trial_name = TrialID;
@@ -1019,7 +1077,172 @@ BEGIN
   stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Insert into de_subject_snp_dataset',0,stepCt,'Done');
   COMMIT;
-	
+
+		execute immediate ('truncate table "&TM_LZ_SCHEMA".lt_src_mrna_data');
+		commit;
+
+		stepCt := stepCt + 1;
+		cz_write_audit(jobId,databaseName,procedureName,'Truncated lt_src_mrna_data',0,stepCt,'Done');
+
+		insert into lt_src_mrna_data
+		(expr_id, probeset, intensity_value)
+			select gsm_num, snp_name, copy_number
+			from lt_snp_copy_number;
+		commit;
+
+		stepCt := stepCt + 1;
+		cz_write_audit(jobId,databaseName,procedureName,'Inserting into lt_src_mrna_data',0,stepCt,'Done');
+
+
+
+
+--	tag data with probeset_id from reference.probeset_deapp
+
+		execute immediate ('truncate table "&TM_WZ_SCHEMA".wt_subject_mrna_probeset');
+
+--	note: assay_id represents a unique subject/site/sample
+
+
+
+		insert into wt_subject_mrna_probeset
+		(probeset_id
+		 --	,expr_id
+			,intensity_value
+
+			,patient_id
+		 --	,sample_cd
+		--	,subject_id
+			,trial_name
+			,assay_id
+		)
+			select gs.probeset_id
+--		  ,sd.sample_cd
+				,cast(avg(cast (md.intensity_value as number(30,20))) as number) as aiv -- temporary fix to avoid overflow in some cases, need to address this properly by changing staging tables
+
+				,sd.patient_id
+--		  ,sd.sample_cd
+--		  ,sd.subject_id
+				,TrialId
+				,sd.assay_id
+			from de_subject_sample_mapping sd
+				,lt_src_mrna_data md
+				,probeset_deapp gs
+
+			where sd.sample_cd = md.expr_id
+						and sd.platform = 'SNP'
+						and sd.trial_name = TrialId
+						and sd.source_cd = sourceCd
+
+
+						and sd.gpl_id = gs.platform
+						and md.probeset = gs.probeset
+						and decode(dataType,'R',sign(md.intensity_value),1) = 1  --	take only >0 for dataType R
+			group by gs.probeset_id
+--  ,sd.sample_cd
+				,sd.patient_id
+--  ,sd.sample_cd
+--  ,sd.subject_id
+				,sd.assay_id;
+
+		pExists := SQL%ROWCOUNT;
+
+		stepCt := stepCt + 1;
+		cz_write_audit(jobId,databaseName,procedureName,'Insert into DEAPP wt_subject_mrna_probeset',SQL%ROWCOUNT,stepCt,'Done');
+
+		commit;
+
+
+		if pExists = 0 then
+			raise no_probeset_recs;
+		end if;
+
+--	insert into de_subject_microarray_data when dataType is T (transformed)
+
+		if dataType = 'T' then
+			insert into de_subject_microarray_data
+			(trial_source
+				,probeset_id
+				,assay_id
+				,patient_id
+			 --,sample_id
+			--,subject_id
+				,trial_name
+				,zscore
+			)
+				select TrialId || ':' || sourceCd
+					,probeset_id
+					,assay_id
+					,patient_id
+--,sample_id
+--,subject_id
+					,trial_name
+					,case when intensity_value < -2.5
+				then -2.5
+					 when intensity_value > 2.5
+					 then 2.5
+					 else intensity_value
+					 end as zscore
+				from wt_subject_mrna_probeset
+				where trial_name = TrialID;
+			stepCt := stepCt + 1;
+			cz_write_audit(jobId,databaseName,procedureName,'Insert transformed into DEAPP de_subject_microarray_data',SQL%ROWCOUNT,stepCt,'Done');
+
+			commit;
+		else
+--	insert into de_subject_microarray_data when dataType is T (transformed)
+
+
+			if dataType = 'Z' then
+				insert into de_subject_microarray_data
+				(trial_source
+					,probeset_id
+					,assay_id
+					,patient_id
+				 --,sample_id
+				--,subject_id
+					,TRIAL_NAME
+					,log_intensity
+					,zscore
+
+				)
+					select TrialId || ':' || sourceCd
+						,probeset_id
+						,assay_id
+						,patient_id
+--,sample_id
+--,subject_id
+						,TRIAL_NAME
+						,intensity_value
+						,case when intensity_value < -2.5
+
+					then -2.5
+						 when intensity_value > 2.5
+						 then 2.5
+						 else intensity_value
+						 end as zscore
+					from wt_subject_mrna_probeset
+					where trial_name = TrialID;
+				STEPCT := STEPCT + 1;
+				cz_write_audit(jobId,databaseName,procedureName,'Insert transformed (workaround) into DEAPP de_subject_microarray_data',SQL%ROWCOUNT,stepCt,'Done');
+
+
+				commit;
+			else
+--	Calculate ZScores and insert data into de_subject_microarray_data.  The 'L' parameter indicates that the gene expression data will be selected from
+--	wt_subject_mrna_probeset as part of a Load.
+
+
+				if dataType = 'R' or dataType = 'L' then
+					i2b2_mrna_zscore_calc(TrialID,'L',jobId,dataType,logBase,sourceCD);
+					stepCt := stepCt + 1;
+					cz_write_audit(jobId,databaseName,procedureName,'Calculate Z-Score',0,stepCt,'Done');
+					commit;
+
+				end if;
+
+			end if;
+		end if;
+
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'End i2b2_process_snp_data',0,stepCt,'Done');
 
