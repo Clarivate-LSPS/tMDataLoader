@@ -11,7 +11,7 @@ AS
 --	JEA@20100112	Added removal of SECURITY records from observation_fact
   TYPE sourceCDs IS TABLE OF Varchar2(250);
   TYPE tVarCh2 IS TABLE OF Varchar2(700);
-
+  bioexpid    NUMBER(18,0);
   TrialID 		varchar2(100);
   pathString  VARCHAR2(700 BYTE);
   tPathString  VARCHAR2(700 BYTE);
@@ -299,6 +299,20 @@ BEGIN
   where trial_name = trialId;
   stepCt := stepCt + 1;
   cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from DE_SUBJECT_SNP_DATASET',SQL%ROWCOUNT,stepCt,'Done');
+  commit;
+
+  select bio_experiment_id into bioexpid from biomart.bio_experiment
+  where accession = trialId;
+
+  delete from biomart.bio_experiment
+  where accession = trialId;
+  stepCt := stepCt + 1;
+  cz_write_audit(jobId,databaseName,procedureName,'Delete data from BIO_EXPERIMENT',SQL%ROWCOUNT,stepCt,'Done');
+  commit;
+
+  delete from biomart.bio_data_uid where bio_data_id = bioexpid;
+  stepCt := stepCt + 1;
+  cz_write_audit(jobId,databaseName,procedureName,'Delete data from BIO_DATA_UID',SQL%ROWCOUNT,stepCt,'Done');
   commit;
 
 	/*Check and delete top node, if remove node is last*/
