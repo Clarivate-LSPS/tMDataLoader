@@ -1060,36 +1060,28 @@ BEGIN
 	begin
 		insert into DE_SUBJECT_PROTEIN_DATA
 		(trial_name
-	,protein_annotation_id
-	,component
-	,gene_symbol
-	,gene_id
-	,assay_id
-	,subject_id
-	,intensity 
-	,zscore
-        ,log_intensity
-	,patient_id
+      ,protein_annotation_id
+      ,component
+      ,gene_symbol
+      ,gene_id
+      ,assay_id
+      ,subject_id
+      ,intensity
+      ,zscore
+      ,log_intensity
+      ,patient_id
 		)
 		select TrialId 
-                  ,d.id
-		  ,m.probeset
-                  ,d.uniprot_id
-                  ,d.biomarker_id
-		  ,m.assay_id
-                  ,m.subject_id 
-                   ,m.intensity_value as intensity ----UAT 154 changes done on 19/03/2014
-			  ,case when m.intensity_value < -2.5
-			        then -2.5
-					when m.intensity_value > 2.5
-					then 2.5
-					else m.intensity_value
-			   end as zscore
-                           /*, case when m.intensity_value > 0 then round(log(2, m.intensity_value),6)
-                            else 0 
-                            end */
-                            ,round(log(2, m.intensity_value + 0.001),6)  ----UAT 154 changes done on 19/03/2014
-                            ,m.patient_id
+            ,d.id
+		        ,m.probeset
+            ,d.uniprot_id
+            ,d.biomarker_id
+		        ,m.assay_id
+            ,m.subject_id
+            ,null as intensity
+			      ,m.intensity_value as zscore
+            ,null as log_intensity
+            ,m.patient_id
 		from WT_SUBJECT_PROTEOMICS_PROBESET  m
                 ,DEAPP.DE_PROTEIN_ANNOTATION d
 		where trial_name = TrialID
