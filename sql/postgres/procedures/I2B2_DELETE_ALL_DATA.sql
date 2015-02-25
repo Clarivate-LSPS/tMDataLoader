@@ -7,6 +7,7 @@ create or replace function I2B2_DELETE_ALL_DATA
 $BODY$
 Declare
   TrialID   varchar(100);
+  bioexpid  bigint;
   pathString  VARCHAR(700);
   TrialType 	VARCHAR(250);
   sourceCD  	VARCHAR(250);
@@ -304,6 +305,20 @@ BEGIN
 	stepCt := stepCt + 1;
   get diagnostics rowCt := ROW_COUNT;
   select cz_write_audit(jobId,databaseName,procedureName,'Delete SNP data for trial from DE_SUBJECT_SNP_DATASET',rowCt,stepCt,'Done') into rtnCd;
+
+  select bio_experiment_id into bioexpid from biomart.bio_experiment
+  where accession = trialId;
+
+  delete from biomart.bio_experiment
+  where accession = trialId;
+  stepCt := stepCt + 1;
+  get diagnostics rowCt := ROW_COUNT;
+  select cz_write_audit(jobId,databaseName,procedureName,'Delete data from BIO_EXPERIMENT',rowCt,stepCt,'Done') into rtnCd;
+
+  delete from biomart.bio_data_uid where bio_data_id = bioexpid;
+  stepCt := stepCt + 1;
+  get diagnostics rowCt := ROW_COUNT;
+  select cz_write_audit(jobId,databaseName,procedureName,'Delete data from BIO_DATA_UID',rowCt,stepCt,'Done') into rtnCd;
 
 	/*Check and delete top node, if removed node is last*/
     stepCt := stepCt + 1;
