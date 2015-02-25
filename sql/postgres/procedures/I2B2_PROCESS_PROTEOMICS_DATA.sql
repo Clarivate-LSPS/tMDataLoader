@@ -1066,9 +1066,7 @@ BEGIN
       ,gene_id
       ,assay_id
       ,subject_id
-      ,intensity
       ,zscore
-      ,log_intensity
       ,patient_id
 		)
 		select TrialId 
@@ -1078,9 +1076,7 @@ BEGIN
             ,d.biomarker_id
 		        ,m.assay_id
             ,m.subject_id
-            ,null as intensity
 			      ,m.intensity_value as zscore
-            ,null as log_intensity
             ,m.patient_id
 		from WT_SUBJECT_PROTEOMICS_PROBESET  m
                 ,DEAPP.DE_PROTEIN_ANNOTATION d
