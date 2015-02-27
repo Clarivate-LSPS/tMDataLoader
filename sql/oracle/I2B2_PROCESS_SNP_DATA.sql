@@ -72,6 +72,7 @@ AS
 	logBase		number;
   pCount		integer;
   sCount		integer;
+	cnCount		integer;
   tablespaceName	varchar2(200);
   
     --Audit variables
@@ -1078,6 +1079,11 @@ BEGIN
 	cz_write_audit(jobId,databaseName,procedureName,'Insert into de_subject_snp_dataset',0,stepCt,'Done');
   COMMIT;
 
+	select count(*)
+	into cnCount
+	from lt_snp_copy_number;
+
+	if cnCount > 0 then
 		execute immediate ('truncate table "&TM_LZ_SCHEMA".lt_src_mrna_data');
 		commit;
 
@@ -1242,6 +1248,7 @@ BEGIN
 
 			end if;
 		end if;
+	end if;
 
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'End i2b2_process_snp_data',0,stepCt,'Done');
