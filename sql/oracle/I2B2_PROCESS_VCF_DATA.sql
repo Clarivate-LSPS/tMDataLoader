@@ -637,14 +637,24 @@ BEGIN
 	cz_write_audit(jobId,databaseName,procedureName,'Update c_columndatatype and c_metadataxml for numeric data types in I2B2METADATA i2b2',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
 
-  update deapp.de_variant_subject_summary v
+    update deapp.de_variant_subject_summary v
     set assay_id = (select sm.assay_id
     from deapp.de_subject_sample_mapping sm
-    where sm.trial_name = TrialID
+    where sm.trial_name = trialID
+      and sm.source_cd = sourceCd
       and sm.sample_cd = v.subject_id
       and sm.platform='VCF'
-      and v.dataset_id = sm.trial_name||':'||sm.source_cd
-      );
+      and v.dataset_id = trialID||':'||sourceCd
+      )
+      where exists
+       (select 1
+        from deapp.de_subject_sample_mapping sm1
+        where sm1.trial_name = trialID
+          and sm1.source_cd = sourceCd
+          and sm1.sample_cd = v.subject_id
+          and sm1.platform='VCF'
+          and v.dataset_id = trialID||':'||sourceCd
+          );
 
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Associate deapp.de_subject_sample_mapping with deapp.de_variant_subject_summary',SQL%ROWCOUNT,stepCt,'Done');
