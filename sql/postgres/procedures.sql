@@ -39,3 +39,5 @@ $$;
 \i procedures/I2B2_DELETE_PARTITION.sql
 \i procedures/I2B2_ADD_PLATFORM.sql
 \i procedures/I2B2_PROCESS_SERIAL_HDD_DATA.sql
+\i procedures/I2B2_LOAD_CHROM_REGION.sql
+\i procedures/I2B2_PROCESS_ACGH_DATA.sql
