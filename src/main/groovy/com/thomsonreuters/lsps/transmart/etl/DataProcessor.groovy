@@ -58,4 +58,9 @@ abstract class DataProcessor {
         return res
     }
 
+    boolean isStudyExist(sql, studyInfo){
+        def row = sql.firstRow("select count(*) as cnt from i2b2metadata.i2b2 where sourcesystem_cd = ? and c_fullname not like ? ",
+                [studyInfo['id'],'\\\\'+studyInfo['node'].replace('\\','\\\\')+'\\\\%'])
+        return row?.cnt
+    }
 }
