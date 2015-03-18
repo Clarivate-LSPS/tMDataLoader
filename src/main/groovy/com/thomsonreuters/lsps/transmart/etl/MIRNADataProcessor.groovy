@@ -19,6 +19,7 @@ public class MIRNADataProcessor extends DataProcessor {
 
         dir.eachFileMatch(~/(?i).+_Subject_Sample_Mapping_File(_GPL\d+)*\.txt/) {
             platformList.addAll(processMappingFile(it, sql, studyInfo))
+            if (isStudyExist(sql,studyInfo)){ throw new Exception("Exist dataset with equal Study Id and other path") }
         }
 
         platformList = platformList.toList()

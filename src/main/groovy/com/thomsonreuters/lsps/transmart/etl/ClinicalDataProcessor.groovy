@@ -137,6 +137,7 @@ class ClinicalDataProcessor extends DataProcessor {
             mapping.eachFileMapping { fileMapping ->
                 this.processFile(sql, new File(dir, fileMapping.fileName), fileMapping)
             }
+            if (isStudyExist(sql,studyInfo)){ throw new Exception("Exist dataset with equal Study Id and other path") }
         }
         new File(dir, "SummaryStatistic.txt").withWriter { writer ->
             statistic.printReport(writer)
