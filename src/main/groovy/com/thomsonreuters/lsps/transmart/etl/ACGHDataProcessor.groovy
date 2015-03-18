@@ -95,11 +95,20 @@ class ACGHDataProcessor extends DataProcessor {
     private void loadPlatforms(File dir, Sql sql, List platformList, studyInfo) {
         platformList.each { String platform ->
 
-            File acghPlatformFile = new File(dir, "${platform}_region_platform.txt")
+            File acghPlatformFile;
+            dir.eachFileMatch(~/${platform}_region_platform.txt|${platform}.txt/){
+                acghPlatformFile = new File('', it)
+            }
+
             if (acghPlatformFile.exists()){
                 def acghPlatform = new aCGHPlatform(acghPlatformFile, platform, config)
                 studyInfo['loadaCGHPlatform'] = !acghPlatform.isLoaded(sql)
                 acghPlatform.load(sql, studyInfo)
+            } else {
+                def row = sql.firstRow("SELECT count(*) as cnt FROM deapp.de_chromosomal_region WHERE gpl_id = ?",[platform])
+                if (row?.cnt == 0)
+                    throw new Exception("No platforms file")
+
             }
         }
     }
