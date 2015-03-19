@@ -36,7 +36,7 @@ class DirectoryProcessor {
             Metabolomics: MetabolomicsDataProcessor,
             RNASeq      : RNASeqDataProcessor,
             SerialHDD   : SerialHDDDataProcessor,
-            ACGH        : ACGHDataProcessor
+            ACGH        : ACGHDataProcessor,
     ]
 
     DirectoryProcessor(conf) {
@@ -182,12 +182,11 @@ class DirectoryProcessor {
             def studyName = it.name
             config.logger.log "== Found study: ${studyName} =="
 
-            def studyInfo = ['name': studyName, 'node': "${parentNode}\\${studyName}".toString()]
-
             def isStudyUploadSuccessful = true
 
             //process following data types
             dataProcessors.each { entry ->
+                def studyInfo = ['name': studyName, 'node': "${parentNode}\\${studyName}".toString()]
                 if (!processDataDirectory(it, entry.key, entry.value, studyInfo)) {
                     isStudyUploadSuccessful = false
                 }
