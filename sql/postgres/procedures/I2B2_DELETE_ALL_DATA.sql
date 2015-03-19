@@ -320,6 +320,12 @@ BEGIN
   get diagnostics rowCt := ROW_COUNT;
   select cz_write_audit(jobId,databaseName,procedureName,'Delete data from BIO_DATA_UID',rowCt,stepCt,'Done') into rtnCd;
 
+  /* Delete aCGH data */
+  delete from deapp.de_subject_acgh_data WHERE trial_name= TrialId;
+  stepCt := stepCt + 1;
+  get diagnostics rowCt := ROW_COUNT;
+  select cz_write_audit(jobId,databaseName,procedureName,'Delete data from DE_SUBJECT_ACGH_DATA',rowCt,stepCt,'Done') into rtnCd;
+
 	/*Check and delete top node, if removed node is last*/
     stepCt := stepCt + 1;
     select cz_write_audit(jobId,databaseName,procedureName,'Check and delete top node '||topNode||' if removed node is last',0,stepCt,'Done') into rtnCd;
