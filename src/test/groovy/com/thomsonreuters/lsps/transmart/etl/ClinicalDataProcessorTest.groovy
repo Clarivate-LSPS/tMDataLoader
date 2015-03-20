@@ -152,4 +152,16 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
 
         assertThat(sql, hasNode($/${conceptPath}Biomarker Data\Mutations\TST002 (Entrez ID: 324)\/$))
     }
+
+    def 'it should load study with non-unique column names'() {
+        when:
+        def studyId = 'GSE0'
+        def studyName = 'Test Study With Non Unique Column Names'
+        config.allowNonUniqueColumnNames = true
+        def processor = new ClinicalDataProcessor(config)
+        processor.process(new File(studyDir(studyName, studyId, additionalStudiesDir), "ClinicalDataToUpload"),
+                [name: studyName, node: "Test Studies\\${studyName}".toString()])
+        then:
+        noExceptionThrown()
+    }
 }
