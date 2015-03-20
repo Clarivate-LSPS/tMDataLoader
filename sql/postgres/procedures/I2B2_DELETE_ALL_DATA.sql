@@ -33,6 +33,7 @@ Declare
   jobID numeric(18,0);
   stepCt numeric(18,0);
   rtnCd	 integer;
+  nCount  integer;
 BEGIN
   databaseName := current_schema();
   procedureName := 'i2b2_delete_all_data';
@@ -306,20 +307,24 @@ BEGIN
   get diagnostics rowCt := ROW_COUNT;
   select cz_write_audit(jobId,databaseName,procedureName,'Delete SNP data for trial from DE_SUBJECT_SNP_DATASET',rowCt,stepCt,'Done') into rtnCd;
 
-  select bio_experiment_id into bioexpid from biomart.bio_experiment
+  select count(bio_experiment_id) into nCount from biomart.bio_experiment
   where accession = trialId;
 
-  delete from biomart.bio_experiment
-  where accession = trialId;
-  stepCt := stepCt + 1;
-  get diagnostics rowCt := ROW_COUNT;
-  select cz_write_audit(jobId,databaseName,procedureName,'Delete data from BIO_EXPERIMENT',rowCt,stepCt,'Done') into rtnCd;
+  if nCount > 0 then
+    select bio_experiment_id into bioexpid from biomart.bio_experiment
+    where accession = trialId;
 
-  delete from biomart.bio_data_uid where bio_data_id = bioexpid;
-  stepCt := stepCt + 1;
-  get diagnostics rowCt := ROW_COUNT;
-  select cz_write_audit(jobId,databaseName,procedureName,'Delete data from BIO_DATA_UID',rowCt,stepCt,'Done') into rtnCd;
+    delete from biomart.bio_experiment
+    where accession = trialId;
+    stepCt := stepCt + 1;
+    get diagnostics rowCt := ROW_COUNT;
+    select cz_write_audit(jobId,databaseName,procedureName,'Delete data from BIO_EXPERIMENT',rowCt,stepCt,'Done') into rtnCd;
 
+    delete from biomart.bio_data_uid where bio_data_id = bioexpid;
+    stepCt := stepCt + 1;
+    get diagnostics rowCt := ROW_COUNT;
+    select cz_write_audit(jobId,databaseName,procedureName,'Delete data from BIO_DATA_UID',rowCt,stepCt,'Done') into rtnCd;
+  end if;
   /* Delete aCGH data */
   delete from deapp.de_subject_acgh_data WHERE trial_name= TrialId;
   stepCt := stepCt + 1;
