@@ -17,18 +17,18 @@ class CsvLikeFile implements PrepareIfRequired {
     File file
     protected String lineComment
     private List<String> header
+    private boolean allowNonUniqueColumnNames
     private List<String> headComments
     protected CSVFormat format = CSVFormat.TDF.
-            withHeader().
             withSkipHeaderRecord(true).
             withIgnoreEmptyLines(true).
             withIgnoreSurroundingSpaces(true).
             withAllowMissingColumnNames(true)
 
-    protected def withParser(Closure closure) {
+    protected def withParser(CSVFormat format = null, Closure closure) {
         file.withReader { reader ->
             def linesReader = !lineComment.is(null) ? new SkipLinesReader(reader, [lineComment]) : reader
-            def parser = new CSVParser(linesReader, format)
+            def parser = new CSVParser(linesReader, format ?: this.format)
             if (closure.maximumNumberOfParameters == 2) {
                 def lineNumberProducer = linesReader instanceof SkipLinesReader ?
                         { (linesReader as SkipLinesReader).skippedLinesCount + parser.currentLineNumber } :
@@ -40,13 +40,14 @@ class CsvLikeFile implements PrepareIfRequired {
         }
     }
 
-    CsvLikeFile(File file, String lineComment = null) {
+    CsvLikeFile(File file, String lineComment = null, boolean allowNonUniqueColumnNames = false) {
         this.file = file
         this.lineComment = lineComment
+        this.allowNonUniqueColumnNames = allowNonUniqueColumnNames
     }
 
     String[] getHeader() {
-        header ?: (header = withParser { it.headerMap.keySet() as String[] })
+        header ?: (header = withParser(format.withHeader(null)) { it.nextRecord().toList() })
     }
 
     String[] getHeadComments() {
@@ -74,9 +75,31 @@ class CsvLikeFile implements PrepareIfRequired {
         return values
     }
 
+    private List<String> getRefinedHeader() {
+        List<String> refinedHeader = new ArrayList<>(header)
+        int idx = refinedHeader.size()
+        refinedHeader.reverseEach {
+            idx--
+            for (int pos = 0; pos < idx; pos++) {
+                if (refinedHeader[pos].equals(it)) {
+                    refinedHeader[pos] = it + '@' + pos
+                    refinedHeader[idx] = it + '@' + idx
+                    break
+                }
+            }
+        }
+        return refinedHeader
+    }
+
     def <T> T eachEntry(Closure<T> processEntry) {
         prepareIfRequired()
-        withParser { CSVParser parser, lineNumberProducer ->
+        CSVFormat format = format
+        if (!allowNonUniqueColumnNames) {
+            format = format.withHeader()
+        } else {
+            format = format.withHeader(refinedHeader as String[])
+        }
+        withParser(format) { CSVParser parser, lineNumberProducer ->
             def _processEntry = processEntry.maximumNumberOfParameters == 2 ?
                     { processEntry(it, lineNumberProducer()) } :
                     { processEntry(it) }

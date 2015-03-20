@@ -141,7 +141,7 @@ class Database {
 
         runner.waitFor()
         if (runner.exitValue() != 0) {
-            throw new RuntimeException(runner.errorStream.text)
+            throw new RuntimeException(err.toString())
         }
 
         if (err.length() > 0) {
