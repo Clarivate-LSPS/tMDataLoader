@@ -124,7 +124,9 @@ To start ETL process, just run the following command:
 You can run it with "-h" option to get a list of all available options:
 
     $ java -jar tm_etl.jar -h
-    usage: tm_etl [options] [<data_dir>]                                      
+    usage: tm_etl [options] [<data_dir>]
+        --allow-non-unique-columns             Allow non-unique column names
+                                               in clinical data files
         --alt-clinical-proc <proc_name>        Name of alternative clinical   
                                                stored procedure (expert       
                                                option)                        
@@ -154,7 +156,7 @@ You can run it with "-h" option to get a list of all available options:
      -v,--version                              Display version information and
                                                exit                           
         --visit-name-first                     Put VISIT_NAME before the data 
-                                               value                          
+                                               value
 
 By default, the configuration file location is ~/.tm_etl/Config.groovy.
 You can specify the configuration file name using -c option.

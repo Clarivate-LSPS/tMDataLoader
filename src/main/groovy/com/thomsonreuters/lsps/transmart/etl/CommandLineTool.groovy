@@ -48,6 +48,7 @@ class CommandLineTool {
             _ longOpt: 'delete-study-by-id', args: 1, argName: 'delete_id', 'Delete study by id'
             _ longOpt: 'delete-study-by-path', args: 1, argName: 'delete_path', 'Delete study by path'
             _ longOpt: 'force-start', 'Force TM Data Loader start (even if another instance is already running)'
+            _ longOpt: 'allow-non-unique-columns', 'Allow non-unique column names in clinical data files'
         }
         // TODO: implement stop-on-fail mode!
         def opts = cli.parse(args)
@@ -179,6 +180,10 @@ class CommandLineTool {
             config.moveStudyNewPath = opts.ms[1];
             config.mdOperation = true;
             println ">>> MOVE STUDY from ${opts.ms[0]} to ${opts.ms[1]}"
+        }
+
+        if (opts?.'allow-non-unique-columns') {
+            config.allowNonUniqueColumnNames = true
         }
 
         def extra_args = opts.arguments()

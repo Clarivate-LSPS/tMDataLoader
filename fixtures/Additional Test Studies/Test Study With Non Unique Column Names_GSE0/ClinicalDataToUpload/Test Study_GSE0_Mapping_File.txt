@@ -1,0 +1,17 @@
+filename	category_cd	col_nbr	data_label	data_label_source
+TST002.txt		1	STUDY_ID
+TST002.txt		2	SUBJ_ID
+TST002.txt		3	OMIT
+TST002.txt	Biomarker_Data+Mutations+TST002_(Entrez_ID:_324)+AA_mutation	4	DATA_LABEL
+TST002.txt	Biomarker_Data+Mutations+TST002_(Entrez_ID:_324)+AA_mutation+Mutant Allele (Genomic)	5	\	4A
+TST002.txt	Biomarker_Data+Mutations+TST002_(Entrez_ID:_324)+AA_mutation+Mutant Allele (cDNA)	6	\	4A
+TST002.txt	Biomarker_Data+Mutations+TST002_(Entrez_ID:_324)+AA_mutation+Mutation Type	7	\	4A
+TST002.txt	Biomarker_Data+Mutations+TST002_(Entrez_ID:_324)+AA_mutation+Variant Type	8	\	4A
+TST001.txt		1	STUDY_ID
+TST001.txt		2	SUBJ_ID
+TST001.txt		3	OMIT
+TST001.txt	Biomarker_Data+Mutations+TST001_(Entrez_ID:_1956)+AA_mutation	4	DATA_LABEL
+TST001.txt	Biomarker_Data+Mutations+TST001_(Entrez_ID:_1956)+AA_mutation+Mutant Allele (Genomic)	5	\	4A
+TST001.txt	Biomarker_Data+Mutations+TST001_(Entrez_ID:_1956)+AA_mutation+Mutant Allele (cDNA)	6	\	4A
+TST001.txt	Biomarker_Data+Mutations+TST001_(Entrez_ID:_1956)+AA_mutation+Mutation Type	7	\	4A
+TST001.txt	Biomarker_Data+Mutations+TST001_(Entrez_ID:_1956)+AA_mutation+Variant Type	8	\	4A

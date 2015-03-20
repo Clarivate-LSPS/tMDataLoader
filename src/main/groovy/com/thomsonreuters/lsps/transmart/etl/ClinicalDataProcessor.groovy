@@ -37,7 +37,9 @@ class ClinicalDataProcessor extends DataProcessor {
 
     private long processEachRow(File f, fMappings, Closure<List> processRow) {
         def lineNum = 1L
-        CsvLikeFile csvFile = new CsvLikeFile(f, '# ')
+        def _DATA = fMappings['_DATA']
+
+        CsvLikeFile csvFile = new CsvLikeFile(f, '# ', config.allowNonUniqueColumnNames.asBoolean())
         statistic.collectForTable(f.name) { table ->
             addStatisticVariables(table, csvFile, fMappings)
             csvFile.eachEntry { String[] data ->
@@ -65,10 +67,10 @@ class ClinicalDataProcessor extends DataProcessor {
                             ctrl_vocab_code: ''  // CTRL_VOCAB_CODE - unused
                     ]
 
-                    if (fMappings['_DATA']) {
+                    if (_DATA) {
                         table.startCollectForRecord()
                         table.collectVariableValue('SUBJ_ID', output.subj_id)
-                        fMappings['_DATA'].each { v ->
+                        _DATA.each { v ->
                             def out = output.clone()
                             int valueColumn = v['COLUMN']
                             String value = cols[valueColumn]
