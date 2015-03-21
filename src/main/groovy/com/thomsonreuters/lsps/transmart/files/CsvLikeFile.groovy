@@ -47,7 +47,7 @@ class CsvLikeFile implements PrepareIfRequired {
     }
 
     String[] getHeader() {
-        header ?: (header = withParser(format.withHeader(null)) { it.nextRecord().toList() })
+        header ?: (header = withParser(format.withHeader((String[]) null)) { it.nextRecord().toList() })
     }
 
     String[] getHeadComments() {
