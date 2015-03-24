@@ -44,6 +44,7 @@ class CommandLineTool {
             _ longOpt: 'alt-control-schema', args: 1, argName: 'schema', 'Name of alternative control schema (TM_CZ) - expert option'
             _ longOpt: 'secure-study', 'Make study securable'
             _ longOpt: 'visit-name-first', 'Put VISIT_NAME before the data value'
+            _ longOpt: 'set-visit-name-not-null', 'If need visit_name in path'
             _ longOpt: 'data-value-first', 'Put VISIT NAME after the data value (default behavior, use to override non-standard config)'
             _ longOpt: 'delete-study-by-id', args: 1, argName: 'delete_id', 'Delete study by id'
             _ longOpt: 'delete-study-by-path', args: 1, argName: 'delete_path', 'Delete study by path'
@@ -158,6 +159,15 @@ class CommandLineTool {
 
         if (config?.visitNameFirst) {
             println '>>> FYI: using VISIT_NAME before DATA_VALUE as default behavior (per config or command line)'
+        }
+
+        if (config?.setVisitNameNotNull) {
+            println '>>> FYI: using Set VISIT_NAME as NULL'
+        }
+
+        if (opts?.'set-visit-name-not-null'){
+            config.setVisitNameNotNull = true;
+            println '>>> FYI: using Set VISIT_NAME as NULL'
         }
 
         if (opts?.'delete-study-by-id') {
