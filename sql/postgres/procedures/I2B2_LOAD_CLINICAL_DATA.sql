@@ -7,7 +7,7 @@ CREATE OR REPLACE FUNCTION i2b2_load_clinical_data(
   top_node character varying,
   secure_study character varying DEFAULT 'N'::character varying,
   highlight_study character varying DEFAULT 'N'::character varying,
-  setVisitNameNull character varying DEFAULT 'N'::character varying,
+  alwaysSetVisitName character varying DEFAULT 'N'::character varying,
   currentjobid numeric DEFAULT (-1))
   RETURNS numeric AS
 $BODY$
@@ -377,7 +377,7 @@ BEGIN
 
 	--	set visit_name to null when there's only a single visit_name for the catgory
 
-  if setVisitNameNull = 'Y' then
+  if alwaysSetVisitName = 'Y' then
    begin
     begin
     update wrk_clinical_data tpm

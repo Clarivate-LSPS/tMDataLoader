@@ -11,7 +11,7 @@ PROCEDURE                                                       "I2B2_LOAD_CLINI
  ,top_node			in  varchar2
  ,secure_study		in varchar2 := 'N'
  ,highlight_study	in	varchar2 := 'N'
- ,setVisitNameNull in varchar2 := 'N'
+ ,alwaysSetVisitName in varchar2 := 'N'
  ,currentJobID		IN	NUMBER := null
 )
 AS
@@ -404,7 +404,7 @@ BEGIN
 	
 	--	set data_label to null when it duplicates the last part of the category_path
 	--	Remove data_label from last part of category_path when they are the same
-  if setVisitNameNull = 'Y' then begin
+  if alwaysSetVisitName = 'Y' then begin
     update wrk_clinical_data tpm
     --set data_label = null
     set category_path=substr(tpm.category_path,1,instr(tpm.category_path,'\',-2)-1)
