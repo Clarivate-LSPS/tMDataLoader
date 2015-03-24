@@ -11,6 +11,7 @@ PROCEDURE                                                       "I2B2_LOAD_CLINI
  ,top_node			in  varchar2
  ,secure_study		in varchar2 := 'N'
  ,highlight_study	in	varchar2 := 'N'
+ ,setVisitNameNull in varchar2 := 'N'
  ,currentJobID		IN	NUMBER := null
 )
 AS
@@ -403,24 +404,28 @@ BEGIN
 	
 	--	set data_label to null when it duplicates the last part of the category_path
 	--	Remove data_label from last part of category_path when they are the same
-	
-	update wrk_clinical_data tpm
-	--set data_label = null
-	set category_path=substr(tpm.category_path,1,instr(tpm.category_path,'\',-2)-1)
-	   ,category_cd=substr(tpm.category_cd,1,instr(tpm.category_cd,'+',-2)-1)
-	where (tpm.category_cd, tpm.data_label) in
-		  (select distinct t.category_cd
-				 ,t.data_label
-		   from wrk_clinical_data t
-		   where upper(substr(t.category_path,instr(t.category_path,'\',-1)+1,length(t.category_path)-instr(t.category_path,'\',-1))) 
-			     = upper(t.data_label)
-		     and t.data_label is not null)
-	  and tpm.data_label is not null;
+  if setVisitNameNull = 'Y' then begin
+    update wrk_clinical_data tpm
+    --set data_label = null
+    set category_path=substr(tpm.category_path,1,instr(tpm.category_path,'\',-2)-1)
+       ,category_cd=substr(tpm.category_cd,1,instr(tpm.category_cd,'+',-2)-1)
+    where (tpm.category_cd, tpm.data_label) in
+        (select distinct t.category_cd
+           ,t.data_label
+         from wrk_clinical_data t
+         where upper(substr(t.category_path,instr(t.category_path,'\',-1)+1,length(t.category_path)-instr(t.category_path,'\',-1)))
+             = upper(t.data_label)
+           and t.data_label is not null)
+      and tpm.data_label is not null;
 
-	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Set data_label to null when found in category_path',SQL%ROWCOUNT,stepCt,'Done');
-		
-	commit;
+    stepCt := stepCt + 1;
+    cz_write_audit(jobId,databaseName,procedureName,'Set data_label to null when found in category_path',SQL%ROWCOUNT,stepCt,'Done');
+  	commit;
+  end;
+  else
+    stepCt := stepCt + 1;
+    cz_write_audit(jobId,databaseName,procedureName,'Use single visit_name in path',0,stepCt,'Done');
+  end if;
 
 	--	set visit_name to null if same as data_label
 	

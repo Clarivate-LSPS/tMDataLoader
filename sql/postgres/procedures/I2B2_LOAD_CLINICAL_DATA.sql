@@ -2,7 +2,13 @@
 
 -- DROP FUNCTION i2b2_load_clinical_data(character varying, character varying, character varying, character varying, numeric);
 
-CREATE OR REPLACE FUNCTION i2b2_load_clinical_data(trial_id character varying, top_node character varying, secure_study character varying DEFAULT 'N'::character varying, highlight_study character varying DEFAULT 'N'::character varying, currentjobid numeric DEFAULT (-1))
+CREATE OR REPLACE FUNCTION i2b2_load_clinical_data(
+  trial_id character varying,
+  top_node character varying,
+  secure_study character varying DEFAULT 'N'::character varying,
+  highlight_study character varying DEFAULT 'N'::character varying,
+  setVisitNameNull character varying DEFAULT 'N'::character varying,
+  currentjobid numeric DEFAULT (-1))
   RETURNS numeric AS
 $BODY$
 /*************************************************************************
@@ -371,28 +377,34 @@ BEGIN
 
 	--	set visit_name to null when there's only a single visit_name for the catgory
 
-	begin
-	update wrk_clinical_data tpm
-	set visit_name=null
-	where (tpm.category_cd) in
-		  (select x.category_cd
-		   from wrk_clinical_data x
-		   group by x.category_cd
-		   having count(distinct upper(x.visit_name)) = 1);
-	get diagnostics rowCt := ROW_COUNT;
-	exception
-	when others then
-		errorNumber := SQLSTATE;
-		errorMessage := SQLERRM;
-		--Handle errors.
-		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
-		--End Proc
-		select cz_end_audit (jobID, 'FAIL') into rtnCd;
-		return -16;
-	end;
-	stepCt := stepCt + 1;
-	select cz_write_audit(jobId,databaseName,procedureName,'Set single visit_name to null',rowCt,stepCt,'Done') into rtnCd;
-
+  if setVisitNameNull = 'Y' then
+   begin
+    begin
+    update wrk_clinical_data tpm
+    set visit_name=null
+    where (tpm.category_cd) in
+        (select x.category_cd
+         from wrk_clinical_data x
+         group by x.category_cd
+         having count(distinct upper(x.visit_name)) = 1);
+    get diagnostics rowCt := ROW_COUNT;
+    exception
+    when others then
+      errorNumber := SQLSTATE;
+      errorMessage := SQLERRM;
+      --Handle errors.
+      select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+      --End Proc
+      select cz_end_audit (jobID, 'FAIL') into rtnCd;
+      return -16;
+    end;
+    stepCt := stepCt + 1;
+    select cz_write_audit(jobId,databaseName,procedureName,'Set single visit_name to null',rowCt,stepCt,'Done') into rtnCd;
+   end;
+   else
+    stepCt := stepCt + 1;
+    select cz_write_audit(jobId,databaseName,procedureName,'Use single visit_name in path',0,stepCt,'Done') into rtnCd;
+   end if;
 	--	set data_label to null when it duplicates the last part of the category_path
 	--	Remove data_label from last part of category_path when they are the same
 
