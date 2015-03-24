@@ -158,6 +158,8 @@ create index DE_SNP_CALLS_BY_GSM_PN_GN_IDX on deapp.de_snp_calls_by_gsm(patient_
 
 create index de_snp_calls_by_gsm_sn_nm_idx on deapp.de_snp_calls_by_gsm(snp_name);
 
+CREATE INDEX IDX_DE_CHROMOSAL_REGION ON DEAPP.de_chromosomal_region (GPL_ID, GENE_SYMBOL);
+
 --------------------------------------------------------
 --  DDL for Table DE_VARIANT_DATASET
 --------------------------------------------------------
