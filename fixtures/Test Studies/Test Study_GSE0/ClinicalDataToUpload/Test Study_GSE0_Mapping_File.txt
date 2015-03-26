@@ -13,3 +13,9 @@ TST_DEMO.txt	Subjects+Demographics	3	"Age (AGE)"		Numerical	"Required; Greater t
 TST_DEMO.txt	Subjects+Demographics	4	"Sex (SEX)"		Categorical	Required
 TST_DEMO.txt	Subjects+Demographics	5	Assessment Date		Date
 TST_DEMO.txt	Subjects+Demographics	6	Language		Text
+TST_TAGS.txt		1	STUDY_ID
+TST_TAGS.txt		2	SUBJ_ID
+TST_TAGS.txt	$$STUDY_ID+$$Language+$$Sex (SEX)+Demographics	3	"Age (AGE)"		Numerical	"Required; Greater than 30, when ""Sex"" is equal to ""Male""; Lesser than 50; Greater than or equal to 20; Lesser than or equal to 20; >30; <50; >=20; <=20; 30-50; Between 30 to 50"
+TST_TAGS.txt	$$STUDY_ID+$$Language+$$Sex (SEX)+Demographics	4	"Sex (SEX)"		Categorical	Required
+TST_TAGS.txt	$$STUDY_ID+$$Language+$$Sex (SEX)+Demographics	5	Assessment Date		Date
+TST_TAGS.txt	$$STUDY_ID+$$Language+$$Sex (SEX)+Demographics	6	Language		Text

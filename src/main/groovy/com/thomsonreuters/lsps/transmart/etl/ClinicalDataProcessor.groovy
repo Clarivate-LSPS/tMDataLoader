@@ -80,6 +80,23 @@ class ClinicalDataProcessor extends DataProcessor {
 
                             out['data_value'] = fixColumn(value)
                             def cat_cd = v['CATEGORY_CD']
+                            //Support tag start
+                            if (cat_cd.contains('$$')){
+                                //Default tags
+                                cat_cd = cat_cd.replace('$$STUDY_ID', cols[fMappings['STUDY_ID']])
+                                cat_cd = cat_cd.replace('$$SITE_ID', cols[fMappings['SITE_ID']])
+                                cat_cd = cat_cd.replace('$$SUBJ_ID', cols[fMappings['SUBJ_ID']])
+                                cat_cd = cat_cd.replace('$$SAMPLE_ID', cols[fMappings['SAMPLE_ID']])
+                                //Custom tags
+                                def tags = cat_cd.findAll(/\$\$([A-z0-9_\"\s\(\)]+)/)
+                                fMappings._DATA.each{ it ->
+                                    if (tags.lastIndexOf('$$'+it.DATA_LABEL) > -1 ){
+                                        cat_cd = cat_cd.replace('$$'+it.DATA_LABEL,
+                                                cols[fMappings._DATA[fMappings._DATA.DATA_LABEL.lastIndexOf(it.DATA_LABEL)].COLUMN])
+                                    }
+                                }
+                            }
+                            //Support tag stop
 
                             if (v['DATA_LABEL_SOURCE'] > 0) {
                                 // ok, the actual data label is in the referenced column

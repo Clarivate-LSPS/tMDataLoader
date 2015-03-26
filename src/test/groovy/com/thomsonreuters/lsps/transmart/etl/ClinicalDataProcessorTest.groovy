@@ -128,6 +128,20 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat(sql, hasNode(conceptPathForPatient + 'T790M\\'))
     }
 
+    void testItLoadsDataWithTags() {
+        expect:
+        String conceptPath = "\\Test Studies\\${studyName}\\"
+        String conceptPathForPatient = conceptPath + studyId + '\\'
+
+        processor.process(
+                new File(studyDir(studyName, studyId), "ClinicalDataToUpload"),
+                [name: studyName, node: "Test Studies\\${studyName}".toString()])
+
+        assertThat(sql, hasPatient('HCC2935').inTrial(studyId))
+        assertThat(sql, hasNode(conceptPathForPatient + 'Female\\').withPatientCount(4))
+        assertThat(sql, hasNode(conceptPathForPatient + 'English\\').withPatientCount(2))
+    }
+
     void testItMergesData() {
         expect:
         String conceptPath = "\\Test Studies\\${studyName}\\"
