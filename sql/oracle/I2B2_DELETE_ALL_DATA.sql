@@ -301,19 +301,24 @@ BEGIN
   cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from DE_SUBJECT_SNP_DATASET',SQL%ROWCOUNT,stepCt,'Done');
   commit;
 
-  select bio_experiment_id into bioexpid from biomart.bio_experiment
+  select count(bio_experiment_id) into rowsExists from biomart.bio_experiment
   where accession = trialId;
 
-  delete from biomart.bio_experiment
-  where accession = trialId;
-  stepCt := stepCt + 1;
-  cz_write_audit(jobId,databaseName,procedureName,'Delete data from BIO_EXPERIMENT',SQL%ROWCOUNT,stepCt,'Done');
-  commit;
+  if rowsExists > 0 then
+    select bio_experiment_id into bioexpid from biomart.bio_experiment
+    where accession = trialId;
 
-  delete from biomart.bio_data_uid where bio_data_id = bioexpid;
-  stepCt := stepCt + 1;
-  cz_write_audit(jobId,databaseName,procedureName,'Delete data from BIO_DATA_UID',SQL%ROWCOUNT,stepCt,'Done');
-  commit;
+    delete from biomart.bio_experiment
+    where accession = trialId;
+    stepCt := stepCt + 1;
+    cz_write_audit(jobId,databaseName,procedureName,'Delete data from BIO_EXPERIMENT',SQL%ROWCOUNT,stepCt,'Done');
+    commit;
+
+    delete from biomart.bio_data_uid where bio_data_id = bioexpid;
+    stepCt := stepCt + 1;
+    cz_write_audit(jobId,databaseName,procedureName,'Delete data from BIO_DATA_UID',SQL%ROWCOUNT,stepCt,'Done');
+    commit;
+  end if;
 
 	/*Check and delete top node, if remove node is last*/
   stepCt := stepCt + 1;
