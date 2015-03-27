@@ -135,13 +135,15 @@ class Database {
         }
 
         StringBuffer err = new StringBuffer()
-        Appendable stdout = showOutput ? System.out : NullWriter.DEFAULT
+        StringBuffer out = new StringBuffer()
+        Appendable stdout = new MulticastAppendable(out, showOutput ? System.out : NullWriter.DEFAULT)
         Appendable stderr = showOutput ? new MulticastAppendable(System.err, err) : err
         runner.consumeProcessOutput(stdout, stderr)
 
         runner.waitFor()
         if (runner.exitValue() != 0) {
-            throw new RuntimeException(err.toString())
+            def msg = err.toString() ?: out.toString()
+            throw new RuntimeException(msg)
         }
 
         if (err.length() > 0) {

@@ -14,10 +14,10 @@ Declare
 
   -- vcf datasets
   vcfDataSetId varchar(100);
-  vcfDataSets CURSOR is
+  vcfDataSets CURSOR(trialId VARCHAR) IS
     select distinct v.dataset_id
     from  deapp.de_subject_sample_mapping sm, deapp.de_variant_subject_summary v
-    where sm.assay_id = v.assay_id;
+    where sm.assay_id = v.assay_id and sm.trial_name = trialId;
 
   --Audit variables
   rowCt		numeric(18,0);
@@ -134,7 +134,7 @@ BEGIN
 		get diagnostics rowCt := ROW_COUNT;
 		select cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from lz_src_clinical_data',rowCt,stepCt,'Done') into rtnCd;
 
-    FOR vcfDataSet in vcfDataSets LOOP
+    FOR vcfDataSet in vcfDataSets(TrialID) LOOP
       vcfDataSetId := vcfDataSet.dataset_id;
 
       /*Deleting data from de_variant_subject_summary*/
