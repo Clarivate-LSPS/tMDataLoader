@@ -168,27 +168,52 @@ BEGIN
 		cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_subject_summary',SQL%ROWCOUNT,stepCt,'Done');
 		commit;
 
-		delete from deapp.de_variant_population_data where dataset_id = TrialId;
+		delete from deapp.de_variant_population_data where dataset_id in (
+      select sm.trial_name||':'||sm.source_cd
+      from deapp.de_subject_sample_mapping sm
+      where sm.trial_name = TrialID
+            and sm.platform='VCF'
+    );
 		stepCt := stepCt + 1;
 		cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_population_data',SQL%ROWCOUNT,stepCt,'Done');
 		commit;
 
-    delete from deapp.de_variant_population_info where dataset_id = TrialId;
+    delete from deapp.de_variant_population_info where dataset_id in (
+      select sm.trial_name||':'||sm.source_cd
+      from deapp.de_subject_sample_mapping sm
+      where sm.trial_name = TrialID
+            and sm.platform='VCF'
+    );
     stepCt := stepCt + 1;
 		cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_population_info',SQL%ROWCOUNT,stepCt,'Done');
 		commit;
 
-    delete from deapp.de_variant_subject_detail where dataset_id = TrialId;
+    delete from deapp.de_variant_subject_detail where dataset_id in (
+      select sm.trial_name||':'||sm.source_cd
+      from deapp.de_subject_sample_mapping sm
+      where sm.trial_name = TrialID
+            and sm.platform='VCF'
+    );
     stepCt := stepCt + 1;
 		cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_subject_detail',SQL%ROWCOUNT,stepCt,'Done');
 		commit;
 
-    delete from deapp.de_variant_subject_idx where dataset_id = TrialId;
+    delete from deapp.de_variant_subject_idx where dataset_id in (
+      select sm.trial_name||':'||sm.source_cd
+      from deapp.de_subject_sample_mapping sm
+      where sm.trial_name = TrialID
+            and sm.platform='VCF'
+    );
     stepCt := stepCt + 1;
 		cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_subject_idx',SQL%ROWCOUNT,stepCt,'Done');
 		commit;
 
-    delete from deapp.de_variant_dataset where dataset_id = TrialId;
+    delete from deapp.de_variant_dataset where dataset_id in (
+      select sm.trial_name||':'||sm.source_cd
+      from deapp.de_subject_sample_mapping sm
+      where sm.trial_name = TrialID
+            and sm.platform='VCF'
+    );
     stepCt := stepCt + 1;
 		cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_dataset',SQL%ROWCOUNT,stepCt,'Done');
 		commit;
