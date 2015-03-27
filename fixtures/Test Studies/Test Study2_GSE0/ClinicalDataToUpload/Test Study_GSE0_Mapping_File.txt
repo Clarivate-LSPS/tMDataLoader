@@ -19,5 +19,5 @@ TST_TAGS.txt	$$STUDY_ID+$$TAG2+$$TAG+Demographics	3	"Age (AGE)"		Numerical	"Requ
 TST_TAGS.txt	$$STUDY_ID+$$TAG2+$$TAG+Demographics	4	"Sex (SEX)"		Categorical	Required
 TST_TAGS.txt	$$STUDY_ID+$$TAG2+$$TAG+Demographics	5	Assessment Date		Date
 TST_TAGS.txt	$$STUDY_ID+$$TAG2+$$TAG+Demographics	6	Language		Text
-TST_TAGS.txt		7	$$TAG		
-TST_TAGS.txt		8	$$TAG2		
+TST_TAGS.txt		7	TAG		
+TST_TAGS.txt		8	TAG2		

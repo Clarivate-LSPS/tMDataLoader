@@ -94,30 +94,20 @@ class ClinicalDataMapping {
                         ))
                     }
                 } else {
-                    if ((cols[1] == '')&&(cols[3].matches(/^\$\$.*/))){
-                        curMapping._DATA.add(new Entry(
-                                CATEGORY_CD     : '',
-                                DATA_LABEL      : dataLabel,
-                                COLUMN          : cols[2].toInteger(),
-                                variableType    : variableType,
-                                validationRules : validationRules
-                        ))
+                    if (curMapping.hasProperty(dataLabel)) {
+                        curMapping[dataLabel] = cols[2].toInteger()
                     } else {
-                        if (curMapping.hasProperty(dataLabel)) {
-                            curMapping[dataLabel] = cols[2].toInteger()
+                        if (cols[2].toInteger() > 0) {
+                            curMapping._DATA.add(new Entry(
+                                    DATA_LABEL: dataLabel,
+                                    CATEGORY_CD: cols[1],
+                                    COLUMN: cols[2].toInteger(),
+                                    variableType: variableType,
+                                    validationRules: validationRules
+                            ))
                         } else {
-                            if (cols[1] && cols[2].toInteger() > 0) {
-                                curMapping._DATA.add(new Entry(
-                                        DATA_LABEL: dataLabel,
-                                        CATEGORY_CD: cols[1],
-                                        COLUMN: cols[2].toInteger(),
-                                        variableType: variableType,
-                                        validationRules: validationRules
-                                ))
-                            } else {
-                                logger.log(LogType.ERROR, "Category or column number is missing for line ${lineNum}")
-                                throw new Exception("Error parsing mapping file")
-                            }
+                            logger.log(LogType.ERROR, "Category or column number is missing for line ${lineNum}")
+                            throw new Exception("Error parsing mapping file")
                         }
                     }
                 }

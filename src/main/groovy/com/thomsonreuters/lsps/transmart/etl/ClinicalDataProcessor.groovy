@@ -71,14 +71,13 @@ class ClinicalDataProcessor extends DataProcessor {
                         table.startCollectForRecord()
                         table.collectVariableValue('SUBJ_ID', output.subj_id)
                         _DATA.each { v ->
+                            int valueColumn = v['COLUMN']
+                            String value = cols[valueColumn]
+                            if (valueColumn > 0) {
+                                table.collectVariableValue(csvFile.header[valueColumn - 1], value)
+                            }
                             if (v['CATEGORY_CD'] != '') {
                                 def out = output.clone()
-                                int valueColumn = v['COLUMN']
-                                String value = cols[valueColumn]
-                                if (valueColumn > 0) {
-                                    table.collectVariableValue(csvFile.header[valueColumn - 1], value)
-                                }
-
                                 out['data_value'] = fixColumn(value)
                                 def cat_cd = v['CATEGORY_CD']
                                 //Support tag start
@@ -93,7 +92,7 @@ class ClinicalDataProcessor extends DataProcessor {
                                         [(it.DATA_LABEL) : it.COLUMN]
                                     }
                                     cat_cd = cat_cd.replaceAll(/\$\$([A-z0-9_\"\s\(\)]+)/){ all, text ->
-                                        cols[groups['$$' + text]]
+                                        cols[groups[ text]]
                                     }
                                 }
                                 //Support tag stop
