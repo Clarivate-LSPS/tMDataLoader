@@ -94,8 +94,9 @@ class ClinicalDataMapping {
                         ))
                     }
                 } else {
-                    if (variableType == VariableType.Tag){
+                    if ((cols[1] == '')&&(cols[3].matches(/^\$\$.*/))){
                         curMapping._DATA.add(new Entry(
+                                CATEGORY_CD     : '',
                                 DATA_LABEL      : dataLabel,
                                 COLUMN          : cols[2].toInteger(),
                                 variableType    : variableType,
