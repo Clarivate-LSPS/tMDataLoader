@@ -8,7 +8,8 @@ enum VariableType {
     Text,
     Categorical,
     Numerical,
-    Date;
+    Date,
+    Tag;
 
     public static VariableType tryParse(String variableType, VariableType defaultType) {
         if (!variableType) {

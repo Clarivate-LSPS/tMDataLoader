@@ -16,6 +16,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
     private ClinicalDataProcessor _processor
 
     String studyName = 'Test Study'
+    String studyNameForTag = 'Test Study2'
     String studyId = 'GSE0'
 
     void setup() {
@@ -130,16 +131,16 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
 
     void testItLoadsDataWithTags() {
         expect:
-        String conceptPath = "\\Test Studies\\${studyName}\\"
-        String conceptPathForPatient = conceptPath + studyId + '\\'
+        String conceptPath = "\\Test Studies\\${studyNameForTag}\\"
+        String conceptPathForPatient = conceptPath + studyId + '\\eText\\'
 
         processor.process(
-                new File(studyDir(studyName, studyId), "ClinicalDataToUpload"),
-                [name: studyName, node: "Test Studies\\${studyName}".toString()])
+                new File(studyDir(studyNameForTag, studyId), "ClinicalDataToUpload"),
+                [name: studyNameForTag, node: "Test Studies\\${studyNameForTag}".toString()])
 
         assertThat(sql, hasPatient('HCC2935').inTrial(studyId))
-        assertThat(sql, hasNode(conceptPathForPatient + 'Female\\').withPatientCount(4))
-        assertThat(sql, hasNode(conceptPathForPatient + 'English\\').withPatientCount(2))
+        assertThat(sql, hasNode(conceptPathForPatient + 'tag1\\').withPatientCount(5))
+        assertThat(sql, hasNode(conceptPathForPatient + 'tag2\\').withPatientCount(4))
     }
 
     void testItMergesData() {
