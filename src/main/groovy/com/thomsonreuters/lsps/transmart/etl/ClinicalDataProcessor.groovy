@@ -71,69 +71,71 @@ class ClinicalDataProcessor extends DataProcessor {
                         table.startCollectForRecord()
                         table.collectVariableValue('SUBJ_ID', output.subj_id)
                         _DATA.each { v ->
-                            def out = output.clone()
-                            int valueColumn = v['COLUMN']
-                            String value = cols[valueColumn]
-                            if (valueColumn > 0) {
-                                table.collectVariableValue(csvFile.header[valueColumn - 1], value)
-                            }
+                            if (v['variableType'] != VariableType.Tag) {
+                                def out = output.clone()
+                                int valueColumn = v['COLUMN']
+                                String value = cols[valueColumn]
+                                if (valueColumn > 0) {
+                                    table.collectVariableValue(csvFile.header[valueColumn - 1], value)
+                                }
 
-                            out['data_value'] = fixColumn(value)
-                            def cat_cd = v['CATEGORY_CD']
-                            //Support tag start
-                            if (cat_cd.contains('$$')){
-                                //Default tags
-                                cat_cd = cat_cd.replace('$$STUDY_ID', cols[fMappings['STUDY_ID']])
-                                cat_cd = cat_cd.replace('$$SITE_ID', cols[fMappings['SITE_ID']])
-                                cat_cd = cat_cd.replace('$$SUBJ_ID', cols[fMappings['SUBJ_ID']])
-                                cat_cd = cat_cd.replace('$$SAMPLE_ID', cols[fMappings['SAMPLE_ID']])
-                                //Custom tags
-                                def tags = cat_cd.findAll(/\$\$([A-z0-9_\"\s\(\)]+)/)
-                                fMappings._DATA.each{ it ->
-                                    if (tags.lastIndexOf('$$'+it.DATA_LABEL) > -1 ){
-                                        cat_cd = cat_cd.replace('$$'+it.DATA_LABEL,
-                                                cols[fMappings._DATA[fMappings._DATA.DATA_LABEL.lastIndexOf(it.DATA_LABEL)].COLUMN])
+                                out['data_value'] = fixColumn(value)
+                                def cat_cd = v['CATEGORY_CD']
+                                //Support tag start
+                                if (cat_cd.contains('$$')) {
+                                    //Default tags
+                                    cat_cd = cat_cd.replace('$$STUDY_ID', cols[fMappings['STUDY_ID']])
+                                    cat_cd = cat_cd.replace('$$SITE_ID', cols[fMappings['SITE_ID']])
+                                    cat_cd = cat_cd.replace('$$SUBJ_ID', cols[fMappings['SUBJ_ID']])
+                                    cat_cd = cat_cd.replace('$$SAMPLE_ID', cols[fMappings['SAMPLE_ID']])
+                                    //Custom tags
+                                    def groups = fMappings._DATA.collectEntries{
+                                        [(it.DATA_LABEL) : it.COLUMN]
+                                    }
+                                    cat_cd = cat_cd.replaceAll(/\$\$([A-z0-9_\"\s\(\)]+)/){ all, text ->
+                                        cols[groups[text]]
                                     }
                                 }
-                            }
-                            //Support tag stop
+                                //Support tag stop
 
-                            if (v['DATA_LABEL_SOURCE'] > 0) {
-                                // ok, the actual data label is in the referenced column
-                                out['data_label'] = fixColumn(cols[v['DATA_LABEL_SOURCE']])
-                                // now need to modify CATEGORY_CD before proceeding
+                                if (v['DATA_LABEL_SOURCE'] > 0) {
+                                    // ok, the actual data label is in the referenced column
+                                    out['data_label'] = fixColumn(cols[v['DATA_LABEL_SOURCE']])
+                                    // now need to modify CATEGORY_CD before proceeding
 
-                                // handling DATALABEL in category_cd
-                                if (!cat_cd.contains('DATALABEL')) {
-                                    // do this only if category_cd doesn't contain DATALABEL yet
-                                    if (v['DATA_LABEL_SOURCE_TYPE'] == 'A')
-                                        cat_cd = (cat_cd =~ /^(.+)\+([^\+]+?)$/).replaceFirst('$1+DATALABEL+$2')
-                                    else
-                                        cat_cd = cat_cd + '+DATALABEL'
+                                    // handling DATALABEL in category_cd
+                                    if (!cat_cd.contains('DATALABEL')) {
+                                        // do this only if category_cd doesn't contain DATALABEL yet
+                                        if (v['DATA_LABEL_SOURCE_TYPE'] == 'A')
+                                            cat_cd = (cat_cd =~ /^(.+)\+([^\+]+?)$/).replaceFirst('$1+DATALABEL+$2')
+                                        else
+                                            cat_cd = cat_cd + '+DATALABEL'
+                                    }
+
+                                } else {
+                                    out['data_label'] = fixColumn(v['DATA_LABEL'])
                                 }
 
-                            } else {
-                                out['data_label'] = fixColumn(v['DATA_LABEL'])
-                            }
+                                cat_cd = fixColumn(cat_cd)
 
-                            cat_cd = fixColumn(cat_cd)
-
-                            // VISIT_NAME special handling; do it only when VISITNAME is not in category_cd already
-                            if (!(cat_cd.contains('VISITNAME') || cat_cd.contains('+VISITNFST'))) {
-                                if (config.visitNameFirst) {
-                                    cat_cd = cat_cd + '+VISITNFST'
+                                // VISIT_NAME special handling; do it only when VISITNAME is not in category_cd already
+                                if (!(cat_cd.contains('VISITNAME') || cat_cd.contains('+VISITNFST'))) {
+                                    if (config.visitNameFirst) {
+                                        cat_cd = cat_cd + '+VISITNFST'
+                                    }
                                 }
+
+                                out['category_cd'] = cat_cd
+
+                                processRow(out)
                             }
-
-                            out['category_cd'] = cat_cd
-
-                            processRow(out)
                         }
                         table.endCollectForRecord()
                     } else {
                         processRow(output)
                         table.collectForRecord(SUBJ_ID: output.subj_id)
                     }
+
                 }
             }
         }
