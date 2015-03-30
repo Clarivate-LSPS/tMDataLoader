@@ -326,7 +326,7 @@ BEGIN
     select cz_write_audit(jobId,databaseName,procedureName,'Delete data from BIO_DATA_UID',rowCt,stepCt,'Done') into rtnCd;
 
     select count(*) into nCount from searchapp.search_secure_object where bio_data_id = bioexpid;
-    if rowsExists > 0 then
+    if nCount > 0 then
       delete from searchapp.search_secure_object where bio_data_id = bioexpid;
       stepCt := stepCt + 1;
       get diagnostics rowCt := ROW_COUNT;
