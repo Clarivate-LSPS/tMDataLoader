@@ -348,7 +348,6 @@ BEGIN
     if rowsExists > 0 then
       delete from searchapp.search_secure_object where bio_data_id = bioexpid;
       stepCt := stepCt + 1;
-      get diagnostics rowCt := ROW_COUNT;
       cz_write_audit(jobId,databaseName,procedureName,'Delete data from SEARCH_SECURE_OBJECT',SQL%ROWCOUNT,stepCt,'Done');
     end if;
   end if;
