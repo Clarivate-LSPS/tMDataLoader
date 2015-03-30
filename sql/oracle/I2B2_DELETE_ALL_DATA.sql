@@ -318,6 +318,14 @@ BEGIN
     stepCt := stepCt + 1;
     cz_write_audit(jobId,databaseName,procedureName,'Delete data from BIO_DATA_UID',SQL%ROWCOUNT,stepCt,'Done');
     commit;
+
+    select count(*) into rowsExists from searchapp.search_secure_object where bio_data_id = bioexpid;
+    if rowsExists > 0 then
+      delete from searchapp.search_secure_object where bio_data_id = bioexpid;
+      stepCt := stepCt + 1;
+      get diagnostics rowCt := ROW_COUNT;
+      cz_write_audit(jobId,databaseName,procedureName,'Delete data from SEARCH_SECURE_OBJECT',SQL%ROWCOUNT,stepCt,'Done');
+    end if;
   end if;
 
 	/*Check and delete top node, if remove node is last*/
