@@ -166,7 +166,7 @@ class CommandLineTool {
         }
 
         if (opts?.'always-set-visit-name'){
-            config.setVisitNameNotNull = true;
+            config.alwaysSetVisitName = true;
             println '>>> FYI: using Set VISIT_NAME as NULL'
         }
 
