@@ -47,9 +47,23 @@ BEGIN
 	cz_write_audit(jobId,databaseName,procedureName,'Uppercase study_id in lt_src_mrna_xml_data',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
 
-  update i2b2metadata.i2b2 ib set c_metadataxml =
-    (select c_metadataxml from lt_src_mrna_xml_data mxd
-    where ib.c_name = mxd.category_cd and ib.sourcesystem_cd = mxd.study_id);
+  update i2b2metadata.i2b2 ib
+  set c_metadataxml =(
+    select c_metadataxml
+    from lt_src_mrna_xml_data mxd
+    where ib.c_name = mxd.category_cd
+      and ib.sourcesystem_cd = mxd.study_id
+  )
+  where ib.sourcesystem_cd = studyId
+    and ib.c_basecode in (
+        select sm.concept_code
+        from
+          deapp.de_subject_sample_mapping sm
+          inner join lt_src_mrna_subj_samp_map lsm
+          on lsm.sample_cd = sm.sample_cd
+        where sm.trial_name = studyId
+          and sm.platform = 'MRNA_AFFYMETRIX'
+    );
 
   stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Update records in i2b2metadata.i2b2',SQL%ROWCOUNT,stepCt,'Done');
