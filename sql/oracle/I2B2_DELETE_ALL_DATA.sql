@@ -21,11 +21,11 @@ AS
 
   --Audit variables
   newJobFlag INTEGER(1);
-  trialCount INTEGER(1);
-  pathCount INTEGER(1);
+  trialCount INTEGER(8);
+  pathCount INTEGER(8);
   countNodeUnderTop INTEGER(8);
   topNodeCount integer(8);
-  isExistTopNode integer(1);
+  isExistTopNode integer(8);
   countSourceCD integer(8);
   rowsExists  INT;
   topNode	VARCHAR(500 BYTE);
@@ -100,7 +100,7 @@ BEGIN
         pathString := tPathString;
       end if;
     end loop;
-    if (pathCount = 2) then
+    if (pathCount > 1) then
       raise more_path;
     end if;
   else
