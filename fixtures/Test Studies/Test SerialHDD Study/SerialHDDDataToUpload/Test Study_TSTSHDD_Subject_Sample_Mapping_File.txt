@@ -1,0 +1,23 @@
+Study ID	Site ID	SubjectID	Sample ID	Platform	Tissuetype	Attr1	Attr2	Category_CD
+TSTSHDD		A204	A204	HDD999				Sample_Factors_Week_1
+TSTSHDD		A673	A673	HDD999				Sample_Factors_Week_2
+TSTSHDD		BHT101	BHT101	HDD999				Sample_Factors_Week_3
+TSTSHDD		CAL62	CAL62	HDD999				Sample_Factors_Week_4
+TSTSHDD		CGTHW1	CGTHW1	HDD999				Sample_Factors_Week_5
+TSTSHDD		HOS	HOS	HDD999				Sample_Factors_Week_6
+TSTSHDD		HT1080	HT1080	HDD999				Sample_Factors_Week_7
+TSTSHDD		KHOS240S	KHOS240S	HDD999				Sample_Factors_Week_8
+TSTSHDD		MG63	MG63	HDD999				Sample_Factors_Week_9
+TSTSHDD		NCIH295R	NCIH295R	HDD999				Sample_Factors_Week_10
+TSTSHDD		RD	RD	HDD999				Sample_Factors_Week_11
+TSTSHDD		SAOS2	SAOS2	HDD999				Sample_Factors_Week_1
+TSTSHDD		SJRH30	SJRH30	HDD999				Sample_Factors_Week_2
+TSTSHDD		SJSA1	SJSA1	HDD999				Sample_Factors_Week_3
+TSTSHDD		SW13	SW13	HDD999				Sample_Factors_Week_4
+TSTSHDD		SW1353	SW1353	HDD999				Sample_Factors_Week_5
+TSTSHDD		SW579	SW579	HDD999				Sample_Factors_Week_6
+TSTSHDD		SW684	SW684	HDD999				Sample_Factors_Week_7
+TSTSHDD		SW872	SW872	HDD999				Sample_Factors_Week_8
+TSTSHDD		SW982	SW982	HDD999				Sample_Factors_Week_9
+TSTSHDD		TE381T	TE381T	HDD999				Sample_Factors_Week_10
+TSTSHDD		U2OS	U2OS	HDD999				Sample_Factors_Week_11
