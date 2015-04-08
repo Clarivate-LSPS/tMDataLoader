@@ -60,7 +60,7 @@ BEGIN
 	begin
 
 		update i2b2metadata.i2b2 ib set c_metadataxml = mxd.c_metadataxml
-		from (select study_id, category_cd, c_metadataxml from lt_src_mrna_xml_data) mxd
+		from lt_src_mrna_xml_data mxd
 		where ib.c_name = mxd.category_cd and ib.sourcesystem_cd = mxd.study_id;
 
 		exception
@@ -101,9 +101,18 @@ BEGIN
 
 	begin
 
-		update i2b2demodata.observation_fact obf set sample_cd = sm.sample_cd
-		from (select patient_id, sample_cd from deapp.de_subject_sample_mapping) sm
-		where obf.patient_num = sm.patient_id and obf.sourcesystem_cd = studyId;
+		update
+			i2b2demodata.observation_fact obf
+		set
+			sample_cd = sm.sample_cd
+		from
+			deapp.de_subject_sample_mapping sm
+		where
+			obf.sourcesystem_cd = studyId
+			and obf.concept_cd = sm.concept_code
+			and obf.patient_num = sm.patient_id
+			and obf.sourcesystem_cd = sm.trial_name
+			and sm.platform = 'MRNA_AFFYMETRIX';
 
 		exception
 		when others then

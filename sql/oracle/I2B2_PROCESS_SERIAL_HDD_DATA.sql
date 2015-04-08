@@ -63,9 +63,27 @@ BEGIN
 	cz_write_audit(jobId,databaseName,procedureName,'Insert records into i2b2demodata.sample_dimension',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
 
-  update i2b2demodata.observation_fact obf set sample_cd = (
-  select distinct sm.sample_cd from deapp.de_subject_sample_mapping sm
-  where obf.patient_num = sm.patient_id and obf.sourcesystem_cd = studyId);
+  update i2b2demodata.observation_fact obf
+  set sample_cd = (
+    select distinct sm.sample_cd
+    from deapp.de_subject_sample_mapping sm
+    where
+      obf.patient_num = sm.patient_id
+      and obf.sourcesystem_cd = sm.trial_name
+      and obf.concept_cd = sm.concept_code
+      and sm.platform = 'MRNA_AFFYMETRIX'
+  )
+  where
+    obf.sourcesystem_cd = studyId
+    and obf.concept_cd in (
+      select sm.concept_code
+      from
+        deapp.de_subject_sample_mapping sm
+        inner join lt_src_mrna_subj_samp_map lsm
+        on lsm.sample_cd = sm.sample_cd
+      where sm.trial_name = studyId
+        and sm.platform = 'MRNA_AFFYMETRIX'
+    );
 
   stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Update sample codes in i2b2demodata.observation_fact',SQL%ROWCOUNT,stepCt,'Done');
