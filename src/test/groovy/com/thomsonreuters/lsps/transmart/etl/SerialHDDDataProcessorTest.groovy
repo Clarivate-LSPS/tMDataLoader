@@ -11,7 +11,7 @@ class SerialHDDDataProcessorTest extends GroovyTestCase implements ConfigAwareTe
     private SerialHDDDataProcessor _processor
 
     String studyName = 'Test SerialHDD Study'
-    String studyId = 'BSI201RICERCA'
+    String studyId = 'TSTSHDD'
     String platformId = 'HDD999'
 
     SerialHDDDataProcessor getProcessor() {
@@ -66,6 +66,7 @@ class SerialHDDDataProcessorTest extends GroovyTestCase implements ConfigAwareTe
         def testNodeName = "\\Test Studies\\Test SerialHDD Study\\Sample Factors Week 1\\"
         def testMetadata = """<?xml version="1.0"?>
                         <ValueMetadata>
+                            <Oktousevalues>Y</Oktousevalues>
                             <SeriesMeta>
                                 <Value>7</Value>
                                 <Unit>days</Unit>
