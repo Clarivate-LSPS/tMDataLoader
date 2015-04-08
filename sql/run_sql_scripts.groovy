@@ -4,7 +4,7 @@ def etlDir = new File(scriptPath).parentFile.parent
 def sqlDir = new File(etlDir, 'sql')
 loader.addURL(new File(etlDir, 'tm_etl.jar').toURI().toURL())
 
-def cli = new CliBuilder(usage: 'tm_etl [options] [<data_dir>]')
+def cli = new CliBuilder(usage: 'run_sql_scripts [options]')
 cli.with {
     c longOpt: 'jdbc-url', args: 1, argName: '<jdbc url>', 'JDBC connection url'
     h longOpt: 'help', 'Show usage information'
