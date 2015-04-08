@@ -61,7 +61,17 @@ BEGIN
 
 		update i2b2metadata.i2b2 ib set c_metadataxml = mxd.c_metadataxml
 		from lt_src_mrna_xml_data mxd
-		where ib.c_name = mxd.category_cd and ib.sourcesystem_cd = mxd.study_id;
+		where ib.c_name = mxd.category_cd
+			and ib.sourcesystem_cd = mxd.study_id
+			and ib.c_basecode in (
+				select sm.concept_code
+        from
+          deapp.de_subject_sample_mapping sm
+          inner join lt_src_mrna_subj_samp_map lsm
+          on lsm.sample_cd = sm.sample_cd
+        where sm.trial_name = studyId
+          and sm.platform = 'MRNA_AFFYMETRIX'
+			);
 
 		exception
 		when others then
