@@ -132,6 +132,8 @@ You can run it with "-h" option to get a list of all available options:
                                                option)                        
         --alt-control-schema <schema>          Name of alternative control    
                                                schema (TM_CZ) - expert option
+         --always-set-visit-name               Add visit name to concept path
+                                               even if only one visit found
      -c,--config <config>                      Configuration filename         
         --data-value-first                     Put VISIT NAME after the data  
                                                value (default behavior, use to
