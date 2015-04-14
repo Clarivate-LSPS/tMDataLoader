@@ -1168,6 +1168,5 @@ BEGIN
 		cz_end_audit (jobID, 'FAIL');
 		rtnCode := 16;
 	
-end;
+END;
 /
-exit;

@@ -172,5 +172,5 @@ AS
 		cz_error_handler(jobID, procedureName);
 --End Proc
 		cz_end_audit(jobID, 'FAIL');
-	END;
-
+END;
+/
