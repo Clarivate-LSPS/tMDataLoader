@@ -103,13 +103,13 @@ AS
 
 		IF dataPartitioned <> 0 AND partitionExists = 0
 		THEN
-			useCompression := 0;
+			useCompression := 1;
 
 			SELECT 0
 			INTO useCompression
 			FROM all_tab_partitions
-			WHERE table_name = 'DE_SNP_CALLS_BY_GSM'
-						AND table_OWNER = 'DEAPP'
+			WHERE table_name = tbl_name
+						AND table_OWNER = tbl_owner
 						AND COMPRESSION = 'DISABLED'
 						AND ROWNUM = 1;
 
