@@ -153,6 +153,7 @@ BEGIN
 	where sd.platform = 'MRNA_AFFYMETRIX'
 	  and sd.trial_name = TrialId
 	  and sd.source_cd = sourceCd
+	  and sd.gpl_id = (select distinct platform from lt_src_mrna_subj_samp_map)
 	  and case when dataType = 'R'
 			   then case when md.intensity_value::double precision > 0 then 1 else 0 end
 			   else 1 end = 1         --	take only >0 for dataType R
@@ -212,7 +213,8 @@ BEGIN
     sqlText := 'delete from ' || partitionName || ' where assay_id in (' ||
      'select sm.assay_id from deapp.de_subject_sample_mapping sm, lt_src_mrna_subj_samp_map tsm'
      || ' where sm.trial_name = ''' || TrialID || ''' and sm.source_cd = '''|| sourceCD || ''''
-     || ' and coalesce(sm.site_id, '''') = coalesce(tsm.site_id, '''') and sm.subject_id = tsm.subject_id and sm.sample_cd = tsm.sample_cd)';
+     || ' and coalesce(sm.site_id, '''') = coalesce(tsm.site_id, '''') and sm.subject_id = tsm.subject_id '
+     || 'and sm.sample_cd = tsm.sample_cd and sm.gpl_id = tsm.platform)';
     raise notice 'sqlText= %', sqlText;
     execute sqlText;
 		stepCt := stepCt + 1;
