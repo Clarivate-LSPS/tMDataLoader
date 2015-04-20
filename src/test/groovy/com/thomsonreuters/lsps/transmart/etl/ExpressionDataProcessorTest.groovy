@@ -25,14 +25,14 @@ class ExpressionDataProcessorTest extends GroovyTestCase implements ConfigAwareT
     @Override
     void setUp() {
         ConfigAwareTestCase.super.setUp()
-        sql.execute('delete from i2b2demodata.observation_fact where modifier_cd = ?', studyId)
-        sql.execute('delete from deapp.de_subject_sample_mapping where trial_name = ?', studyId)
         runScript('I2B2_PROCESS_MRNA_DATA.sql')
+        new DeleteDataProcessor(config).process(['id': studyId])
     }
 
-    void assertThatSampleIsPresent(String sampleId, sampleData) {
-        def sample = sql.firstRow('select * from deapp.de_subject_sample_mapping where trial_name = ? and sample_cd = ?',
-                studyId, sampleId)
+    void assertThatSampleIsPresent(String sampleId, String gplId=platformId, sampleData) {
+        def sample = sql.firstRow(
+                'select * from deapp.de_subject_sample_mapping where trial_name = ? and gpl_id = ? and sample_cd = ?',
+                studyId, gplId, sampleId)
         assertThat(sample, notNullValue())
         String suffix = '';
         if (sample.hasProperty("partition_id")){
@@ -42,7 +42,7 @@ class ExpressionDataProcessorTest extends GroovyTestCase implements ConfigAwareT
             def rows = sql.rows("select d.raw_intensity from deapp.de_subject_microarray_data${suffix} d " +
                     "inner join deapp.de_mrna_annotation a on d.probeset_id = a.probeset_id " +
                     "where a.gpl_id = ? and d.assay_id = ? and a.probe_id = ?",
-                    platformId, sample.assay_id, probe_id)
+                    gplId, sample.assay_id, probe_id)
             assertThat(rows?.size(), equalTo(1))
             assertEquals(rows[0].raw_intensity as double, value as double, 0.001)
         }
@@ -88,5 +88,22 @@ class ExpressionDataProcessorTest extends GroovyTestCase implements ConfigAwareT
         assertThatSampleIsPresent('TST1000000723', ['1007_s_at': 6.653120041])
         assertThat(db, hasNode("\\Test Studies\\${studyName}\\Biomarker Data\\Test GEX Platform\\Blood\\").
                 withPatientCount(33))
+    }
+
+    void testItLoadsSameSamplesForDifferentPlatforms() {
+        processor.process(
+                new File("fixtures/Additional Test Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
+                [name: studyName, node: "Test Studies\\${studyName}".toString()])
+        processor.process(
+                new File("fixtures/Additional Test Studies/${studyName}_${studyId}/ExpressionDataToUpload_OtherPlatform"),
+                [name: studyName, node: "Test Studies\\${studyName}".toString()])
+        assertThatSampleIsPresent('TST2000000719', 'GEX_TST', ['1007_s_at': 7.624529839])
+        assertThatSampleIsPresent('TST2000000719', 'GEX_TST2', ['1007_s_at': 1.624529839])
+        assertThatSampleIsPresent('TST1000000722', 'GEX_TST', ['1007_s_at': 5.374219894])
+        assertThatSampleIsPresent('TST1000000722', 'GEX_TST2', ['1007_s_at': 1.374219894])
+        assertThat(db, hasNode("\\Test Studies\\${studyName}\\Biomarker Data\\Test GEX Platform\\Blood\\").
+                withPatientCount(3))
+        assertThat(db, hasNode("\\Test Studies\\${studyName}\\Biomarker Data\\Test GEX Platform 2\\Blood\\").
+                withPatientCount(3))
     }
 }

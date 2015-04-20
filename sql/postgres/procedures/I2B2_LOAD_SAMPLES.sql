@@ -747,7 +747,9 @@ BEGIN
 		  and pd.source_cd = sourceCD
 		  and coalesce(pd.site_id,'') = coalesce(upd.site_id,'')
 		  and pd.subject_id = upd.subject_id
-		  and pd.sample_cd = upd.sample_cd;
+		  and pd.sample_cd = upd.sample_cd
+		  and pd.platform = platform_type
+		  and pd.gpl_id = upd.gpl_id;
 		get diagnostics rowCt := ROW_COUNT;
 		exception
 		when others then
@@ -871,7 +873,7 @@ BEGIN
 			and a2.node_type = 'ATTR2'
 		where a.trial_name = TrialID
 		  and a.source_cd = sourceCD
-		  and  ln.concept_cd is not null
+		  and ln.concept_cd is not null
 		  and not exists
 			  (select 1 from deapp.de_subject_sample_mapping x
 			   where a.trial_name = x.trial_name
@@ -880,6 +882,7 @@ BEGIN
 				 and coalesce(a.site_id,'') = coalesce(x.site_id,'')
 				 and a.subject_id = x.subject_id
 				 and a.sample_cd = x.sample_cd
+				 and a.platform = x.gpl_id
 				 )) t;
 	get diagnostics rowCt := ROW_COUNT;
 	exception
