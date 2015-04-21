@@ -324,6 +324,7 @@ BEGIN
 				 AND dssm.gpl_id = ltssm.platform
 				 AND dssm.subject_id = ltssm.subject_id
 				 AND dssm.sample_cd = ltssm.sample_cd
+				 AND dssm.platform = 'MRNA_AFFYMETRIX'
 	WHERE
 		dssm.trial_name = TrialId
 		AND nvl(dssm.source_cd, 'STD') = sourceCd
@@ -336,13 +337,12 @@ BEGIN
     and assay_id in (
       select dssm.assay_id from
         lt_src_mrna_subj_samp_map ltssm
-        left join
-        deapp.de_subject_sample_mapping dssm
-        on
-        dssm.trial_name = ltssm.trial_name
+        inner join deapp.de_subject_sample_mapping dssm
+        on dssm.trial_name = ltssm.trial_name
         and dssm.gpl_id = ltssm.platform
         and dssm.subject_id = ltssm.subject_id
         and dssm.sample_cd  = ltssm.sample_cd
+				and dssm.platform = 'MRNA_AFFYMETRIX'
       where
         dssm.trial_name = TrialId
         and nvl(dssm.source_cd,'STD') = sourceCd
@@ -368,10 +368,8 @@ BEGIN
 	  assay_id in (
 		select dssm.assay_id from
 		  lt_src_mrna_subj_samp_map ltssm
-		  left join
-		  deapp.de_subject_sample_mapping dssm
-		  on
-		  dssm.trial_name     = ltssm.trial_name
+		  inner join deapp.de_subject_sample_mapping dssm
+		  on dssm.trial_name  = ltssm.trial_name
 		  and dssm.gpl_id     = ltssm.platform
 		  and dssm.subject_id = ltssm.subject_id
 		  and dssm.sample_cd  = ltssm.sample_cd
@@ -438,7 +436,7 @@ BEGIN
 		  ,platform as platform
 		  ,tissue_type
 		  ,attribute_1 as attribute_1
-          ,attribute_2 as attribute_2
+      ,attribute_2 as attribute_2
 		  ,'LEAF'
 	from  wt_mrna_node_values;
 
@@ -468,7 +466,7 @@ BEGIN
 		  ,'PLATFORM'
 	from  wt_mrna_node_values;
 
-    stepCt := stepCt + 1;
+  stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Create platform nodes in wt_mrna_nodes',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
 
@@ -479,7 +477,7 @@ BEGIN
 	,category_cd
 	,platform
 	,tissue_type
-    ,attribute_1
+  ,attribute_1
 	,attribute_2
 	,node_type
 	)
@@ -935,7 +933,13 @@ BEGIN
 		  ,sd.patient_id
 		  ,TrialId
 		  ,sd.assay_id
-	from de_subject_sample_mapping sd
+	from
+		lt_src_mrna_subj_samp_map ltssm
+		inner join deapp.de_subject_sample_mapping sd
+		on sd.trial_name = ltssm.trial_name
+		 and sd.gpl_id = ltssm.platform
+		 and sd.subject_id = ltssm.subject_id
+		 and sd.sample_cd  = ltssm.sample_cd
 		,lt_src_mrna_data md
 		,de_mrna_annotation da
 	where sd.sample_cd = md.expr_id
