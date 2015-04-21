@@ -19,6 +19,7 @@
  ******************************************************************/
 
 package com.thomsonreuters.lsps.transmart.etl
+
 import com.thomsonreuters.lsps.transmart.sql.Database
 import groovy.sql.Sql
 
@@ -49,7 +50,7 @@ abstract class DataProcessor {
             sql.connection.autoCommit = false
 
             if (processFiles(dir, sql, studyInfo)) {
-                res = new AuditableJobRunner(sql, config).runJob(procedureName) { jobId->
+                res = new AuditableJobRunner(sql, config).runJob(procedureName) { jobId ->
                     logger.log("Run procedures: ${getProcedureName()}")
                     runStoredProcedures(jobId, sql, studyInfo)
                 }
@@ -58,11 +59,13 @@ abstract class DataProcessor {
         return res
     }
 
-    boolean isStudyExist(sql, studyInfo){
-        String fullName = (studyInfo['node'].matches("^\\\\.*")?'':'\\\\') + studyInfo['node'].replace('\\','\\\\')+'\\\\%';
-
-        def row = sql.firstRow("select count(*) as cnt from i2b2metadata.i2b2 where sourcesystem_cd = ? and c_fullname not like ? ",
-                [studyInfo['id'],fullName])
-        return row?.cnt
+    void checkStudyExist(sql, studyInfo) {
+        String fullName = "${(studyInfo['node'] =~ /^\\.*/ ? '' : '\\')}${studyInfo['node']}\\%";
+        def row = sql.firstRow(
+                "select c_fullname from i2b2metadata.i2b2 where sourcesystem_cd = ? and c_fullname not like ? escape '`'",
+                [studyInfo['id'], fullName])
+        if (row) {
+            throw new Exception("Other study with same id exists by different path: ${row.c_fullname}")
+        }
     }
 }

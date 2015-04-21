@@ -75,8 +75,8 @@ class ACGHDataProcessor extends DataProcessor {
 
         dir.eachFileMatch(~/(?i).+_Subject_Sample_Mapping_File(_GPL\d+)*\.txt/) {
             platformList.addAll(processMappingFile(it, sql, studyInfo))
-            if (isStudyExist(sql,studyInfo)){ throw new Exception("Exist dataset with equal Study Id and other path") }
         }
+        checkStudyExist(sql, studyInfo)
 
         platformList = platformList.toList()
         if (platformList.size() > 0) {
