@@ -34,13 +34,14 @@ AS
   jobID number(18,0);
   stepCt number(18,0);
   more_trial exception;
-  more_path exception;
+  path_not_found exception;
 	res	number;
 
 BEGIN
   --Set Audit Parameters
   newJobFlag := 0; -- False (Default)
   jobID := currentJobID;
+  stepCt := 0;
 
   SELECT sys_context('USERENV', 'CURRENT_SCHEMA') INTO databaseName FROM dual;
   procedureName := $$PLSQL_UNIT;
@@ -52,6 +53,9 @@ BEGIN
     newJobFlag := 1; -- True
     cz_start_audit (procedureName, databaseName, jobID);
   END IF;
+
+  stepCt := stepCt + 1;
+  cz_write_audit(jobId, databaseName, procedureName,'Starting I2B2_DELETE_ALL_DATA', 0, stepCt, 'Done');
 
   if (path_string is not null) then
     select REGEXP_REPLACE('\' || path_string || '\','(\\){2,}', '\') into pathString from dual;
@@ -77,32 +81,16 @@ BEGIN
   end if;
 
   if (path_string is null) then
-    select concept_path bulk collect into pathStrings
-      from I2B2DEMODATA.concept_dimension where concept_cd in (
-        select concept_code from DEAPP.de_subject_sample_mapping where trial_name = TrialId
-      );
+    SELECT DISTINCT
+      first_value(i2b2.c_fullname) over (partition by i2b2.sourcesystem_cd order by length(i2b2.c_fullname))
+    INTO pathString
+    FROM i2b2metadata.i2b2
+    WHERE i2b2.sourcesystem_cd = TrialID
+    ORDER BY i2b2.sourcesystem_cd;
 
-    pathCount := 0;
-    FOR i IN pathStrings.FIRST..pathStrings.LAST LOOP
-      select concept_path into tPathString
-        from (
-          select level, concept_path
-            from i2b2demodata.concept_counts
-            start with CONCEPT_PATH = pathStrings(i)
-        connect by prior  PARENT_CONCEPT_PATH = CONCEPT_PATH
-        order by level desc)
-        where ROWNUM  = 1;
-
-      if (tPathString = pathString) then
-        pathCount := pathCount + 1;
-        pathString := tPathString;
-      else
-        pathString := tPathString;
-      end if;
-    end loop;
-    if (pathCount > 1) then
-      raise more_path;
-    end if;
+    If pathString is NULL THEN
+      RAISE path_not_found;
+    END IF;
   else
     pathString := path_string;
   end if;
@@ -122,13 +110,10 @@ BEGIN
     topNode := SUBSTR(pathString,0,instr(pathString,'\',2));
   end if;
 
-
-  stepCt := 0;
-
   if pathString != ''  or pathString != '%'
   then
 	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Starting I2B2_DELETE_ALL_DATA '||topNode,0,stepCt,'Done');
+	cz_write_audit(jobId, databaseName, procedureName, 'Deleting data for path: ' || pathString, 0, stepCt, 'Done');
 
 	--	delete all i2b2 nodes
 
@@ -360,11 +345,11 @@ BEGIN
 
   EXCEPTION
   WHEN more_trial then
-	cz_write_audit(jobId,databasename,procedurename,'Please select right path to study',1,stepCt,'ERROR');
+	cz_write_audit(jobId,databasename,procedurename,'Please select right path for study',1,stepCt,'ERROR');
 	cz_error_handler(jobid,procedurename);
 	cz_end_audit (jobId,'FAIL');
-  WHEN more_path then
-	cz_write_audit(jobId,databasename,procedurename,'Please select right trial to study',1,stepCt,'ERROR');
+  WHEN path_not_found then
+	cz_write_audit(jobId,databasename,procedurename,'Path was not found for this trial id',1,stepCt,'ERROR');
 	cz_error_handler(jobid,procedurename);
 	cz_end_audit (jobId,'FAIL');
 
