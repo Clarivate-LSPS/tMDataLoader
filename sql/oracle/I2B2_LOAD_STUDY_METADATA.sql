@@ -763,7 +763,7 @@ order by c_fullname
 		cz_end_audit (jobID, 'FAIL');
 	
 END;
-
+/
 
 /*	ignore for now
 	--	Add trial/study to search_secure_object
