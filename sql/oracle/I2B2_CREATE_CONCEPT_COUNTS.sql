@@ -196,6 +196,7 @@ END IF;
     cz_end_audit (jobID, 'FAIL');
 	
 END;
+/
 
 /*	needed for i2b2 1.4
 
