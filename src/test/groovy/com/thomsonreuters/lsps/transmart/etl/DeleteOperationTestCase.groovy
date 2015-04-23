@@ -1,5 +1,4 @@
 package com.thomsonreuters.lsps.transmart.etl
-
 import com.thomsonreuters.lsps.transmart.Fixtures
 import com.thomsonreuters.lsps.transmart.sql.DatabaseType
 import org.hamcrest.core.IsNull
@@ -9,7 +8,6 @@ import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasSamp
 import static org.junit.Assert.assertThat
 
 class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestCase {
-    private ExpressionDataProcessor _processorLoad
     private SNPDataProcessor _processorLoadSNP
     private ClinicalDataProcessor _processorLoadClinical
     private DeleteDataProcessor _processorDelete
@@ -22,10 +20,6 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
 
     VCFDataProcessor getDataProcessor() {
         _processorLoadVCF ?: (_processorLoadVCF = new VCFDataProcessor(config))
-    }
-
-    ExpressionDataProcessor getExpressionDataProcessor() {
-        _processorLoad ?: (_processorLoad = new ExpressionDataProcessor(config))
     }
 
     DeleteDataProcessor getProcessorDelete() {
@@ -74,6 +68,12 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
     String studyNameSNP = 'Test Study'
     String studyNameClinical = 'Test Study'
     String studyPath = "\\Test Studies\\${studyName}\\"
+
+    def expressionData = Fixtures.getExpressionData(studyName, studyId)
+    def delOp1ExpressionData = expressionData.withStudy("${expressionData.studyName}_DOP1", "DOP1${expressionData.studyId}")
+    def delOp2ExpressionData = expressionData.withStudy("${expressionData.studyName}_DOP2", "DOP2${expressionData.studyId}")
+    def delOp3ExpressionData = expressionData.withStudy("${expressionData.studyName}_DOP3", "DOP3${expressionData.studyId}")
+    def delOp4ExpressionData = expressionData.withStudy("${expressionData.studyName}_DOP4", "DOP4${expressionData.studyId}")
 
     void assertThatDataDeleted(inpData, boolean isDelete) {
         String fullName = inpData['path'].toString();
@@ -137,8 +137,7 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
      * If system exist study with trialId equals GSE0 test is down
      */
     void testItDeleteDataById() {
-        expressionDataProcessor.process(Fixtures.getExpressionData(studyName, studyId).path,
-                [name: studyName, node: "Test Studies\\${studyName}".toString()])
+        expressionData.load(config)
         assertThat(sql, hasSample(studyId, 'TST1000000719'))
         assertThat(sql, hasNode(studyPath))
         processorDelete.process('id': studyId, 'path': null);
@@ -151,8 +150,7 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
      * Remove data by full path study and don't understand trialId.
      */
     void testItDeleteDataByName() {
-        expressionDataProcessor.process(Fixtures.getExpressionData(studyName, studyId).path,
-                [name: studyName, node: "Test Studies\\${studyName}".toString()])
+        expressionData.load(config)
         assertThat(sql, hasSample(studyId, 'TST1000000719'))
         assertThat(sql, hasNode(studyPath))
         processorDelete.process(id: null, path: studyPath)
@@ -165,9 +163,7 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
      */
 
     void testDeleteDataByNameWOSlash() {
-        expressionDataProcessor.process(
-                new File("fixtures/Test Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
-                [name: studyName, node: "Test Studies\\${studyName}".toString()])
+        expressionData.load(config)
         assertThat(sql, hasSample(studyId, 'TST1000000719'))
         def inpData = ['id'  : null,
                        'path': "\\Test Studies\\${studyName}"];
@@ -184,9 +180,7 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
      * Remove data by trial Id and full path study.
      */
     void testItDeleteDataByIdAndName() {
-        expressionDataProcessor.process(
-                new File("fixtures/Test Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
-                [name: studyName, node: "Test Studies\\${studyName}".toString()])
+        expressionData.load(config)
         assertThat(sql, hasSample(studyId, 'TST1000000719'))
         def inpData = ['id'  : studyId,
                        'path': "\\Test Studies\\${studyName}\\"];
@@ -199,35 +193,29 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
     }
 
     void testItDeleteTopNode() {
-        expressionDataProcessor.process(
-                new File("fixtures/Test Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
-                [name: studyName, node: "Delete Operation Test\\${studyName}".toString()])
-        assertThat(sql, hasSample(studyId, 'TST1000000719'))
-        def inpData = ['id'  : studyId,
-                       'path': "\\Delete Operation Test\\${studyName}\\"];
+        delOp1ExpressionData.load(config, "Delete Operation Test\\")
+        assertThat(sql, hasSample(delOp1ExpressionData.studyId, 'TST1000000719'))
+        def inpData = ['id'  : delOp1ExpressionData.studyId,
+                       'path': "\\Delete Operation Test\\${delOp1ExpressionData.studyName}\\"];
         processorDelete.process(inpData);
 
         assertThatTopNodeDelete("\\Delete Operation Test\\", true)
     }
 
     void testItNotDeleteTopNode() {
-        expressionDataProcessor.process(
-                new File("fixtures/Test Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
-                [name: studyName, node: "Delete Operation Test\\${studyName}_1".toString()])
-        expressionDataProcessor.process(
-                new File("fixtures/Test Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
-                [name: studyName, node: "Delete Operation Test\\${studyName}_2".toString()])
-        assertThat(sql, hasSample(studyId, 'TST1000000719'))
-        def inpData = ['id'  : studyId,
-                       'path': "\\Delete Operation Test\\${studyName}_2\\"];
+        delOp1ExpressionData.load(config, "Delete Operation Test\\")
+        delOp2ExpressionData.load(config, "Delete Operation Test\\")
+        assertThat(sql, hasSample(delOp1ExpressionData.studyId, 'TST1000000719'))
+        assertThat(sql, hasSample(delOp2ExpressionData.studyId, 'TST1000000719'))
+        def inpData = ['id'  : delOp2ExpressionData.studyId,
+                       'path': "\\Delete Operation Test\\${delOp2ExpressionData.studyName}\\"];
         processorDelete.process(inpData);
 
         assertThatTopNodeDelete("\\Delete Operation Test\\", false)
 
-        inpData = ['id': studyId, 'path': "\\Delete Operation Test\\${studyName}_1\\"];
+        inpData = ['id': delOp1ExpressionData.studyId, 'path': "\\Delete Operation Test\\${delOp1ExpressionData.studyName}\\"];
         processorDelete.process(inpData);
         assertThatTopNodeDelete("\\Delete Operation Test\\", true)
-
     }
 
     void testItDeleteSNPData() {
@@ -243,9 +231,7 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
     }
 
     void testItDeleteSubNode() {
-        expressionDataProcessor.process(
-                new File("fixtures/Test Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
-                [name: studyName, node: "Test Studies\\${studyName}".toString()])
+        expressionData.load(config)
         processorLoadSNP.process(
                 new File("fixtures/Test Studies/${studyNameSNP}_${studyId}/SNPDataToUpload"),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
@@ -296,20 +282,19 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
     }
 
     void testItDeleteTopEmptyNode() {
-        expressionDataProcessor.process(
-                new File("fixtures/Test Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
-                [name: studyName, node: "Delete Operation Test\\Test Study\\${studyName}_1".toString()])
-        expressionDataProcessor.process(
-                new File("fixtures/Test Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
-                [name: studyName, node: "Delete Operation Test\\Test Study\\${studyName}_2".toString()])
-        assertThat(sql, hasSample(studyId, 'TST1000000719'))
+        delOp3ExpressionData.load(config, "Delete Operation Test\\Test Study\\")
+        delOp4ExpressionData.load(config, "Delete Operation Test\\Test Study\\")
+        assertThat(sql, hasSample(delOp3ExpressionData.studyId, 'TST1000000719'))
+        assertThat(sql, hasSample(delOp4ExpressionData.studyId, 'TST1000000719'))
 
-        def inpData = [id: studyId, path: "\\Delete Operation Test\\Test Study\\${studyName}_2\\"];
+        def inpData = [id: delOp4ExpressionData.studyId,
+                       path: "\\Delete Operation Test\\Test Study\\${delOp4ExpressionData.studyName}\\"];
         processorDelete.process(inpData);
 
         assertThatSubTopNodeDelete("\\Delete Operation Test\\Test Study\\", false)
 
-        inpData = [id: studyId, path: "\\Delete Operation Test\\Test Study\\${studyName}_1\\"];
+        inpData = [id: delOp3ExpressionData.studyId,
+                   path: "\\Delete Operation Test\\Test Study\\${delOp3ExpressionData.studyName}\\"];
         processorDelete.process(inpData);
         assertThatSubTopNodeDelete("\\Delete Operation Test\\Test Study\\", true)
         assertThatTopNodeDelete("\\Delete Operation Test\\", true)
