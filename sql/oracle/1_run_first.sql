@@ -140,17 +140,17 @@ CREATE TABLE "&TM_LZ_SCHEMA"."LT_SNP_GENE_MAP"
 	"ENTREZ_GENE_ID" NUMBER
 ) NOLOGGING;
 
-create index QT_PATIENT_SET_COLLECTION_IDX1 on I2B2DEMODATA.QT_PATIENT_SET_COLLECTION(RESULT_INSTANCE_ID, PATIENT_NUM);
+create index I2B2DEMODATA.QT_PATIENT_SET_COLLECTION_IDX1 on I2B2DEMODATA.QT_PATIENT_SET_COLLECTION(RESULT_INSTANCE_ID, PATIENT_NUM);
 
-create index bio_marker_correl_mv_abm_idx on BIOMART.bio_marker_correl_mv(asso_bio_marker_id);
+create index BIOMART.bio_marker_correl_mv_abm_idx on BIOMART.bio_marker_correl_mv(asso_bio_marker_id);
 
-create index search_keyword_uid_idx on searchapp.search_keyword(unique_id);
+create index searchapp.search_keyword_uid_idx on searchapp.search_keyword(unique_id);
 
-create index DE_SNP_CALLS_BY_GSM_PN_GN_IDX on deapp.de_snp_calls_by_gsm(patient_num, gsm_num);
+create index deapp.DE_SNP_CALLS_BY_GSM_PN_GN_IDX on deapp.de_snp_calls_by_gsm(patient_num, gsm_num);
 
-create index de_snp_calls_by_gsm_sn_nm_idx on deapp.de_snp_calls_by_gsm(snp_name);
+create index deapp.de_snp_calls_by_gsm_sn_nm_idx on deapp.de_snp_calls_by_gsm(snp_name);
 
-CREATE INDEX IDX_DE_CHROMOSAL_REGION ON DEAPP.de_chromosomal_region (GPL_ID, GENE_SYMBOL);
+CREATE INDEX DEAPP.IDX_DE_CHROMOSAL_REGION ON DEAPP.de_chromosomal_region (GPL_ID, GENE_SYMBOL);
 
 --------------------------------------------------------
 --  DDL for Table DE_VARIANT_DATASET
