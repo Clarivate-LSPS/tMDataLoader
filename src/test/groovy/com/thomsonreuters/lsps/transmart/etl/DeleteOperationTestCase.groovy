@@ -137,7 +137,7 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
      * If system exist study with trialId equals GSE0 test is down
      */
     void testItDeleteDataById() {
-        expressionDataProcessor.process(Fixtures.getExpressionData(studyName, studyId),
+        expressionDataProcessor.process(Fixtures.getExpressionData(studyName, studyId).path,
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
         assertThat(sql, hasSample(studyId, 'TST1000000719'))
         assertThat(sql, hasNode(studyPath))
@@ -151,7 +151,7 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
      * Remove data by full path study and don't understand trialId.
      */
     void testItDeleteDataByName() {
-        expressionDataProcessor.process(Fixtures.getExpressionData(studyName, studyId),
+        expressionDataProcessor.process(Fixtures.getExpressionData(studyName, studyId).path,
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
         assertThat(sql, hasSample(studyId, 'TST1000000719'))
         assertThat(sql, hasNode(studyPath))
