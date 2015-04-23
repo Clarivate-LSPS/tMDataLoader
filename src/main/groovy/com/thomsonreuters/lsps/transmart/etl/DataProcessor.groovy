@@ -59,13 +59,15 @@ abstract class DataProcessor {
         return res
     }
 
-    void checkStudyExist(sql, studyInfo) {
+    void checkStudyExist(Sql sql, studyInfo) {
         String fullName = "${(studyInfo['node'] =~ /^\\.*/ ? '' : '\\')}${studyInfo['node']}\\%";
-        def row = sql.firstRow(
-                "select c_fullname from i2b2metadata.i2b2 where sourcesystem_cd = ? and c_fullname not like ? escape '`'",
+        def row = sql.firstRow("""
+                select concept_path
+                from i2b2demodata.concept_dimension
+                where sourcesystem_cd = ? and concept_path not like ? escape '`' order by concept_path""",
                 [studyInfo['id'], fullName])
         if (row) {
-            throw new Exception("Other study with same id exists by different path: ${row.c_fullname}")
+            throw new Exception("Other study with same id found by different path: ${row.concept_path}")
         }
     }
 }
