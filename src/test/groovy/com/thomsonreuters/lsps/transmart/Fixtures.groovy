@@ -1,16 +1,12 @@
 package com.thomsonreuters.lsps.transmart
 
+import com.thomsonreuters.lsps.transmart.fixtures.ExpressionData
 import org.codehaus.groovy.runtime.DefaultGroovyMethods
 
 /**
  * Created by bondarev on 4/3/14.
  */
 class Fixtures {
-    static class ExpressionData {
-        String studyId
-        File path
-    }
-
     static File getStudiesDir() {
         return new File(['fixtures', 'Test Studies'].join(File.separator))
     }
@@ -32,7 +28,8 @@ class Fixtures {
     }
 
     static ExpressionData getExpressionData(String studyName = 'Test Study', String studyId = 'GSE0') {
-        new ExpressionData(studyId: studyId, path: new File(studyDir(studyName, studyId), 'ExpressionDataToUpload'))
+        new ExpressionData(studyId: studyId, studyName: studyName,
+                dir: new File(studyDir(studyName, studyId), 'ExpressionDataToUpload'))
     }
 
     static File getClinicalData(String studyName = 'Test Study', String studyId = 'GSE0') {

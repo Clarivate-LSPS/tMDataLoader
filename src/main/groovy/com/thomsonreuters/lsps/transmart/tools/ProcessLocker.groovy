@@ -1,5 +1,7 @@
 package com.thomsonreuters.lsps.transmart.tools
 
+import org.apache.commons.io.FileUtils
+
 /**
  * Created by bondarev on 4/1/14.
  */
@@ -8,7 +10,7 @@ class ProcessLocker {
     private boolean locked
 
     private ProcessLocker(String name) {
-        File tmpDir = new File(System.getProperty('java.io.tmpdir'))
+        File tmpDir = FileUtils.tempDirectory
         tmpDir.mkdirs()
         this.lockFile = new File(tmpDir, ".${name}.process-locker.lock")
     }
