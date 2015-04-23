@@ -1,5 +1,6 @@
 package com.thomsonreuters.lsps.transmart.sql
 
+import com.thomsonreuters.lsps.transmart.util.TempStorage
 import groovy.sql.Sql
 import org.codehaus.groovy.control.io.NullWriter
 
@@ -63,15 +64,8 @@ class Database {
     }
 
     private File prepareScript(File sqlFile) {
-        File tmpDir = new File("tmp")
-        tmpDir.mkdirs()
-        tmpDir.deleteOnExit()
+        File tmpFile = TempStorage.instance.createTempFile("script", ".sql")
 
-        File tmpFile = File.createTempFile("script", ".sql", tmpDir)
-        tmpFile.deleteOnExit();
-        tmpFile.setReadable(true, false);
-        tmpFile.setWritable(true, false);
-        tmpFile.setExecutable(true, false);
         String content = sqlFile.text
         tmpFile.withWriter {
             if (databaseType == DatabaseType.Postgres) {

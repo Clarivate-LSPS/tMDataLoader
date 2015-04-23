@@ -6,6 +6,11 @@ import org.codehaus.groovy.runtime.DefaultGroovyMethods
  * Created by bondarev on 4/3/14.
  */
 class Fixtures {
+    static class ExpressionData {
+        String studyId
+        File path
+    }
+
     static File getStudiesDir() {
         return new File(['fixtures', 'Test Studies'].join(File.separator))
     }
@@ -26,8 +31,8 @@ class Fixtures {
         new File(studyDir(studyName, studyId), 'MultiVCFDataToUpload')
     }
 
-    static File getExpressionData(String studyName = 'Test Study', String studyId = 'GSE0') {
-        new File(studyDir(studyName, studyId), 'ExpressionDataToUpload')
+    static ExpressionData getExpressionData(String studyName = 'Test Study', String studyId = 'GSE0') {
+        new ExpressionData(studyId: studyId, path: new File(studyDir(studyName, studyId), 'ExpressionDataToUpload'))
     }
 
     static File getClinicalData(String studyName = 'Test Study', String studyId = 'GSE0') {

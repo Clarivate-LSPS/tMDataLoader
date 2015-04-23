@@ -1,6 +1,7 @@
 package com.thomsonreuters.lsps.transmart.sql
 
 import com.thomsonreuters.lsps.transmart.etl.ConfigAwareTestCase
+import com.thomsonreuters.lsps.transmart.util.TempStorage
 import groovy.sql.Sql
 
 import static org.hamcrest.CoreMatchers.equalTo
@@ -75,8 +76,7 @@ class DatabaseTest extends GroovyTestCase implements ConfigAwareTestCase {
     }
 
     void testItRunScript() {
-        File sampleScript = File.createTempFile('sample', '.sql')
-        sampleScript.deleteOnExit()
+        File sampleScript = TempStorage.instance.createTempFile('sample', '.sql')
         def db = new Database(config)
         db.withSql { Sql sql->
             sql.execute("delete from lt_src_mrna_subj_samp_map where trial_name = ?", 'TEST SCRIPT LOAD')
