@@ -68,10 +68,11 @@ BEGIN
   end if;
 
   if (path_string is null) then
-    SELECT DISTINCT ON (i2b2.sourcesystem_cd) i2b2.c_fullname into pathString
-    FROM i2b2metadata.i2b2
-    WHERE i2b2.sourcesystem_cd = TrialID
-    ORDER BY i2b2.sourcesystem_cd, char_length(i2b2.c_fullname::text);
+    SELECT DISTINCT
+      first_value(concept_path) over (partition by sourcesystem_cd order by concept_path)
+    INTO pathString
+    FROM i2b2demodata.concept_dimension
+    WHERE sourcesystem_cd = TrialID;
 
     if pathString is null then
       stepCt := stepCt + 1;
