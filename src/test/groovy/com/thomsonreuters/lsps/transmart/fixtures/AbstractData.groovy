@@ -24,6 +24,9 @@ abstract class AbstractData<T extends AbstractData> {
     protected abstract void adaptFiles(StudyInfo studyInfo)
 
     void load(config, parentNode = "Test Studies\\") {
+        if (!parentNode.endsWith('\\')) {
+            parentNode += '\\'
+        }
         newDataProcessor(config).process(dir, [name: studyName, node: "$parentNode$studyName" as String])
     }
 
