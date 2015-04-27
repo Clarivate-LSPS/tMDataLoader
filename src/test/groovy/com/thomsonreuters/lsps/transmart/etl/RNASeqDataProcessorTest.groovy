@@ -59,13 +59,13 @@ class RNASeqDataProcessorTest extends GroovyTestCase implements ConfigAwareTestC
         assertThat(db, hasSample(studyId, 'S57024'))
         assertThat(db, hasPatient('0:1').inTrial(studyId))
         if (database?.databaseType == DatabaseType.Postgres) {
-            assertThat(db, hasNode("\\Test Studies\\${studyName}\\Biomarker Data\\Intestine\\Test\\").
+            assertThat(db, hasNode("\\Test Studies\\${studyName}\\Biomarker Data\\${platformId}\\Intestine\\Test\\").
                     withPatientCount(2))
             assertThat(db, hasRecord('deapp.de_subject_sample_mapping',
                     [trial_name: studyId, gpl_id: platformId, subject_id: '2', sample_cd: 'S57024'],
                     [platform: 'RNA_AFFYMETRIX']))
         } else if (database?.databaseType == DatabaseType.Oracle) {
-            assertThat(db, hasNode("\\Test Studies\\${studyName}\\Biomarker Data\\RNA SEQ\\Intestine\\Test\\").
+            assertThat(db, hasNode("\\Test Studies\\${studyName}\\Biomarker Data\\RNA SEQ\\${platformId}\\Intestine\\Test\\").
                     withPatientCount(2))
             assertThat(db, hasRecord('deapp.de_subject_sample_mapping',
                     [trial_name: studyId, gpl_id: platformId, subject_id: '2', sample_cd: 'S57024'],
