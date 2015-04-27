@@ -12,4 +12,8 @@ class StudyInfo {
         this.id = id
         this.name = name
     }
+
+    StudyInfo withSuffix(String suffix) {
+        return new StudyInfo("${id}${suffix}", "${name} ${suffix}")
+    }
 }
