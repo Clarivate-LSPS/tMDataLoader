@@ -7,7 +7,7 @@ import com.thomsonreuters.lsps.transmart.etl.mappings.ClinicalDataMapping
  * Date: 27.04.2015
  * Time: 13:59
  */
-class ClinicalData extends AbstractData {
+class ClinicalData extends AbstractData<ClinicalData> {
     final String dataType = 'ClinicalData'
 
     @Override
@@ -19,7 +19,7 @@ class ClinicalData extends AbstractData {
     protected void adaptFiles(StudyInfo studyInfo) {
         List<File> files = dir.listFiles()
 
-        File mappingFile = files.find { it.name ==~ /.*_Subject_Sample_Mapping_File\.txt$/ }
+        File mappingFile = files.find { it.name ==~ /.*_Mapping_File\.txt$/ }
         def mapping = ClinicalDataMapping.loadFromFile(mappingFile)
         mapping.eachFileMapping { ClinicalDataMapping.FileMapping fileMapping ->
             TdfUtils.transformColumnValue(0, new File(dir, fileMapping.fileName)) { _ -> studyInfo.id }
