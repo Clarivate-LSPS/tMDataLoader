@@ -61,6 +61,8 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
             runScript('I2B2_DELETE_PARTITION.sql')
         }
         runScript('I2B2_DELETE_ALL_DATA.sql')
+        processorDelete.process(id: null, path: studyPath)
+        processorDelete.process(id: studyId, path: null)
     }
 
     String studyName = 'Test Study'
