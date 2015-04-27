@@ -9,8 +9,16 @@ import org.apache.commons.csv.CSVPrinter
  * Time: 12:43
  */
 class ExpressionData {
-    String studyId
-    String studyName
+    StudyInfo studyInfo
+
+    String getStudyId() {
+        return studyInfo.id
+    }
+
+    String getStudyName() {
+        return studyInfo.name
+    }
+
     File dir
 
     void load(config, parentNode = "Test Studies\\") {
@@ -56,6 +64,6 @@ class ExpressionData {
             }
             mappingFile.delete()
         }
-        return new ExpressionData(dir: newDir, studyName: newStudyName, studyId: newStudyId)
+        return new ExpressionData(dir: newDir, studyInfo: new StudyInfo(newStudyId, newStudyName))
     }
 }

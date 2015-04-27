@@ -1,5 +1,9 @@
 package com.thomsonreuters.lsps.transmart.etl
 
+import com.thomsonreuters.lsps.transmart.Fixtures
+import com.thomsonreuters.lsps.transmart.fixtures.ExpressionData
+import com.thomsonreuters.lsps.transmart.fixtures.Study
+
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasNode
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasPatient
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasRecord
@@ -14,8 +18,9 @@ import static org.junit.Assert.assertThat
 class ExpressionDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase {
     private ExpressionDataProcessor _processor
 
-    String studyName = 'Test Study'
-    String studyId = 'GSE0'
+    ExpressionData expressionData = Fixtures.getExpressionData()
+    String studyName = expressionData.studyName
+    String studyId = expressionData.studyId
     String platformId = 'GEX_TST'
 
     ExpressionDataProcessor getProcessor() {
@@ -26,7 +31,6 @@ class ExpressionDataProcessorTest extends GroovyTestCase implements ConfigAwareT
     void setUp() {
         ConfigAwareTestCase.super.setUp()
         runScript('I2B2_PROCESS_MRNA_DATA.sql')
-        new DeleteDataProcessor(config).process(['id': studyId])
     }
 
     void assertThatSampleIsPresent(String sampleId, String gplId=platformId, sampleData) {
@@ -49,9 +53,8 @@ class ExpressionDataProcessorTest extends GroovyTestCase implements ConfigAwareT
     }
 
     void testItLoadsData() {
-        processor.process(
-                new File("fixtures/Test Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
-                [name: studyName, node: "Test Studies\\${studyName}".toString()])
+        Study.deleteById(config, studyId)
+        expressionData.load(config)
         assertThat(db, hasSample(studyId, 'TST1000000719'))
         assertThat(db, hasPatient('996RMS').inTrial(studyId))
         assertThat(db, hasNode("\\Test Studies\\${studyName}\\Biomarker Data\\Test GEX Platform\\Blood\\").
@@ -70,18 +73,16 @@ class ExpressionDataProcessorTest extends GroovyTestCase implements ConfigAwareT
     }
 
     void testItMergeSamples() {
-        processor.process(
-                new File("fixtures/Test Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
-                [name: studyName, node: "Test Studies\\${studyName}".toString()])
+        Study.deleteById(config, studyId)
+        expressionData.load(config)
+
         assertThatSampleIsPresent('TST1000000719', ['1007_s_at': 6.624529839])
         assertThatSampleIsPresent('TST1000000722', ['1007_s_at': 6.374219894])
         assertThatSampleIsPresent('TST1000000723', ['1007_s_at': 6.653120041])
         assertThat(db, hasNode("\\Test Studies\\${studyName}\\Biomarker Data\\Test GEX Platform\\Blood\\").
                 withPatientCount(32))
 
-        processor.process(
-                new File("fixtures/Additional Test Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
-                [name: studyName, node: "Test Studies\\${studyName}".toString()])
+        Fixtures.additionalStudiesDir.studyDir(studyName, studyId).expressionData.load(config)
         assertThatSampleIsPresent('TST1000000719', ['1007_s_at': 6.624529839])
         assertThatSampleIsPresent('TST2000000719', ['1007_s_at': 7.624529839])
         assertThatSampleIsPresent('TST1000000722', ['1007_s_at': 5.374219894])
@@ -91,12 +92,12 @@ class ExpressionDataProcessorTest extends GroovyTestCase implements ConfigAwareT
     }
 
     void testItLoadsSameSamplesForDifferentPlatforms() {
-        processor.process(
-                new File("fixtures/Additional Test Studies/${studyName}_${studyId}/ExpressionDataToUpload"),
-                [name: studyName, node: "Test Studies\\${studyName}".toString()])
-        processor.process(
-                new File("fixtures/Additional Test Studies/${studyName}_${studyId}/ExpressionDataToUpload_OtherPlatform"),
-                [name: studyName, node: "Test Studies\\${studyName}".toString()])
+        Study.deleteById(config, studyId)
+        Fixtures.additionalStudiesDir.studyDir(studyName, studyId).
+                getExpressionData('ExpressionDataToUpload').load(config)
+        Fixtures.additionalStudiesDir.studyDir(studyName, studyId).
+                getExpressionData('ExpressionDataToUpload_OtherPlatform').load(config)
+
         assertThatSampleIsPresent('TST2000000719', 'GEX_TST', ['1007_s_at': 7.624529839])
         assertThatSampleIsPresent('TST2000000719', 'GEX_TST2', ['1007_s_at': 1.624529839])
         assertThatSampleIsPresent('TST1000000722', 'GEX_TST', ['1007_s_at': 5.374219894])
