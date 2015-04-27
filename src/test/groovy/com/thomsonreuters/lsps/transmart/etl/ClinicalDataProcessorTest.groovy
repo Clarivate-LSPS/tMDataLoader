@@ -1,6 +1,7 @@
 package com.thomsonreuters.lsps.transmart.etl
 
 import com.thomsonreuters.lsps.transmart.Fixtures
+import com.thomsonreuters.lsps.transmart.fixtures.ClinicalData
 import groovy.sql.Sql
 import spock.lang.Specification
 
@@ -13,10 +14,10 @@ import static org.junit.Assert.assertThat
  * Created by bondarev on 2/24/14.
  */
 class ClinicalDataProcessorTest extends Specification implements ConfigAwareTestCase {
+    ClinicalData clinicalData = Fixtures.clinicalData
     private ClinicalDataProcessor _processor
 
     String studyName = 'Test Study'
-    String studyNameForTag = 'Test Study2'
     String studyId = 'GSE0'
 
     void setup() {
@@ -30,8 +31,8 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
 
     void testItLoadsAge() {
         setup:
-        processor.process(Fixtures.getClinicalData(studyName, studyId),
-                [name: studyName, node: "Test Studies\\${studyName}".toString()])
+        clinicalData.load(config)
+
         expect:
         assertThat(db, hasRecord('i2b2demodata.patient_dimension',
                 ['sourcesystem_cd': "${studyId}:HCC827"], [age_in_years_num: 20]))
@@ -39,12 +40,11 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
 
     def 'it should produce SummaryStatistic.txt'() {
         when:
-        def clinicalDataDir = Fixtures.getClinicalData(studyName, studyId)
-        def expectedFile = new File(clinicalDataDir, 'ExpectedSummaryStatistic.txt')
-        def actualFile = new File(clinicalDataDir, 'SummaryStatistic.txt')
+        def expectedFile = new File(clinicalData.dir, 'ExpectedSummaryStatistic.txt')
+        def actualFile = new File(clinicalData.dir, 'SummaryStatistic.txt')
         actualFile.delete()
-        processor.process(clinicalDataDir,
-                [name: studyName, node: "Test Studies\\${studyName}".toString()])
+        clinicalData.load(config)
+
         then:
         actualFile.exists()
         actualFile.text == expectedFile.text
@@ -52,11 +52,13 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
 
     def "it should collect statistic"() {
         setup:
+        def processor = new ClinicalDataProcessor(config)
         database.withSql { sql ->
-            processor.processFiles(Fixtures.getClinicalData(studyName, studyId), sql as Sql,
-                    [name: studyName, node: "Test Studies\\${studyName}".toString()])
+            processor.processFiles(clinicalData.dir, sql as Sql,
+                    [name: clinicalData.studyName, node: "Test Studies\\${clinicalData.studyName}".toString()])
         }
         def statistic = processor.statistic
+
         expect:
         statistic != null
         statistic.tables.keySet() as List == ['TST001.txt', 'TST_DEMO.txt']
@@ -130,14 +132,14 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
     }
 
     void testItLoadsDataWithTags() {
+        setup:
+        ClinicalData tagClinicalData = Fixtures.studiesDir.studyDir('Test Study Tag', 'GSE0TAG').clinicalData
+        String conceptPath = "\\Test Studies\\${tagClinicalData.studyName}\\"
+        String conceptPathForPatient = conceptPath + tagClinicalData.studyId + '\\eText\\'
+
+        tagClinicalData.load(config)
+
         expect:
-        String conceptPath = "\\Test Studies\\${studyNameForTag}\\"
-        String conceptPathForPatient = conceptPath + studyId + '\\eText\\'
-
-        processor.process(
-                new File(studyDir(studyNameForTag, studyId), "ClinicalDataToUpload"),
-                [name: studyNameForTag, node: "Test Studies\\${studyNameForTag}".toString()])
-
         assertThat(sql, hasPatient('HCC2935').inTrial(studyId))
         assertThat(sql, hasNode(conceptPathForPatient + 'tag1\\').withPatientCount(5))
         assertThat(sql, hasNode(conceptPathForPatient + 'tag2\\').withPatientCount(4))

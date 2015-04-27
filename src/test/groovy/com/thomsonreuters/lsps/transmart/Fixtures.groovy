@@ -1,5 +1,6 @@
 package com.thomsonreuters.lsps.transmart
 
+import com.thomsonreuters.lsps.transmart.fixtures.ClinicalData
 import com.thomsonreuters.lsps.transmart.fixtures.ExpressionData
 import com.thomsonreuters.lsps.transmart.fixtures.StudyInfo
 import org.codehaus.groovy.runtime.DefaultGroovyMethods
@@ -18,6 +19,10 @@ class Fixtures {
 
         ExpressionData getExpressionData(String expressionDataFolder = 'ExpressionDataToUpload') {
             return new ExpressionData(studyInfo: studyInfo, dir: new File(this, expressionDataFolder))
+        }
+
+        ClinicalData getClinicalData(String clinicalDataFolder = 'ClinicalDataToUpload') {
+            return new ClinicalData(studyInfo: studyInfo, dir: new File(this, clinicalDataFolder))
         }
     }
 
@@ -55,8 +60,8 @@ class Fixtures {
         return studyDir(studyName, studyId).expressionData
     }
 
-    static File getClinicalData(String studyName = 'Test Study', String studyId = 'GSE0') {
-        new File(studyDir(studyName, studyId), 'ClinicalDataToUpload')
+    static ClinicalData getClinicalData(String studyName = 'Test Study', String studyId = 'GSE0') {
+        return studiesDir.studyDir(studyName, studyId).clinicalData
     }
 
     public static class FilePathBuilder {
