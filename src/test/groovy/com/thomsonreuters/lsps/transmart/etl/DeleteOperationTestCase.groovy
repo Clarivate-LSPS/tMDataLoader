@@ -1,5 +1,6 @@
 package com.thomsonreuters.lsps.transmart.etl
 import com.thomsonreuters.lsps.transmart.Fixtures
+import com.thomsonreuters.lsps.transmart.fixtures.ExpressionData
 import com.thomsonreuters.lsps.transmart.sql.DatabaseType
 import org.hamcrest.core.IsNull
 
@@ -72,10 +73,10 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
     String studyPath = "\\Test Studies\\${studyName}\\"
 
     def expressionData = Fixtures.getExpressionData(studyName, studyId)
-    def delOp1ExpressionData = expressionData.withStudy("${expressionData.studyName}_DOP1", "DOP1${expressionData.studyId}")
-    def delOp2ExpressionData = expressionData.withStudy("${expressionData.studyName}_DOP2", "DOP2${expressionData.studyId}")
-    def delOp3ExpressionData = expressionData.withStudy("${expressionData.studyName}_DOP3", "DOP3${expressionData.studyId}")
-    def delOp4ExpressionData = expressionData.withStudy("${expressionData.studyName}_DOP4", "DOP4${expressionData.studyId}")
+    def delOp1ExpressionData = expressionData.copyWithSuffix('DOP1')
+    def delOp2ExpressionData = expressionData.copyWithSuffix('DOP2')
+    def delOp3ExpressionData = expressionData.copyWithSuffix('DOP3')
+    def delOp4ExpressionData = expressionData.copyWithSuffix('DOP4')
 
     void assertThatDataDeleted(inpData, boolean isDelete) {
         String fullName = inpData['path'].toString();
