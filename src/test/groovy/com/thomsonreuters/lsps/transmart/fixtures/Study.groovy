@@ -13,6 +13,10 @@ class Study {
         new DeleteDataProcessor(config).process(id: studyId)
     }
 
+    static void deleteByPath(config, String path) {
+        new DeleteDataProcessor(config).process(path: path)
+    }
+
     Study withData(AbstractData data) {
         this.dataList.add(data)
         return this
