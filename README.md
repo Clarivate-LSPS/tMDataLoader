@@ -47,15 +47,7 @@ Please, clone transmartApp-DB repository:
 Then apply the fixes to your PostgreSQL database:
 	
 	cd transmartApp-DB/postgresql_wGEO
-	psql -d transmart -f post_1.1.0_update.sql
-		
-If you want "realtime" log updates in database tables, you also need:
-
-1) Make sure dblink extension is installed with PostgreSQL (normally comes with standard 'contrib' package)
-2) Edit etl/functions/CZ_WRITE_AUDIT_withdblink.sql and specify login/password if ETL tool is not connecting to DB as a superuser
-3) Apply the fix:
-	
-	psql -d transmart -f etl/functions/CZ_WRITE_AUDIT_withdblink.sql
+	psql -d transmart -f post_1.1.0_update.sql		
 		
 Go back to tMDataLoader repository and run following commands:
 				
