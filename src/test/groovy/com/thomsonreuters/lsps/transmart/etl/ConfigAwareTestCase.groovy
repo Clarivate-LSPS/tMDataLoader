@@ -16,7 +16,7 @@ public trait ConfigAwareTestCase {
     Database _database
 
     void setUp() {
-        URL testConfigUrl = getClass().classLoader.getResource('TestConfig.groovy')
+        URL testConfigUrl = getClass().classLoader.getResource('TestConfig.groovy.sample')
         Assume.assumeTrue("No database config was found. Please, copy src/test/resources/TestConfig.groovy.sample " +
                 "to src/test/resources/TestConfig.groovy and set-up your database connection", !testConfigUrl.is(null))
         Logger.setInteractiveMode(true)

@@ -19,6 +19,7 @@ class ACGHDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCas
     private ACGHDataProcessor _processor
 
     String studyName = 'Test Study'
+    String studyFolderName = studyName + ' ACGH'
     String studyId = 'GSE0'
     String trialName = 'TSTA'
 
@@ -36,7 +37,7 @@ class ACGHDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCas
     void testItLoadsData() {
         withErrorLogging {
             processor.process(new File(studyDir(studyName, studyId), "ACGHDataToUpload"),
-                    [name: studyName, node: "Test Studies\\${studyName}".toString()])
+                    [name: studyName, node: "Test Studies\\${studyFolderName}".toString()])
         }
         assertThat(db, hasSample(trialName, 'TSGA-04-1530', platform: 'ACGH'))
         assertThat(db, hasRecord('deapp.de_subject_acgh_data',
