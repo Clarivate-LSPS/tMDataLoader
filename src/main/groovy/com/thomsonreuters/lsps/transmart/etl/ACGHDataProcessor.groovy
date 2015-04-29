@@ -172,8 +172,8 @@ class ACGHDataProcessor extends DataProcessor {
                 sql.call("{call " + config.controlSchema + ".i2b2_load_chrom_region()}")
             }
 
-            sql.call("{call " + config.controlSchema + ".i2b2_process_acgh_data (?, ?, ?, '" + config.securitySymbol + "', ?)}",
-                    [studyId, studyNode, 'STD', jobId]) {}
+            sql.call("{call " + config.controlSchema + ".i2b2_process_acgh_data (?, ?, ?, '" + config.securitySymbol + "', ?, ?)}",
+                    [studyId, studyNode, 'STD', jobId, Sql.NUMERIC]) {}
         } else {
             config.logger.log(LogType.ERROR, "Study ID or Node not defined!")
             return false;

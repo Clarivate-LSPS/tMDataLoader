@@ -28,18 +28,18 @@ class aCGHPlatform extends GenePlatform{
     int loadEntries(Sql sql) {
         return loadEachEntry(sql, """
             INSERT into lt_chromosomal_region (gpl_id, chromosome, start_bp, end_bp, num_probes, region_name, cytoband, gene_symbol, gene_id, organism)
-            VALUES (?, ?, cast(? as bigint), cast(? as bigint), cast(? as integer), ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
              """) { entry ->
             [
                     id,
                     entry.chromosome,
-                    entry.start_bp,
-                    entry.end_bp,
-                    entry.num_probes,
+                    new Integer((String)entry.start_bp),
+                    new Integer((String)entry.end_bp),
+                    new Integer((String)entry.num_probes),
                     entry.region_name,
                     entry.cytoband,
                     entry.gene_symbol,
-                    entry.gene_id,
+                    entry.gene_id?new Integer((String)entry.gene_id):null,
                     entry.species ?: organism
             ]
         }
