@@ -193,6 +193,7 @@ class CommandLineTool {
         }
 
         if (opts?.'allow-non-unique-columns') {
+            println ">>> Allow non unique column names"
             config.allowNonUniqueColumnNames = true
         }
 
