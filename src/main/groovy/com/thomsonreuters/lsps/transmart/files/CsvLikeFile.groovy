@@ -44,6 +44,7 @@ class CsvLikeFile implements PrepareIfRequired {
         this.file = file
         this.lineComment = lineComment
         this.allowNonUniqueColumnNames = allowNonUniqueColumnNames
+        this.header = getHeader()
     }
 
     String[] getHeader() {
@@ -76,7 +77,7 @@ class CsvLikeFile implements PrepareIfRequired {
     }
 
     private List<String> getRefinedHeader() {
-        List<String> refinedHeader = new ArrayList<>(header)
+        List<String> refinedHeader = new ArrayList<String>(header)
         int idx = refinedHeader.size()
         refinedHeader.reverseEach {
             idx--
