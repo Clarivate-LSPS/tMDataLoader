@@ -105,13 +105,17 @@ AS
 		THEN
 			useCompression := 1;
 
-			SELECT 0
-			INTO useCompression
-			FROM all_tab_partitions
-			WHERE table_name = tbl_name
+			begin
+			    SELECT 0
+			    INTO useCompression
+			    FROM all_tab_partitions
+			    WHERE table_name = tbl_name
 						AND table_OWNER = tbl_owner
 						AND COMPRESSION = 'DISABLED'
 						AND ROWNUM = 1;
+			exception
+			    when NO_DATA_FOUND then NULL;
+			end;
 
 			sqlText := 'ALTER TABLE ' || qualifiedName || ' ADD PARTITION "' || partitionName || '" ' ||
 								 'VALUES (''' || REPLACE(val, '''', '''''') || ''') ' ||
