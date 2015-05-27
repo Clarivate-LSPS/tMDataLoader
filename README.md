@@ -32,24 +32,15 @@ Please make sure you edit the configuration file before using the tool.
 For Oracle
 ==========
 
-Launch SQLDeveloper and execute the code of each *.sql file in sql/oracle directory, starting with 1_run_first.sql.
-This will apply necessary fixes to the database without breaking compatibility with other tools.
+From `sql/oracle/` run following scripts using SQLDeveloper or sqlplus with DB user as specified:
+  
+    run_as_dba.sql
+    run_as_tm_cz.sql
 
 For PostgreSQL
 ==============
 
-First of all, you need to apply fixes to the schema and stored procedures, as they are broken in 1.1 release.
-Please, clone transmartApp-DB repository:
-
-	git clone https://github.com/eugene-rakhmatulin/transmartApp-DB.git
-	git checkout post_GPL1.1.0_fixes
-	
-Then apply the fixes to your PostgreSQL database:
-	
-	cd transmartApp-DB/postgresql_wGEO
-	psql -d transmart -f post_1.1.0_update.sql		
-		
-Go back to tMDataLoader repository and run following commands:
+Go to tMDataLoader repository and run following commands:
 				
 	psql -d transmart -f sql/postgres/migrations.sql
 	psql -d transmart -f sql/postgres/permissions.sql
