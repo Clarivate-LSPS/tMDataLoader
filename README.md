@@ -40,11 +40,11 @@ From `sql/oracle/` run following scripts using SQLDeveloper or sqlplus with DB u
 For PostgreSQL
 ==============
 
-Go to tMDataLoader repository and run following commands:
+From `sql/postgres` directory run following commands (you may need to add credentials and/or host/port information):
 				
-	psql -d transmart -f sql/postgres/migrations.sql
-	psql -d transmart -f sql/postgres/permissions.sql
-	psql -d transmart -f sql/postgres/procedures.sql
+	psql -d transmart -f migrations.sql
+	psql -d transmart -f permissions.sql
+	psql -d transmart -f procedures.sql
 
 PREPARING DATA FOR UPLOAD
 =========================
