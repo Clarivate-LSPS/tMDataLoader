@@ -40,19 +40,34 @@ BEGIN
 
   select case when coalesce(currentjobid, -1) < 1 then cz_start_audit(procedureName, databaseName) else currentjobid end into jobId;
 
-  if (path_string is not null) then
-	  pathString := REGEXP_REPLACE('\' || path_string || '\','(\\){2,}', '\','g');
+  if (path_string is null) then
+    SELECT DISTINCT
+      first_value(concept_path) over (partition by sourcesystem_cd order by concept_path)
+    INTO pathString
+    FROM i2b2demodata.concept_dimension
+    WHERE sourcesystem_cd = trial_id;
+
+    if pathString is null then
+      stepCt := stepCt + 1;
+      select cz_write_audit(jobId,databasename,procedurename, 'No study with id ''' || COALESCE(trial_id, '<<null>>') || ''' found',1,stepCt,'ERROR') into rtnCd;
+      select cz_error_handler(jobid, procedurename, '-1', 'Application raised error') into rtnCd;
+      select cz_end_audit (jobId,'FAIL') into rtnCd;
+      return -16;
+    end if;
+  else
+    pathString := path_string;
+    pathString := REGEXP_REPLACE('\' || pathString || '\','(\\){2,}', '\','g');
   end if;
 
   if (trial_id is null) then
 	  select count(distinct trial_name) into trialCount
 		from DEAPP.de_subject_sample_mapping where concept_code in (
-			select concept_cd from I2B2DEMODATA.concept_dimension where concept_path like path_string || '%' ESCAPE '`'
+			select concept_cd from I2B2DEMODATA.concept_dimension where concept_path like pathString || '%' ESCAPE '`'
 		);
     if (trialCount = 1) then
       select distinct trial_name into TrialId
         from DEAPP.de_subject_sample_mapping where concept_code in (
-          select concept_cd from I2B2DEMODATA.concept_dimension where concept_path like path_string || '%' ESCAPE '`'
+          select concept_cd from I2B2DEMODATA.concept_dimension where concept_path like pathString || '%' ESCAPE '`'
         );
     ELSIF ( trialCount = 0 ) THEN
       TrialId := null;
@@ -65,24 +80,6 @@ BEGIN
     end if;
   else
 	  TrialId := trial_id;
-  end if;
-
-  if (path_string is null) then
-    SELECT DISTINCT
-      first_value(concept_path) over (partition by sourcesystem_cd order by concept_path)
-    INTO pathString
-    FROM i2b2demodata.concept_dimension
-    WHERE sourcesystem_cd = TrialID;
-
-    if pathString is null then
-      stepCt := stepCt + 1;
-      select cz_write_audit(jobId,databasename,procedurename, 'No study with id ''' || TrialId || ''' found',1,stepCt,'ERROR') into rtnCd;
-      select cz_error_handler(jobid, procedurename, '-1', 'Application raised error') into rtnCd;
-      select cz_end_audit (jobId,'FAIL') into rtnCd;
-      return -16;
-    end if;
-  else
-    pathString := path_string;
   end if;
 
   select count(parent_concept_path) into topNodeCount
