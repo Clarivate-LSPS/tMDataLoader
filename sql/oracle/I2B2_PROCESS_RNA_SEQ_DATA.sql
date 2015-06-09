@@ -854,7 +854,7 @@ EXECUTE IMMEDIATE 'alter session set NLS_NUMERIC_CHARACTERS=".,"';
 
         update i2b2 a
 	set c_visualattributes='FAS'
-        where a.c_fullname = substr(topNode,1,instr(topNode,'\',1,3));
+        where a.c_fullname = topNode;
 
 
        -- SUBSTR(topNode,1,Length(TrialId) + instr(topNode,TrialId));

@@ -617,6 +617,23 @@ BEGIN
 
 	END LOOP;
 
+	begin
+    update i2b2metadata.i2b2 a
+		set c_visualattributes='FAS'
+    where a.c_fullname = topNode;
+  exception
+  when others then
+		errorNumber := SQLSTATE;
+		errorMessage := SQLERRM;
+		perform cz_error_handler (jobID, procedureName, errorNumber, errorMessage);
+		perform cz_end_audit (jobID, 'FAIL');
+		return -16;
+	end;
+
+	stepCt := stepCt + 1;
+	get diagnostics rowCt := ROW_COUNT;
+	perform cz_write_audit(jobId,databaseName,procedureName,'Update visual attributes for study nodes in I2B2METADATA i2b2',rowCt,stepCt,'Done');
+
 	--	set sourcesystem_cd, c_comment to null if any added upper-level nodes
 
 	begin
@@ -629,10 +646,8 @@ BEGIN
 	when others then
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
-		--Handle errors.
-		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
-		--End Proc
-		select cz_end_audit (jobID, 'FAIL') into rtnCd;
+		perform cz_error_handler (jobID, procedureName, errorNumber, errorMessage);
+		perform cz_end_audit (jobID, 'FAIL');
 		return -16;
 	end;
 	stepCt := stepCt + 1;

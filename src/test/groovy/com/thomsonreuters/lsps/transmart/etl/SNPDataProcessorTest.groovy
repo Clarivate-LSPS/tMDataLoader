@@ -15,6 +15,7 @@ class SNPDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase
 
     String studyName = 'Test Study'
     String studyId = 'GSE0'
+    String platformId = 'Test SNP Platform'
 
     @Override
     void setUp() {
@@ -47,7 +48,7 @@ class SNPDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase
         }
         assertThat(db, hasSample(studyId, 'TST001', platform: 'SNP'))
         assertThat(db, hasPatient('Subject_0').inTrial(studyId))
-        assertThat(db, hasNode("\\Test Studies\\${studyName}\\SNP\\${studyId}\\Unknown\\").withPatientCount(3))
+        assertThat(db, hasNode("\\Test Studies\\${studyName}\\SNP\\${platformId}\\Unknown\\").withPatientCount(3))
         def sample = findSample('TST001')
         assertThat(db, hasRecord('deapp.de_snp_calls_by_gsm',
                 [patient_num: sample.patient_id, gsm_num: 'TST001', snp_name: 'SNP_A-1984209'],
@@ -64,13 +65,13 @@ class SNPDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase
         }
         assertThat(db, hasCopyNumber('TST001', 'SNP_A-4265338', 2))
         assertThat(db, hasCopyNumber('TST002', 'CN_497981', 1))
-        assertThat(db, hasNode($/\Test Studies\${studyName}\SNP\${studyId}\Unknown\/$).withPatientCount(3))
+        assertThat(db, hasNode($/\Test Studies\${studyName}\SNP\${platformId}\Unknown\/$).withPatientCount(3))
 
         processor.process(new File(studyDir(studyName, studyId, additionalStudiesDir), "SNPDataToUpload"),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
         assertThat(db, hasCopyNumber('TST001', 'SNP_A-4265338', 1))
         assertThat(db, hasCopyNumber('TST002', 'CN_497981', 1))
         assertThat(db, hasCopyNumber('TST001', 'SNP_A-2176913', 1))
-        assertThat(db, hasNode($/\Test Studies\${studyName}\SNP\${studyId}\Unknown\/$).withPatientCount(4))
+        assertThat(db, hasNode($/\Test Studies\${studyName}\SNP\${platformId}\Unknown\/$).withPatientCount(4))
     }
 }

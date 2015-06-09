@@ -811,7 +811,7 @@ BEGIN
 
   update i2b2 a
  	set c_visualattributes='FAS'
-        where a.c_fullname = substr(topNode,1,instr(topNode,'\',1,3));
+        where a.c_fullname = topNode;
 
   stepCt := stepCt + 1;
   cz_write_audit(jobId,databaseName,procedureName,'Update visual attributes for study nodes in I2B2METADATA i2b2',SQL%ROWCOUNT,stepCt,'Done');

@@ -986,7 +986,7 @@ BEGIN
 	begin
         update i2b2metadata.i2b2 a
     set c_visualattributes='FAS'
-        where a.c_fullname = substr(topNode,1,instr(topNode,'\',1,3));
+        where a.c_fullname = topNode;
 	get diagnostics rowCt := ROW_COUNT;
 	exception
 	when others then
