@@ -378,6 +378,14 @@ BEGIN
 	END LOOP;
 	--	set sourcesystem_cd, c_comment to null if any added upper-level nodes
 
+	update i2b2 a
+ 	set c_visualattributes='FAS'
+  where a.c_fullname = topNode;
+
+  stepCt := stepCt + 1;
+  cz_write_audit(jobId,databaseName,procedureName,'Update visual attributes for study nodes in I2B2METADATA i2b2',SQL%ROWCOUNT,stepCt,'Done');
+  COMMIT;
+
 	update i2b2 b
 	set sourcesystem_cd=null,c_comment=null
 	where b.sourcesystem_cd = TrialId

@@ -120,7 +120,7 @@ BEGIN
 	(length(concept_path) - coalesce(length(replace(concept_path, '\','')),0)) / length('\') - 2 + root_level,
 	CONCEPT_PATH,
 	NAME_CHAR,
-	case when ((length(concept_path) - coalesce(length(replace(concept_path, '\','')),0)) / length('\') - 2 + root_level)=1 then 'FAS' else 'FA' end,
+	'FA',
 	'N',
 	'CONCEPT_CD',
 	'CONCEPT_DIMENSION',
