@@ -27,10 +27,10 @@ class VCFDataProcessor extends DataProcessor {
             studyInfo.species = metaInfo.SPECIES ?: 'Homo Sapiens'
         }
         def sampleMapping = [:]
-        csv.eachEntry {
+        csv.eachEntry { String[] it ->
             String subjectId = it[0]
             String sampleCd = it[1]
-            sampleMapping[sampleCd] = subjectId
+            sampleMapping[sampleCd] = ['subjectId': subjectId, 'categoryCd': it.length > 2 ? it[2] : null]
         }
         studyInfo.sampleMapping = sampleMapping
     }
@@ -117,8 +117,9 @@ class VCFDataProcessor extends DataProcessor {
                 logger.log(LogType.DEBUG, "Loading samples: ${vcfFile.samples.size()}")
                 vcfFile.samples.eachWithIndex { sample, idx ->
                     st.addBatch([dataSetId, sample, idx + 1])
-                    samplesLoader.addSample("VCF+${vcfName}", sampleMapping[sample], sample, studyInfo.platformId,
-                            sourceCd: sourceCd)
+                    def sampleInfo = sampleMapping[sample]
+                    samplesLoader.addSample(sampleInfo.categoryCd ?: "VCF+${vcfName}", sampleInfo.subjectId,
+                            sample, studyInfo.platformId, sourceCd: sourceCd)
                 }
             }
 
