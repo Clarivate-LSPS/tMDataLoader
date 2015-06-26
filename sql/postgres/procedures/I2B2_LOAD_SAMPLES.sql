@@ -312,14 +312,15 @@ BEGIN
 	--	Delete existing observation_fact data, will be repopulated
 
 	begin
-	delete from i2b2demodata.observation_fact obf
-	where obf.concept_cd in
-		 (select distinct x.concept_code
-		  from deapp.de_subject_sample_mapping x
-		  where x.trial_name = TrialId
-		    and coalesce(x.source_cd,'STD') = sourceCD
-		    and x.platform = platform_type);
-	get diagnostics rowCt := ROW_COUNT;
+		delete from i2b2demodata.observation_fact obf
+		using deapp.de_subject_sample_mapping x
+		where obf.concept_cd = x.concept_code
+			and obf.patient_num = x.patient_id
+			and x.trial_name = TrialId
+			and coalesce(x.source_cd,'STD') = sourceCD
+			and x.platform = platform_type;
+
+		get diagnostics rowCt := ROW_COUNT;
 	exception
 	when others then
 		errorNumber := SQLSTATE;
