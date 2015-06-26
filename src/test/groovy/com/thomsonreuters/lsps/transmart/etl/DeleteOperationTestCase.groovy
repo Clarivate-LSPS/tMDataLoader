@@ -1,6 +1,5 @@
 package com.thomsonreuters.lsps.transmart.etl
 import com.thomsonreuters.lsps.transmart.Fixtures
-import com.thomsonreuters.lsps.transmart.fixtures.ExpressionData
 import com.thomsonreuters.lsps.transmart.sql.DatabaseType
 import org.hamcrest.core.IsNull
 
@@ -12,16 +11,11 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
     private SNPDataProcessor _processorLoadSNP
     private ClinicalDataProcessor _processorLoadClinical
     private DeleteDataProcessor _processorDelete
-    private VCFDataProcessor _processorLoadVCF
     private ProteinDataProcessor _processorLoadProtein
     private MIRNADataProcessor _processorLoadMIRNA
     private MetabolomicsDataProcessor _processorLoadMetabolomics
     private RBMDataProcessor _processorLoadRBM
     private RNASeqDataProcessor _processorLoadRNASeq
-
-    VCFDataProcessor getDataProcessor() {
-        _processorLoadVCF ?: (_processorLoadVCF = new VCFDataProcessor(config))
-    }
 
     DeleteDataProcessor getProcessorDelete() {
         _processorDelete ?: (_processorDelete = new DeleteDataProcessor(config))
@@ -274,10 +268,10 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
     }
 
     void testItDeleteVCFData() {
-        assertTrue(dataProcessor.process(Fixtures.vcfData, [name: studyName, node: $/Test Studies\${studyName}_VCF/$]))
+        assertTrue(Fixtures.getVcfData().copyWithSuffix('DOP').load(config))
 
         def inpData = ['id'  : 'GSE0',
-                       'path': "\\Test Studies\\${studyName}_VCF\\"];
+                       'path': "\\Test Studies\\${studyName} DOP\\"];
         processorDelete.process(inpData);
 
         assertThatDataDeleted(inpData, true)

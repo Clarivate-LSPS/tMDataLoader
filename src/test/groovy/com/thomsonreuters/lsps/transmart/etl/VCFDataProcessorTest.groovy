@@ -1,6 +1,7 @@
 package com.thomsonreuters.lsps.transmart.etl
 
 import com.thomsonreuters.lsps.transmart.Fixtures
+import com.thomsonreuters.lsps.transmart.fixtures.VCFData
 import com.thomsonreuters.lsps.transmart.sql.SqlMethods
 
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.*
@@ -36,7 +37,7 @@ class VCFDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase
         cal
     }
 
-    void assertSampleAssociated(String gplId, String dataSetId, CharSequence sampleId, CharSequence probesetId) {
+    void assertSampleAssociated(String studyId, String gplId, String dataSetId, CharSequence sampleId, CharSequence probesetId) {
         use(SqlMethods) {
             def variant = db.findRecord('deapp.de_variant_subject_summary',
                     dataset_id: dataSetId, subject_id: sampleId, rs_id: probesetId)
@@ -46,7 +47,7 @@ class VCFDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase
         }
     }
 
-    void assertThatVcfDataForSubject1IsLoaded(String gplId, String dataSetId) {
+    void assertThatVcfDataForSubject1IsLoaded(String studyId, String gplId, String dataSetId) {
         // verify deapp.de_variant_dataset
         assertThat(db, hasRecord('deapp.de_variant_dataset',
                 dataset_id: dataSetId, etl_id: 'tMDataLoader', genome: 'hg19',
@@ -70,10 +71,10 @@ class VCFDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase
         assertThat(db, not(hasRecord('deapp.de_variant_subject_summary',
                 dataset_id: dataSetId, subject_id: 'VCF_TST001', chr: '22', pos: 16050624, rs_id: 'rs146752879')))
 
-        assertSampleAssociated(gplId, dataSetId, 'VCF_TST001', 'rs149201999')
-        assertSampleAssociated(gplId, dataSetId, 'VCF_TST001', 'rs146752890')
-        assertSampleAssociated(gplId, dataSetId, 'VCF_TST001', 'rs146752889')
-        assertSampleAssociated(gplId, dataSetId, 'VCF_TST001', 'rs146752880')
+        assertSampleAssociated(studyId, gplId, dataSetId, 'VCF_TST001', 'rs149201999')
+        assertSampleAssociated(studyId, gplId, dataSetId, 'VCF_TST001', 'rs146752890')
+        assertSampleAssociated(studyId, gplId, dataSetId, 'VCF_TST001', 'rs146752889')
+        assertSampleAssociated(studyId, gplId, dataSetId, 'VCF_TST001', 'rs146752880')
 
         // verify deapp.de_variant_population_info
         assertThat(db, hasRecord('deapp.de_variant_population_info',
@@ -97,7 +98,7 @@ class VCFDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase
                 [integer_value: null, float_value: null, text_value: 'SNP']))
     }
 
-    void assertThatVcfDataForSubject2IsLoaded(String gplId, String dataSetId, int position = 1) {
+    void assertThatVcfDataForSubject2IsLoaded(String studyId, String gplId, String dataSetId, int position = 1) {
         // verify deapp.de_variant_dataset
         assertThat(db, hasRecord('deapp.de_variant_dataset',
                 dataset_id: dataSetId, etl_id: 'tMDataLoader', genome: 'hg19',
@@ -118,10 +119,10 @@ class VCFDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase
         assertThat(db, not(hasRecord('deapp.de_variant_subject_summary',
                 dataset_id: dataSetId, subject_id: 'VCF_TST002', chr: '22', pos: 16050624, rs_id: 'rs146752879')))
 
-        assertSampleAssociated(gplId, dataSetId, 'VCF_TST002', 'rs149201999')
-        assertSampleAssociated(gplId, dataSetId, 'VCF_TST002', 'rs146752890')
-        assertSampleAssociated(gplId, dataSetId, 'VCF_TST002', 'rs146752889')
-        assertSampleAssociated(gplId, dataSetId, 'VCF_TST002', 'rs146752880')
+        assertSampleAssociated(studyId, gplId, dataSetId, 'VCF_TST002', 'rs149201999')
+        assertSampleAssociated(studyId, gplId, dataSetId, 'VCF_TST002', 'rs146752890')
+        assertSampleAssociated(studyId, gplId, dataSetId, 'VCF_TST002', 'rs146752889')
+        assertSampleAssociated(studyId, gplId, dataSetId, 'VCF_TST002', 'rs146752880')
 
         // verify deapp.de_variant_population_info
         assertThat(db, hasRecord('deapp.de_variant_population_info',
@@ -147,16 +148,17 @@ class VCFDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase
 
     void testItLoadsVCFFileWithSNVData() {
         def gplId = 'VCF_hg36'
-        assertTrue(dataProcessor.process(Fixtures.vcfData, [name: studyName, node: $/Test Studies\${studyName}/$]))
+        def vcfData = Fixtures.vcfData
+        assertTrue(vcfData.load(config))
         assertThat(db, hasPlatform(gplId, gplId, 'VCF', organism: 'Homo Sapiens'))
-        assertThat(db, hasNode("\\Test Studies\\${studyName}\\VCF\\VCFTest\\").withPatientCount(2))
-        assertThat(db, hasSample(studyId, 'VCF_TST001', platform: 'VCF'))
-        assertThat(db, hasSample(studyId, 'VCF_TST002', platform: 'VCF'))
-        assertThat(db, hasPatient('Subject_0').inTrial(studyId))
+        assertThat(db, hasNode("\\Test Studies\\${vcfData.studyName}\\VCF\\VCFTest\\").withPatientCount(2))
+        assertThat(db, hasSample(vcfData.studyId, 'VCF_TST001', platform: 'VCF'))
+        assertThat(db, hasSample(vcfData.studyId, 'VCF_TST002', platform: 'VCF'))
+        assertThat(db, hasPatient('Subject_0').inTrial(vcfData.studyId))
 
         def dataSetId = "${studyId}:VCFTEST"
-        assertThatVcfDataForSubject1IsLoaded(gplId, dataSetId)
-        assertThatVcfDataForSubject2IsLoaded(gplId, dataSetId, 2)
+        assertThatVcfDataForSubject1IsLoaded(vcfData.studyId, gplId, dataSetId)
+        assertThatVcfDataForSubject2IsLoaded(vcfData.studyId, gplId, dataSetId, 2)
 
         // verify deapp.de_variant_subject_detail
         assertThat(db, hasRecord('deapp.de_variant_subject_detail',
@@ -180,7 +182,10 @@ class VCFDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase
 
     void testItLoadsMultipleVcfFiles() {
         def gplId = 'VCF'
-        assertTrue(dataProcessor.process(Fixtures.multipleVcfData, [name: studyName, node: $/Test Studies\${studyName}/$]))
+        VCFData vcfData = Fixtures.multipleVcfData.copyWithSuffix('MultiVCF')
+        def studyName = vcfData.studyName
+        def studyId = vcfData.studyId
+        assertTrue(vcfData.load(config))
         assertThat(db, hasPlatform(gplId, gplId, 'VCF', organism: 'Homo Sapiens'))
         assertThat(db, hasNode("\\Test Studies\\${studyName}\\VCF\\VCFTest1\\").withPatientCount(1))
         assertThat(db, hasNode("\\Test Studies\\${studyName}\\VCF\\VCFTest2\\").withPatientCount(1))
@@ -189,7 +194,7 @@ class VCFDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase
         assertThat(db, hasPatient('Subject_0').inTrial(studyId))
 
         def dataSet1Id = "${studyId}:VCFTEST1"
-        assertThatVcfDataForSubject1IsLoaded(gplId, dataSet1Id)
+        assertThatVcfDataForSubject1IsLoaded(vcfData.studyId, gplId, dataSet1Id)
 
         // verify deapp.de_variant_subject_detail
         assertThat(db, hasRecord('deapp.de_variant_subject_detail',
@@ -212,7 +217,66 @@ class VCFDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase
 
 
         def dataSet2Id = "${studyId}:VCFTEST2"
-        assertThatVcfDataForSubject2IsLoaded(gplId, dataSet2Id)
+        assertThatVcfDataForSubject2IsLoaded(vcfData.studyId, gplId, dataSet2Id)
+
+        // verify deapp.de_variant_subject_detail
+        assertThat(db, hasRecord('deapp.de_variant_subject_detail',
+                [dataset_id: dataSet2Id, chr: '22', pos: 16050408, rs_id: 'rs149201999'],
+                [ref: 'T', alt: 'C', qual: '100', filter: 'PASS',
+                 info: 'LDAF=0.0649;RSQ=0.8652;AN=2184;ERATE=0.0046;VT=SNP;AA=.;AVGPOST=0.9799;THETA=0.0149;SNPSOURCE=LOWCOV;AC=134;AF=0.06;ASN_AF=0.04;AMR_AF=0.05;AFR_AF=0.10;EUR_AF=0.06',
+                 format: 'GT:DS:GL', variant_value: '0|1:0.900:-0.71,-0.09,-5.00']))
+
+        assertThat(db, hasRecord('deapp.de_variant_subject_detail',
+                [dataset_id: dataSet2Id, chr: '22', pos: 16050620, rs_id: 'rs146752880'],
+                [ref: 'C', alt: 'G,T', qual: '100', filter: 'PASS',
+                 info: 'UNKNW=42;AC=184;RSQ=0.8228;AVGPOST=0.9640;AN=2184;ERATE=0.0031;VT=SNP;AA=.;THETA=0.0127;LDAF=0.0902;SNPSOURCE=LOWCOV;AF=0.08;ASN_AF=0.08;AMR_AF=0.14;AFR_AF=0.08;EUR_AF=0.07',
+                 format: 'GT:DS:GL', variant_value: './0:1.000:-0.86,-0.06,-5.00']))
+
+        assertThat(db, hasRecord('deapp.de_variant_subject_detail',
+                [dataset_id: dataSet2Id, chr: '22', pos: 16050624, rs_id: 'rs146752879'],
+                [ref: 'C', alt: 'G', qual: '100', filter: 'PASS',
+                 info: 'TST_FLAG=0;AC=184;RSQ=0.8228;AVGPOST=0.9640;AN=2184;ERATE=0.0031;VT=SNP;AA=.;THETA=0.0127;LDAF=0.0902;SNPSOURCE=LOWCOV;AF=0.08;ASN_AF=0.08;AMR_AF=0.14;AFR_AF=0.08;EUR_AF=0.07',
+                 format: 'DS:GL', variant_value: '1.000:-0.86,-0.06,-5.00']))
+    }
+
+    void testItLoadsMultipleVcfFilesWithConfiguredPaths() {
+        def gplId = 'VCF'
+        VCFData vcfData = Fixtures.multipleVcfDataWithConfiguredPaths.copyWithSuffix('MultiVCFWithPaths')
+        assertTrue(vcfData.load(config))
+        assertThat(db, hasPlatform(gplId, gplId, 'VCF', organism: 'Homo Sapiens'))
+        assertThat(db, hasNode("\\Test Studies\\${vcfData.studyName}\\VCF\\VCFTest1\\").withPatientCount(1))
+        assertThat(db, hasNode("\\Test Studies\\${vcfData.studyName}\\VCF\\VCFTest2\\").withPatientCount(1))
+        assertThat(db, hasNode("\\Test Studies\\${vcfData.studyName}\\VCF\\VCFTest3\\").withPatientCount(1))
+        assertThat(db, hasSample(vcfData.studyId, 'VCF_TST001', platform: 'VCF'))
+        assertThat(db, hasSample(vcfData.studyId, 'VCF_TST002', platform: 'VCF'))
+        assertThat(db, hasSample(vcfData.studyId, 'VCF_TST003', platform: 'VCF'))
+        assertThat(db, hasPatient('Subject_0').inTrial(vcfData.studyId))
+
+        def dataSet1Id = "${vcfData.studyId}:VCFTEST1"
+        assertThatVcfDataForSubject1IsLoaded(vcfData.studyId, gplId, dataSet1Id)
+
+        // verify deapp.de_variant_subject_detail
+        assertThat(db, hasRecord('deapp.de_variant_subject_detail',
+                [dataset_id: dataSet1Id, chr: '22', pos: 16050408, rs_id: 'rs149201999'],
+                [ref: 'T', alt: 'C', qual: '100', filter: 'PASS',
+                 info: 'LDAF=0.0649;RSQ=0.8652;AN=2184;ERATE=0.0046;VT=SNP;AA=.;AVGPOST=0.9799;THETA=0.0149;SNPSOURCE=LOWCOV;AC=134;AF=0.06;ASN_AF=0.04;AMR_AF=0.05;AFR_AF=0.10;EUR_AF=0.06',
+                 format: 'GT:DS:GL', variant_value: '0|0:0.050:-0.03,-1.17,-5.00']))
+
+        assertThat(db, hasRecord('deapp.de_variant_subject_detail',
+                [dataset_id: dataSet1Id, chr: '22', pos: 16050620, rs_id: 'rs146752880'],
+                [ref: 'C', alt: 'G,T', qual: '100', filter: 'PASS',
+                 info: 'UNKNW=42;AC=184;RSQ=0.8228;AVGPOST=0.9640;AN=2184;ERATE=0.0031;VT=SNP;AA=.;THETA=0.0127;LDAF=0.0902;SNPSOURCE=LOWCOV;AF=0.08;ASN_AF=0.08;AMR_AF=0.14;AFR_AF=0.08;EUR_AF=0.07',
+                 format: 'GT:DS:GL', variant_value: '2/1:1.000:-2.05,-0.01,-1.71']))
+
+        assertThat(db, hasRecord('deapp.de_variant_subject_detail',
+                [dataset_id: dataSet1Id, chr: '22', pos: 16050624, rs_id: 'rs146752879'],
+                [ref: 'C', alt: 'G', qual: '100', filter: 'PASS',
+                 info: 'TST_FLAG=0;AC=184;RSQ=0.8228;AVGPOST=0.9640;AN=2184;ERATE=0.0031;VT=SNP;AA=.;THETA=0.0127;LDAF=0.0902;SNPSOURCE=LOWCOV;AF=0.08;ASN_AF=0.08;AMR_AF=0.14;AFR_AF=0.08;EUR_AF=0.07',
+                 format: 'DS:GL', variant_value: '1.000:-2.05,-0.01,-1.71']))
+
+
+        def dataSet2Id = "${vcfData.studyId}:VCFTEST2"
+        assertThatVcfDataForSubject2IsLoaded(vcfData.studyId, gplId, dataSet2Id)
 
         // verify deapp.de_variant_subject_detail
         assertThat(db, hasRecord('deapp.de_variant_subject_detail',

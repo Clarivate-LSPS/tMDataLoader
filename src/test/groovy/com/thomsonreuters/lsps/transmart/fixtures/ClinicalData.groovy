@@ -16,17 +16,17 @@ class ClinicalData extends AbstractData<ClinicalData> {
     }
 
     @Override
-    protected void adaptFiles(StudyInfo studyInfo) {
+    protected void adaptFiles(StudyInfo oldStudyInfo) {
         List<File> files = dir.listFiles()
 
         File mappingFile = files.find { it.name ==~ /.*_Mapping_File\.txt$/ }
         def mapping = ClinicalDataMapping.loadFromFile(mappingFile)
         mapping.eachFileMapping { ClinicalDataMapping.FileMapping fileMapping ->
-            TdfUtils.transformColumnValue(0, new File(dir, fileMapping.fileName)) { _ -> studyInfo.id }
+            TdfUtils.transformColumnValue(0, new File(dir, fileMapping.fileName)) { _ -> studyId }
         }
 
         File newMappingFile = new File(mappingFile.parentFile,
-                "${studyInfo.name}_${studyInfo.id}_Subject_Sample_Mapping_File.txt")
+                "${studyName}_${studyId}_Subject_Sample_Mapping_File.txt")
         mappingFile.renameTo(newMappingFile)
     }
 }

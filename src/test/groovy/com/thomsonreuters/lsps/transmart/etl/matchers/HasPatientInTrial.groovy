@@ -20,7 +20,8 @@ class HasPatientInTrial extends BaseMatcher<Sql> {
     boolean matches(Object item) {
         Sql sql = item as Sql
         def query = sql.rows('select * from i2b2demodata.patient_trial where patient_num in ' +
-                '(select patient_num from i2b2demodata.patient_dimension where SOURCESYSTEM_CD=?)', trialId + ':' + subjectId)
+                '(select patient_num from i2b2demodata.patient_dimension where SOURCESYSTEM_CD=?)',
+                trialId.toUpperCase() + ':' + subjectId)
         return query.size() == 1
     }
 

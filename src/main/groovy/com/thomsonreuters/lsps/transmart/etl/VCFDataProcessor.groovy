@@ -273,8 +273,7 @@ class VCFDataProcessor extends DataProcessor {
             loadPlatform(jobId, sql, studyInfo)
             use(SqlMethods) {
                 sources.each { source ->
-                    sql.callProcedure("${config.controlSchema}.i2b2_process_vcf_data",
-                            studyId, studyNode, source, config.securitySymbol, jobId)
+                    sql.callProcedure(procedureName, studyId, studyNode, source, config.securitySymbol, jobId)
                 }
             }
             return true
