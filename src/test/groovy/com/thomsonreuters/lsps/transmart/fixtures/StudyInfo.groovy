@@ -14,7 +14,7 @@ class StudyInfo {
     }
 
     StudyInfo withSuffix(String suffix) {
-        return new StudyInfo("${id}${suffix}", "${name} ${suffix}")
+        return new StudyInfo("${id}${suffix.toUpperCase()}", "${name} ${suffix}")
     }
 
     StudyInfo withName(String studyName) {

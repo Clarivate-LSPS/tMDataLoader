@@ -21,9 +21,9 @@ abstract class AbstractData<T extends AbstractData> {
 
     abstract String getDataType()
     protected abstract DataProcessor newDataProcessor(config)
-    protected abstract void adaptFiles(StudyInfo studyInfo)
+    protected abstract void adaptFiles(StudyInfo oldStudyInfo)
 
-    void load(config, parentNode = "Test Studies\\") {
+    boolean load(config, parentNode = "Test Studies\\") {
         if (!parentNode.endsWith('\\')) {
             parentNode += '\\'
         }

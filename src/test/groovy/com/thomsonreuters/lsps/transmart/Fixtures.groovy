@@ -3,6 +3,7 @@ package com.thomsonreuters.lsps.transmart
 import com.thomsonreuters.lsps.transmart.fixtures.ClinicalData
 import com.thomsonreuters.lsps.transmart.fixtures.ExpressionData
 import com.thomsonreuters.lsps.transmart.fixtures.StudyInfo
+import com.thomsonreuters.lsps.transmart.fixtures.VCFData
 import org.codehaus.groovy.runtime.DefaultGroovyMethods
 
 /**
@@ -23,6 +24,10 @@ class Fixtures {
 
         ClinicalData getClinicalData(String clinicalDataFolder = 'ClinicalDataToUpload') {
             return new ClinicalData(studyInfo: studyInfo, dir: new File(this, clinicalDataFolder))
+        }
+
+        VCFData getVCFData(String vcfDataFolder = 'VCFDataToUpload') {
+            return new VCFData(studyInfo: studyInfo, dir: new File(this, vcfDataFolder))
         }
     }
 
@@ -48,12 +53,16 @@ class Fixtures {
         return new StudyDirFile(studiesDir, studyId, studyName)
     }
 
-    static File getVcfData(String studyName = 'Test Study', String studyId = 'GSE0') {
-        new File(studyDir(studyName, studyId), 'VCFDataToUpload')
+    static VCFData getVcfData(String studyName = 'Test Study', String studyId = 'GSE0') {
+        return studyDir(studyName, studyId).getVCFData()
     }
 
-    static File getMultipleVcfData(String studyName = 'Test Study', String studyId = 'GSE0') {
-        new File(studyDir(studyName, studyId), 'MultiVCFDataToUpload')
+    static VCFData getMultipleVcfData(String studyName = 'Test Study', String studyId = 'GSE0') {
+        return studyDir(studyName, studyId).getVCFData('MultiVCFDataToUpload')
+    }
+
+    static VCFData getMultipleVcfDataWithConfiguredPaths() {
+        return studyDir('Test Study', 'GSE0').getVCFData('MultiVCFDataWithConfiguredPaths')
     }
 
     static ExpressionData getExpressionData(String studyName = 'Test Study', String studyId = 'GSE0') {

@@ -22,7 +22,7 @@ class HasSample extends BaseMatcher<Sql> {
     @Override
     boolean matches(sql) {
         sample = sql.firstRow('select * from deapp.de_subject_sample_mapping where trial_name = ? and sample_cd = ?',
-                studyId, sampleId)
+                studyId.toUpperCase(), sampleId)
         return !sample.is(null) && props.keySet().every { props[it] == sample.getAt(it) }
     }
 
