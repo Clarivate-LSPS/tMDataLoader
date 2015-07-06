@@ -52,6 +52,7 @@ Declare
 	rtnCode			integer;
 	tText			varchar(2000);
 	recreateIndexes boolean;
+	recreateIndexesSql text;
 
 	addNodes CURSOR is
 	select DISTINCT leaf_node, node_name
@@ -1158,9 +1159,7 @@ BEGIN
 	end if;
 
 	if recreateIndexes = TRUE then
-		DROP INDEX IF EXISTS fact_modifier_patient;
-		DROP INDEX IF EXISTS idx_ob_fact_2;
-		DROP INDEX IF EXISTS idx_ob_fact_1;
+		SELECT DROP_ALL_INDEXES('i2b2demodata', 'observation_fact') INTO recreateIndexesSql;
 		stepCt := stepCt + 1;
 		select cz_write_audit(jobId,databaseName,procedureName,'Drop observation facts indexes',0,stepCt,'Done') into rtnCd;
 	end if;
@@ -1207,17 +1206,9 @@ BEGIN
 	select cz_write_audit(jobId,databaseName,procedureName,'Create i2b2 full tree', 0, stepCt,'Done') into rtnCd;
 
 	if recreateIndexes = TRUE then
-		CREATE INDEX fact_modifier_patient ON i2b2demodata.observation_fact(modifier_cd, patient_num) tablespace indx;
+		execute(recreateIndexesSql);
 		stepCt := stepCt + 1;
-		select cz_write_audit(jobId,databaseName,procedureName,'Create fact_modifier_patient index', 0, stepCt,'Done') into rtnCd;
-
-		CREATE INDEX idx_ob_fact_2 ON observation_fact (concept_cd,patient_num,encounter_num) tablespace indx;
-		stepCt := stepCt + 1;
-		select cz_write_audit(jobId,databaseName,procedureName,'Create idx_ob_fact_2 index', 0, stepCt,'Done') into rtnCd;
-
-		CREATE INDEX idx_ob_fact_1 ON observation_fact (concept_cd) tablespace indx;
-		stepCt := stepCt + 1;
-		select cz_write_audit(jobId,databaseName,procedureName,'Create idx_ob_fact_1 index', 0, stepCt,'Done') into rtnCd;
+		select cz_write_audit(jobId,databaseName,procedureName,'Create observation facts index', 0, stepCt,'Done') into rtnCd;
 	end if;
 
 
