@@ -8,6 +8,7 @@ $$;
 
 \i procedures/median.sql
 \i procedures/AUDIT_FUNCTIONS.sql
+\i procedures/DROP_ALL_INDEXES.sql
 \i procedures/I2B2_ADD_NODE.sql
 \i procedures/I2B2_ADD_ROOT_NODE.sql
 \i procedures/I2B2_CREATE_CONCEPT_COUNTS.sql
