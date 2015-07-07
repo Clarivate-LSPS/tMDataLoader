@@ -95,61 +95,30 @@ BEGIN
 	  return res;
 	end if;
 
-	  -- Load SNP data from temp tables
-  delete from deapp.de_snp_calls_by_gsm
-  where patient_num in (
-    select sm.omic_patient_id
-    from deapp.de_subject_sample_mapping sm, lt_src_mrna_subj_samp_map tsm
-    where sm.trial_name = TrialID
-      and sm.source_cd = sourceCD
-		  and coalesce(sm.site_id, '') = coalesce(tsm.site_id, '')
-		  and sm.subject_id = tsm.subject_id and sm.sample_cd = tsm.sample_cd
-		  and sm.platform = 'SNP'
-  );
+	-- Load SNP data from temp tables
+	delete from deapp.de_sample_snp_data
+		where sample_id in (
+				select tsm.sample_cd from lt_src_mrna_subj_samp_map tsm
+		);
 
-  get diagnostics rowCt := ROW_COUNT;
+	get diagnostics rowCt := ROW_COUNT;
   stepCt := stepCt + 1;
-	select cz_write_audit(jobId,databaseName,procedureName,'Cleanup de_snp_calls_by_gsm',rowCt,stepCt,'Done') into rtnCd;
+	select cz_write_audit(jobId,databaseName,procedureName,'Cleanup de_sample_snp_data',rowCt,stepCt,'Done') into rtnCd;
 
-  -- Load SNP calls
-  insert into deapp.de_snp_calls_by_gsm
-  (gsm_num, patient_num, snp_name, snp_calls)
-  select sm.sample_cd as gsm_num, sm.omic_patient_id as patient_num, tmp.snp_name as snp_name, tmp.snp_calls as snp_calls
-  from lt_snp_calls_by_gsm tmp
-  inner join deapp.de_subject_sample_mapping sm
-  on sm.sample_cd = tmp.gsm_num
-  where sm.trial_name = TrialID;
+	insert into deapp.de_sample_snp_data
+		(sample_id, snp_name, snp_calls, copy_number)
+	select
+		coalesce(cn.gsm_num, calls.gsm_num) as sample_id,
+		coalesce(cn.snp_name, calls.snp_name) as snp_name,
+		calls.snp_calls,
+		cn.copy_number as copy_number
+	from lt_snp_copy_number cn
+		FULL JOIN lt_snp_calls_by_gsm calls
+		ON cn.gsm_num = calls.gsm_num and cn.snp_name = calls.snp_name;
 
-  get diagnostics rowCt := ROW_COUNT;
-  stepCt := stepCt + 1;
-	select cz_write_audit(jobId,databaseName,procedureName,'Fill de_snp_calls_by_gsm',rowCt,stepCt,'Done') into rtnCd;
-
-  delete from deapp.de_snp_copy_number
-  where patient_num in (
-    select sm.omic_patient_id
-    from deapp.de_subject_sample_mapping sm, lt_src_mrna_subj_samp_map tsm
-    where sm.trial_name = TrialID
-      and sm.source_cd = sourceCD
-		  and coalesce(sm.site_id, '') = coalesce(tsm.site_id, '')
-		  and sm.subject_id = tsm.subject_id and sm.sample_cd = tsm.sample_cd
-		  and sm.platform = 'SNP'
-  );
-
-  get diagnostics rowCt := ROW_COUNT;
-  stepCt := stepCt + 1;
-	select cz_write_audit(jobId,databaseName,procedureName,'Cleanup de_snp_copy_number',rowCt,stepCt,'Done') into rtnCd;
-
-  insert into deapp.de_snp_copy_number
-  (patient_num, snp_name, chrom, chrom_pos, copy_number)
-  select sm.omic_patient_id as patient_num, tmp.snp_name as snp_name, tmp.chrom, tmp.chrom_pos, power(2::double precision, tmp.copy_number::double precision)
-  from lt_snp_copy_number tmp
-  inner join deapp.de_subject_sample_mapping sm
-  on sm.sample_cd = tmp.gsm_num
-  where sm.trial_name = TrialID;
-
-  get diagnostics rowCt := ROW_COUNT;
-  stepCt := stepCt + 1;
-	select cz_write_audit(jobId,databaseName,procedureName,'Fill de_snp_copy_number',rowCt,stepCt,'Done') into rtnCd;
+	get diagnostics rowCt := ROW_COUNT;
+	stepCt := stepCt + 1;
+	select cz_write_audit(jobId,databaseName,procedureName,'Insert data into de_sample_snp_data',rowCt,stepCt,'Done') into rtnCd;
 
   insert into deapp.de_subject_snp_dataset
   (dataset_name, concept_cd, platform_name, trial_name, patient_num, subject_id, sample_type)
