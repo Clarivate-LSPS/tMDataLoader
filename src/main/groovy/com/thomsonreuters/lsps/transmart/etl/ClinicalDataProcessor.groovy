@@ -276,6 +276,7 @@ class ClinicalDataProcessor extends DataProcessor {
         res = res.replace('%', 'PCT')
         res = res.replace('*', '')
         res = res.replace('&', ' and ')
+        res = res.replaceAll('[^\\p{ASCII}]', '')
 
         return res
     }
