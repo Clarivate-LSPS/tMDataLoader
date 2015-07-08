@@ -1095,6 +1095,20 @@ BEGIN
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Delete clinical data for study from observation_fact',rowCt,stepCt,'Done') into rtnCd;
 
+	-- TR Optimization: usage of this index reduces next query time from 5+ days to few minutes
+	create index lcd_tmp_idx_wrk_cd_1 on wrk_clinical_data(
+		coalesce(category_cd,'@'),
+		coalesce(data_label,'**NULL**'),
+		coalesce(visit_name,'**NULL**'),
+		(case when data_type = 'T' then data_value else '**NULL**' end)
+	);
+
+	analyze wrk_clinical_data;
+	analyze wt_trial_nodes;
+
+	stepCt := stepCt + 1;
+	select cz_write_audit(jobId,databaseName,procedureName,'Create temp index lcd_tmp_idx_wrk_cd_1 for loading in observation facts',0,0,'Done') into rtnCd;
+
 	begin
 	create temporary table tmp_observation_facts without oids as
 	select distinct c.patient_num as encounter_num,
@@ -1152,6 +1166,10 @@ BEGIN
 		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return -16;
 	end;
+
+	drop index lcd_tmp_idx_wrk_cd_1;
+	stepCt := stepCt + 1;
+	select cz_write_audit(jobId,databaseName,procedureName,'Drop temp index lcd_tmp_idx_wrk_cd_1',0,0,'Done') into rtnCd;
 
 	recreateIndexes := TRUE;
 	if rowCt < 200 then
