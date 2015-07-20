@@ -1,6 +1,7 @@
 package com.thomsonreuters.lsps.transmart.etl.platforms
 import com.thomsonreuters.lsps.transmart.etl.LogType
 import com.thomsonreuters.lsps.transmart.files.GplFile
+import com.thomsonreuters.lsps.transmart.etl.PlatformProcessor
 import groovy.sql.Sql
 /**
  * Date: 19.09.2014
@@ -61,14 +62,14 @@ class GexPlatform extends GenePlatform {
                 "${speciesIdx != -1 ? header[speciesIdx] : '(Not specified)'}")
 
         platformFile.eachEntry { String[] cols ->
-            if (cols[entrezGeneIdIdx].isEmpty() || cols[entrezGeneIdIdx] ==~ /\d+/) {
-                processEntry([
-                        probeset_id   : cols[0],
-                        gene_symbol   : cols[geneSymbolIdx],
-                        entrez_gene_id: !cols[entrezGeneIdIdx].isEmpty() ? cols[entrezGeneIdIdx] : null,
-                        species       : speciesIdx != -1 ? cols[speciesIdx] : null
-                ])
-            }
+            def (String entrezId, String geneSymbol)
+                = PlatformProcessor.normalizeGeneIdAndSymbol(cols[entrezGeneIdIdx], cols[geneSymbolIdx])
+            processEntry([
+                probeset_id   : cols[0],
+                gene_symbol   : geneSymbol,
+                entrez_gene_id: entrezId,
+                species       : speciesIdx != -1 ? cols[speciesIdx] : null
+            ])
             return cols;
         }
     }

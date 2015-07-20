@@ -31,18 +31,36 @@ class PlatformProcessor {
         gplFile.eachEntry { String[] cols ->
             lineNum++
 
-            if (cols[entrezGeneIdIdx].isEmpty() || cols[entrezGeneIdIdx] ==~ /\d+/) {
-                logger.log(LogType.PROGRESS, "[${lineNum}]")
-                processEntry([
-                        probeset_id   : cols[0],
-                        gene_symbol   : cols[geneSymbolIdx],
-                        entrez_gene_id: !cols[entrezGeneIdIdx].isEmpty() ? cols[entrezGeneIdIdx] : null,
-                        species       : speciesIdx != -1 ? cols[speciesIdx] : null
-                ])
-            }
+            def (String entrezId, String geneSymbol) = normalizeGeneIdAndSymbol(cols[entrezGeneIdIdx], cols[geneSymbolIdx])
+            logger.log(LogType.PROGRESS, "[${lineNum}]")
+            processEntry([
+                    probeset_id   : cols[0],
+                    gene_symbol   : geneSymbol,
+                    entrez_gene_id: entrezId,
+                    species       : speciesIdx != -1 ? cols[speciesIdx] : null
+            ])
             return cols;
         }
         logger.log(LogType.PROGRESS, "")
         return lineNum
+    }
+
+    // We decided on 2015-07-17 that if Entrez Gene Id looks like "123 /// 456"
+    // we take the first number only. In this case we also take only the part
+    // of gene symbol that precedes '///' (if any). Finally if gene symbol does
+    // not make any sense at all (e.g.: "---") we ignore it.
+    static String[] normalizeGeneIdAndSymbol(String entrezId, String geneSymbol) {
+        String normalizedId = entrezId.trim().replaceFirst(' *//+.*', '')
+        if (normalizedId != entrezId) {
+            geneSymbol = geneSymbol.replaceFirst(' *//+.*', '')
+        }
+        // Ignore any Entrez Gene Ids that do not look like positive integer.
+        if (normalizedId.isEmpty() || !(normalizedId ==~ /\d+/)) {
+            normalizedId = null
+        }
+        if (!(geneSymbol =~ /\w/)) {
+            geneSymbol = ''
+        }
+        return [normalizedId, geneSymbol]
     }
 }
