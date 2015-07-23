@@ -6,7 +6,7 @@ import com.thomsonreuters.lsps.transmart.files.GplFile
  * Created by bondarev on 3/28/14.
  */
 class PlatformProcessor {
-    static long eachPlatformEntry(File platformFile, logger, Closure processEntry) {
+    static long eachPlatformEntry(File platformFile, config, Closure processEntry) {
         long lineNum = 0
         GplFile gplFile = new GplFile(platformFile)
         int entrezGeneIdIdx = -1, geneSymbolIdx = -1, speciesIdx = -1
@@ -18,12 +18,12 @@ class PlatformProcessor {
         }
         if (speciesIdx == -1) {
             // OK, trying to get species from the description
-            logger.log(LogType.WARNING, "Species not found in the platform file, using description")
+            config.logger.log(LogType.WARNING, "Species not found in the platform file, using description")
         }
         if (entrezGeneIdIdx == -1 || geneSymbolIdx == -1) {
             throw new Exception("Incorrect platform file header")
         }
-        logger.log(LogType.DEBUG, "ENTREZ, SYMBOL, SPECIES => " +
+        config.logger.log(LogType.DEBUG, "ENTREZ, SYMBOL, SPECIES => " +
                 "${header[entrezGeneIdIdx]}, " +
                 "${header[geneSymbolIdx]}, " +
                 "${speciesIdx != -1 ? header[speciesIdx] : '(Not specified)'}")
@@ -31,8 +31,8 @@ class PlatformProcessor {
         gplFile.eachEntry { String[] cols ->
             lineNum++
 
-            def (String entrezId, String geneSymbol) = normalizeGeneIdAndSymbol(cols[entrezGeneIdIdx], cols[geneSymbolIdx])
-            logger.log(LogType.PROGRESS, "[${lineNum}]")
+            def (String entrezId, String geneSymbol) = normalizeGeneIdAndSymbol(cols[entrezGeneIdIdx], cols[geneSymbolIdx], config)
+            config.logger.log(LogType.PROGRESS, "[${lineNum}]")
             processEntry([
                     probeset_id   : cols[0],
                     gene_symbol   : geneSymbol,
@@ -41,7 +41,7 @@ class PlatformProcessor {
             ])
             return cols;
         }
-        logger.log(LogType.PROGRESS, "")
+        config.logger.log(LogType.PROGRESS, "")
         return lineNum
     }
 
@@ -49,8 +49,8 @@ class PlatformProcessor {
     // we take the first number only. In this case we also take only the part
     // of gene symbol that precedes '///' (if any). Finally if gene symbol does
     // not make any sense at all (e.g.: "---") we ignore it.
-    static String[] normalizeGeneIdAndSymbol(String entrezId, String geneSymbol) {
-        String normalizedId = entrezId.trim().replaceFirst(' *//+.*', '')
+    static String[] normalizeGeneIdAndSymbol(String entrezId, String geneSymbol, config) {
+        String normalizedId = config?.useFirstGeneId ? entrezId.trim().replaceFirst(' *//+.*', '') : entrezId
         if (normalizedId != entrezId) {
             geneSymbol = geneSymbol.replaceFirst(' *//+.*', '')
         }

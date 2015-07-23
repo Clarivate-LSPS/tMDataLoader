@@ -24,4 +24,20 @@ class PlatformLoaderTest extends GroovyTestCase implements ConfigAwareTestCase {
         assertNull(emptyGeneId['gene_id'])
         assertThat(cntRow[0] as long, equalTo(5L))
     }
+
+    void testMultipleGeneIds() {
+        sql.execute("delete from deapp.de_gpl_info where platform = ?", 'TST')
+        sql.execute("delete from annotation_deapp where gpl_id = ?", 'TST')
+        def conf = config.clone()
+        conf.useFirstGeneId = true
+        def platformLoader = new PlatformLoader(sql, conf)
+        def gexPlatform = new GexPlatform(new File('fixtures/Platforms/TST.txt'), 'TST', conf)
+        platformLoader.doLoad(gexPlatform, [:])
+        def cntRow = sql.firstRow("select count(*) from lt_src_deapp_annot where gpl_id = ?", 'TST')
+        def emptyGeneId = sql.firstRow("select gene_id from lt_src_deapp_annot where gpl_id = ? and gene_symbol = ?", 'TST', 'ARX')
+        def multGeneId = sql.firstRow("select gene_id from lt_src_deapp_annot where gpl_id = ? and gene_symbol = ?", 'TST', 'MULTID')
+        assertNull(emptyGeneId['gene_id'])
+        assertThat(multGeneId['gene_id'] as long, equalTo(123L))
+        assertThat(cntRow[0] as long, equalTo(6L))
+    }
 }

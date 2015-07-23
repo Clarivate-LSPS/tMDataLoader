@@ -62,14 +62,19 @@ class GexPlatform extends GenePlatform {
                 "${speciesIdx != -1 ? header[speciesIdx] : '(Not specified)'}")
 
         platformFile.eachEntry { String[] cols ->
-            def (String entrezId, String geneSymbol) = PlatformProcessor.normalizeGeneIdAndSymbol(cols[entrezGeneIdIdx], cols[geneSymbolIdx])
+            String origId = cols[entrezGeneIdIdx]
+            // In previous versions we completely ignored such rows
+            if (!config?.useFirstGeneId && !origId.isEmpty() && !(origId ==~ /\d+/)) {
+                return
+            }
+            def (String entrezId, String geneSymbol) =
+                PlatformProcessor.normalizeGeneIdAndSymbol(origId, cols[geneSymbolIdx], config)
             processEntry([
                 probeset_id   : cols[0],
                 gene_symbol   : geneSymbol,
                 entrez_gene_id: entrezId,
                 species       : speciesIdx != -1 ? cols[speciesIdx] : null
             ])
-            return cols;
         }
     }
 }
