@@ -50,6 +50,7 @@ class CommandLineTool {
             _ longOpt: 'delete-study-by-path', args: 1, argName: 'delete_path', 'Delete study by path'
             _ longOpt: 'force-start', 'Force TM Data Loader start (even if another instance is already running)'
             _ longOpt: 'allow-non-unique-columns', 'Allow non-unique column names in clinical data files'
+            _ longOpt: 'use-first-gene-id', 'When probe maps to multiple Entrez Gene IDs use only the first one'
         }
         // TODO: implement stop-on-fail mode!
         def opts = cli.parse(args)
@@ -195,6 +196,11 @@ class CommandLineTool {
         if (opts?.'allow-non-unique-columns') {
             println ">>> Allow non unique column names"
             config.allowNonUniqueColumnNames = true
+        }
+
+        if (opts?.'use-first-gene-id') {
+            println ">>> Use first gene id"
+            config.useFirstGeneId = true
         }
 
         def extra_args = opts.arguments()
