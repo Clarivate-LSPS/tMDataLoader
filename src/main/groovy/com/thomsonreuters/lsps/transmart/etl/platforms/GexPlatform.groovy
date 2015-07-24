@@ -61,6 +61,15 @@ class GexPlatform extends GenePlatform {
                 "${speciesIdx != -1 ? header[speciesIdx] : '(Not specified)'}")
 
         platformFile.eachEntry { String[] cols ->
+            if (cols[entrezGeneIdIdx]  ==~ /\d+[\/]+\d+/){
+                def entresArr = cols[entrezGeneIdIdx].split(/\/+/)
+                processEntry([
+                        probeset_id   : cols[0],
+                        gene_symbol   : cols[geneSymbolIdx],
+                        entrez_gene_id: !entresArr[0].isEmpty() ? entresArr[0] : null,
+                        species       : speciesIdx != -1 ? cols[speciesIdx] : null
+                ])
+            } else
             if (cols[entrezGeneIdIdx].isEmpty() || cols[entrezGeneIdIdx] ==~ /\d+/) {
                 processEntry([
                         probeset_id   : cols[0],
