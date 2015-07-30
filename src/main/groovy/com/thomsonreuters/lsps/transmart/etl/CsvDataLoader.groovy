@@ -41,8 +41,13 @@ class CsvDataLoader extends DataLoader {
         database.withSql { sql->
             def out = org.postgresql.copy.PGCopyOutputStream.newInstance([sql.connection, command as String] as Object[])
             def printer = new OutputStreamWriter(out)
-            block.call(new BatchWriter(printer))
-            printer.flush()
+            try {
+                block.call(new BatchWriter(printer))
+                printer.flush()
+            } catch (Throwable ex){
+                out.cancelCopy()
+                throw ex;
+            }
             return out.endCopy()
         }
     }
