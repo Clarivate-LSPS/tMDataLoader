@@ -73,6 +73,10 @@ class Fixtures {
         return studiesDir.studyDir(studyName, studyId).clinicalData
     }
 
+    static ClinicalData getClinicalDataWithPlusSign() {
+        return studiesDir.studyDir('Test Study With Plus Sign', 'GSE0PLS').clinicalData
+    }
+
     public static class FilePathBuilder {
         File file
 
