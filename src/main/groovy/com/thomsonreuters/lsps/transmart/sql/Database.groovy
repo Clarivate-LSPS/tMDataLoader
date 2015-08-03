@@ -58,7 +58,7 @@ class Database {
     Process runPsqlCommand(File dir, String ... additionalArgs) {
         def env = System.getenv().entrySet().collect { "${it.key}=${it.value}" }
         env << "PGPASSWORD=${config.password}"
-        def cmd = ['psql', '-h', host, '-U', config.username, '-d', database]
+        def cmd = ['psql', '-h', host, '-U', config.username, '-d', database, '-p', port]
         cmd.addAll(additionalArgs)
         return Runtime.runtime.exec(cmd as String[], env as String[], dir)
     }
