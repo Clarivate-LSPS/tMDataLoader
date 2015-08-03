@@ -512,11 +512,12 @@ BEGIN
 	--	change any % to Pct and & and + to ' and ' and _ to space in data_label only
 
 	begin
-	update wrk_clinical_data
-	set data_label=replace(replace(replace(replace(data_label,'%',' Pct'),'&',' and '),'+',' and '),'_',' ')
-	   ,data_value=replace(replace(replace(data_value,'%',' Pct'),'&',' and '),'+',' and ')
-	   ,category_cd=replace(replace(category_cd,'%',' Pct'),'&',' and ')
-	   ,category_path=replace(replace(category_path,'%',' Pct'),'&',' and ');
+		update wrk_clinical_data
+		set data_label=replace(replace(replace(replace(replace(data_label,'%',' Pct'),'&',' and '),'+',' and '),'_',' '),'(plus)','+')
+	   		,data_value=replace(replace(replace(data_value,'%',' Pct'),'&',' and '),'+',' and ')
+	   		,category_cd=replace(replace(category_cd,'%',' Pct'),'&',' and ')
+	   		,category_path=replace(replace(replace(category_path,'%',' Pct'),'&',' and '),'(plus)','+');
+
 	   exception
 	when others then
 		errorNumber := SQLSTATE;
@@ -675,7 +676,6 @@ BEGIN
 	select cz_write_audit(jobId,databaseName,procedureName,'Updated data_type flag for numeric data_types',rowCt,stepCt,'Done') into rtnCd;
 
 	-- Build all needed leaf nodes in one pass for both numeric and text nodes
-
 	execute ('truncate table wt_trial_nodes');
 
 	begin

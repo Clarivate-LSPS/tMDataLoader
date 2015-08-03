@@ -181,4 +181,14 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         then:
         noExceptionThrown()
     }
+
+    def 'it should load category_cd and data_label with plus sign'() {
+        when:
+        def clinicalData = Fixtures.clinicalDataWithPlusSign
+        clinicalData.load(config)
+        then:
+        assertThat(sql, hasNode("\\Test Studies\\$clinicalData.studyName\\Subjects+\\Demographics+\\").withPatientCount(1))
+        assertThat(sql, hasNode("\\Test Studies\\$clinicalData.studyName\\Subjects+\\Demographics+\\Language++\\").withPatientCount(1))
+        assertThat(sql, hasNode("\\Test Studies\\$clinicalData.studyName\\Subjects+\\Demographics+\\Language++\\Spain and English and German\\").withPatientCount(1))
+    }
 }

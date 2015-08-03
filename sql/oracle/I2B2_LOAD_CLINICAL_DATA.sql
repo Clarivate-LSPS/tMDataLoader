@@ -504,11 +504,13 @@ BEGIN
 	 -- July 2013. Performace fix by TR. Merge into one query
    
 	update /*+ parallel(4) */ wrk_clinical_data
-	set data_label  = trim(trailing ',' from trim(replace(replace(/**/  replace(replace(replace(replace(data_label,'%',' Pct'),'&',' and '),'+',' and '),'_',' ') /**/   ,'  ', ' '),' ,',',')))
+	set data_label  = trim(trailing ',' from trim(replace(replace(/**/
+				replace(replace(replace(replace(replace(data_label,'%',' Pct'),'&',' and '),'+',' and '),'_',' '),'(plus)','+')
+		 /**/   ,'  ', ' '),' ,',',')))
 		 ,data_value  = trim(trailing ',' from trim(replace(replace(/**/  replace(replace(replace(data_value,'%',' Pct'),'&',' and '),'+',' and ') /**/  ,'  ', ' '),' ,',',')))
      ,visit_name  = trim(trailing ',' from trim(replace(replace(visit_name,'  ', ' '),' ,',',')))
      ,category_cd=replace(replace(category_cd,'%',' Pct'),'&',' and ')
-	   ,category_path=replace(replace(category_path,'%',' Pct'),'&',' and ')
+	   ,category_path=replace(replace(replace(category_path,'%',' Pct'),'&',' and '),'(plus)','+')
     ;	
 		
 	stepCt := stepCt + 1;
