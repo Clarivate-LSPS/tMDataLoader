@@ -1,14 +1,8 @@
 package com.thomsonreuters.lsps.transmart.etl
-
 import com.thomsonreuters.lsps.transmart.Fixtures
 import com.thomsonreuters.lsps.transmart.fixtures.ProteinData
-import com.thomsonreuters.lsps.transmart.fixtures.Study
-import com.thomsonreuters.lsps.transmart.sql.DatabaseType
 
-import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasNode
-import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasPatient
-import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasRecord
-import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasSample
+import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.*
 import static org.hamcrest.CoreMatchers.equalTo
 import static org.hamcrest.CoreMatchers.notNullValue
 import static org.junit.Assert.assertThat
@@ -24,9 +18,7 @@ class ProteinDataProcessorTest extends GroovyTestCase implements ConfigAwareTest
     void setUp() {
         ConfigAwareTestCase.super.setUp()
         runScript('I2B2_LOAD_PROTEOMICS_ANNOT.sql')
-        if (database?.databaseType == DatabaseType.Postgres) {
-            runScript('I2B2_PROCESS_PROTEOMICS_DATA.sql')
-        }
+        runScript('I2B2_PROCESS_PROTEOMICS_DATA.sql')
     }
 
     void assertThatSampleIsPresent(String sampleId, sampleData, currentStudyId, currentPlatformId, String prop = 'zscore') {
@@ -63,8 +55,6 @@ class ProteinDataProcessorTest extends GroovyTestCase implements ConfigAwareTest
     }
 
     void testItMergeSamples() {
-        Study.deleteById(config, studyId)
-
         proteinData.load(config)
         assertThatSampleIsPresent('O00231', ['P50440': 22.6096], studyId, platformId, 'log_intensity')
 
