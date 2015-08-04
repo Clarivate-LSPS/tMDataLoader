@@ -100,7 +100,7 @@ class DirectoryProcessor {
         def res = false
         // looping through the subfolders, looking for predefined names
         dir.eachDirMatch(~/[^\._].+/) {
-            if (it.name ==~ /^(?i)(${dataProcessors.keySet().join('|')})Data(ToUpload)?$/) {
+            if (it.name ==~ /^(?i)(${dataProcessors.keySet().join('|')})Data(ToUpload)?\b.*/) {
                 res = true
             }
         }
@@ -139,20 +139,23 @@ class DirectoryProcessor {
     }
 
     private boolean processDataDirectory(File parentDir, String dataType, Class<? extends DataProcessor> processorClass, studyInfo) {
-        def dirNames = ["${dataType}Data", "${dataType}DataToUpload",
-                        "${dataType.toLowerCase().capitalize()}DataToUpload"]
-        def dataDir = dirNames.collect { String dirName -> new File(parentDir, dirName) }.
-                find { File f -> f.exists() && f.isDirectory() }
-        if (dataDir) {
+        File[] dataDirs = parentDir.listFiles(new FileFilter() {
+            @Override
+            boolean accept(File file) {
+                return file.isDirectory() &&
+                        file.name ==~ /^(?:${dataType}|${dataType.toLowerCase().capitalize()})Data(?:ToUpload)?\b.*/
+            }
+        })
+        def res = true
+        for (File dataDir : dataDirs) {
             config.logger.log "Processing ${dataType} data"
-            def res = false
-
             def dataProcessor = processorClass.newInstance(config)
             try {
                 studyInfo['base_datatype'] = dataType
-                res = dataProcessor.process(dataDir, studyInfo)
+                res = res && dataProcessor.process(dataDir, studyInfo)
             }
             catch (Exception e) {
+                res = false
                 config.logger.log(LogType.ERROR, e)
             }
 
@@ -164,14 +167,11 @@ class DirectoryProcessor {
 
                 if (config.stopOnFail) return false
             }
-            return res
-        } else {
-            return true
         }
+        return res
     }
 
     private boolean processStudies(d, String parentNode) {
-
         config.logger.log("=== PROCESSING STUDIES IN ${parentNode} ===")
         def isAllSuccessful = true
 
