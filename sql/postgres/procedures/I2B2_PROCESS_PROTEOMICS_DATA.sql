@@ -302,9 +302,22 @@ BEGIN
 	get diagnostics rowCt := ROW_COUNT;
 	select cz_write_audit(jobId,databaseName,procedureName,'Delete data from observation_fact',rowCt,stepCt,'Done') into rtnCd;
 
+	create temp table assay_ids_to_remove on commit drop
+	as
+		select assay_id
+		from DE_SUBJECT_SAMPLE_MAPPING ssm
+			inner join lt_src_proteomics_sub_sam_map psm
+			on psm.trial_name = ssm.trial_name
+				 and psm.sample_cd = ssm.sample_cd
+				 and psm.subject_id = ssm.subject_id
+				 and psm.platform = ssm.gpl_id
+				 and coalesce(psm.source_cd, 'STD') = coalesce(ssm.source_cd, 'STD')
+		where ssm.platform = 'PROTEIN';
+
 	begin
 	delete from DE_SUBJECT_PROTEIN_DATA
-	where trial_name = TrialId ;
+	where trial_name = TrialId
+				and assay_id in (select assay_id from assay_ids_to_remove);
 	exception
 	when others then
 		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
@@ -322,8 +335,10 @@ BEGIN
 	delete from DE_SUBJECT_SAMPLE_MAPPING ssm
 	where trial_name = TrialID 
 	  and coalesce(ssm.source_cd,'STD') = sourceCd
+		--Making sure only PROTEIN data is deleted
 	  and platform = 'PROTEIN'
-	; --Making sure only miRNA data is deleted
+		and assay_id in (select assay_id from assay_ids_to_remove);
+
 	exception
 	when others then
 		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
@@ -1012,25 +1027,31 @@ BEGIN
 	,trial_name
 	,assay_id
 	)
-	select    md.peptide
-		  ,avg(md.intensity_value::numeric)
-                  ,sd.patient_id
-                  ,sd.subject_id
-		  ,TrialId
-		  ,sd.assay_id
-	from deapp.de_subject_sample_mapping sd
-		,LT_SRC_PROTEOMICS_DATA md   
+	select
+		md.peptide
+		,avg(md.intensity_value::numeric)
+    ,ssm.patient_id
+    ,ssm.subject_id
+		,TrialId
+		,ssm.assay_id
+	from
+		deapp.de_subject_sample_mapping ssm
+			inner join lt_src_proteomics_sub_sam_map psm
+			on psm.trial_name = ssm.trial_name
+				 and psm.sample_cd = ssm.sample_cd
+				 and psm.subject_id = ssm.subject_id
+				 and psm.platform = ssm.gpl_id
+				 and coalesce(psm.source_cd, 'STD') = coalesce(ssm.source_cd, 'STD')
+		,LT_SRC_PROTEOMICS_DATA md
               --  ,peptide_deapp p
-	where sd.sample_cd = md.m_p_id
-	  and sd.platform = 'PROTEIN'
-	  and sd.trial_name =TrialId
-	  and sd.source_cd = sourceCd
+	where ssm.sample_cd = md.m_p_id
+	  and ssm.platform = 'PROTEIN'
+	  and ssm.trial_name = TrialId
+	  and ssm.source_cd = sourceCd
 	 -- and sd.gpl_id = gs.id_ref
 	--  and md.peptide =p.peptide-- gs.mirna_id
 	 and CASE WHEN dataType = 'R' THEN sign(md.intensity_value::numeric) ELSE 1 END <> -1   --UAT 154 changes done on 19/03/2014
-	 and sd.subject_id in (select subject_id from lt_src_proteomics_sub_sam_map) 
-	group by md.peptide ,subject_id
-		  ,sd.patient_id,sd.assay_id;
+	group by md.peptide, ssm.subject_id, ssm.patient_id, ssm.assay_id;
 
 	exception
 	when others then
