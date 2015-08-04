@@ -2,6 +2,7 @@ package com.thomsonreuters.lsps.transmart
 
 import com.thomsonreuters.lsps.transmart.fixtures.ClinicalData
 import com.thomsonreuters.lsps.transmart.fixtures.ExpressionData
+import com.thomsonreuters.lsps.transmart.fixtures.ProteinData
 import com.thomsonreuters.lsps.transmart.fixtures.StudyInfo
 import com.thomsonreuters.lsps.transmart.fixtures.VCFData
 import org.codehaus.groovy.runtime.DefaultGroovyMethods
@@ -28,6 +29,10 @@ class Fixtures {
 
         VCFData getVCFData(String vcfDataFolder = 'VCFDataToUpload') {
             return new VCFData(studyInfo: studyInfo, dir: new File(this, vcfDataFolder))
+        }
+
+        ProteinData getProteinData(String proteinDataFolder = 'ProteinDataToUpload') {
+            return new ProteinData(studyInfo: studyInfo, dir: new File(this, proteinDataFolder))
         }
     }
 
@@ -75,6 +80,14 @@ class Fixtures {
 
     static ClinicalData getClinicalDataWithPlusSign() {
         return studiesDir.studyDir('Test Study With Plus Sign', 'GSE0PLS').clinicalData
+    }
+
+    static ProteinData getProteinData() {
+        return studiesDir.studyDir('Test Protein Study', 'GSE37425').proteinData
+    }
+
+    static ProteinData getProteinDataWithoutPeptide() {
+        return studiesDir.studyDir('Test Protein Study 2', 'GSE374251').proteinData
     }
 
     public static class FilePathBuilder {
