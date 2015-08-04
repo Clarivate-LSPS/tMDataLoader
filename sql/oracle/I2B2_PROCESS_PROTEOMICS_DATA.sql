@@ -50,6 +50,7 @@ AS
   logBase		number;
   pCount		integer;
   sCount		integer;
+  notMatchingSamplesCount integer;
   tablespaceName	varchar2(200);
   v_bio_experiment_id	number(18,0);
 
@@ -90,7 +91,6 @@ AS
     cursor uploadI2b2 is
     select category_cd,display_value,display_label,display_unit from
     tm_lz.lt_src_protein_display_mapping;
-
 BEGIN
   EXECUTE IMMEDIATE 'alter session set NLS_NUMERIC_CHARACTERS=".,"';
 	TrialID := upper(trial_id);
@@ -291,6 +291,39 @@ BEGIN
 	cz_write_audit(jobId,databaseName,procedureName,'Delete data from observation_fact',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
 
+	-- checking if we in partial upload or not
+	select count(assay_id) into notMatchingSamplesCount
+		from DE_SUBJECT_SAMPLE_MAPPING ssm
+			left join lt_src_proteomics_sub_sam_map psm
+			on psm.trial_name = ssm.trial_name
+				 and psm.sample_cd = ssm.sample_cd
+				 and psm.subject_id = ssm.subject_id
+				 and psm.platform = ssm.gpl_id
+				 and coalesce(psm.source_cd, 'STD') = coalesce(ssm.source_cd, 'STD')
+		where ssm.platform = 'PROTEIN'
+			and ssm.trial_name = TrialId
+			and nvl(ssm.source_cd,'STD') = sourceCd
+			and psm.sample_cd is NULL;
+
+	if notMatchingSamplesCount > 0 then
+		delete from DE_SUBJECT_PROTEIN_DATA
+		where trial_name = TrialId and assay_id in (
+			select assay_id
+			from DE_SUBJECT_SAMPLE_MAPPING ssm
+				inner join lt_src_proteomics_sub_sam_map psm
+				on psm.trial_name = ssm.trial_name
+				 and psm.sample_cd = ssm.sample_cd
+				 and psm.subject_id = ssm.subject_id
+				 and psm.platform = ssm.gpl_id
+				 and coalesce(psm.source_cd, 'STD') = coalesce(ssm.source_cd, 'STD')
+			where ssm.platform = 'PROTEIN'
+		);
+
+		stepCt := stepCt + 1;
+		cz_write_audit(jobId,databaseName,procedureName,'Delete data from DE_SUBJECT_PROTEIN_DATA',SQL%ROWCOUNT,stepCt,'Done');
+		commit;
+	end if;
+
 	select count(*) into pExists
 	from all_tables
 	where table_name = 'DE_SUBJECT_PROTEIN_DATA'
@@ -299,11 +332,14 @@ BEGIN
 	if pExists = 0 then
 		--	dataset is not partitioned so must delete
 
-		delete from DE_SUBJECT_PROTEIN_DATA
-		where trial_name = TrialId ;
-		stepCt := stepCt + 1;
-		cz_write_audit(jobId,databaseName,procedureName,'Delete data from DE_SUBJECT_PROTEIN_DATA',SQL%ROWCOUNT,stepCt,'Done');
-		commit;
+		if notMatchingSamplesCount = 0 then
+			delete from DE_SUBJECT_PROTEIN_DATA
+			where trial_name = TrialId;
+
+			stepCt := stepCt + 1;
+			cz_write_audit(jobId,databaseName,procedureName,'Delete data from DE_SUBJECT_PROTEIN_DATA',SQL%ROWCOUNT,stepCt,'Done');
+			commit;
+		end if;
 	else
 		--	Create partition in DE_SUBJECT_PROTEIN_DATA if it doesn't exist else truncate partition
 
@@ -324,10 +360,12 @@ BEGIN
 			cz_write_audit(jobId,databaseName,procedureName,'Adding partition to DE_SUBJECT_PROTEIN_DATA',0,stepCt,'Done');
 
 		else
-			sqlText := 'alter table deapp.DE_SUBJECT_PROTEIN_DATA truncate partition "' || TrialID || ':' || sourceCd || '"';
-			execute immediate(sqlText);
-			stepCt := stepCt + 1;
-			cz_write_audit(jobId,databaseName,procedureName,'Truncating partition in DE_SUBJECT_PROTEIN_DATA',0,stepCt,'Done');
+			if notMatchingSamplesCount = 0 then
+				sqlText := 'alter table deapp.DE_SUBJECT_PROTEIN_DATA truncate partition "' || TrialID || ':' || sourceCd || '"';
+				execute immediate(sqlText);
+				stepCt := stepCt + 1;
+				cz_write_audit(jobId,databaseName,procedureName,'Truncating partition in DE_SUBJECT_PROTEIN_DATA',0,stepCt,'Done');
+			end if;
 		end if;
 
 	end if;
@@ -338,6 +376,17 @@ BEGIN
 	where trial_name = TrialID
 	  and nvl(source_cd,'STD') = sourceCd
 	  and platform = 'PROTEIN'
+	  and assay_id in (
+			select assay_id
+			from DE_SUBJECT_SAMPLE_MAPPING ssm
+				inner join lt_src_proteomics_sub_sam_map psm
+				on psm.trial_name = ssm.trial_name
+				 and psm.sample_cd = ssm.sample_cd
+				 and psm.subject_id = ssm.subject_id
+				 and psm.platform = ssm.gpl_id
+				 and coalesce(psm.source_cd, 'STD') = coalesce(ssm.source_cd, 'STD')
+			where ssm.platform = 'PROTEIN'
+	  )
 	; --Making sure only miRNA data is deleted
 
 	stepCt := stepCt + 1;
@@ -919,25 +968,29 @@ BEGIN
 	,trial_name
 	,assay_id
 	)
-	select    md.peptide
+	select md.peptide
 		  ,avg(md.intensity_value)
-                  ,sd.patient_id
-                  ,sd.subject_id
+      ,sd.patient_id
+      ,sd.subject_id
 		  ,TrialId
 		  ,sd.assay_id
 	from deapp.de_subject_sample_mapping sd
+		inner join lt_src_proteomics_sub_sam_map psm
+			on psm.trial_name = sd.trial_name
+				 and psm.sample_cd = sd.sample_cd
+				 and psm.subject_id = sd.subject_id
+				 and psm.platform = sd.gpl_id
+				 and coalesce(psm.source_cd, 'STD') = coalesce(sd.source_cd, 'STD')
 		,LT_SRC_PROTEOMICS_DATA md
               --  ,peptide_deapp p
 	where sd.sample_cd = md.m_p_id
 	  and sd.platform = 'PROTEIN'
-	  and sd.trial_name =TrialId
+	  and sd.trial_name = TrialId
 	  and sd.source_cd = sourceCd
 	 -- and sd.gpl_id = gs.id_ref
 	--  and md.peptide =p.peptide-- gs.mirna_id
 	 and decode(dataType,'R',sign(md.intensity_value),1) <> -1   --UAT 154 changes done on 19/03/2014
-	 and sd.subject_id in (select subject_id from lt_src_proteomics_sub_sam_map)
-	group by md.peptide ,subject_id
-		  ,sd.patient_id,sd.assay_id;
+	group by md.peptide, sd.subject_id, sd.patient_id, sd.assay_id;
 
 	pExists := SQL%ROWCOUNT;
 
