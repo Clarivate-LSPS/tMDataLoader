@@ -86,6 +86,10 @@ class Fixtures {
         return studiesDir.studyDir('Test Protein Study', 'GSE37425').proteinData
     }
 
+    static ProteinData getAdditionalProteinData() {
+        return studiesDir.studyDir('Test Protein Study', 'GSE37425').getProteinData('ProteinDataToUpload (Additional)')
+    }
+
     static ProteinData getProteinDataWithoutPeptide() {
         return studiesDir.studyDir('Test Protein Study 2', 'GSE374251').proteinData
     }
