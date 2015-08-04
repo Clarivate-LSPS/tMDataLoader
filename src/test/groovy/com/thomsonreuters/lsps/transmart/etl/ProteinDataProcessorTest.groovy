@@ -1,5 +1,7 @@
 package com.thomsonreuters.lsps.transmart.etl
 
+import com.thomsonreuters.lsps.transmart.Fixtures
+import com.thomsonreuters.lsps.transmart.fixtures.ProteinData
 import com.thomsonreuters.lsps.transmart.sql.DatabaseType
 
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasNode
@@ -11,24 +13,15 @@ import static org.hamcrest.CoreMatchers.notNullValue
 import static org.junit.Assert.assertThat
 
 class ProteinDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase {
-    private ProteinDataProcessor _processor
-    String studyName = 'Test Protein Study'
-    String studyId = 'GSE37425'
+    ProteinData proteinData = Fixtures.proteinData
+    String studyName = proteinData.studyName
+    String studyId = proteinData.studyId
+
     String platformId = 'RBM999'
-
-    String platformIdWithoutPeptide = 'RBM888'
-    String studyIdWithoutPeptide = 'GSE374251'
-    String studyNameWithoutPeptide = 'Test Protein Study 2'
-
-    ProteinDataProcessor getProcessor() {
-        _processor ?: (_processor = new ProteinDataProcessor(config))
-    }
 
     @Override
     void setUp() {
         ConfigAwareTestCase.super.setUp()
-        sql.execute('delete from i2b2demodata.observation_fact where modifier_cd = ? or sourcesystem_cd = ?', studyId, studyId)
-        sql.execute('delete from deapp.de_subject_sample_mapping where trial_name = ?', studyId)
         runScript('I2B2_LOAD_PROTEOMICS_ANNOT.sql')
         if (database?.databaseType == DatabaseType.Postgres) {
             runScript('I2B2_PROCESS_PROTEOMICS_DATA.sql')
@@ -50,11 +43,8 @@ class ProteinDataProcessorTest extends GroovyTestCase implements ConfigAwareTest
         }
     }
 
-
     void testItLoadsData() {
-        processor.process(
-                new File("fixtures/Test Studies/${studyName}/ProteinDataToUpload"),
-                [name: studyName, node: "Test Studies\\${studyName}".toString()])
+        proteinData.load(config)
         assertThat(db, hasSample(studyId, 'P50440'))
         assertThat(db, hasPatient('GSM918945').inTrial(studyId))
         assertThat(db, hasNode("\\Test Studies\\${studyName}\\Biomarker Data\\Test Protein Platform\\").
@@ -72,9 +62,12 @@ class ProteinDataProcessorTest extends GroovyTestCase implements ConfigAwareTest
     }
 
     void testItLoadsDataWithoutPeptide() {
-        processor.process(
-                new File("fixtures/Test Studies/${studyNameWithoutPeptide}/ProteinDataToUpload"),
-                [name: studyNameWithoutPeptide, node: "Test Studies\\${studyNameWithoutPeptide}".toString()])
+        def proteinDataWithoutPeptide = Fixtures.proteinDataWithoutPeptide
+        def studyIdWithoutPeptide = proteinDataWithoutPeptide.studyId
+        def studyNameWithoutPeptide = proteinDataWithoutPeptide.studyName
+        String platformIdWithoutPeptide = 'RBM888'
+        proteinDataWithoutPeptide.load(config)
+
         assertThat(db, hasSample(studyIdWithoutPeptide, 'P504401'))
         assertThat(db, hasPatient('GSM9189451').inTrial(studyIdWithoutPeptide))
         assertThat(db, hasNode("\\Test Studies\\${studyNameWithoutPeptide}\\Biomarker Data\\Test Protein Platform 2\\").
