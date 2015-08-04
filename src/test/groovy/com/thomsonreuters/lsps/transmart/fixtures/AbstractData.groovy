@@ -43,7 +43,9 @@ abstract class AbstractData<T extends AbstractData> {
     T copyAttachedToStudy(StudyInfo studyInfo) {
         def newDir = TempStorage.instance.createSingletonTempDirectoryFrom(dir,
                 "${studyInfo.name}_${studyInfo.id}_${dataType}") { dir ->
-            this.class.newInstance(dir: dir, studyInfo: studyInfo).adaptFiles(this.studyInfo)
+            if (studyInfo.id != this.studyInfo.id || studyInfo.name != this.studyInfo.name) {
+                this.class.newInstance(dir: dir, studyInfo: studyInfo).adaptFiles(this.studyInfo)
+            }
         }
         return (T) this.class.newInstance(dir: newDir, studyInfo: studyInfo)
     }
