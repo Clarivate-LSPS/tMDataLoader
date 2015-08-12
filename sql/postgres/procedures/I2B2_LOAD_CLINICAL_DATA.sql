@@ -1149,6 +1149,7 @@ BEGIN
 	when others then
 		errorNumber := SQLSTATE;
 		errorMessage := SQLERRM;
+		set enable_mergejoin to default;
 		--Handle errors.
 		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
 		--End Proc
