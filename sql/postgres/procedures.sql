@@ -13,6 +13,7 @@ $$;
 \i procedures/I2B2_ADD_ROOT_NODE.sql
 \i procedures/I2B2_CREATE_CONCEPT_COUNTS.sql
 \i procedures/I2B2_DELETE_1_NODE.sql
+\i procedures/I2B2_FILL_IN_TREE.sql
 \i procedures/I2B2_LOAD_SECURITY_DATA.sql
 \i procedures/I2B2_LOAD_SAMPLES.sql
 \i procedures/I2B2_LOAD_ANNOTATION_DEAPP.sql
