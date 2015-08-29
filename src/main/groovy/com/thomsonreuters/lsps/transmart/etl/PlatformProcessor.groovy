@@ -31,7 +31,13 @@ class PlatformProcessor {
         gplFile.eachEntry { String[] cols ->
             lineNum++
 
-            def (String entrezId, String geneSymbol) = normalizeGeneIdAndSymbol(cols[entrezGeneIdIdx], cols[geneSymbolIdx], config)
+            String origId = cols[entrezGeneIdIdx]
+            // In previous versions we completely ignored such rows
+            if (!config?.useFirstGeneId && !origId.isEmpty() && !(origId ==~ /\d+/)) {
+                return
+            }
+            def (String entrezId, String geneSymbol) =
+                normalizeGeneIdAndSymbol(origId, cols[geneSymbolIdx], config)
             config.logger.log(LogType.PROGRESS, "[${lineNum}]")
             processEntry([
                     probeset_id   : cols[0],
@@ -39,7 +45,6 @@ class PlatformProcessor {
                     entrez_gene_id: entrezId,
                     species       : speciesIdx != -1 ? cols[speciesIdx] : null
             ])
-            return cols;
         }
         config.logger.log(LogType.PROGRESS, "")
         return lineNum
