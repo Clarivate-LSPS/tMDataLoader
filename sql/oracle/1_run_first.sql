@@ -509,7 +509,7 @@ END;
   --
   ALTER TABLE deapp.de_variant_population_info
       ADD CONSTRAINT de_variant_population_info_fk FOREIGN KEY (dataset_id) REFERENCES deapp.de_variant_dataset(dataset_id);
-/
+
 ALTER TABLE tm_lz.lt_src_deapp_annot
    modify gene_symbol character varying(400 byte);
 
@@ -527,4 +527,6 @@ ALTER TABLE tm_cz.annotation_deapp
 
 ALTER TABLE deapp.de_mrna_annotation
    modify probe_id character varying(200 byte);
-/
+
+alter table I2B2METADATA.I2B2 add constraint i2b2_uk unique(C_FULLNAME);
+
