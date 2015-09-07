@@ -486,6 +486,25 @@ BEGIN
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Set visit_name to null when found in data_value',rowCt,stepCt,'Done') into rtnCd;
 
+	begin
+		update wrk_clinical_data t
+		set visit_name=null
+		where category_path like '%\\$' and category_path not like '%VISITNAME%';
+
+		get diagnostics rowCt := ROW_COUNT;
+	exception
+	when others then
+			errorNumber := SQLSTATE;
+			errorMessage := SQLERRM;
+			--Handle errors.
+			select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+			--End Proc
+			select cz_end_audit (jobID, 'FAIL') into rtnCd;
+			return -16;
+	end;
+	stepCt := stepCt + 1;
+	select cz_write_audit(jobId,databaseName,procedureName,'Set visit_name to null when terminator used and visit_name not in category_path',rowCt,stepCt,'Done') into rtnCd;
+
 	--	set visit_name to null if only DATALABEL in category_cd
 
 	-- TR: disabled!!!!
@@ -550,6 +569,22 @@ BEGIN
 	end;
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Remove leading, trailing, double spaces',rowCt,stepCt,'Done') into rtnCd;
+
+	WITH duplicates AS (
+		DELETE FROM wrk_clinical_data
+		WHERE (subject_id, coalesce(visit_name, '**NULL**'), data_label, category_cd) in (
+			SELECT subject_id, coalesce(visit_name, '**NULL**'), data_label, category_cd
+			FROM wrk_clinical_data
+			GROUP BY subject_id, visit_name, data_label, category_cd
+			HAVING count(*) > 1)
+		RETURNING *
+	)
+	INSERT INTO wrk_clinical_data
+	SELECT DISTINCT * FROM duplicates;
+	get diagnostics rowCt := ROW_COUNT;
+
+	stepCt := stepCt + 1;
+	select cz_write_audit(jobId,databaseName,procedureName,'Remove duplicates from wrk_clinical_data',rowCt,stepCt,'Done') into rtnCd;
 
     --1. DETERMINE THE DATA_TYPES OF THE FIELDS
 	--	replaced cursor with update, used temp table to store category_cd/data_label because correlated subquery ran too long
@@ -629,7 +664,7 @@ BEGIN
 		return -16;
 	end if;
 
-	--	check for multiple visit_names for category_cd, data_label, data_value
+	--	check for multiple visit_names for subject_id, category_cd, data_label, data_value
 
      select max(case when x.null_ct > 0 and x.non_null_ct > 0
 					 then 1 else 0 end) into pCount
@@ -642,11 +677,11 @@ BEGIN
 			group by category_cd, data_label, data_value) x;
 	get diagnostics rowCt := ROW_COUNT;
 	stepCt := stepCt + 1;
-	select cz_write_audit(jobId,databaseName,procedureName,'Check for multiple visit_names for category/label/value ',rowCt,stepCt,'Done') into rtnCd;
+	select cz_write_audit(jobId,databaseName,procedureName,'Check for missing visit_names for subject_id/category/label/value ',rowCt,stepCt,'Done') into rtnCd;
 
 	if pCount > 0 then
 		stepCt := stepCt + 1;
-		select cz_write_audit(jobId,databaseName,procedureName,'Multiple visit names for category/label/value',0,stepCt,'Done') into rtnCd;
+		select cz_write_audit(jobId,databaseName,procedureName,'Not for all subject_id/category/label/value visit names specified. Visit names should be all empty or specified for all records.',0,stepCt,'Done') into rtnCd;
 		select cz_error_handler (jobID, procedureName, '-1', 'Application raised error') into rtnCd;
 		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return -16;
@@ -687,41 +722,43 @@ BEGIN
 	,data_value
 	,data_type
 	)
-    select DISTINCT
+  select DISTINCT
     Case
-	--	Text data_type (default node)
-	When a.data_type = 'T'
-	     then case
-		    when a.category_path like '%DATALABEL%' and a.category_path like '%DATAVALUE%' and a.category_path like '%VISITNAME%'
-				then regexp_replace(topNode || replace(replace(replace(coalesce(a.category_path, ''),'DATALABEL',coalesce(a.data_label, '')),'VISITNAME',coalesce(a.visit_name, '')), 'DATAVALUE',coalesce(a.data_value, ''))  || '\','(\\){2,}', '\')
-		 	when a.category_path like '%DATALABEL%' and a.category_path like '%VISITNAME%'
-				then regexp_replace(topNode || replace(replace(coalesce(a.category_path, ''),'DATALABEL',coalesce(a.data_label, '')),'VISITNAME',coalesce(a.visit_name, '')) || '\' || coalesce(a.data_value, '') || '\','(\\){2,}', '\')
-			when a.CATEGORY_PATH like '%DATALABEL%'
-				then case
-				when a.category_path like '%\VISITNFST' -- TR: support visit first
-					then regexp_replace(topNode || replace(replace(coalesce(a.category_path, ''),'\VISITNFST', ''), 'DATALABEL',coalesce(a.data_label, '')) || '\' || coalesce(a.visit_name, '') || '\' || coalesce(a.data_value, '') || '\', '(\\){2,}', '\')
-					else regexp_replace(topNode || replace(coalesce(a.category_path, ''), 'DATALABEL',coalesce(a.data_label, '')) || '\' || coalesce(a.data_value, '') || '\' || coalesce(a.visit_name, '') || '\', '(\\){2,}', '\')
-				end
-			ELSE case
-			when a.category_path like '%\VISITNFST' -- TR: support visit first
-				then REGEXP_REPLACE(TOPNODE || replace(coalesce(a.category_path, ''),'\VISITNFST', '') || '\'  || coalesce(a.data_label, '') || '\' || coalesce(a.visit_name, '') || '\' || coalesce(a.data_value, '') || '\', '(\\){2,}', '\')
-				else REGEXP_REPLACE(TOPNODE || coalesce(a.category_path, '') || '\'  || coalesce(a.DATA_LABEL, '') || '\' || coalesce(a.DATA_VALUE, '') || '\' || coalesce(a.VISIT_NAME, '') || '\', '(\\){2,}', '\')
-			end
-	end
-	--	else is numeric data_type and default_node
-	else case when a.category_path like '%DATALABEL%' and a.category_path like '%VISITNAME%'
-		      then regexp_replace(topNode || replace(replace(replace(coalesce(a.category_path, ''),'DATALABEL',coalesce(a.data_label, '')),'VISITNAME',coalesce(a.visit_name, '')), '\VISITNFST', '') || '\','(\\){2,}', '\')
-			  when a.CATEGORY_PATH like '%DATALABEL%'
-			  then regexp_replace(topNode || replace(replace(coalesce(a.category_path, ''),'DATALABEL',coalesce(a.data_label, '')), '\VISITNFST', '') || '\' || coalesce(a.visit_name, '') || '\', '(\\){2,}', '\')
-			  else REGEXP_REPLACE(topNode || replace(coalesce(a.category_path, ''), '\VISITNFST', '') ||
-                   '\'  || coalesce(a.data_label, '') || '\' || coalesce(a.visit_name, '') || '\',
-                   '(\\){2,}', '\')
-			  end
-	end as leaf_node,
-    a.category_cd,
-    a.visit_name,
-	a.data_label,
-	case when a.data_type = 'T' then a.data_value else null end as data_value
+    when a.category_path like '%\\$'
+      then regexp_replace(topNode || replace(replace(replace(substring(a.category_path for length(a.category_path)-2),'DATALABEL',coalesce(a.data_label, '')),'VISITNAME',coalesce(a.visit_name, '')), 'DATAVALUE',coalesce(a.data_value, ''))  || '\','(\\){2,}', '\')
+    --	Text data_type (default node)
+    When a.data_type = 'T'
+      then case
+        when a.category_path like '%DATALABEL%' and a.category_path like '%DATAVALUE%' and a.category_path like '%VISITNAME%'
+          then regexp_replace(topNode || replace(replace(replace(coalesce(a.category_path, ''),'DATALABEL',coalesce(a.data_label, '')),'VISITNAME',coalesce(a.visit_name, '')), 'DATAVALUE',coalesce(a.data_value, ''))  || '\','(\\){2,}', '\')
+        when a.category_path like '%DATALABEL%' and a.category_path like '%VISITNAME%'
+          then regexp_replace(topNode || replace(replace(coalesce(a.category_path, ''),'DATALABEL',coalesce(a.data_label, '')),'VISITNAME',coalesce(a.visit_name, '')) || '\' || coalesce(a.data_value, '') || '\','(\\){2,}', '\')
+        when a.CATEGORY_PATH like '%DATALABEL%'
+          then case
+          when a.category_path like '%\\VISITNFST' -- TR: support visit first
+            then regexp_replace(topNode || replace(replace(coalesce(a.category_path, ''),'\VISITNFST', ''), 'DATALABEL',coalesce(a.data_label, '')) || '\' || coalesce(a.visit_name, '') || '\' || coalesce(a.data_value, '') || '\', '(\\){2,}', '\')
+            else regexp_replace(topNode || replace(coalesce(a.category_path, ''), 'DATALABEL',coalesce(a.data_label, '')) || '\' || coalesce(a.data_value, '') || '\' || coalesce(a.visit_name, '') || '\', '(\\){2,}', '\')
+          end
+        ELSE case
+        when a.category_path like '%\\VISITNFST' -- TR: support visit first
+          then REGEXP_REPLACE(TOPNODE || replace(coalesce(a.category_path, ''),'\VISITNFST', '') || '\'  || coalesce(a.data_label, '') || '\' || coalesce(a.visit_name, '') || '\' || coalesce(a.data_value, '') || '\', '(\\){2,}', '\')
+          else REGEXP_REPLACE(TOPNODE || coalesce(a.category_path, '') || '\'  || coalesce(a.DATA_LABEL, '') || '\' || coalesce(a.DATA_VALUE, '') || '\' || coalesce(a.VISIT_NAME, '') || '\', '(\\){2,}', '\')
+        end
+    end
+    --	else is numeric data_type and default_node
+    else case when a.category_path like '%DATALABEL%' and a.category_path like '%VISITNAME%'
+            then regexp_replace(topNode || replace(replace(replace(coalesce(a.category_path, ''),'DATALABEL',coalesce(a.data_label, '')),'VISITNAME',coalesce(a.visit_name, '')), '\VISITNFST', '') || '\','(\\){2,}', '\')
+          when a.CATEGORY_PATH like '%DATALABEL%'
+          then regexp_replace(topNode || replace(replace(coalesce(a.category_path, ''),'DATALABEL',coalesce(a.data_label, '')), '\VISITNFST', '') || '\' || coalesce(a.visit_name, '') || '\', '(\\){2,}', '\')
+          else REGEXP_REPLACE(topNode || replace(coalesce(a.category_path, ''), '\VISITNFST', '') ||
+                     '\'  || coalesce(a.data_label, '') || '\' || coalesce(a.visit_name, '') || '\',
+                     '(\\){2,}', '\')
+          end
+    end as leaf_node
+    ,a.category_cd
+    ,a.visit_name
+    ,a.data_label
+    ,case when a.data_type = 'T' then a.data_value else null end as data_value
     ,a.data_type
 	from  wrk_clinical_data a;
 	get diagnostics rowCt := ROW_COUNT;
