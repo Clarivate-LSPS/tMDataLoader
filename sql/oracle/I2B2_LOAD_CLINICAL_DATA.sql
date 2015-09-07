@@ -458,6 +458,15 @@ BEGIN
 	cz_write_audit(jobId,databaseName,procedureName,'Set visit_name to null when found in data_value',SQL%ROWCOUNT,stepCt,'Done');
 		
 	commit;
+
+	update wrk_clinical_data t
+	set visit_name=null
+	where category_path like '%\$' and category_path not like '%VISITNAME%';
+
+	stepCt := stepCt + 1;
+	cz_write_audit(jobId,databaseName,procedureName,'Set visit_name to null when terminator used and visit_name not in category_path',SQL%ROWCOUNT,stepCt,'Done');
+
+	commit;
 	
 	--	set visit_name to null if only DATALABEL in category_cd
   -- EUGR: disabled!!!!!
@@ -515,7 +524,22 @@ BEGIN
 		
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Remove leading, trailing, double spaces',SQL%ROWCOUNT,stepCt,'Done');
-	
+
+	commit;
+
+	delete from /*+ parallel(4) */ wrk_clinical_data
+ 	where rowid IN (
+ 		select rid
+ 		from (
+ 			select rowid rid, row_number() over (
+				partition by subject_id, visit_name, data_label, category_cd order by rowid
+			) rn from wrk_clinical_data
+ 		) where rn <> 1
+ 	);
+
+	stepCt := stepCt + 1;
+	cz_write_audit(jobId,databaseName,procedureName,'Remove duplicates from wrk_clinical_data',SQL%ROWCOUNT,stepCt,'Done');
+
 	commit;
 
 -- determine numeric data types
@@ -585,7 +609,7 @@ BEGIN
 			group by category_cd, data_label, data_value) x;
   
 	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Check for multiple visit_names for category/label/value ',pCount,stepCt,'Done');
+	cz_write_audit(jobId,databaseName,procedureName,'Check for missing visit_names for category/label/value ',pCount,stepCt,'Done');
 			  
 	if pCount > 0 then
 		raise multiple_visit_names;
@@ -617,8 +641,10 @@ BEGIN
 	,data_value
 	,data_type
 	)
-    select /*+ parallel(a, 4) */  DISTINCT 
-    Case 
+    select /*+ parallel(a, 4) */  DISTINCT
+    Case
+	When category_path like '%\$'
+		then regexp_replace(topNode || replace(replace(replace(substr(a.category_path, 1, length(a.category_path) - 2),'DATALABEL',a.data_label),'VISITNAME',a.visit_name), 'DATAVALUE',a.data_value)  || '\','(\\){2,}', '\')
 	--	Text data_type (default node)
 	When a.data_type = 'T'
 	     then case 
@@ -1167,7 +1193,7 @@ BEGIN
 		rtnCode := 16;	
 	when multiple_visit_names then
 		stepCt := stepCt + 1;
-		cz_write_audit(jobId,databaseName,procedureName,'Multiple visit_names exist for category/label/value',0,stepCt,'Done');	
+		cz_write_audit(jobId,databaseName,procedureName,'Not for all subject_id/category/label/value visit names specified. Visit names should be all empty or specified for all records.',0,stepCt,'Done');
 		cz_error_handler (jobID, procedureName);
 		cz_end_audit (jobID, 'FAIL');
 		rtnCode := 16;

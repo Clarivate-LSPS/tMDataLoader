@@ -82,6 +82,10 @@ class Fixtures {
         return studiesDir.studyDir('Test Study With Plus Sign', 'GSE0PLS').clinicalData
     }
 
+    static ClinicalData getClinicalDataWithTerminator() {
+        return studiesDir.studyDir('Test Study With Terminator', 'GSE0TERMINATOR').clinicalData
+    }
+
     static ProteinData getProteinData() {
         return studiesDir.studyDir('Test Protein Study', 'GSE37425').proteinData
     }
