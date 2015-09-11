@@ -530,3 +530,11 @@ ALTER TABLE deapp.de_mrna_annotation
 
 alter table I2B2METADATA.I2B2 add constraint i2b2_uk unique(C_FULLNAME);
 
+update amapp.am_tag_template set ACTIVE_IND= '1' where ACTIVE_IND= 't';
+
+update amapp.am_tag_template set ACTIVE_IND= '0' where ACTIVE_IND= 'f';
+
+update amapp.am_tag_item set ACTIVE_IND= '1' where ACTIVE_IND= 't';
+
+update amapp.am_tag_item set ACTIVE_IND= '0' where ACTIVE_IND= 'f';
+
