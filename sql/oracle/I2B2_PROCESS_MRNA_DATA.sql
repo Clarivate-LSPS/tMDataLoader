@@ -927,6 +927,8 @@ BEGIN
 
  	execute immediate ('truncate table "&TM_WZ_SCHEMA".wt_subject_mrna_probeset');
 
+        dbms_stats.gather_table_stats('TM_LZ', 'LT_SRC_MRNA_DATA', cascade => true);
+
 	--	note: assay_id represents a unique subject/site/sample
 
 	insert into wt_subject_mrna_probeset
