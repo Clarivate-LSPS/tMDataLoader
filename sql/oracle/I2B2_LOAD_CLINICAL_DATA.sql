@@ -527,6 +527,41 @@ BEGIN
 
 	commit;
 
+	update /*+ parallel(4) */ wrk_clinical_data
+	set category_path =
+		case
+			-- Path with terminator, don't change, just remove terminator
+			when category_path like '%\$'
+			then substr(category_path, 1, length(category_path) - 2)
+			-- Add missing fields to concept_path
+			else
+				case
+					when category_path like '%\VISITNFST' then replace(category_path, '\VISITNFST', '')
+					else category_path
+				end ||
+				case
+					when category_path not like '%DATALABEL%' then '\DATALABEL'
+					else ''
+				end ||
+				case
+					when category_path like '%\VISITNFST' then '\VISITNAME'
+					else ''
+				end ||
+				case
+					when data_type = 'T' and category_path not like '%DATAVALUE%' then '\DATAVALUE'
+					else ''
+				end ||
+				case
+					when category_path not like '%\VISITNFST' and category_path not like '%VISITNAME%' then '\VISITNAME'
+					else ''
+				end
+		end;
+
+	stepCt := stepCt + 1;
+	cz_write_audit(jobId,databaseName,procedureName,'Add if missing DATALABEL, VISITNAME and DATAVALUE to category_path',SQL%ROWCOUNT,stepCt,'Done');
+
+	commit;
+
 	delete from /*+ parallel(4) */ wrk_clinical_data
  	where rowid IN (
  		select rid
@@ -641,43 +676,18 @@ BEGIN
 	,data_value
 	,data_type
 	)
-    select /*+ parallel(a, 4) */  DISTINCT
-    Case
-	When category_path like '%\$'
-		then regexp_replace(topNode || replace(replace(replace(substr(a.category_path, 1, length(a.category_path) - 2),'DATALABEL',a.data_label),'VISITNAME',a.visit_name), 'DATAVALUE',a.data_value)  || '\','(\\){2,}', '\')
-	--	Text data_type (default node)
-	When a.data_type = 'T'
-	     then case 
-		    when a.category_path like '%DATALABEL%' and a.category_path like '%DATAVALUE%' and a.category_path like '%VISITNAME%'
-				then regexp_replace(topNode || replace(replace(replace(a.category_path,'DATALABEL',a.data_label),'VISITNAME',a.visit_name), 'DATAVALUE',a.data_value)  || '\','(\\){2,}', '\')
-		 	when a.category_path like '%DATALABEL%' and a.category_path like '%VISITNAME%'
-				then regexp_replace(topNode || replace(replace(a.category_path,'DATALABEL',a.data_label),'VISITNAME',a.visit_name) || '\' || a.data_value || '\','(\\){2,}', '\')
-			when a.CATEGORY_PATH like '%DATALABEL%'
-				then case
-				when a.category_path like '%\VISITNFST' -- TR: support visit first
-					then regexp_replace(topNode || replace(replace(a.category_path,'\VISITNFST', ''), 'DATALABEL',a.data_label) || '\' || a.visit_name || '\' || a.data_value || '\', '(\\){2,}', '\') 
-					else regexp_replace(topNode || replace(a.category_path, 'DATALABEL',a.data_label) || '\' || a.data_value || '\' || a.visit_name || '\', '(\\){2,}', '\')
-				end
-			ELSE case
-			when a.category_path like '%\VISITNFST' -- TR: support visit first
-				then REGEXP_REPLACE(TOPNODE || replace(a.category_path,'\VISITNFST', '') || '\'  || a.data_label || '\' || a.visit_name || '\' || a.data_value || '\', '(\\){2,}', '\')
-				else REGEXP_REPLACE(TOPNODE || a.category_path || '\'  || a.DATA_LABEL || '\' || a.DATA_VALUE || '\' || a.VISIT_NAME || '\', '(\\){2,}', '\')
-			end
-	end
-	--	else is numeric data_type and default_node
-	else case when a.category_path like '%DATALABEL%' and a.category_path like '%VISITNAME%'
-		      then regexp_replace(topNode || replace(replace(replace(a.category_path,'DATALABEL',a.data_label),'VISITNAME',a.visit_name), '\VISITNFST', '') || '\','(\\){2,}', '\')
-			  when a.CATEGORY_PATH like '%DATALABEL%'
-			  then regexp_replace(topNode || replace(replace(a.category_path,'DATALABEL',a.data_label), '\VISITNFST', '') || '\' || a.visit_name || '\', '(\\){2,}', '\')
-			  else REGEXP_REPLACE(topNode || replace(a.category_path, '\VISITNFST', '') || 
-                   '\'  || a.data_label || '\' || a.visit_name || '\',
-                   '(\\){2,}', '\')
-			  end
-	end as leaf_node,
+  select /*+ parallel(a, 4) */  DISTINCT
+		Case
+			--	Text data_type (default node)
+			When a.data_type = 'T'
+			then regexp_replace(topNode || replace(replace(replace(a.category_path,'DATALABEL',a.data_label),'VISITNAME',a.visit_name), 'DATAVALUE',a.data_value)  || '\','(\\){2,}', '\')
+			--	else is numeric data_type and default_node
+			else regexp_replace(topNode || replace(replace(a.category_path,'DATALABEL',a.data_label),'VISITNAME',a.visit_name) || '\','(\\){2,}', '\')
+		end as leaf_node,
     a.category_cd,
     a.visit_name,
-	a.data_label,
-	decode(a.data_type,'T',a.data_value,null) as data_value
+		a.data_label,
+		decode(a.data_type,'T',a.data_value,null) as data_value
     ,a.data_type
 	from  wrk_clinical_data a;
 	stepCt := stepCt + 1;
