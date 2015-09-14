@@ -1009,7 +1009,10 @@ BEGIN
 		  
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Delete clinical data for study from observation_fact',SQL%ROWCOUNT,stepCt,'Done');
-    COMMIT;		  
+    COMMIT;
+
+    dbms_stats.gather_table_stats('TM_WZ', 'WRK_CLINICAL_DATA', cascade => true);
+    dbms_stats.gather_table_stats('TM_WZ', 'WT_TRIAL_NODES', cascade => true);
 	
     --Insert into observation_fact
 	--22 July 2013. Performace fix by TR. Set nologging.
