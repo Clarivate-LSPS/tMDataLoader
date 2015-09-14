@@ -548,6 +548,40 @@ BEGIN
 		return -16;
 	end;
 
+	update wrk_clinical_data
+	set category_path =
+	case
+		-- Path with terminator, don't change, just remove terminator
+		when category_path like '%\$'
+		then substr(category_path, 1, length(category_path) - 2)
+		-- Add missing fields to concept_path
+		else
+			case
+				when category_path like '%\VISITNFST' then replace(category_path, '\VISITNFST', '')
+				else category_path
+			end ||
+			case
+				when category_path not like '%DATALABEL%' then '\DATALABEL'
+				else ''
+			end ||
+			case
+				when category_path like '%\VISITNFST' then '\VISITNAME'
+				else ''
+			end ||
+			case
+				when data_type = 'T' and category_path not like '%DATAVALUE%' then '\DATAVALUE'
+				else ''
+			end ||
+			case
+				when category_path not like '%\VISITNFST' and category_path not like '%VISITNAME%' then '\VISITNAME'
+				else ''
+			end
+		end;
+
+	get diagnostics rowCt := ROW_COUNT;
+	stepCt := stepCt + 1;
+	select cz_write_audit(jobId,databaseName,procedureName,'Add if missing DATALABEL, VISITNAME and DATAVALUE to category_path',rowCt,stepCt,'Done') into rtnCd;
+
   --Trim trailing and leadling spaces as well as remove any double spaces, remove space from before comma, remove trailing comma
 
 	begin
@@ -724,36 +758,11 @@ BEGIN
 	)
   select DISTINCT
     Case
-    when a.category_path like '%\\$'
-      then regexp_replace(topNode || replace(replace(replace(substring(a.category_path for length(a.category_path)-2),'DATALABEL',coalesce(a.data_label, '')),'VISITNAME',coalesce(a.visit_name, '')), 'DATAVALUE',coalesce(a.data_value, ''))  || '\','(\\){2,}', '\')
-    --	Text data_type (default node)
-    When a.data_type = 'T'
-      then case
-        when a.category_path like '%DATALABEL%' and a.category_path like '%DATAVALUE%' and a.category_path like '%VISITNAME%'
-          then regexp_replace(topNode || replace(replace(replace(coalesce(a.category_path, ''),'DATALABEL',coalesce(a.data_label, '')),'VISITNAME',coalesce(a.visit_name, '')), 'DATAVALUE',coalesce(a.data_value, ''))  || '\','(\\){2,}', '\')
-        when a.category_path like '%DATALABEL%' and a.category_path like '%VISITNAME%'
-          then regexp_replace(topNode || replace(replace(coalesce(a.category_path, ''),'DATALABEL',coalesce(a.data_label, '')),'VISITNAME',coalesce(a.visit_name, '')) || '\' || coalesce(a.data_value, '') || '\','(\\){2,}', '\')
-        when a.CATEGORY_PATH like '%DATALABEL%'
-          then case
-          when a.category_path like '%\\VISITNFST' -- TR: support visit first
-            then regexp_replace(topNode || replace(replace(coalesce(a.category_path, ''),'\VISITNFST', ''), 'DATALABEL',coalesce(a.data_label, '')) || '\' || coalesce(a.visit_name, '') || '\' || coalesce(a.data_value, '') || '\', '(\\){2,}', '\')
-            else regexp_replace(topNode || replace(coalesce(a.category_path, ''), 'DATALABEL',coalesce(a.data_label, '')) || '\' || coalesce(a.data_value, '') || '\' || coalesce(a.visit_name, '') || '\', '(\\){2,}', '\')
-          end
-        ELSE case
-        when a.category_path like '%\\VISITNFST' -- TR: support visit first
-          then REGEXP_REPLACE(TOPNODE || replace(coalesce(a.category_path, ''),'\VISITNFST', '') || '\'  || coalesce(a.data_label, '') || '\' || coalesce(a.visit_name, '') || '\' || coalesce(a.data_value, '') || '\', '(\\){2,}', '\')
-          else REGEXP_REPLACE(TOPNODE || coalesce(a.category_path, '') || '\'  || coalesce(a.DATA_LABEL, '') || '\' || coalesce(a.DATA_VALUE, '') || '\' || coalesce(a.VISIT_NAME, '') || '\', '(\\){2,}', '\')
-        end
-    end
-    --	else is numeric data_type and default_node
-    else case when a.category_path like '%DATALABEL%' and a.category_path like '%VISITNAME%'
-            then regexp_replace(topNode || replace(replace(replace(coalesce(a.category_path, ''),'DATALABEL',coalesce(a.data_label, '')),'VISITNAME',coalesce(a.visit_name, '')), '\VISITNFST', '') || '\','(\\){2,}', '\')
-          when a.CATEGORY_PATH like '%DATALABEL%'
-          then regexp_replace(topNode || replace(replace(coalesce(a.category_path, ''),'DATALABEL',coalesce(a.data_label, '')), '\VISITNFST', '') || '\' || coalesce(a.visit_name, '') || '\', '(\\){2,}', '\')
-          else REGEXP_REPLACE(topNode || replace(coalesce(a.category_path, ''), '\VISITNFST', '') ||
-                     '\'  || coalesce(a.data_label, '') || '\' || coalesce(a.visit_name, '') || '\',
-                     '(\\){2,}', '\')
-          end
+    	--	Text data_type (default node)
+    	When a.data_type = 'T'
+      then regexp_replace(topNode || replace(replace(replace(coalesce(a.category_path, ''),'DATALABEL',coalesce(a.data_label, '')),'VISITNAME',coalesce(a.visit_name, '')), 'DATAVALUE',coalesce(a.data_value, ''))  || '\','(\\){2,}', '\')
+    	--	else is numeric data_type and default_node
+      else regexp_replace(topNode || replace(replace(coalesce(a.category_path, ''),'DATALABEL',coalesce(a.data_label, '')),'VISITNAME',coalesce(a.visit_name, '')) || '\','(\\){2,}', '\')
     end as leaf_node
     ,a.category_cd
     ,a.visit_name
