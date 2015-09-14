@@ -175,6 +175,7 @@ public class MIRNADataProcessor extends DataProcessor {
         }
 
         sql.commit()
+        sql.execute("begin dbms_stats.gather_table_stats('TM_LZ', 'LT_SRC_QPCR_MIRNA_DATA', cascade => true); end;")
         config.logger.log(LogType.PROGRESS, "")
         config.logger.log("Processed ${lineNum} rows")
     }
