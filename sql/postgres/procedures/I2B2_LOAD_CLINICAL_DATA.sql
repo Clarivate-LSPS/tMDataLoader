@@ -266,8 +266,9 @@ BEGIN
 
 	update wrk_clinical_data
 	set data_type = 'T'
-	   ,category_path = replace(replace(category_cd,'_',' '),'+','\')
-	   ,usubjid = REGEXP_REPLACE(TrialID || ':' || coalesce(site_id,'') || ':' || subject_id,
+		-- All tag values prefixed with $$, so we should remove prefixes in category_path
+		,category_path = replace(replace(replace(category_cd,'_',' '),'+','\'),'\$$','\')
+	  ,usubjid = REGEXP_REPLACE(TrialID || ':' || coalesce(site_id,'') || ':' || subject_id,
                    '(::){1,}', ':', 'g');
 	 get diagnostics rowCt := ROW_COUNT;
 	stepCt := stepCt + 1;
@@ -383,10 +384,10 @@ BEGIN
     begin
     update wrk_clinical_data tpm
     set visit_name=null
-    where (tpm.category_cd) in
-        (select x.category_cd
+    where (regexp_replace(tpm.category_cd,'\$\$[^+]+','\$\$')) in
+        (select regexp_replace(x.category_cd,'\$\$[^+]+','\$\$')
          from wrk_clinical_data x
-         group by x.category_cd
+         group by regexp_replace(x.category_cd,'\$\$[^+]+','\$\$')
          having count(distinct upper(x.visit_name)) = 1);
     get diagnostics rowCt := ROW_COUNT;
     exception
@@ -486,25 +487,6 @@ BEGIN
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Set visit_name to null when found in data_value',rowCt,stepCt,'Done') into rtnCd;
 
-	begin
-		update wrk_clinical_data t
-		set visit_name=null
-		where category_path like '%\\$' and category_path not like '%VISITNAME%';
-
-		get diagnostics rowCt := ROW_COUNT;
-	exception
-	when others then
-			errorNumber := SQLSTATE;
-			errorMessage := SQLERRM;
-			--Handle errors.
-			select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
-			--End Proc
-			select cz_end_audit (jobID, 'FAIL') into rtnCd;
-			return -16;
-	end;
-	stepCt := stepCt + 1;
-	select cz_write_audit(jobId,databaseName,procedureName,'Set visit_name to null when terminator used and visit_name not in category_path',rowCt,stepCt,'Done') into rtnCd;
-
 	--	set visit_name to null if only DATALABEL in category_cd
 
 	-- TR: disabled!!!!
@@ -548,6 +530,84 @@ BEGIN
 		return -16;
 	end;
 
+	--Trim trailing and leadling spaces as well as remove any double spaces, remove space from before comma, remove trailing comma
+	begin
+		update wrk_clinical_data
+		set data_label  = trim(trailing ',' from trim(replace(replace(data_label,'  ', ' '),' ,',','))),
+			data_value  = trim(trailing ',' from trim(replace(replace(data_value,'  ', ' '),' ,',','))),
+			--		sample_type = trim(trailing ',' from trim(replace(replace(sample_type,'  ', ' '),' ,',','))),
+			visit_name  = trim(trailing ',' from trim(replace(replace(visit_name,'  ', ' '),' ,',',')));
+		get diagnostics rowCt := ROW_COUNT;
+		exception
+		when others then
+			errorNumber := SQLSTATE;
+			errorMessage := SQLERRM;
+			--Handle errors.
+			select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+			--End Proc
+			select cz_end_audit (jobID, 'FAIL') into rtnCd;
+			return -16;
+	end;
+	stepCt := stepCt + 1;
+	select cz_write_audit(jobId,databaseName,procedureName,'Remove leading, trailing, double spaces',rowCt,stepCt,'Done') into rtnCd;
+
+	--1. DETERMINE THE DATA_TYPES OF THE FIELDS
+	--	replaced cursor with update, used temp table to store category_cd/data_label because correlated subquery ran too long
+
+	execute ('truncate table wt_num_data_types');
+
+	begin
+		insert into wt_num_data_types
+		(category_cd
+			,data_label
+			,visit_name
+		)
+			select category_cd,
+				data_label,
+				visit_name
+			from wrk_clinical_data
+			where data_value is not null
+			group by category_cd
+				,data_label
+				,visit_name
+			having sum(is_numeric(data_value)) = 0;
+		get diagnostics rowCt := ROW_COUNT;
+		exception
+		when others then
+			errorNumber := SQLSTATE;
+			errorMessage := SQLERRM;
+			--Handle errors.
+			select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+			--End Proc
+			select cz_end_audit (jobID, 'FAIL') into rtnCd;
+			return -16;
+	end;
+	stepCt := stepCt + 1;
+	select cz_write_audit(jobId,databaseName,procedureName,'Insert numeric data into WZ wt_num_data_types',rowCt,stepCt,'Done') into rtnCd;
+
+	begin
+		update wrk_clinical_data t
+		set data_type='N'
+		where exists
+		(select 1 from wt_num_data_types x
+				where coalesce(t.category_cd,'@') = coalesce(x.category_cd,'@')
+							and coalesce(t.data_label,'**NULL**') = coalesce(x.data_label,'**NULL**')
+							and coalesce(t.visit_name,'**NULL**') = coalesce(x.visit_name,'**NULL**')
+		);
+		get diagnostics rowCt := ROW_COUNT;
+		exception
+		when others then
+			errorNumber := SQLSTATE;
+			errorMessage := SQLERRM;
+			--Handle errors.
+			select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+			--End Proc
+			select cz_end_audit (jobID, 'FAIL') into rtnCd;
+			return -16;
+	end;
+	stepCt := stepCt + 1;
+	select cz_write_audit(jobId,databaseName,procedureName,'Updated data_type flag for numeric data_types',rowCt,stepCt,'Done') into rtnCd;
+
 	update wrk_clinical_data
 	set category_path =
 	case
@@ -582,28 +642,6 @@ BEGIN
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Add if missing DATALABEL, VISITNAME and DATAVALUE to category_path',rowCt,stepCt,'Done') into rtnCd;
 
-  --Trim trailing and leadling spaces as well as remove any double spaces, remove space from before comma, remove trailing comma
-
-	begin
-	update wrk_clinical_data
-	set data_label  = trim(trailing ',' from trim(replace(replace(data_label,'  ', ' '),' ,',','))),
-		data_value  = trim(trailing ',' from trim(replace(replace(data_value,'  ', ' '),' ,',','))),
---		sample_type = trim(trailing ',' from trim(replace(replace(sample_type,'  ', ' '),' ,',','))),
-		visit_name  = trim(trailing ',' from trim(replace(replace(visit_name,'  ', ' '),' ,',',')));
-	get diagnostics rowCt := ROW_COUNT;
-	exception
-	when others then
-		errorNumber := SQLSTATE;
-		errorMessage := SQLERRM;
-		--Handle errors.
-		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
-		--End Proc
-		select cz_end_audit (jobID, 'FAIL') into rtnCd;
-		return -16;
-	end;
-	stepCt := stepCt + 1;
-	select cz_write_audit(jobId,databaseName,procedureName,'Remove leading, trailing, double spaces',rowCt,stepCt,'Done') into rtnCd;
-
 	WITH duplicates AS (
 		DELETE FROM wrk_clinical_data
 		WHERE (subject_id, coalesce(visit_name, '**NULL**'), data_label, category_cd) in (
@@ -619,40 +657,6 @@ BEGIN
 
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Remove duplicates from wrk_clinical_data',rowCt,stepCt,'Done') into rtnCd;
-
-    --1. DETERMINE THE DATA_TYPES OF THE FIELDS
-	--	replaced cursor with update, used temp table to store category_cd/data_label because correlated subquery ran too long
-
-	execute ('truncate table wt_num_data_types');
-
-	begin
-	insert into wt_num_data_types
-	(category_cd
-	,data_label
-	,visit_name
-	)
-    select category_cd,
-           data_label,
-           visit_name
-    from wrk_clinical_data
-    where data_value is not null
-    group by category_cd
-	        ,data_label
-            ,visit_name
-      having sum(is_numeric(data_value)) = 0;
-	get diagnostics rowCt := ROW_COUNT;
-	exception
-	when others then
-		errorNumber := SQLSTATE;
-		errorMessage := SQLERRM;
-		--Handle errors.
-		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
-		--End Proc
-		select cz_end_audit (jobID, 'FAIL') into rtnCd;
-		return -16;
-	end;
-	stepCt := stepCt + 1;
-	select cz_write_audit(jobId,databaseName,procedureName,'Insert numeric data into WZ wt_num_data_types',rowCt,stepCt,'Done') into rtnCd;
 
 	--	Check if any duplicate records of key columns (site_id, subject_id, visit_name, data_label, category_cd) for numeric data
 	--	exist.  Raise error if yes
@@ -720,29 +724,6 @@ BEGIN
 		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return -16;
 	end if;
-
-	begin
-	update wrk_clinical_data t
-	set data_type='N'
-	where exists
-	     (select 1 from wt_num_data_types x
-	      where coalesce(t.category_cd,'@') = coalesce(x.category_cd,'@')
-			and coalesce(t.data_label,'**NULL**') = coalesce(x.data_label,'**NULL**')
-			and coalesce(t.visit_name,'**NULL**') = coalesce(x.visit_name,'**NULL**')
-		  );
-	get diagnostics rowCt := ROW_COUNT;
-	exception
-	when others then
-		errorNumber := SQLSTATE;
-		errorMessage := SQLERRM;
-		--Handle errors.
-		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
-		--End Proc
-		select cz_end_audit (jobID, 'FAIL') into rtnCd;
-		return -16;
-	end;
-	stepCt := stepCt + 1;
-	select cz_write_audit(jobId,databaseName,procedureName,'Updated data_type flag for numeric data_types',rowCt,stepCt,'Done') into rtnCd;
 
 	-- Build all needed leaf nodes in one pass for both numeric and text nodes
 	execute ('truncate table wt_trial_nodes');

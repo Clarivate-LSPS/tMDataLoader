@@ -219,4 +219,20 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat(sql, not(hasNode("\\Test Studies\\$clinicalData.studyName\\Subjects\\Demographics\\Age (AGE)\\Female\\\$\\")))
         assertThat(sql, not(hasNode("\\Test Studies\\$clinicalData.studyName\\Subjects\\Demographics\\Age (AGE)\\Female\\v1\\")))
     }
+
+    def 'it should load category_cd with data value'() {
+        when:
+        def clinicalData = Fixtures.clinicalDataWithDataValueInPath
+        clinicalData.load(config)
+        def demoPath = "\\Test Studies\\$clinicalData.studyName\\Subjects\\Demographics"
+
+        then:
+        assertThat(sql, hasNode("$demoPath\\Female\\Baseline\\French\\Sex (SEX)\\").withPatientCount(2))
+        assertThat(sql, hasNode("$demoPath\\Female\\Visit 7\\French\\Sex (SEX)\\").withPatientCount(1))
+        assertThat(sql, hasNode("$demoPath\\Female\\Baseline\\Not specified\\Sex (SEX)\\").withPatientCount(2))
+        assertThat(sql, hasNode("$demoPath\\Female\\Baseline\\English\\Sex (SEX)\\").withPatientCount(1))
+        assertThat(sql, hasNode("$demoPath\\Age (AGE)\\Baseline\\").withPatientCount(9))
+        assertThat(sql, hasNode("$demoPath\\Age (AGE)\\Visit 7\\").withPatientCount(2))
+
+    }
 }

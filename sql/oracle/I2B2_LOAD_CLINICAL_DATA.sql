@@ -239,7 +239,8 @@ BEGIN
 		  ,data_value
 		  ,category_cd
 		  ,ctrl_vocab_code
-      ,replace(replace(category_cd,'_',' '),'+','\')
+		  -- All tag values prefixed with $$, so we should remove prefixes in category_path
+      ,replace(replace(replace(category_cd,'_',' '),'+','\'),'\$$','\')
       ,(CASE WHEN site_id IS NOT NULL THEN TrialID || ':' || site_id || ':' || subject_id ELSE TrialID || ':' || subject_id END)
       ,'T'
 	from lt_src_clinical_data
@@ -387,14 +388,16 @@ BEGIN
 	
 	commit;
 
-	--	set visit_name to null when there's only a single visit_name for the catgory
+	--	set visit_name to null when there's only a single visit_name for the category_cd
 	
 	update wrk_clinical_data tpm
 	set visit_name=null
-	where (tpm.category_cd) in
-		  (select x.category_cd
+	where (regexp_replace(tpm.category_cd,'\$\$[^+]+','\$\$')) in
+		  (select regexp_replace(x.category_cd,'\$\$[^+]+','\$\$')
 		   from wrk_clinical_data x
-		   group by x.category_cd
+		   -- all tag values started with $$ ($$ will be removed from concept_path),
+		   -- concept_cd with different tags should be in same group, so we just replace tag with $$ for grouping
+		   group by regexp_replace(x.category_cd,'\$\$[^+]+','\$\$')
 		   having count(distinct upper(x.visit_name)) = 1);
 
 	stepCt := stepCt + 1;
@@ -458,15 +461,6 @@ BEGIN
 	cz_write_audit(jobId,databaseName,procedureName,'Set visit_name to null when found in data_value',SQL%ROWCOUNT,stepCt,'Done');
 		
 	commit;
-
-	update wrk_clinical_data t
-	set visit_name=null
-	where category_path like '%\$' and category_path not like '%VISITNAME%';
-
-	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Set visit_name to null when terminator used and visit_name not in category_path',SQL%ROWCOUNT,stepCt,'Done');
-
-	commit;
 	
 	--	set visit_name to null if only DATALABEL in category_cd
   -- EUGR: disabled!!!!!
@@ -527,6 +521,43 @@ BEGIN
 
 	commit;
 
+-- determine numeric data types
+
+	execute immediate('truncate table "&TM_WZ_SCHEMA".wt_num_data_types');
+  
+	insert into wt_num_data_types
+	(category_cd
+	,data_label
+	,visit_name
+	)
+    select category_cd,
+           data_label,
+           visit_name
+    from wrk_clinical_data
+    where data_value is not null
+    group by category_cd
+	        ,data_label
+            ,visit_name
+      having sum(is_number(data_value)) = 0;
+	stepCt := stepCt + 1;
+	cz_write_audit(jobId,databaseName,procedureName,'Insert numeric data into WZ wt_num_data_types',SQL%ROWCOUNT,stepCt,'Done');
+	
+	commit;
+
+	update wrk_clinical_data t
+	set data_type='N'
+	where exists
+	     (select 1 from wt_num_data_types x
+	      where nvl(t.category_cd,'@') = nvl(x.category_cd,'@')
+			and nvl(t.data_label,'**NULL**') = nvl(x.data_label,'**NULL**')
+			and nvl(t.visit_name,'**NULL**') = nvl(x.visit_name,'**NULL**')
+		  );
+	stepCt := stepCt + 1;
+	cz_write_audit(jobId,databaseName,procedureName,'Updated data_type flag for numeric data_types',SQL%ROWCOUNT,stepCt,'Done');
+
+	commit;
+
+
 	update /*+ parallel(4) */ wrk_clinical_data
 	set category_path =
 		case
@@ -575,29 +606,6 @@ BEGIN
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Remove duplicates from wrk_clinical_data',SQL%ROWCOUNT,stepCt,'Done');
 
-	commit;
-
--- determine numeric data types
-
-	execute immediate('truncate table "&TM_WZ_SCHEMA".wt_num_data_types');
-  
-	insert into wt_num_data_types
-	(category_cd
-	,data_label
-	,visit_name
-	)
-    select category_cd,
-           data_label,
-           visit_name
-    from wrk_clinical_data
-    where data_value is not null
-    group by category_cd
-	        ,data_label
-            ,visit_name
-      having sum(is_number(data_value)) = 0;
-	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Insert numeric data into WZ wt_num_data_types',SQL%ROWCOUNT,stepCt,'Done');
-	
 	commit;
 
 	--	Check if any duplicate records of key columns (site_id, subject_id, visit_name, data_label, category_cd) for numeric data
@@ -649,19 +657,6 @@ BEGIN
 	if pCount > 0 then
 		raise multiple_visit_names;
 	end if;
-		
-	update wrk_clinical_data t
-	set data_type='N'
-	where exists
-	     (select 1 from wt_num_data_types x
-	      where nvl(t.category_cd,'@') = nvl(x.category_cd,'@')
-			and nvl(t.data_label,'**NULL**') = nvl(x.data_label,'**NULL**')
-			and nvl(t.visit_name,'**NULL**') = nvl(x.visit_name,'**NULL**')
-		  );
-	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Updated data_type flag for numeric data_types',SQL%ROWCOUNT,stepCt,'Done');
-	
-	commit;
 
 	-- Build all needed leaf nodes in one pass for both numeric and text nodes
  
