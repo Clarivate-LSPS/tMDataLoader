@@ -379,7 +379,7 @@ BEGIN
 
 	--	set visit_name to null when there's only a single visit_name for the catgory
 
-  if alwaysSetVisitName = 'Y' then
+  if alwaysSetVisitName = 'N' then
    begin
     begin
     update wrk_clinical_data tpm

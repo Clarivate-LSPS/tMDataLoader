@@ -257,7 +257,7 @@ class ClinicalDataProcessor extends DataProcessor {
         if (studyId && studyNode) {
             config.logger.log("Study ID=${studyId}; Node=${studyNode}")
             def highlightFlag = config.highlightClinicalData.is(true) ? 'Y' : 'N'
-            def alwaysSetVisitName = config.alwaysSetVisitName.is(true) ? 'N' : 'Y'
+            def alwaysSetVisitName = config.alwaysSetVisitName.is(true) ? 'Y' : 'N'
             sql.call("{call " + config.controlSchema + "." + getProcedureName() + "(?,?,?,?,?,?)}", [studyId, studyNode, config.securitySymbol, highlightFlag, alwaysSetVisitName, jobId])
         } else {
             config.logger.log(LogType.ERROR, "Study ID or Node not defined!")
