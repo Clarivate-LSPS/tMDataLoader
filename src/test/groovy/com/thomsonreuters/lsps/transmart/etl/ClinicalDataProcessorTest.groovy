@@ -231,8 +231,46 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat(sql, hasNode("$demoPath\\Female\\Visit 7\\French\\Sex (SEX)\\").withPatientCount(1))
         assertThat(sql, hasNode("$demoPath\\Female\\Baseline\\Not specified\\Sex (SEX)\\").withPatientCount(2))
         assertThat(sql, hasNode("$demoPath\\Female\\Baseline\\English\\Sex (SEX)\\").withPatientCount(1))
+
         assertThat(sql, hasNode("$demoPath\\Age (AGE)\\Baseline\\").withPatientCount(9))
         assertThat(sql, hasNode("$demoPath\\Age (AGE)\\Visit 7\\").withPatientCount(2))
 
+        assertThat(sql, hasNode("$demoPath\\French\\Language\\Baseline\\").withPatientCount(2))
+        assertThat(sql, hasNode("$demoPath\\French\\Language\\Visit 7\\").withPatientCount(1))
+    }
+
+    def 'it should remove single visit name by default'() {
+        when:
+        def clinicalData = Fixtures.clinicalDataWithSingleVisitName
+        clinicalData.load(config)
+        def demoPath = "\\Test Studies\\$clinicalData.studyName\\Subjects\\Demographics"
+
+        then:
+        assertThat(sql, hasNode("$demoPath\\Female\\French\\Sex (SEX)\\").withPatientCount(2))
+        assertThat(sql, hasNode("$demoPath\\Female\\Not specified\\Sex (SEX)\\").withPatientCount(2))
+        assertThat(sql, hasNode("$demoPath\\Female\\English\\Sex (SEX)\\").withPatientCount(1))
+
+        assertThat(sql, hasNode("$demoPath\\Age (AGE)\\").withPatientCount(9))
+        assertThat(sql, not(hasNode("$demoPath\\Age (AGE)\\Baseline\\")))
+
+        assertThat(sql, hasNode("$demoPath\\Language\\French\\").withPatientCount(2))
+        assertThat(sql, not(hasNode("$demoPath\\Language\\French\\Baseline\\")))
+    }
+
+    def 'it should always set visit name if option specified'() {
+        when:
+        def clinicalData = Fixtures.clinicalDataWithSingleVisitName
+        config.alwaysSetVisitName = true
+        clinicalData.load(config)
+        def demoPath = "\\Test Studies\\$clinicalData.studyName\\Subjects\\Demographics"
+
+        then:
+        assertThat(sql, hasNode("$demoPath\\Female\\Baseline\\French\\Sex (SEX)\\").withPatientCount(2))
+        assertThat(sql, hasNode("$demoPath\\Female\\Baseline\\Not specified\\Sex (SEX)\\").withPatientCount(2))
+        assertThat(sql, hasNode("$demoPath\\Female\\Baseline\\English\\Sex (SEX)\\").withPatientCount(1))
+
+        assertThat(sql, hasNode("$demoPath\\Age (AGE)\\Baseline\\").withPatientCount(9))
+
+        assertThat(sql, hasNode("$demoPath\\Language\\French\\Baseline\\").withPatientCount(2))
     }
 }

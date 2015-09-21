@@ -90,6 +90,10 @@ class Fixtures {
         return studiesDir.studyDir('Test Study With Data Value In Path', 'GSE0DVINPATH').clinicalData
     }
 
+    static ClinicalData getClinicalDataWithSingleVisitName() {
+        return studiesDir.studyDir('Test Study With Single Visit Name', 'GSE0SINGLEVN').clinicalData
+    }
+
     static ProteinData getProteinData() {
         return studiesDir.studyDir('Test Protein Study', 'GSE37425').proteinData
     }
