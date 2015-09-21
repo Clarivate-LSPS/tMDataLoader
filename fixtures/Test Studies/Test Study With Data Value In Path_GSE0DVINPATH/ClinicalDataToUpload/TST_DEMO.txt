@@ -1,0 +1,12 @@
+STUDY_ID	SUBJ_ID	Age In Years	Sex	Language	Visit Name	Time Point
+GSE0DVINPATH	HCC2935	20	Female	French	Baseline
+GSE0DVINPATH	HCC2935	20	Female	French	Visit 7
+GSE0DVINPATH	HCC4006	20.5		Russian	Baseline
+GSE0DVINPATH	HCC4006	20.5		Russian	Visit 7
+GSE0DVINPATH	HCC827	20.9	Male	Spanish	Baseline
+GSE0DVINPATH	NCIH1650	31.1	Female	French	Baseline
+GSE0DVINPATH	NCIH1975	40	Female		Baseline
+GSE0DVINPATH	NCIH3255	18	Male	English	Baseline
+GSE0DVINPATH	PC14	23	Female		Baseline
+GSE0DVINPATH	SKMEL28	90	Female	English	Baseline
+GSE0DVINPATH	SW48	11.5			Baseline

@@ -86,6 +86,10 @@ class Fixtures {
         return studiesDir.studyDir('Test Study With Terminator', 'GSE0TERMINATOR').clinicalData
     }
 
+    static ClinicalData getClinicalDataWithDataValueInPath() {
+        return studiesDir.studyDir('Test Study With Data Value In Path', 'GSE0DVINPATH').clinicalData
+    }
+
     static ProteinData getProteinData() {
         return studiesDir.studyDir('Test Protein Study', 'GSE37425').proteinData
     }

@@ -92,7 +92,7 @@ class ClinicalDataProcessor extends DataProcessor {
                                         [(it.DATA_LABEL) : it.COLUMN]
                                     }
                                     cat_cd = cat_cd.replaceAll(/\$\$([A-z0-9_\"\s\(\)]+)/){ all, text ->
-                                        cols[groups[ text]] ?: 'Not specified'
+                                        '$$' + (cols[groups[ text]] ?: 'Not specified')
                                     }
                                 }
                                 //Support tag stop
