@@ -1,0 +1,7 @@
+STUDY_ID	SUBJ_ID	visit	Pain Assay	Test_data_label	Duplicates	TAG
+GSE0DVINPATH	GR03446	Baseline	1.8	Datavalue8	Active	TAG_test_2
+GSE0DVINPATH	GR03446	Visit 7	1.8	Datavalue8	Active	TAG_test_2
+GSE0DVINPATH	GR03456	Baseline	-1	Datavalue5	Active	TAG_test_2
+GSE0DVINPATH	GR03456	Visit 4	-1	Datavalue5	Active	TAG_test_2
+GSE0DVINPATH	GR03457	Baseline	-0.8	Datavalue6	Active	TAG_test_2
+GSE0DVINPATH	GR03457	Visit 5	-0.8	Datavalue6	Active	TAG_test_2

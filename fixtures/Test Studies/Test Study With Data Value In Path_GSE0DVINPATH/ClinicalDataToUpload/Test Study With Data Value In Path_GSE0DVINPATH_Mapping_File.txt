@@ -5,3 +5,11 @@ TST_DEMO.txt	Subjects+Demographics	3	"Age (AGE)"
 TST_DEMO.txt	Subjects+Demographics+DATAVALUE+VISITNAME+$$Language+DATALABEL	4	"Sex (SEX)"
 TST_DEMO.txt	Subjects+Demographics+DATAVALUE	5	Language
 TST_DEMO.txt		6	VISIT_NAME
+TESTNK.txt		1	STUDY_ID
+TESTNK.txt		2	SUBJ_ID
+TESTNK.txt		3	VISIT_NAME
+TESTNK.txt	Clinical_Data	4	Pain Assay
+TESTNK.txt	Clinical_Data+DATAVALUE+VISITNAME+$$TAG+DATALABEL	5	Test_data_label
+TESTNK.txt	Clinical_Data+Status+DATALABEL+DATAVALUE+$	6	Duplicates
+TESTNK.txt		7	TAG
+
