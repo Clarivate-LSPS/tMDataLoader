@@ -237,6 +237,8 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
 
         assertThat(sql, hasNode("$demoPath\\French\\Language\\Baseline\\").withPatientCount(2))
         assertThat(sql, hasNode("$demoPath\\French\\Language\\Visit 7\\").withPatientCount(1))
+
+        assertThat(sql, hasNode("\\Test Studies\\$clinicalData.studyName\\Clinical Data\\Datavalue5\\Baseline\\TAG test 2\\Test data label\\").withPatientCount(1))
     }
 
     def 'it should remove single visit name by default'() {
