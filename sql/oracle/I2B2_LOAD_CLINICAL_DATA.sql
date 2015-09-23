@@ -458,6 +458,16 @@ BEGIN
 	cz_write_audit(jobId,databaseName,procedureName,'Set visit_name to null when found in data_value',SQL%ROWCOUNT,stepCt,'Done');
 		
 	commit;
+
+	-- set visit_name to null if category_path uses terminator and VISITNAME not in path. Avoids duplicates for wt_trial_nodes
+	update wrk_clinical_data t
+	set visit_name=null
+	where category_path like '%\$' and category_path not like '%VISITNAME%';
+
+	stepCt := stepCt + 1;
+	cz_write_audit(jobId,databaseName,procedureName,'Set visit_name to null when terminator used and visit_name not in category_path',SQL%ROWCOUNT,stepCt,'Done');
+
+	commit;
 	
 	--	set visit_name to null if only DATALABEL in category_cd
   -- EUGR: disabled!!!!!
