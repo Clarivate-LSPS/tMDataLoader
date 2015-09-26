@@ -955,6 +955,8 @@ BEGIN
 --	tag data with probeset_id from reference.probeset_deapp
 
 	execute immediate ('truncate table tm_wz.WT_SUBJECT_PROTEOMICS_PROBESET');
+	dbms_stats.gather_table_stats('TM_LZ', 'LT_SRC_PROTEOMICS_DATA', cascade => true);
+	dbms_stats.gather_table_stats('TM_LZ', 'LT_SRC_PROTEOMICS_SUB_SAM_MAP', cascade => true);
 
 	--	note: assay_id represents a unique subject/site/sample
 
