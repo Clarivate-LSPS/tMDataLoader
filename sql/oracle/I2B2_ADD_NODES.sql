@@ -18,6 +18,10 @@ AS
     l_job_id INTEGER;
     step INTEGER;
 BEGIN
+    IF New_paths.COUNT = 0 THEN
+        RETURN;
+    END IF;
+
     --Set Audit Parameters
     step := 0;
     l_job_id := Job_id;
