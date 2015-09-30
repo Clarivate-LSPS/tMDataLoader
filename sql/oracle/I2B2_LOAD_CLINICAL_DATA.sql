@@ -1013,8 +1013,10 @@ BEGIN
 	cz_write_audit(jobId,databaseName,procedureName,'Delete clinical data for study from observation_fact',SQL%ROWCOUNT,stepCt,'Done');
     COMMIT;
 
-    dbms_stats.gather_table_stats('TM_WZ', 'WRK_CLINICAL_DATA', cascade => true);
-    dbms_stats.gather_table_stats('TM_WZ', 'WT_TRIAL_NODES', cascade => true);
+    dbms_stats.gather_table_stats('&TM_WZ_SCHEMA', 'WRK_CLINICAL_DATA', cascade => true);
+    dbms_stats.gather_table_stats('&TM_WZ_SCHEMA', 'WT_TRIAL_NODES', cascade => true);
+    dbms_stats.gather_table_stats('I2B2METADATA', 'I2B2', cascade => true);
+    dbms_stats.gather_table_stats('I2B2DEMODATA', 'PATIENT_DIMENSION', cascade => true);
 	
     --Insert into observation_fact
 	--22 July 2013. Performace fix by TR. Set nologging.
@@ -1032,7 +1034,7 @@ BEGIN
      location_cd,
      instance_num
 	)
-	select /*+ parallel(wrk_clinical_data, 4) */ distinct c.patient_num,
+       select /*+opt_param('_optimizer_cartesian_enabled','false')*/ distinct c.patient_num,
 		   i.c_basecode,
 		   a.study_id,
 		   a.data_type,
