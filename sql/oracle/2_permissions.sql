@@ -65,6 +65,7 @@ grant select, insert, update, delete on "&TM_WZ_SCHEMA".wt_subject_mrna_probeset
 grant select, insert, update, delete on "&TM_WZ_SCHEMA".wt_subject_microarray_logs to "&TM_CZ_SCHEMA";
 grant select, insert, update, delete on "&TM_WZ_SCHEMA".wt_subject_microarray_calcs to "&TM_CZ_SCHEMA";
 grant select, insert, update, delete on "&TM_WZ_SCHEMA".wt_subject_microarray_med to "&TM_CZ_SCHEMA";
+grant select, insert, update, delete on "&TM_WZ_SCHEMA".i2b2_load_path_with_count to "&TM_CZ_SCHEMA";
 
 grant select on sys.all_tables to "&TM_CZ_SCHEMA";
 -- the following 2 grants are done for ETL performance improvements, tm_cz_schema user needs
@@ -76,7 +77,6 @@ grant select on i2b2metadata.i2b2_id_seq to "&TM_CZ_SCHEMA";
 grant select on i2b2demodata.concept_id to "&TM_CZ_SCHEMA";
 grant select on i2b2demodata.seq_patient_num to "&TM_CZ_SCHEMA";
 
-grant execute on tm_cz.i2b2_load_clinical_data to "&TM_CZ_SCHEMA";
 grant execute on tm_cz.i2b2_create_full_tree to "&TM_CZ_SCHEMA";
 grant execute on tm_cz.i2b2_create_concept_counts to "&TM_CZ_SCHEMA";
 
