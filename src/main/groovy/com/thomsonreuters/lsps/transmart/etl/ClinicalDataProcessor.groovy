@@ -247,7 +247,11 @@ class ClinicalDataProcessor extends DataProcessor {
 
     @Override
     public String getProcedureName() {
-        return config.altClinicalProcName ?: "I2B2_LOAD_CLINICAL_DATA"
+        if (config.checkDublicates){
+            return "I2B2_CHECK_DUBLICATES"
+        } else {
+            return config.altClinicalProcName ?: "I2B2_LOAD_CLINICAL_DATA"
+        }
     }
 
     @Override

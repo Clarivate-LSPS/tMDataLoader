@@ -24,6 +24,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
     void setup() {
         ConfigAwareTestCase.super.setUp()
         runScript('I2B2_LOAD_CLINICAL_DATA.sql')
+        runScript('I2B2_CHECK_DUBLICATES.sql')
     }
 
     ClinicalDataProcessor getProcessor() {
@@ -274,5 +275,30 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat(sql, hasNode("$demoPath\\Age (AGE)\\Baseline\\").withPatientCount(9))
 
         assertThat(sql, hasNode("$demoPath\\Language\\French\\Baseline\\").withPatientCount(2))
+    }
+
+    def 'it dublicates patient ID exist '(){
+        when:
+            def clinicalData = Fixtures.clinicalDataWithDublicated
+            def expectedFile = new File(clinicalData.dir, 'ExpectedResult.csv')
+            def actualFile = new File(clinicalData.dir, 'result.csv')
+            actualFile.delete()
+            config.checkDublicates = true
+            clinicalData.load(config)
+        then:
+            actualFile.exists()
+            actualFile.text == expectedFile.text
+    }
+
+    def 'it do not dublicates patient ID exist '(){
+        when:
+        def clinicalData = Fixtures.clinicalData
+        def expectedFile = new File(clinicalData.dir, 'ExpectedResult.csv')
+        def actualFile = new File(clinicalData.dir, 'result.csv')
+        actualFile.delete()
+        config.checkDublicates = true
+        clinicalData.load(config)
+        then:
+        !actualFile.exists()
     }
 }
