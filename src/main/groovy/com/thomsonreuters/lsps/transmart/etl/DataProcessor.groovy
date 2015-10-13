@@ -22,6 +22,10 @@ package com.thomsonreuters.lsps.transmart.etl
 
 import com.thomsonreuters.lsps.transmart.sql.Database
 import groovy.sql.Sql
+import org.apache.commons.csv.CSVFormat
+import org.apache.commons.csv.CSVPrinter
+
+import java.nio.file.FileSystems
 
 abstract class DataProcessor {
     def config
@@ -53,6 +57,45 @@ abstract class DataProcessor {
                 res = new AuditableJobRunner(sql, config).runJob(procedureName) { jobId ->
                     logger.log("Run procedures: ${getProcedureName()}")
                     runStoredProcedures(jobId, sql, studyInfo)
+                }
+            }
+        }
+        if ((config?.checkDublicates) && (!res)) {
+            database.withSql { sql ->
+                FileWriter fileWriter = null;
+                CSVPrinter csvFilePrinter = null;
+
+                def rows = sql.rows("select * from wt_clinical_data_dups" as String)
+                CSVFormat csvFormat = CSVFormat.DEFAULT.withRecordSeparator('\n')
+                try {
+                    def fs = FileSystems.getDefault()
+                    fileWriter = new FileWriter(fs.getPath(dir.path,'result.csv').toString());
+
+                    csvFilePrinter = new CSVPrinter(fileWriter, csvFormat);
+                    Object[] FILE_HEADER = ["site_id", "subject_id", "visit_name", "data_label", "category_cd", "modifier_cd", "link_value"]
+                    csvFilePrinter.printRecord(FILE_HEADER);
+                    rows.each {
+                        List csvRow = new ArrayList();
+                        csvRow.add(it.site_id ?: '')
+                        csvRow.add(it.subject_id ?: '')
+                        csvRow.add(it.visit_name ?: '')
+                        csvRow.add(it.data_label ?: '')
+                        csvRow.add(it.category_cd ?: '')
+                        csvRow.add(it.modifier_cd ?: '')
+                        csvRow.add(it.link_value ?: '')
+
+                        csvFilePrinter.printRecord(csvRow)
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    try {
+                        fileWriter.flush();
+                        fileWriter.close();
+                        csvFilePrinter.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         }
