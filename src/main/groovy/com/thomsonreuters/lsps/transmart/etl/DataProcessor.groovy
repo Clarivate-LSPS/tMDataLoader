@@ -60,7 +60,7 @@ abstract class DataProcessor {
                 }
             }
         }
-        if ((config?.checkDublicates) && (!res)) {
+        if ((config?.checkDuplicates) && (!res)) {
             database.withSql { sql ->
                 FileWriter fileWriter = null;
                 CSVPrinter csvFilePrinter = null;
