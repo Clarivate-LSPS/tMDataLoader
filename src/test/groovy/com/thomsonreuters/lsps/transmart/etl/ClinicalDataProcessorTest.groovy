@@ -24,7 +24,6 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
     void setup() {
         ConfigAwareTestCase.super.setUp()
         runScript('I2B2_LOAD_CLINICAL_DATA.sql')
-        runScript('I2B2_CHECK_DUBLICATES.sql')
     }
 
     ClinicalDataProcessor getProcessor() {
@@ -283,7 +282,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
             def expectedFile = new File(clinicalData.dir, 'ExpectedResult.csv')
             def actualFile = new File(clinicalData.dir, 'result.csv')
             actualFile.delete()
-            config.checkDublicates = true
+            config.checkDuplicates = true
             clinicalData.load(config)
         then:
             actualFile.exists()
@@ -296,7 +295,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         def expectedFile = new File(clinicalData.dir, 'ExpectedResult.csv')
         def actualFile = new File(clinicalData.dir, 'result.csv')
         actualFile.delete()
-        config.checkDublicates = true
+        config.checkDuplicates = true
         clinicalData.load(config)
         then:
         !actualFile.exists()
