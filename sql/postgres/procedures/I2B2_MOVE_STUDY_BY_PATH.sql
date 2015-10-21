@@ -21,6 +21,10 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
     rowCt			              numeric(18,0);
 	  errorNumber		          character varying;
 	  errorMessage	          character varying;
+    x                       text;
+    genPath                 text;--VARCHAR(2000);
+    rCount                  INTEGER ;
+    trialId                 VARCHAR(2000);
 
     old_path                VARCHAR(2000);
     new_path                VARCHAR(2000);
@@ -81,6 +85,9 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
     -- update slashes
     old_path := REGEXP_REPLACE('\' || old_path || '\','(\\){2,}', '\','g');
     new_path := REGEXP_REPLACE('\' || new_path || '\','(\\){2,}', '\','g');
+
+    select sourcesystem_cd into trialId from i2b2demodata.concept_dimension
+    where concept_path = old_path;
 
     -- check duplicates
     IF old_path = new_path
@@ -406,6 +413,27 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
 
     stepCt := stepCt + 1;
     select cz_write_audit(jobId, databaseName, procedureName, 'Rename paths in concept_counts', rowCt, stepCt, 'Done') into rtnCd;
+
+  genPath := '';
+  FOR x IN select unnest(string_to_array(new_path,'\',''))
+   LOOP
+      if x is not null then
+        genPath := concat(genPath, '\', x);
+
+        SELECT count(*) into rCount from i2b2demodata.concept_counts where concept_path = (genPath || '\') ;
+
+        if rCount = 0 THEN
+          SELECT count(*) into rCount from i2b2metadata.i2b2_secure where c_fullname = (genPath || '\');
+          if rCount = 0 then
+            select i2b2_add_node(trialId , genPath|| '\', x, jobId) into rtnCd;
+            PERFORM I2B2_CREATE_CONCEPT_COUNTS(genPath || '\', jobId, 'Y');
+            stepCt := stepCt + 1;
+            select cz_write_audit(jobId, databaseName, procedureName, 'i2b2_add_node genPath ' || genPath , 0, stepCt, 'Done') into rtnCd;
+          end if;
+        end if;
+
+      end if;
+   END LOOP;
 
     -- Fill in levels if levels are added
     select i2b2_fill_in_tree(null, new_path, jobID) into rtnCd;

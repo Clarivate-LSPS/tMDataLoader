@@ -12,7 +12,10 @@ AS
   jobID                   NUMBER(18, 0);
   stepCt                  NUMBER(18, 0);
   tText                   VARCHAR2(2000);
-
+  x                       VARCHAR2(700 BYTE);
+  genPath                 VARCHAR2(700 BYTE);
+  rCount                  INT;
+  trialId                 VARCHAR2(700 BYTE);
 
   old_path                VARCHAR2(700 BYTE);
   new_path                VARCHAR2(700 BYTE);
@@ -49,6 +52,10 @@ AS
     new_path_exists_exception EXCEPTION;
     subnode_exists_exception EXCEPTION;
 
+  cursor r1(path VARCHAR2) is
+    select regexp_substr(path,'[^\\]+', 1, level) as res from dual
+    connect by regexp_substr(path, '[^\\]+', 1, level) is not null;
+
   BEGIN
 
 --Audit JOB Initialization
@@ -81,6 +88,9 @@ AS
 
     old_path := trim(old_path_in);
     new_path := trim(new_path_in);
+
+    select sourcesystem_cd into trialId from i2b2demodata.concept_dimension
+    where concept_path = old_path;
 
     IF old_path is null or new_path is null
       or old_path = '' or new_path=''
@@ -340,6 +350,25 @@ AS
     stepCt := stepCt + 1;
     cz_write_audit(jobId, databaseName, procedureName, 'Rename paths in concept_counts', SQL%ROWCOUNT, stepCt, 'Done');
     COMMIT;
+
+    genPath := '';
+  FOR x IN r1(new_path)
+    LOOP
+        genPath := concat(concat(genPath, '\'), x.res);
+
+        SELECT count(*) into rCount from i2b2demodata.concept_counts where concept_path = (genPath || '\') ;
+
+        if rCount = 0 THEN
+          SELECT count(*) into rCount from i2b2metadata.i2b2_secure where c_fullname = (genPath || '\');
+          if rCount = 0 then
+            i2b2_add_node(trialId , genPath|| '\', x.res, jobId);
+            I2B2_CREATE_CONCEPT_COUNTS(genPath || '\', jobId, 'Y');
+            stepCt := stepCt + 1;
+            cz_write_audit(jobId, databaseName, procedureName, 'i2b2_add_node genPath ' || genPath, 0, stepCt, 'Done');
+          end if;
+        end if;
+
+  END LOOP;
 
 -- check new level need to be added
 -- Fill in levels if levels are added
