@@ -6,6 +6,7 @@ import com.thomsonreuters.lsps.transmart.fixtures.Study
 import com.thomsonreuters.lsps.transmart.sql.DatabaseType
 
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasNode
+import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertThat
 
 class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCase {
@@ -189,6 +190,15 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
         }
     }
 
+    private void assertConceptcounts(String topPath, Map subPathAndCount){
+        subPathAndCount.each{
+            def query = 'select patient_count from i2b2demodata.concept_counts where concept_path = ?'
+            def checkPath = topPath + it.key
+            def c = sql.firstRow(query, checkPath)
+            assertEquals(c[0] as Integer, it.value)
+        }
+    }
+
     private void checkPaths(Map tablesToAttr, String errorMessage, String checkedPath, int correctCount) {
         checkedPath = checkedPath.charAt(checkedPath.length() - 1) != '\\' ? checkedPath + '\\' : checkedPath
         for (t in tablesToAttr) {
@@ -214,5 +224,57 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
 
     private void removeStudy(String pathToRemove) {
         Study.deleteByPath(config, pathToRemove)
+    }
+
+    void testMoveSubfolder(){
+        def oldPath = "\\$rootName\\$studyName\\Subjects\\Demographics\\Language\\"
+        def newPath = "\\$rootName\\$studyName\\Subjects\\Demographics new\\Language\\"
+
+        moveStudy(oldPath, newPath)
+
+        assertMovement(oldPath, newPath)
+        def m = ['Demographics new\\':3,
+                 'Demographics new\\Language\\':3,
+                 'Demographics new\\Language\\English\\':2,
+                 'Demographics new\\Language\\Spain\\':1,
+                ]
+        assertConceptcounts("\\$rootName\\$studyName\\Subjects\\", m)
+        removeStudy(newPath)
+    }
+
+    void testMoveSubfolder2(){
+        def oldPath = "\\$rootName\\$studyName\\Subjects\\Demographics\\Language\\"
+        def newPath = "\\$rootName\\$studyName\\Subjects new\\Demographics\\Language\\"
+
+        moveStudy(oldPath, newPath)
+
+        assertMovement(oldPath, newPath)
+        def m = ['Subjects new\\Demographics\\':3,
+                 'Subjects new\\Demographics\\Language\\':3,
+                 'Subjects new\\Demographics\\Language\\English\\':2,
+                 'Subjects new\\Demographics\\Language\\Spain\\':1,
+                 'Subjects\\Demographics\\Sex (SEX)\\Female\\':5,
+                 'Subjects\\Demographics\\Sex (SEX)\\Male\\':2
+        ]
+        assertConceptcounts("\\$rootName\\$studyName\\", m)
+        removeStudy(newPath)
+    }
+
+    void testMoveSubfolder3(){
+        def oldPath = "\\$rootName\\$studyName\\Subjects\\Demographics\\Language\\"
+        def newPath = "\\$rootName\\$studyName\\Subjects new\\Demographics new\\Language\\"
+
+        moveStudy(oldPath, newPath)
+
+        assertMovement(oldPath, newPath)
+        def m = ['Subjects new\\Demographics new\\':3,
+                 'Subjects new\\Demographics new\\Language\\':3,
+                 'Subjects new\\Demographics new\\Language\\English\\':2,
+                 'Subjects new\\Demographics new\\Language\\Spain\\':1,
+                 'Subjects\\Demographics\\Sex (SEX)\\Female\\':5,
+                 'Subjects\\Demographics\\Sex (SEX)\\Male\\':2
+        ]
+        assertConceptcounts("\\$rootName\\$studyName\\", m)
+        removeStudy(newPath)
     }
 }
