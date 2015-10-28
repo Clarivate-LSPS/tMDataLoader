@@ -28,8 +28,12 @@ import com.thomsonreuters.lsps.transmart.files.CsvLikeFile
 import com.thomsonreuters.lsps.transmart.sql.DatabaseType
 import groovy.sql.Sql
 
+import java.util.regex.Pattern
+
 class ClinicalDataProcessor extends DataProcessor {
     StatisticCollector statistic = new StatisticCollector()
+
+    private static final RE_PLUS = Pattern.compile(/\+/)
 
     public ClinicalDataProcessor(Object conf) {
         super(conf);
@@ -91,8 +95,8 @@ class ClinicalDataProcessor extends DataProcessor {
                                     def groups = fMappings._DATA.collectEntries{
                                         [(it.DATA_LABEL) : it.COLUMN]
                                     }
-                                    cat_cd = cat_cd.replaceAll(/\$\$([A-z0-9_\"\s\(\)]+)/){ all, text ->
-                                        '$$' + (cols[groups[ text]] ?: 'Not specified')
+                                    cat_cd = cat_cd.replaceAll(/\$\$([A-z0-9_\"\s\(\)]+)/) { match, name ->
+                                        '$$' + (cols[groups[name]]?.replaceAll(RE_PLUS, '(plus)') ?: 'Not specified')
                                     }
                                 }
                                 //Support tag stop
