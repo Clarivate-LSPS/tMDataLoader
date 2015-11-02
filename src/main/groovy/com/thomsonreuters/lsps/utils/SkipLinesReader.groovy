@@ -1,22 +1,28 @@
 package com.thomsonreuters.lsps.utils
 
+import groovy.transform.CompileStatic
+
 /**
  * Date: 11.09.2014
- * Time: 18:48
+ * Time: 17:12
  */
-class SkipLinesReader extends Reader {
-    private BufferedReader reader
-    private boolean atLineStart = true;
-    private char[] prefixBuffer;
 
-    private static final char CR = '\r';
+@CompileStatic
+public class SkipLinesReader extends Reader {
+    private Reader reader
+    private boolean atLineStart = true;
+    private char[] prefixBuffer
+    private int skippedLinesCount
+
     private static final char NL = '\n';
-    private static final char[] EMPTY_BUFFER = new char[0];
-    private SortedSet<CharSequence> prefixes = new TreeSet<>();
-    private int skippedLinesCount;
+    private static final char[] EMPTY_BUFFER = new char[0]
+    private TreeSet<String> prefixes = new TreeSet<>()
 
     SkipLinesReader(Reader reader, Collection<String> skipPrefixes) {
-        this.reader = reader instanceof BufferedReader ? (BufferedReader) reader : new BufferedReader(reader)
+        if (!reader.markSupported()) {
+            reader = new BufferedReader(reader)
+        }
+        this.reader = reader
         this.prefixes.addAll(skipPrefixes);
         this.prefixBuffer = new char[this.prefixes.last().length()];
     }
@@ -30,17 +36,22 @@ class SkipLinesReader extends Reader {
     }
 
     @Override
+    boolean ready() throws IOException {
+        return this.reader.ready()
+    }
+
+    @Override
     int read() throws IOException {
         if (atLineStart) {
             skipLines();
         }
         int c = reader.read();
-        atLineStart = c == NL;
+        atLineStart = c == (int) NL;
         return c;
     }
 
     private int skipToNextLine(char[] buf, int off, int end) {
-        skippedLinesCount++;
+        skippedLinesCount++
         while (off < end) {
             if (buf[off++] == NL) {
                 return off;
@@ -53,7 +64,7 @@ class SkipLinesReader extends Reader {
 
     private int readPrefixBuffer(char[] buf, int off, int end) {
         int prefixSize = Math.min(end - off, prefixBuffer.length);
-        System.arraycopy(buf, off, prefixBuffer, 0, Math.min(prefixBuffer.length, prefixSize))
+        System.arraycopy(buf, off, prefixBuffer, 0, prefixSize)
         if (prefixSize < prefixBuffer.length) {
             reader.mark(prefixBuffer.length - prefixSize);
             int read = reader.read(prefixBuffer, prefixSize, prefixBuffer.length - prefixSize);
@@ -68,10 +79,10 @@ class SkipLinesReader extends Reader {
     private int skipLines(char[] buf, int off, int end) {
         lines:
         while (true) {
-            int avail = readPrefixBuffer(buf, off, end);
+            int prefixSize = readPrefixBuffer(buf, off, end);
             prefixes:
-            for (CharSequence prefix : prefixes) {
-                if (prefix.length() > avail) {
+            for (String prefix : prefixes) {
+                if (prefix.length() > prefixSize) {
                     break;
                 }
                 for (int i = 0; i < prefix.length(); i++) {
@@ -79,7 +90,7 @@ class SkipLinesReader extends Reader {
                         continue prefixes;
                     }
                 }
-                off = skipToNextLine(buf, off + avail, end)
+                off = skipToNextLine(buf, Math.min(off + prefixSize, end), end)
                 continue lines;
             }
             break;
@@ -121,4 +132,3 @@ class SkipLinesReader extends Reader {
         reader.close()
     }
 }
-
