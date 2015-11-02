@@ -69,7 +69,7 @@ abstract class DataProcessor {
                 CSVFormat csvFormat = CSVFormat.DEFAULT.withRecordSeparator('\n')
                 try {
                     def fs = FileSystems.getDefault()
-                    fileWriter = new FileWriter(fs.getPath(dir.path,'result.csv').toString());
+                    fileWriter = new FileWriter(fs.getPath(dir.path, 'duplicates.csv').toString());
 
                     csvFilePrinter = new CSVPrinter(fileWriter, csvFormat);
                     Object[] FILE_HEADER = ["site_id", "subject_id", "visit_name", "data_label", "category_cd", "modifier_cd", "link_value"]
