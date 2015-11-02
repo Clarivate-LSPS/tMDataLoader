@@ -205,7 +205,7 @@ class SNPDataProcessor extends DataProcessor {
         sql.execute("delete from lt_snp_gene_map" as String)
         config.logger.log('Processing platform file')
         sql.withBatch(500, "insert into lt_snp_gene_map (snp_name, entrez_gene_id) values (?, ?)") { st ->
-            PlatformProcessor.eachPlatformEntry(platformFile, config.logger) { entry ->
+            PlatformProcessor.eachPlatformEntry(platformFile, config) { entry ->
                 st.addBatch([entry.probeset_id, entry.entrez_gene_id as Long])
             }
         }
