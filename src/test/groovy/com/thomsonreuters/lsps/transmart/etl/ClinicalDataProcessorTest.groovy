@@ -278,24 +278,24 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat(sql, hasNode("$demoPath\\Language\\French\\Baseline\\").withPatientCount(2))
     }
 
-    def 'it dublicates patient ID exist '(){
+    def 'it produces list of duplicates if necessary'(){
         when:
             def clinicalData = Fixtures.clinicalDataWithDublicated
-            def expectedFile = new File(clinicalData.dir, 'ExpectedResult.csv')
-            def actualFile = new File(clinicalData.dir, 'result.csv')
+            def expectedFile = new File(clinicalData.dir, 'ExpectedDuplicates.csv')
+            def actualFile = new File(clinicalData.dir, 'duplicates.csv')
             actualFile.delete()
             config.checkDuplicates = true
             clinicalData.load(config)
         then:
             actualFile.exists()
-            actualFile.text == expectedFile.text
+            actualFile.readLines() == expectedFile.readLines()
     }
 
-    def 'it do not dublicates patient ID exist '(){
+    def 'it does not produces list of duplicates if no duplicates exists'(){
         when:
         def clinicalData = Fixtures.clinicalData
-        def expectedFile = new File(clinicalData.dir, 'ExpectedResult.csv')
-        def actualFile = new File(clinicalData.dir, 'result.csv')
+        def expectedFile = new File(clinicalData.dir, 'ExpectedDuplicates.csv')
+        def actualFile = new File(clinicalData.dir, 'duplicates.csv')
         actualFile.delete()
         config.checkDuplicates = true
         clinicalData.load(config)
