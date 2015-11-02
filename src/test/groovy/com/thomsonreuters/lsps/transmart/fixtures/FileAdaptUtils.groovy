@@ -2,12 +2,14 @@ package com.thomsonreuters.lsps.transmart.fixtures
 
 import java.util.regex.Matcher
 import java.util.regex.Pattern
+
 /**
  * Date: 04.08.2015
  * Time: 13:29
  */
 class FileAdaptUtils {
-    static def adaptFile(File dir, String fileNamePattern, StudyInfo oldStudyInfo, StudyInfo studyInfo, Closure adaptWith) {
+    static
+    def adaptFile(File dir, String fileNamePattern, StudyInfo oldStudyInfo, StudyInfo studyInfo, Closure adaptWith) {
         def mapping = getFileMapping(dir, fileNamePattern, oldStudyInfo, studyInfo)
         adaptWith(mapping)
     }
@@ -16,6 +18,11 @@ class FileAdaptUtils {
         adaptFile(dir, fileNamePattern, oldStudyInfo, studyInfo) { mapping ->
             mapping.oldFile.renameTo(mapping.newFile)
         }
+    }
+
+    @SuppressWarnings("GroovyAssignabilityCheck")
+    private static Integer getNamedGroupIndex(Pattern pattern, String name) {
+        pattern.namedGroups().get(name)
     }
 
     /**
@@ -35,11 +42,11 @@ class FileAdaptUtils {
         }
         if (hasId) {
             fileNamePattern = fileNamePattern.replaceFirst('<<STUDY_ID>>',
-                    "(?P<studyId>${Pattern.quote(oldStudyInfo.id)})")
+                    "(?<studyId>\\\\Q${oldStudyInfo.id}\\\\E)")
         }
         if (hasName) {
             fileNamePattern = fileNamePattern.replaceFirst('<<STUDY_NAME>>',
-                    "(?P<studyName>${Pattern.quote(oldStudyInfo.name)})")
+                    "(?<studyName>\\\\Q${oldStudyInfo.name}\\\\E)")
         }
         Pattern pattern = Pattern.compile(fileNamePattern)
         Matcher matcher = null
@@ -48,13 +55,23 @@ class FileAdaptUtils {
             return matcher.matches()
         }
         String newFileName = oldFile.name
+        TreeMap<String, String> replacements = new TreeMap<>(new Comparator<String>() {
+            @Override
+            int compare(String group1, String group2) {
+                return -(matcher.start(getNamedGroupIndex(pattern, group1)) -
+                        matcher.start(getNamedGroupIndex(pattern, group2)))
+            }
+        })
         if (hasId) {
-            newFileName = newFileName.substring(0, matcher.start('studyId')) + studyInfo.id +
-                    newFileName.substring(matcher.end('studyId'))
+            replacements.put('studyId', studyInfo.id)
         }
         if (hasName) {
-            newFileName = newFileName.substring(0, matcher.start('studyName')) + studyInfo.name +
-                    newFileName.substring(matcher.end('studyName'))
+            replacements.put('studyName', studyInfo.name)
+        }
+        for (def replacement : replacements.entrySet()) {
+            def group = getNamedGroupIndex(pattern, replacement.key)
+            newFileName = newFileName.substring(0, matcher.start(group)) + studyInfo.name +
+                    newFileName.substring(matcher.end(group))
         }
         return [oldFile: oldFile, newFile: new File(oldFile.parentFile, newFileName)]
     }
