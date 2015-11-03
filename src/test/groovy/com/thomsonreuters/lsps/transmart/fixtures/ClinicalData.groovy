@@ -1,8 +1,11 @@
 package com.thomsonreuters.lsps.transmart.fixtures
+
 import com.thomsonreuters.lsps.transmart.TdfUtils
 import com.thomsonreuters.lsps.transmart.etl.ClinicalDataProcessor
 import com.thomsonreuters.lsps.transmart.etl.DataProcessor
 import com.thomsonreuters.lsps.transmart.etl.mappings.ClinicalDataMapping
+import com.thomsonreuters.lsps.transmart.util.TempStorage
+
 /**
  * Date: 27.04.2015
  * Time: 13:59
@@ -13,6 +16,17 @@ class ClinicalData extends AbstractData<ClinicalData> {
     @Override
     protected DataProcessor newDataProcessor(config) {
         return new ClinicalDataProcessor(config)
+    }
+
+    static build(String studyId, String studyName, @DelegatesTo(ClinicalDataBuilder) Closure closure) {
+        def studyInfo = new StudyInfo(studyId, studyName)
+        def dir = TempStorage.instance.createSingletonTempDirectory(
+                "${studyName}_${studyId}_ClinicalData_${UUID.randomUUID()}") { dir ->
+            ClinicalDataBuilder builder = new ClinicalDataBuilder(dir, studyInfo)
+            closure.delegate = builder
+            closure.call()
+        }
+        return new ClinicalData(dir: dir, studyInfo: studyInfo)
     }
 
     @Override
@@ -30,3 +44,4 @@ class ClinicalData extends AbstractData<ClinicalData> {
         mappingFile.renameTo(newMappingFile)
     }
 }
+

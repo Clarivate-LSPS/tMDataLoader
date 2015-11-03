@@ -84,16 +84,16 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         age.required
         age.missingValueIds == []
         age.violatedRangeChecks == [
-                '30-50'                      : ['HCC2935', 'HCC4006', 'HCC827', 'NCIH3255', 'PC14', 'SKMEL28', 'SW48'],
-                'Between 30 to 50'           : ['HCC2935', 'HCC4006', 'HCC827', 'NCIH3255', 'PC14', 'SKMEL28', 'SW48'],
-                'Greater than 30, when "Sex" is equal to "Male"'            : ['HCC827', 'NCIH3255'],
-                '>30'                        : ['HCC2935', 'HCC4006', 'HCC827', 'NCIH3255', 'PC14', 'SW48'],
-                'Greater than or equal to 20': ['NCIH3255', 'SW48'],
-                '>=20'                       : ['NCIH3255', 'SW48'],
-                'Lesser than 50'             : ['SKMEL28'],
-                '<50'                        : ['SKMEL28'],
-                'Lesser than or equal to 20' : ['HCC4006', 'HCC827', 'NCIH1650', 'NCIH1975', 'PC14', 'SKMEL28'],
-                '<=20'                       : ['HCC4006', 'HCC827', 'NCIH1650', 'NCIH1975', 'PC14', 'SKMEL28']
+                '30-50'                                         : ['HCC2935', 'HCC4006', 'HCC827', 'NCIH3255', 'PC14', 'SKMEL28', 'SW48'],
+                'Between 30 to 50'                              : ['HCC2935', 'HCC4006', 'HCC827', 'NCIH3255', 'PC14', 'SKMEL28', 'SW48'],
+                'Greater than 30, when "Sex" is equal to "Male"': ['HCC827', 'NCIH3255'],
+                '>30'                                           : ['HCC2935', 'HCC4006', 'HCC827', 'NCIH3255', 'PC14', 'SW48'],
+                'Greater than or equal to 20'                   : ['NCIH3255', 'SW48'],
+                '>=20'                                          : ['NCIH3255', 'SW48'],
+                'Lesser than 50'                                : ['SKMEL28'],
+                '<50'                                           : ['SKMEL28'],
+                'Lesser than or equal to 20'                    : ['HCC4006', 'HCC827', 'NCIH1650', 'NCIH1975', 'PC14', 'SKMEL28'],
+                '<=20'                                          : ['HCC4006', 'HCC827', 'NCIH1650', 'NCIH1975', 'PC14', 'SKMEL28']
         ]
 
         def sex = demo.variables.'Sex'
@@ -278,20 +278,20 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat(sql, hasNode("$demoPath\\Language\\French\\Baseline\\").withPatientCount(2))
     }
 
-    def 'it produces list of duplicates if necessary'(){
+    def 'it produces list of duplicates if necessary'() {
         when:
-            def clinicalData = Fixtures.clinicalDataWithDublicated
-            def expectedFile = new File(clinicalData.dir, 'ExpectedDuplicates.csv')
-            def actualFile = new File(clinicalData.dir, 'duplicates.csv')
-            actualFile.delete()
-            config.checkDuplicates = true
-            clinicalData.load(config)
+        def clinicalData = Fixtures.clinicalDataWithDuplicatedPatientId
+        def expectedFile = new File(clinicalData.dir, 'ExpectedDuplicates.csv')
+        def actualFile = new File(clinicalData.dir, 'duplicates.csv')
+        actualFile.delete()
+        config.checkDuplicates = true
+        clinicalData.load(config)
         then:
-            actualFile.exists()
-            actualFile.readLines() == expectedFile.readLines()
+        actualFile.exists()
+        actualFile.readLines() == expectedFile.readLines()
     }
 
-    def 'it does not produces list of duplicates if no duplicates exists'(){
+    def 'it does not produces list of duplicates if no duplicates exists'() {
         when:
         def clinicalData = Fixtures.clinicalData
         def expectedFile = new File(clinicalData.dir, 'ExpectedDuplicates.csv')
@@ -303,3 +303,6 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         !actualFile.exists()
     }
 }
+
+
+
