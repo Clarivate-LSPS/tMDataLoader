@@ -30,17 +30,37 @@ class TempStorage {
      * If optional newName provided, then it uses provided parameter as directory name.
      * If optional block provided, then it will be called for newly created directory (if no directory exists)
      *
-     * @param template - template directory
-     * @param newName - name of singleton temp directory
-     * @param block - initialization block
+     * @param template template directory
+     * @param newName name of singleton temp directory
+     * @param block initialization block
      * @return singleton temp directory file
      */
     public File createSingletonTempDirectoryFrom(
             File template, String newName=null,
             @ClosureParams(value=SimpleType.class, options = "java.io.File") Closure block=null) {
-        File dstDir = new File(tmpDir, newName ?: template.name)
-        if (!dstDir.exists()) {
+        return createSingletonTempDirectory(newName ?: template.name) { dstDir ->
             FileUtils.copyDirectory(template, dstDir)
+            if (block != null) {
+                block(dstDir)
+            }
+        }
+    }
+
+    /**
+     * Creates singleton temp directory.
+     * It will do nothing if temp directory with this name already exists.
+     * If optional block provided, then it will be called for newly created directory (if no directory exists)
+     *
+     * @param name temp directory name
+     * @param block initialization block
+     * @return singleton temp directory {@link java.io.File File} object
+     */
+    public File createSingletonTempDirectory(
+            String name,
+            @ClosureParams(value=SimpleType.class, options = "java.io.File") Closure block=null) {
+        File dstDir = new File(tmpDir, name)
+        if (!dstDir.exists()) {
+            FileUtils.forceMkdir(dstDir)
             if (block != null) {
                 block(dstDir)
             }
@@ -48,6 +68,7 @@ class TempStorage {
         }
         return dstDir
     }
+
 
     public File createTempFile(String prefix, String suffix) {
         File file = File.createTempFile(prefix, suffix, this.tmpDir)

@@ -94,8 +94,8 @@ class Fixtures {
         return studiesDir.studyDir('Test Study With Single Visit Name', 'GSE0SINGLEVN').clinicalData
     }
 
-    static ClinicalData getClinicalDataWithDublicated() {
-        return studiesDir.studyDir('Test Study With Dublicated Patiend ID', 'GSE0DUB').clinicalData
+    static ClinicalData getClinicalDataWithDuplicatedPatientId() {
+        return studiesDir.studyDir('Test Study With Duplicated Patient ID', 'GSE0DUPPID').clinicalData
     }
 
     static ProteinData getProteinData() {
