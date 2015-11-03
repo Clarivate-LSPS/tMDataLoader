@@ -8,6 +8,7 @@ import spock.lang.Specification
 import static com.thomsonreuters.lsps.transmart.Fixtures.getAdditionalStudiesDir
 import static com.thomsonreuters.lsps.transmart.Fixtures.studyDir
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.*
+import static org.hamcrest.CoreMatchers.equalTo
 import static org.hamcrest.core.IsNot.not
 import static org.junit.Assert.assertThat
 
@@ -32,9 +33,10 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
 
     void testItLoadsAge() {
         setup:
-        clinicalData.load(config)
+        def result = clinicalData.load(config)
 
         expect:
+        assertThat("Clinical data loading shouldn't fail", result, equalTo(true))
         assertThat(db, hasRecord('i2b2demodata.patient_dimension',
                 ['sourcesystem_cd': "${studyId}:HCC827"], [age_in_years_num: 20]))
     }
@@ -44,9 +46,10 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         def expectedFile = new File(clinicalData.dir, 'ExpectedSummaryStatistic.txt')
         def actualFile = new File(clinicalData.dir, 'SummaryStatistic.txt')
         actualFile.delete()
-        clinicalData.load(config)
+        def result = clinicalData.load(config)
 
         then:
+        assertThat("Clinical data loading shouldn't fail", result, equalTo(true))
         actualFile.exists()
         actualFile.text == expectedFile.text
     }
@@ -138,9 +141,10 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         String conceptPath = "\\Test Studies\\${tagClinicalData.studyName}\\"
         String conceptPathForPatient = conceptPath + tagClinicalData.studyId + '\\eText\\'
 
-        tagClinicalData.load(config)
+        def result = tagClinicalData.load(config)
 
         expect:
+        assertThat("Clinical data loading shouldn't fail", result, equalTo(true))
         assertThat(sql, hasPatient('HCC2935').inTrial(studyId))
         assertThat(sql, hasNode(conceptPathForPatient + 'tag1\\').withPatientCount(5))
         assertThat(sql, hasNode(conceptPathForPatient + 'tag2\\').withPatientCount(4))
@@ -186,8 +190,9 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
     def 'it should load category_cd and data_label with plus sign'() {
         when:
         def clinicalData = Fixtures.clinicalDataWithPlusSign
-        clinicalData.load(config)
+        def result = clinicalData.load(config)
         then:
+        assertThat("Clinical data loading shouldn't fail", result, equalTo(true))
         assertThat(sql, hasNode("\\Test Studies\\$clinicalData.studyName\\Subjects+\\Demographics+\\").withPatientCount(1))
         assertThat(sql, hasNode("\\Test Studies\\$clinicalData.studyName\\Subjects+\\Demographics+\\").withPatientCount(1))
         assertThat(sql, hasNode("\\Test Studies\\$clinicalData.studyName\\Subjects+\\Demographics+\\Language++\\").withPatientCount(1))
@@ -198,8 +203,9 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
     def 'it should load category_cd with terminator'() {
         when:
         def clinicalData = Fixtures.clinicalDataWithTerminator
-        clinicalData.load(config)
+        def result = clinicalData.load(config)
         then:
+        assertThat("Clinical data loading shouldn't fail", result, equalTo(true))
         assertThat(sql, hasNode("\\Test Studies\\$clinicalData.studyName\\Subjects\\Demographics\\").withPatientCount(9))
 
         assertThat(sql, hasNode("\\Test Studies\\$clinicalData.studyName\\Subjects\\Demographics\\Language\\").withPatientCount(5))
@@ -225,10 +231,11 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
     def 'it should load category_cd with data value'() {
         when:
         def clinicalData = Fixtures.clinicalDataWithDataValueInPath
-        clinicalData.load(config)
+        def result = clinicalData.load(config)
         def demoPath = "\\Test Studies\\$clinicalData.studyName\\Subjects\\Demographics"
 
         then:
+        assertThat("Clinical data loading shouldn't fail", result, equalTo(true))
         assertThat(sql, hasNode("$demoPath\\Female\\Baseline\\French\\Sex (SEX)\\").withPatientCount(2))
         assertThat(sql, hasNode("$demoPath\\Female\\Visit 7\\French\\Sex (SEX)\\").withPatientCount(1))
         assertThat(sql, hasNode("$demoPath\\Female\\Baseline\\Not specified\\Sex (SEX)\\").withPatientCount(2))
@@ -246,10 +253,11 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
     def 'it should remove single visit name by default'() {
         when:
         def clinicalData = Fixtures.clinicalDataWithSingleVisitName
-        clinicalData.load(config)
+        def result = clinicalData.load(config)
         def demoPath = "\\Test Studies\\$clinicalData.studyName\\Subjects\\Demographics"
 
         then:
+        assertThat("Clinical data loading shouldn't fail", result, equalTo(true))
         assertThat(sql, hasNode("$demoPath\\Female\\French\\Sex (SEX)\\").withPatientCount(2))
         assertThat(sql, hasNode("$demoPath\\Female\\Not specified\\Sex (SEX)\\").withPatientCount(2))
         assertThat(sql, hasNode("$demoPath\\Female\\English\\Sex (SEX)\\").withPatientCount(1))
@@ -265,10 +273,11 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         when:
         def clinicalData = Fixtures.clinicalDataWithSingleVisitName
         config.alwaysSetVisitName = true
-        clinicalData.load(config)
+        def result = clinicalData.load(config)
         def demoPath = "\\Test Studies\\$clinicalData.studyName\\Subjects\\Demographics"
 
         then:
+        assertThat("Clinical data loading shouldn't fail", result, equalTo(true))
         assertThat(sql, hasNode("$demoPath\\Female\\Baseline\\French\\Sex (SEX)\\").withPatientCount(2))
         assertThat(sql, hasNode("$demoPath\\Female\\Baseline\\Not specified\\Sex (SEX)\\").withPatientCount(2))
         assertThat(sql, hasNode("$demoPath\\Female\\Baseline\\English\\Sex (SEX)\\").withPatientCount(1))
@@ -285,10 +294,11 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         def actualFile = new File(clinicalData.dir, 'duplicates.csv')
         actualFile.delete()
         config.checkDuplicates = true
-        clinicalData.load(config)
+        def result = clinicalData.load(config)
         then:
+        assertThat("Clinical data loading should fail", result, equalTo(false))
         actualFile.exists()
-        actualFile.readLines() == expectedFile.readLines()
+        actualFile.readLines().sort() == expectedFile.readLines().sort()
     }
 
     def 'it does not produces list of duplicates if no duplicates exists'() {
@@ -298,9 +308,39 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         def actualFile = new File(clinicalData.dir, 'duplicates.csv')
         actualFile.delete()
         config.checkDuplicates = true
-        clinicalData.load(config)
+        def result = clinicalData.load(config)
         then:
+        assertThat("Clinical data loading shouldn't fail", result, equalTo(true))
         !actualFile.exists()
+    }
+
+    def "it should load multiple values for same data label"() {
+        given:
+        def clinicalData = ClinicalData.build('GSE0DUPPATHS', 'Test Study With Duplicate Paths') {
+            dataFile('AESTATUS.txt', ['System', 'Active']) {
+                forSubject('50015') {
+                    row 'Neuro', 'Headache', ''
+                    row 'Neuro', 'Unsteadiness', ''
+                }
+            }
+
+            mappingFile {
+                forDataFile('AESTATUS.txt') {
+                    mapSpecial 'DATA_LABEL', 3
+                    mapLabelSource 'Med_His+Active', 4, '3B'
+                }
+            }
+        }
+        def medHistoryPath = "\\Test Studies\\$clinicalData.studyName\\Med His"
+
+        when:
+        def result = clinicalData.load(config)
+
+        then:
+        assertThat("Clinical data loading shouldn't fail", result, equalTo(true))
+
+        assertThat(sql, hasNode("$medHistoryPath\\Active\\Neuro\\Headache\\"))
+        assertThat(sql, hasNode("$medHistoryPath\\Active\\Neuro\\Unsteadiness\\"))
     }
 }
 
