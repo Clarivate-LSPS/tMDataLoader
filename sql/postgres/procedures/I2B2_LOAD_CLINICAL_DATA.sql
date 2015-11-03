@@ -487,26 +487,6 @@ BEGIN
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Set visit_name to null when found in data_value',rowCt,stepCt,'Done') into rtnCd;
 
-	-- set visit_name to null if category_path uses terminator and VISITNAME not in path. Avoids duplicates for wt_trial_nodes
-	begin
-		update wrk_clinical_data t
-		set visit_name=null
-		where category_path like '%\\$' and category_path not like '%VISITNAME%';
-
-		get diagnostics rowCt := ROW_COUNT;
-		exception
-		when others then
-			errorNumber := SQLSTATE;
-			errorMessage := SQLERRM;
-			--Handle errors.
-			select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
-			--End Proc
-			select cz_end_audit (jobID, 'FAIL') into rtnCd;
-			return -16;
-	end;
-	stepCt := stepCt + 1;
-	perform cz_write_audit(jobId,databaseName,procedureName,'Set visit_name to null when terminator used and visit_name not in category_path',rowCt,stepCt,'Done');
-
 	--	set visit_name to null if only DATALABEL in category_cd
 
 	-- TR: disabled!!!!
@@ -662,17 +642,38 @@ BEGIN
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Add if missing DATALABEL, VISITNAME and DATAVALUE to category_path',rowCt,stepCt,'Done') into rtnCd;
 
+	-- set visit_name and data_label to NULL if not found in category_path. Avoids duplicates for wt_trial_nodes
+	update wrk_clinical_data t
+	set visit_name=null
+	where category_path not like '%VISITNAME%';
+
+	get diagnostics rowCt := ROW_COUNT;
+
+	stepCt := stepCt + 1;
+	perform cz_write_audit(jobId,databaseName,procedureName,'Set visit_name to null if VISITNAME not in category_path',rowCt,stepCt,'Done');
+
+	update wrk_clinical_data t
+	set data_label=null
+	where category_path not like '%DATALABEL%';
+
+	get diagnostics rowCt := ROW_COUNT;
+
+	stepCt := stepCt + 1;
+	perform cz_write_audit(jobId,databaseName,procedureName,'Set data_label to null if DATALABEL not in category_path',rowCt,stepCt,'Done');
+
 	WITH duplicates AS (
 		DELETE FROM wrk_clinical_data
-		WHERE (subject_id, coalesce(visit_name, '**NULL**'), data_label, category_cd) in (
-			SELECT subject_id, coalesce(visit_name, '**NULL**'), data_label, category_cd
+		WHERE (subject_id, coalesce(visit_name, '**NULL**'), coalesce(data_label, '**NULL**'), category_cd, data_value) in (
+			SELECT subject_id, coalesce(visit_name, '**NULL**'), coalesce(data_label, '**NULL**'), category_cd, data_value
 			FROM wrk_clinical_data
-			GROUP BY subject_id, visit_name, data_label, category_cd
+			WHERE data_type = 'T'
+			GROUP BY subject_id, visit_name, data_label, category_cd, data_value
 			HAVING count(*) > 1)
 		RETURNING *
 	)
 	INSERT INTO wrk_clinical_data
-	SELECT DISTINCT * FROM duplicates;
+	SELECT DISTINCT ON (subject_id, coalesce(visit_name, '**NULL**'), data_label, category_cd, data_value) *
+	FROM duplicates;
 	get diagnostics rowCt := ROW_COUNT;
 
 	stepCt := stepCt + 1;
