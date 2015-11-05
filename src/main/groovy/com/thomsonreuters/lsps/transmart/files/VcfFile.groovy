@@ -1,6 +1,4 @@
 package com.thomsonreuters.lsps.transmart.files
-
-import org.apache.commons.csv.CSVRecord
 /**
  * CelFilesConverter
  * Created by bondarev on 3/25/14.
@@ -31,9 +29,17 @@ class VcfFile extends CsvLikeFile implements MetaInfoHeader {
     }
 
     static class InfoField {
+        enum Type {
+            Integer,
+            Float,
+            Flag,
+            Character,
+            String;
+        }
+
         String id
         String description
-        String type
+        Type type
         String number
     }
 
@@ -131,7 +137,16 @@ class VcfFile extends CsvLikeFile implements MetaInfoHeader {
             }
             infoString.split(';').collectEntries {
                 def parts = it.split('=', 2)
-                [infoFields[parts[0]] ?: new InfoField(id: parts[0]), parts[1].split(',', -1)]
+                def infoField = infoFields[parts[0]] ?: new InfoField(id: parts[0])
+                String[] values
+                if (parts.length > 1) {
+                    values = parts[1].split(',', -1)
+                } else if (infoField.type == InfoField.Type.Flag) {
+                    values = ['1'] as String[]
+                } else {
+                    values = [] as String[]
+                }
+                [infoField, values]
             }
         }
     }

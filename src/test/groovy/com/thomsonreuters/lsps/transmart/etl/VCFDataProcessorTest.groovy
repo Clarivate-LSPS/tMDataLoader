@@ -160,6 +160,11 @@ class VCFDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase
         assertThatVcfDataForSubject1IsLoaded(vcfData.studyId, gplId, dataSetId)
         assertThatVcfDataForSubject2IsLoaded(vcfData.studyId, gplId, dataSetId, 2)
 
+        // Check info field without value
+        assertThat(db, hasRecord('deapp.de_variant_population_data',
+                [dataset_id: dataSetId, chr: '22', pos:  16050624, info_name: 'DB', info_index: 0],
+                [integer_value: 1, float_value: null, text_value: null]))
+
         // verify deapp.de_variant_subject_detail
         assertThat(db, hasRecord('deapp.de_variant_subject_detail',
                 [dataset_id: dataSetId, chr: '22', pos: 16050408, rs_id: 'rs149201999'],
@@ -176,7 +181,7 @@ class VCFDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase
         assertThat(db, hasRecord('deapp.de_variant_subject_detail',
                 [dataset_id: dataSetId, chr: '22', pos: 16050624, rs_id: 'rs146752879'],
                 [ref: 'C', alt: 'G', qual: '100', filter: 'PASS',
-                 info: 'TST_FLAG=0;AC=184;RSQ=0.8228;AVGPOST=0.9640;AN=2184;ERATE=0.0031;VT=SNP;AA=.;THETA=0.0127;LDAF=0.0902;SNPSOURCE=LOWCOV;AF=0.08;ASN_AF=0.08;AMR_AF=0.14;AFR_AF=0.08;EUR_AF=0.07',
+                 info: 'DB;TST_FLAG=0;AC=184;RSQ=0.8228;AVGPOST=0.9640;AN=2184;ERATE=0.0031;VT=SNP;AA=.;THETA=0.0127;LDAF=0.0902;SNPSOURCE=LOWCOV;AF=0.08;ASN_AF=0.08;AMR_AF=0.14;AFR_AF=0.08;EUR_AF=0.07',
                  format: 'DS:GL', variant_value: '1.000:-2.05,-0.01,-1.71\t1.000:-0.86,-0.06,-5.00']))
     }
 
