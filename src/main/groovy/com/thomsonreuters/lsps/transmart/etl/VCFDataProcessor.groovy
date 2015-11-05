@@ -163,21 +163,21 @@ class VCFDataProcessor extends DataProcessor {
             VcfFile.InfoField infoField = it.key
             Object[] values = it.value
             if (infoField != null && infoField.type != null) {
-                String type = infoField.type.toLowerCase()
+                def type = infoField.type
                 Integer intValue
                 Float floatValue
                 String textValue
                 values.eachWithIndex { value, int idx ->
                     switch (type) {
-                        case 'integer':
-                        case 'flag':
+                        case VcfFile.InfoField.Type.Integer:
+                        case VcfFile.InfoField.Type.Flag:
                             intValue = value as int
                             break
-                        case 'float':
+                        case VcfFile.InfoField.Type.Float:
                             floatValue = value as float
                             break
-                        case 'character':
-                        case 'string':
+                        case VcfFile.InfoField.Type.Character:
+                        case VcfFile.InfoField.Type.String:
                             textValue = value as String
                             break
                     }
