@@ -163,10 +163,7 @@ BEGIN
 			--	  ,sample_cd
 			--	  ,subject_id
 			from wt_subject_mirna_probeset
-			where trial_name = TrialId
-                        ;
-		select count(*) into nbrRecs from wt_subject_MIRNA_logs where log_intensity > 0;
-		cz_write_audit(jobId,databaseName,procedureName,'logBase: ' || logBase || ' DUMP-1: ' || nbrRecs,SQL%ROWCOUNT,stepCt,'Done');
+			where trial_name = TrialId;
            
 		--end if;
   elsif dataType = 'L' then
@@ -247,8 +244,6 @@ BEGIN
 	--cz_write_audit(jobId,databaseName,procedureName,'Create index on TM_WZ wt_subject_mirna_calcs',0,stepCt,'Done');
 		
 -- calculate zscore
-	select count(*) into nbrRecs from wt_subject_MIRNA_logs where log_intensity > 0;
-	cz_write_audit(jobId,databaseName,procedureName,'DUMP0: ' || nbrRecs,SQL%ROWCOUNT,stepCt,'Done');
 
 	insert into wt_subject_mirna_med parallel 
 	(probeset_id
@@ -296,9 +291,6 @@ BEGIN
 		cz_write_audit(jobId,databaseName,procedureName,'Less than 10M records, index drop bypassed',0,stepCt,'Done');
 	end if;
 */
-
-	select count(*) into nbrRecs from wt_subject_MIRNA_med where log_intensity > 0;
-	cz_write_audit(jobId,databaseName,procedureName,'DUMP1: ' || nbrRecs,SQL%ROWCOUNT,stepCt,'Done');
 
 	insert into de_subject_mirna_data
 	(trial_source
