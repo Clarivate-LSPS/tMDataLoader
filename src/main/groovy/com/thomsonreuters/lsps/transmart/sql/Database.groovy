@@ -4,6 +4,8 @@ import com.thomsonreuters.lsps.transmart.util.TempStorage
 import groovy.sql.Sql
 import org.codehaus.groovy.control.io.NullWriter
 
+import java.util.regex.Pattern
+
 /**
  * Created by bondarev on 4/3/14.
  */
@@ -63,6 +65,8 @@ class Database {
         return Runtime.runtime.exec(cmd as String[], env as String[], dir)
     }
 
+    private final RE_ORACLE_SPLITTER = Pattern.compile(/^\/\s*$/, Pattern.MULTILINE)
+
     private File prepareScript(File sqlFile) {
         File tmpFile = TempStorage.instance.createTempFile("script", ".sql")
 
@@ -74,9 +78,12 @@ class Database {
             } else if (databaseType == DatabaseType.Oracle) {
                 it.println("ALTER SESSION SET CURRENT_SCHEMA=${controlSchema};")
                 it.println('/')
-                it.println(content)
-                it.println('/')
-                it.println("exit;")
+                def parts = RE_ORACLE_SPLITTER.split(content)
+                for (def part : parts) {
+                    it.println(content)
+                    it.println('/')
+                }
+                it.println("exit SQL.SQLCODE;")
             }
         }
         return tmpFile;
