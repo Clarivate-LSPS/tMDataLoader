@@ -127,7 +127,7 @@ class VCFDataProcessor extends DataProcessor {
             piRecords = DataLoader.start(database, 'deapp.de_variant_population_info',
                     ['DATASET_ID', 'INFO_NAME', 'DESCRIPTION', 'TYPE', 'NUMBER']) { populationInfo ->
                 vcfFile.infoFields.values().each {
-                    populationInfo.addBatch([dataSetId, it.id, it.description, it.type, it.number])
+                    populationInfo.addBatch([dataSetId, it.id, it.description, it.type.toString(), it.number])
                 }
             }
 
