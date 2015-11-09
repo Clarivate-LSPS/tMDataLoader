@@ -1,3 +1,7 @@
+SET DEFINE ON;
+
+DEFINE TM_CZ_SCHEMA='TM_CZ';
+
 CREATE OR REPLACE PROCEDURE "I2B2_PROCESS_QPCR_MIRNA_DATA"
 (
   trial_id 		VARCHAR2
@@ -918,6 +922,11 @@ BEGIN
 --	tag data with probeset_id from reference.probeset_deapp
 
 	execute immediate ('truncate table tm_wz.WT_SUBJECT_MIRNA_PROBESET');
+
+        dbms_stats.gather_table_stats('&TM_CZ_SCHEMA', 'MIRNA_PROBESET_DEAPP', cascade => true);
+        dbms_stats.gather_table_stats('TM_LZ', 'LT_SRC_QPCR_MIRNA_DATA', cascade => true);
+        dbms_stats.gather_table_stats('TM_LZ', 'LT_SRC_MIRNA_SUBJ_SAMP_MAP', cascade => true);
+        dbms_stats.gather_table_stats('DEAPP', 'DE_SUBJECT_SAMPLE_MAPPING', cascade => true);
 
 	--	note: assay_id represents a unique subject/site/sample
 
