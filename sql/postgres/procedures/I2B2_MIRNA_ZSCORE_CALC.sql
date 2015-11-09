@@ -102,7 +102,7 @@ BEGIN
 	--	if dataType = R, always use intensity_value
 
 
-	if dataType = 'L' then
+	if dataType = 'R' then
 		begin
 		insert into WT_SUBJECT_MIRNA_LOGS 
 			(probeset_id
@@ -130,9 +130,35 @@ BEGIN
 			perform cz_end_audit (jobID, 'FAIL');
 			return -16;
 		end;
+	elsif dataType = 'L' then
+		begin
+			insert into WT_SUBJECT_MIRNA_LOGS
+			(probeset_id
+				,intensity_value
+				,assay_id
+				,log_intensity
+				,patient_id
+			 --	,sample_cd
+			 --	,subject_id
+			)
+				select probeset_id
+					,power(2, intensity_value) ----UAT 154 changes done on 19/03/2014
+					,assay_id
+					,intensity_value
+					,patient_id
+				--	  ,sample_cd
+				--	  ,subject_id
+				from WT_SUBJECT_MIRNA_PROBESET
+				where trial_name = TrialId;
+		exception
+		when others then
+			perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+			perform cz_end_audit (jobID, 'FAIL');
+			return -16;
+		end;
 	else	
 		begin
-                	insert into WT_SUBJECT_MIRNA_LOGS 
+      insert into WT_SUBJECT_MIRNA_LOGS
 			(probeset_id
 			,intensity_value
 			,assay_id
@@ -261,18 +287,17 @@ BEGIN
 		  ,TrialId
 	      ,m.assay_id
 	      ,cast(m.probeset_id AS INTEGER)
-		  ,case when dataType = 'R' then m.intensity_value
-				when dataType = 'L' 
-				then m.intensity_value
+		  ,case
+			 	when dataType in ('R', 'L') then m.intensity_value
 				else null
-				end as raw_intensity
+			end as raw_intensity
 	    --  ,decode(dataType,'R',m.intensity_value,'L',power(logBase, m.log_intensity),null)
-		  ,case when dataType = 'R' then -(m.intensity_value)
-				when dataType = 'L' 
-				then m.log_intensity
+		  ,case
+			 	when dataType in ('R', 'L')
+			 	then m.log_intensity
 				else null
-				end
-	      ,(CASE WHEN m.zscore < -2.5 THEN -2.5 WHEN m.zscore >  2.5 THEN  2.5 ELSE round(m.zscore,5) END)
+			end
+	    ,(CASE WHEN m.zscore < -2.5 THEN -2.5 WHEN m.zscore >  2.5 THEN  2.5 ELSE round(m.zscore,5) END)
               --,m.zscore
 		  ,m.patient_id
 	--	  ,m.sample_id
