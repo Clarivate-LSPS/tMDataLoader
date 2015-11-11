@@ -45,7 +45,10 @@ class CsvDataLoader extends DataLoader {
                 block.call(new BatchWriter(printer))
                 printer.flush()
             } catch (Throwable ex){
-                out.cancelCopy()
+                try {
+                    out.cancelCopy()
+                } catch (Exception ignored) {
+                }
                 throw ex;
             }
             return out.endCopy()
