@@ -237,19 +237,23 @@ class VCFDataProcessor extends DataProcessor {
                 reference = (allele1.is(null) || allele1 == 0) && (allele2.is(null) || allele2 == 0)
             }
 
-            st.addBatch([trialId, sampleEntry.key, entry.probesetId, entry.chromosome, entry.chromosomePosition,
-                         variant, variantFormat, variantType,
-                         reference, allele1, allele2
-            ])
+            entry.probesetIds.each { probesetId ->
+                st.addBatch([trialId, sampleEntry.key, probesetId, entry.chromosome, entry.chromosomePosition,
+                             variant, variantFormat, variantType,
+                             reference, allele1, allele2
+                ])
+            }
         }
     }
 
     private def writeVariantSubjectDetailRecord(CharSequence trialId, def st, VcfFile.Entry entry) {
-        st.addBatch([
-                trialId, entry.probesetId, entry.chromosome, entry.chromosomePosition, entry.reference,
-                entry.alternatives.join(','), entry.qual, entry.filter, entry.infoString, entry.formatString,
-                entry.sampleValues.join('\t')
-        ])
+        entry.probesetIds.each { probesetId ->
+            st.addBatch([
+                    trialId, probesetId, entry.chromosome, entry.chromosomePosition, entry.reference,
+                    entry.alternatives.join(','), entry.qual, entry.filter, entry.infoString, entry.formatString,
+                    entry.sampleValues.join('\t')
+            ])
+        }
     }
 
     private void loadPlatform(jobId, Sql sql, studyInfo) {
