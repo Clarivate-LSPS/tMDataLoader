@@ -50,12 +50,14 @@ class VcfFile extends CsvLikeFile implements MetaInfoHeader {
         private Map samplesData
         private Map<InfoField, Object[]> infoData
         private String[] alternatives
+        private String[] probesetIds
 
         void setData(data) {
             this.data = data
             this.samplesData = null
             this.infoData = null
             this.alternatives = (~/,/).split(alternativesString, -1)
+            this.probesetIds = (~/;/).split(probesetIdsString, -1)
         }
 
         CharSequence getChromosome() {
@@ -66,7 +68,7 @@ class VcfFile extends CsvLikeFile implements MetaInfoHeader {
             data[posColumnIndex] as long
         }
 
-        String getProbesetId() {
+        String getProbesetIdsString() {
             data[idColumnIndex]
         }
 
@@ -100,6 +102,10 @@ class VcfFile extends CsvLikeFile implements MetaInfoHeader {
 
         String[] getAlternatives() {
             alternatives
+        }
+
+        String[] getProbesetIds() {
+            probesetIds
         }
 
         Map<CharSequence, SampleData> getSamplesData() {
