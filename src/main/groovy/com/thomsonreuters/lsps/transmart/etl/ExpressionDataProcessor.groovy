@@ -62,7 +62,7 @@ class ExpressionDataProcessor extends DataProcessor {
 
     @Override
     public boolean runStoredProcedures(Object jobId, Sql sql, Object studyInfo) {
-        def studyId = studyInfo['id']
+        def studyId = studyInfo['id']?.toUpperCase()
         def studyNode = studyInfo['node']
         def studyDataType = studyInfo['datatype']
 
@@ -116,7 +116,7 @@ class ExpressionDataProcessor extends DataProcessor {
                         throw new Exception("Incorrect mapping file: mandatory columns not defined")
 
                     platformList << cols[4]
-                    studyIdList << cols[0]
+                    studyIdList << cols[0]?.toUpperCase()
 
                     // Loading default value if tissue_type is empty
                     String tissueType = cols[5]

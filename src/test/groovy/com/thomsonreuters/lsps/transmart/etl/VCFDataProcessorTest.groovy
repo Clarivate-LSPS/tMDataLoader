@@ -1,6 +1,7 @@
 package com.thomsonreuters.lsps.transmart.etl
 
 import com.thomsonreuters.lsps.transmart.Fixtures
+import com.thomsonreuters.lsps.transmart.fixtures.Study
 import com.thomsonreuters.lsps.transmart.fixtures.VCFData
 import com.thomsonreuters.lsps.transmart.sql.SqlMethods
 
@@ -28,7 +29,7 @@ class VCFDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase
         _dataProcessor ?: (_dataProcessor = new VCFDataProcessor(config))
     }
 
-    Calendar today() {
+    static Calendar today() {
         Calendar cal = Calendar.getInstance()
         cal.clear(Calendar.HOUR)
         cal.clear(Calendar.MINUTE)
@@ -147,6 +148,8 @@ class VCFDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase
     }
 
     void testItLoadsVCFFileWithSNVData() {
+        Study.deleteById(config, studyId)
+
         def gplId = 'VCF_hg36'
         def vcfData = Fixtures.vcfData
         assertTrue(vcfData.load(config))
