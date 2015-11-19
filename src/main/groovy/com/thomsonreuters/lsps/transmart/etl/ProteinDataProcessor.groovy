@@ -90,7 +90,7 @@ public class ProteinDataProcessor extends DataProcessor {
                         throw new Exception("Incorrect mapping file: mandatory columns not defined")
 
                     platformList << cols[4]
-                    studyIdList << cols[0]
+                    studyIdList << cols[0]?.toUpperCase()
 
                     stmt.addBatch(cols)
                 }

@@ -177,7 +177,7 @@ BEGIN
 	end if;
 	--	Delete existing observation_fact data, will be repopulated
 	delete from observation_fact obf
-	where (obf.concept_cd, obf.patient_num) =
+	where (obf.concept_cd, obf.patient_num) IN
 		 (select distinct x.concept_code, x.patient_id
 		  from de_subject_sample_mapping x
 		  where x.trial_name = TrialId

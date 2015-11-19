@@ -26,6 +26,7 @@ class VCFDataProcessor extends DataProcessor {
             studyInfo.platformName = metaInfo.PLATFORM_NAME ?: studyInfo.platformId
             studyInfo.species = metaInfo.SPECIES ?: 'Homo Sapiens'
         }
+        studyInfo.id = studyInfo.id?.toUpperCase()
         def sampleMapping = [:]
         csv.eachEntry { String[] it ->
             String subjectId = it[0]

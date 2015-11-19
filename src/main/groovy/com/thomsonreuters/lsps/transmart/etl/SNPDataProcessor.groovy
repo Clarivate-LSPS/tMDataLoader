@@ -166,7 +166,7 @@ class SNPDataProcessor extends DataProcessor {
                                 copyNumberFileList << cols[1]
                             }
                             platformList << cols[6]
-                            studyIdList << cols[2]
+                            studyIdList << cols[2]?.toUpperCase()
 
                             stmt.addBatch(cols[2..-1])
                         }
