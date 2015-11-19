@@ -38,7 +38,10 @@ public trait ConfigAwareTestCase {
     }
 
     void runScript(String scriptName) {
-        File sqlFile = dbScriptsDir.listFiles().find { it.name.endsWith(scriptName) }
+        File sqlFile = new File(dbScriptsDir, scriptName)
+        if (!sqlFile.exists()) {
+            throw new RuntimeException("Can't run script '$sqlFile'. It doens't exists")
+        }
         database.runScript(sqlFile)
     }
 

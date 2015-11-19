@@ -1,5 +1,7 @@
 package com.thomsonreuters.lsps.transmart.etl
 
+import com.thomsonreuters.lsps.transmart.sql.DatabaseType
+
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.*
 import static org.hamcrest.CoreMatchers.not
 import static org.junit.Assert.assertThat
@@ -15,10 +17,15 @@ class I2B2LoadSamplesTest extends GroovyTestCase implements ConfigAwareTestCase 
     void setUp() {
         ConfigAwareTestCase.super.setUp()
         // reload procedure
-        runScript('I2B2_LOAD_SAMPLES.sql')
+        if (database.databaseType != DatabaseType.Oracle) {
+            runScript('I2B2_LOAD_SAMPLES.sql')
+        }
     }
 
     void testItLoadSamples() {
+        if (database.databaseType == DatabaseType.Oracle)
+            return;
+
         def samplesLoader = new SamplesLoader(trialId)
         samplesLoader.addSample('LDR+PLATFORM+TISSUETYPE', 'LDR_TST_SUBJ_001', 'LDR_TST_SMP_001', platform)
         samplesLoader.addSample('LDR+PLATFORM+TISSUETYPE', 'LDR_TST_SUBJ_002', 'LDR_TST_SMP_002', null, tissueType: 'Blood')
