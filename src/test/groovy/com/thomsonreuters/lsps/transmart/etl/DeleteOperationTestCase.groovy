@@ -1,5 +1,6 @@
 package com.thomsonreuters.lsps.transmart.etl
 import com.thomsonreuters.lsps.transmart.Fixtures
+import com.thomsonreuters.lsps.transmart.fixtures.StudyInfo
 import com.thomsonreuters.lsps.transmart.sql.DatabaseType
 import org.hamcrest.core.IsNull
 
@@ -298,19 +299,18 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
     }
 
     void testItDeletesProteinData() {
-        def proteinStudyName = 'Test Protein Study'
-        def proteinStudyId = 'GSE37425'
+        def studyInfo = new StudyInfo('GSE37425', 'Test Protein Study')
 
         proteinDataProcessor.process(
-                new File("fixtures/Test Studies/${proteinStudyName}/ProteinDataToUpload"),
-                [name: proteinStudyName, node: "Test Studies\\${proteinStudyName}".toString()])
+                new File("fixtures/Test Studies/${studyInfo.name}_${studyInfo.id}/ProteinDataToUpload"),
+                [name: studyInfo.name, node: "Test Studies\\${studyInfo.name}".toString()])
 
-        def inpData = ['id'  : proteinStudyId,
-                       'path': "\\Test Studies\\${proteinStudyName}\\"];
+        def inpData = ['id'  : studyInfo.id,
+                       'path': "\\Test Studies\\${studyInfo.name}\\"];
         processorDelete.process(inpData);
 
-        assertThatTopNodeDelete("\\Test Studies\\${proteinStudyName}\\", true);
-        assertRecordsWasDeleted('deapp.de_subject_protein_data', proteinStudyId);
+        assertThatTopNodeDelete("\\Test Studies\\${studyInfo.name}\\", true);
+        assertRecordsWasDeleted('deapp.de_subject_protein_data', studyInfo.id);
     }
 
     void testItDeletesMIRNAData() {
