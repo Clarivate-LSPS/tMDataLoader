@@ -1,7 +1,6 @@
 package com.thomsonreuters.lsps.transmart.etl
-
+import com.thomsonreuters.lsps.transmart.fixtures.Study
 import com.thomsonreuters.lsps.transmart.fixtures.StudyInfo
-import com.thomsonreuters.lsps.transmart.sql.DatabaseType
 
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.*
 import static org.hamcrest.CoreMatchers.equalTo
@@ -23,13 +22,10 @@ class RNASeqDataProcessorTest extends GroovyTestCase implements ConfigAwareTestC
     @Override
     void setUp() {
         ConfigAwareTestCase.super.setUp()
-        sql.execute('delete from i2b2demodata.observation_fact where modifier_cd = ? or sourcesystem_cd = ?', studyId, studyId)
-        sql.execute('delete from deapp.de_subject_sample_mapping where trial_name = ?', studyId)
-        if (database?.databaseType == DatabaseType.Postgres) {
-            runScript('I2B2_PROCESS_RNA_SEQ_DATA.sql')
-        } else if (database?.databaseType == DatabaseType.Oracle) {
-            runScript('I2B2_RNA_SEQ_ANNOTATION.sql')
-        }
+        Study.deleteById(config, studyId)
+
+        runScript('I2B2_RNA_SEQ_ANNOTATION.sql')
+        runScript('I2B2_PROCESS_RNA_SEQ_DATA.sql')
     }
 
     void assertThatSampleIsPresent(String sampleId, sampleData) {
@@ -65,26 +61,17 @@ class RNASeqDataProcessorTest extends GroovyTestCase implements ConfigAwareTestC
         }
     }
 
-
     void testItLoadsData() {
         processor.process(
                 new File("fixtures/Test Studies/${studyName}/RNASeqDataToUpload"),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
         assertThat(db, hasSample(studyId, 'S57024'))
         assertThat(db, hasPatient('0:1').inTrial(studyId))
-        if (database?.databaseType == DatabaseType.Postgres) {
-            assertThat(db, hasNode("\\Test Studies\\${studyName}\\Biomarker Data\\${platformId}\\Intestine\\Test\\").
-                    withPatientCount(2))
-            assertThat(db, hasRecord('deapp.de_subject_sample_mapping',
-                    [trial_name: studyId, gpl_id: platformId, subject_id: '2', sample_cd: 'S57024'],
-                    [platform: 'RNA_AFFYMETRIX']))
-        } else if (database?.databaseType == DatabaseType.Oracle) {
-            assertThat(db, hasNode("\\Test Studies\\${studyName}\\Biomarker Data\\RNA SEQ\\${platformId}\\Intestine\\Test\\").
-                    withPatientCount(2))
-            assertThat(db, hasRecord('deapp.de_subject_sample_mapping',
-                    [trial_name: studyId, gpl_id: platformId, subject_id: '2', sample_cd: 'S57024'],
-                    [platform: 'RNA_SEQ']))
-        }
+        assertThat(db, hasNode("\\Test Studies\\${studyName}\\Biomarker Data\\${platformId}\\Intestine\\Test\\").
+                withPatientCount(2))
+        assertThat(db, hasRecord('deapp.de_subject_sample_mapping',
+                [trial_name: studyId, gpl_id: platformId, subject_id: '2', sample_cd: 'S57024'],
+                [platform: 'RNA_AFFYMETRIX']))
         assertThatSampleIsPresent('S57023', ['ASCC1': 2])
     }
 

@@ -275,7 +275,7 @@ EXECUTE IMMEDIATE 'alter session set NLS_NUMERIC_CHARACTERS=".,"';
 		  from de_subject_sample_mapping x
 		  where x.trial_name = TrialId
 		    and nvl(x.source_cd,'STD') = sourceCD
-		    and x.platform = 'RNA_SEQ');
+		    and x.platform = 'RNA_AFFYMETRIX');
 
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Delete data from observation_fact',SQL%ROWCOUNT,stepCt,'Done');
@@ -327,7 +327,7 @@ EXECUTE IMMEDIATE 'alter session set NLS_NUMERIC_CHARACTERS=".,"';
 	delete from DE_SUBJECT_SAMPLE_MAPPING
 	where trial_name = TrialID
 	  and nvl(source_cd,'STD') = sourceCd
-	  and platform = 'RNA_SEQ'
+	  and platform = 'RNA_AFFYMETRIX'
 	 ; --Making sure only RNA_sequencing data is deleted
 
 	stepCt := stepCt + 1;
@@ -383,7 +383,7 @@ EXECUTE IMMEDIATE 'alter session set NLS_NUMERIC_CHARACTERS=".,"';
 	,node_type
 	)
 	select distinct topNode || regexp_replace(replace(replace(replace(replace(replace(replace(
-	       category_cd,'PLATFORM',title),'ATTR1',attribute_1),'ATTR2',attribute_2),'TISSUETYPE',tissue_type),'+','\'),'_',' ') || '\','(\\){2,}', '\')
+	       category_cd,'PLATFORM',platform),'ATTR1',attribute_1),'ATTR2',attribute_2),'TISSUETYPE',tissue_type),'+','\'),'_',' ') || '\','(\\){2,}', '\')
 		  ,category_cd
 		  ,platform as platform
 		  ,tissue_type
@@ -408,7 +408,7 @@ EXECUTE IMMEDIATE 'alter session set NLS_NUMERIC_CHARACTERS=".,"';
 	,node_type
 	)
 	select distinct topNode || regexp_replace(replace(replace(replace(replace(replace(replace(
-	       substr(category_cd,1,instr(category_cd,'PLATFORM')+8),'PLATFORM',title),'ATTR1',attribute_1),'ATTR2',attribute_2),'TISSUETYPE',tissue_type),'+','\'),'_',' ') || '\',
+	       substr(category_cd,1,instr(category_cd,'PLATFORM')+8),'PLATFORM',platform),'ATTR1',attribute_1),'ATTR2',attribute_2),'TISSUETYPE',tissue_type),'+','\'),'_',' ') || '\',
 		   '(\\){2,}', '\')
 		  ,substr(category_cd,1,instr(category_cd,'PLATFORM')+8)
 		  ,platform as platform
@@ -434,7 +434,7 @@ EXECUTE IMMEDIATE 'alter session set NLS_NUMERIC_CHARACTERS=".,"';
 	,node_type
 	)
 	select distinct topNode || regexp_replace(replace(replace(replace(replace(replace(replace(
-	       substr(category_cd,1,instr(category_cd,'ATTR1')+5),'PLATFORM',title),'ATTR1',attribute_1),'ATTR2',attribute_2),'TISSUETYPE',tissue_type),'+','\'),'_',' ') || '\',
+	       substr(category_cd,1,instr(category_cd,'ATTR1')+5),'PLATFORM',platform),'ATTR1',attribute_1),'ATTR2',attribute_2),'TISSUETYPE',tissue_type),'+','\'),'_',' ') || '\',
 		   '(\\){2,}', '\')
 		  ,substr(category_cd,1,instr(category_cd,'ATTR1')+5)
 		  ,case when instr(substr(category_cd,1,instr(category_cd,'ATTR1')+5),'PLATFORM') > 1 then platform else null end as platform
@@ -462,7 +462,7 @@ EXECUTE IMMEDIATE 'alter session set NLS_NUMERIC_CHARACTERS=".,"';
 	,node_type
 	)
 	select distinct topNode || regexp_replace(replace(replace(replace(replace(replace(replace(
-	       substr(category_cd,1,instr(category_cd,'ATTR2')+5),'PLATFORM',title),'ATTR1',attribute_1),'ATTR2',attribute_2),'TISSUETYPE',tissue_type),'+','\'),'_',' ') || '\',
+	       substr(category_cd,1,instr(category_cd,'ATTR2')+5),'PLATFORM',platform),'ATTR1',attribute_1),'ATTR2',attribute_2),'TISSUETYPE',tissue_type),'+','\'),'_',' ') || '\',
 		   '(\\){2,}', '\')
 		  ,substr(category_cd,1,instr(category_cd,'ATTR2')+5)
 		  ,case when instr(substr(category_cd,1,instr(category_cd,'ATTR2')+5),'PLATFORM') > 1 then platform else null end as platform
@@ -490,7 +490,7 @@ EXECUTE IMMEDIATE 'alter session set NLS_NUMERIC_CHARACTERS=".,"';
 	,node_type
 	)
 	select distinct topNode || regexp_replace(replace(replace(replace(replace(replace(replace(
-	       substr(category_cd,1,instr(category_cd,'TISSUETYPE')+10),'PLATFORM',title),'ATTR1',attribute_1),'ATTR2',attribute_2),'TISSUETYPE',tissue_type),'+','\'),'_',' ') || '\',
+	       substr(category_cd,1,instr(category_cd,'TISSUETYPE')+10),'PLATFORM',platform),'ATTR1',attribute_1),'ATTR2',attribute_2),'TISSUETYPE',tissue_type),'+','\'),'_',' ') || '\',
 		   '(\\){2,}', '\')
 		  ,substr(category_cd,1,instr(category_cd,'TISSUETYPE')+10)
 		  ,case when instr(substr(category_cd,1,instr(category_cd,'TISSUETYPE')+10),'PLATFORM') > 1 then platform else null end as platform
@@ -629,13 +629,13 @@ EXECUTE IMMEDIATE 'alter session set NLS_NUMERIC_CHARACTERS=".,"';
 			  ,a2.concept_cd as timepoint_cd
 			  ,a.attribute_1 as tissue_type
 			  ,a1.concept_cd as tissue_type_cd
-			  ,'RNA_SEQ' as platform
+			  ,'RNA_AFFYMETRIX' as platform
 			  ,pn.concept_cd as platform_cd
 			  ,ln.concept_cd || '-' || to_char(b.patient_num) as data_uid
 			  ,a.platform as gpl_id
 			  ,coalesce(sid.patient_num,b.patient_num) as sample_id
 			  ,a.sample_cd
-			  ,nvl(a.category_cd,'Biomarker_Data+RNA_SEQ+PLATFORM+TISSUETYPE+ATTR1+ATTR2') as category_cd
+			  ,nvl(a.category_cd,'Biomarker_Data+RNA_AFFYMETRIX+PLATFORM+TISSUETYPE+ATTR1+ATTR2') as category_cd
 			  ,a.source_cd
 			  ,TrialId as omic_source_study
 			  ,b.patient_num as omic_patient_id
@@ -734,7 +734,7 @@ EXECUTE IMMEDIATE 'alter session set NLS_NUMERIC_CHARACTERS=".,"';
     from  de_subject_sample_mapping m
     where m.trial_name = TrialID
 	  and m.source_cd = sourceCD
-      and m.platform = 'RNA_SEQ';
+      and m.platform = 'RNA_AFFYMETRIX';
 
     stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Insert patient facts into I2B2DEMODATA observation_fact',SQL%ROWCOUNT,stepCt,'Done');
@@ -776,7 +776,7 @@ EXECUTE IMMEDIATE 'alter session set NLS_NUMERIC_CHARACTERS=".,"';
     from  de_subject_sample_mapping m
     where m.trial_name = TrialID
 	  and m.source_cd = sourceCd
-      and m.platform = 'RNA_SEQ'
+      and m.platform = 'RNA_AFFYMETRIX'
 	  and m.patient_id != m.sample_id;
 
     stepCt := stepCt + 1;
@@ -845,7 +845,7 @@ EXECUTE IMMEDIATE 'alter session set NLS_NUMERIC_CHARACTERS=".,"';
         set c_visualattributes = 'LAH'
 	where a.c_basecode in (select distinct x.concept_code from de_subject_sample_mapping x
 						   where x.trial_name = TrialId
-						     and x.platform = 'RNA_SEQ'
+						     and x.platform = 'RNA_AFFYMETRIX'
 							 and x.concept_code is not null);
 
 	stepCt := stepCt + 1;
@@ -959,7 +959,7 @@ EXECUTE IMMEDIATE 'alter session set NLS_NUMERIC_CHARACTERS=".,"';
 		,lt_src_RNA_SEQ_data md
 		,probeset_deapp gs
 	where sd.sample_cd = md.expr_id
-	  and sd.platform = 'RNA_SEQ'
+	  and sd.platform = 'RNA_AFFYMETRIX'
 	  and sd.trial_name = TrialId
 	  and sd.source_cd = sourceCd
 	--  and sd.gpl_id = gs.platform
