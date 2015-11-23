@@ -28,7 +28,7 @@ class SqlMatchers {
         return new HasRecord(tableName, keyAttrs, valueAttrs)
     }
 
-    public static RowMatcher matchesRow(Map<CharSequence, Objects> valueAttrs) {
+    public static RowMatcher matchesRow(Map<CharSequence, Object> valueAttrs) {
         return new RowMatcher(valueAttrs)
     }
 }
