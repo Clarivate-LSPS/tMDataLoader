@@ -515,7 +515,7 @@ BEGIN
 	begin
 		update wrk_clinical_data
 		set data_label=replace(replace(replace(replace(replace(data_label,'%',' Pct'),'&',' and '),'+',' and '),'_',' '),'(plus)','+')
-	   		,data_value=replace(replace(replace(data_value,'%',' Pct'),'&',' and '),'+',' and ')
+	   		,data_value=replace(replace(replace(replace(data_value,'%',' Pct'),'&',' and '),'+',' and '),'(plus)','+')
 	   		,category_cd=replace(replace(category_cd,'%',' Pct'),'&',' and ')
 	   		,category_path=replace(replace(replace(category_path,'%',' Pct'),'&',' and '),'(plus)','+');
 
