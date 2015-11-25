@@ -507,7 +507,7 @@ BEGIN
 	set data_label  = trim(trailing ',' from trim(replace(replace(/**/
 				replace(replace(replace(replace(replace(data_label,'%',' Pct'),'&',' and '),'+',' and '),'_',' '),'(plus)','+')
 		 /**/   ,'  ', ' '),' ,',',')))
-		 ,data_value  = trim(trailing ',' from trim(replace(replace(/**/  replace(replace(replace(data_value,'%',' Pct'),'&',' and '),'+',' and ') /**/  ,'  ', ' '),' ,',',')))
+		 ,data_value  = trim(trailing ',' from trim(replace(replace(replace(/**/  replace(replace(replace(data_value,'%',' Pct'),'&',' and '),'+',' and ') /**/  ,'  ', ' '),' ,',','),'(plus)','+')))
      ,visit_name  = trim(trailing ',' from trim(replace(replace(visit_name,'  ', ' '),' ,',',')))
      ,category_cd=replace(replace(category_cd,'%',' Pct'),'&',' and ')
 	   ,category_path=replace(replace(replace(category_path,'%',' Pct'),'&',' and '),'(plus)','+')
