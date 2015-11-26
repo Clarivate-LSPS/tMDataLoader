@@ -27,7 +27,12 @@ import com.thomsonreuters.lsps.transmart.tools.ProcessLocker
 class CommandLineTool {
 
     static main(args) {
-        def version = "1.1.0"
+        def appProperties = new Properties()
+        CommandLineTool.class.getClassLoader().getResourceAsStream('application.properties').withCloseable {
+            appProperties.load(it as InputStream)
+        }
+
+        def version = appProperties.getProperty('info.build.version')
 
         def cli = new CliBuilder(usage: 'tm_etl [options] [<data_dir>]')
         cli.with {
