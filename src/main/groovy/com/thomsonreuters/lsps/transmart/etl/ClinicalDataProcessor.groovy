@@ -95,9 +95,20 @@ class ClinicalDataProcessor extends DataProcessor {
                                     def groups = fMappings._DATA.collectEntries{
                                         [(it.DATA_LABEL) : it.COLUMN]
                                     }
+
+                                    boolean hasEmptyTags = false
                                     cat_cd = cat_cd.replaceAll(/\$\$([A-z0-9_\"\s\(\)]+)/) { match, name ->
-                                        '$$' + (cols[groups[name]]?.replaceAll(RE_PLUS, '(plus)') ?: 'Not specified')
+                                        def tagValue = cols[groups[name]] as String
+                                        if (!tagValue) {
+                                            hasEmptyTags = true
+                                            return
+                                        }
+                                        '$$' + tagValue.replaceAll(RE_PLUS, '(plus)')
                                     }
+
+                                    //ignore record without tags value
+                                    if (hasEmptyTags)
+                                        return
                                 }
                                 //Support tag stop
 

@@ -217,7 +217,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat(sql, hasNode("\\Test Studies\\$clinicalData.studyName\\Subjects\\Demographics\\Language\\Russian\\v2\\").withPatientCount(1))
 
         assertThat(sql, hasNode("\\Test Studies\\$clinicalData.studyName\\Subjects\\Demographics\\Sex (SEX)\\Male\\Spanish\\").withPatientCount(1))
-        assertThat(sql, hasNode("\\Test Studies\\$clinicalData.studyName\\Subjects\\Demographics\\Sex (SEX)\\Female\\").withPatientCount(5))
+        assertThat(sql, hasNode("\\Test Studies\\$clinicalData.studyName\\Subjects\\Demographics\\Sex (SEX)\\Female\\").withPatientCount(2))
         assertThat(sql, hasNode("\\Test Studies\\$clinicalData.studyName\\Subjects\\Demographics\\Sex (SEX)\\Female\\French\\").withPatientCount(1))
         assertThat(sql, not(hasNode("\\Test Studies\\$clinicalData.studyName\\Subjects\\Demographics\\Sex (SEX)\\Female\\French\\\$\\")))
         assertThat(sql, not(hasNode("\\Test Studies\\$clinicalData.studyName\\Subjects\\Demographics\\Sex (SEX)\\Female\\French\\v1\\")))
@@ -238,7 +238,6 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat("Clinical data loading shouldn't fail", result, equalTo(true))
         assertThat(sql, hasNode("$demoPath\\Female\\Baseline\\French\\Sex (SEX)\\").withPatientCount(2))
         assertThat(sql, hasNode("$demoPath\\Female\\Visit 7\\French\\Sex (SEX)\\").withPatientCount(1))
-        assertThat(sql, hasNode("$demoPath\\Female\\Baseline\\Not specified\\Sex (SEX)\\").withPatientCount(2))
         assertThat(sql, hasNode("$demoPath\\Female\\Baseline\\English\\Sex (SEX)\\").withPatientCount(1))
 
         assertThat(sql, hasNode("$demoPath\\Age (AGE)\\Baseline\\").withPatientCount(9))
@@ -259,7 +258,6 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         then:
         assertThat("Clinical data loading shouldn't fail", result, equalTo(true))
         assertThat(sql, hasNode("$demoPath\\Female\\French\\Sex (SEX)\\").withPatientCount(2))
-        assertThat(sql, hasNode("$demoPath\\Female\\Not specified\\Sex (SEX)\\").withPatientCount(2))
         assertThat(sql, hasNode("$demoPath\\Female\\English\\Sex (SEX)\\").withPatientCount(1))
 
         assertThat(sql, hasNode("$demoPath\\Age (AGE)\\").withPatientCount(9))
@@ -279,7 +277,6 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         then:
         assertThat("Clinical data loading shouldn't fail", result, equalTo(true))
         assertThat(sql, hasNode("$demoPath\\Female\\Baseline\\French\\Sex (SEX)\\").withPatientCount(2))
-        assertThat(sql, hasNode("$demoPath\\Female\\Baseline\\Not specified\\Sex (SEX)\\").withPatientCount(2))
         assertThat(sql, hasNode("$demoPath\\Female\\Baseline\\English\\Sex (SEX)\\").withPatientCount(1))
 
         assertThat(sql, hasNode("$demoPath\\Age (AGE)\\Baseline\\").withPatientCount(9))
