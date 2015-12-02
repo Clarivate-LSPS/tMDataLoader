@@ -20,4 +20,10 @@ TST_TAGS.txt	$$STUDY_ID+$$TAG2+$$TAG+Demographics	4	"Sex (SEX)"		Categorical	Req
 TST_TAGS.txt	$$STUDY_ID+$$TAG2+$$TAG+Demographics	5	Assessment Date		Date
 TST_TAGS.txt	$$STUDY_ID+$$TAG2+$$TAG+Demographics	6	Language		Text
 TST_TAGS.txt		7	TAG		
-TST_TAGS.txt		8	TAG2		
+TST_TAGS.txt		8	TAG2
+TST_TAG_OVERLAPPING.txt		1	STUDY_ID
+TST_TAG_OVERLAPPING.txt		2	SUBJ_ID
+TST_TAG_OVERLAPPING.txt	$$STUDY_ID+eText+tag1+Demographics	3	"Age (AGE)"
+TST_TAG_OVERLAPPING.txt	$$STUDY_ID+eText+tag1+Demographics	4	"Sex (SEX)"
+TST_TAG_OVERLAPPING.txt	$$STUDY_ID+eText+tag1+Demographics	5	Assessment Date
+TST_TAG_OVERLAPPING.txt	$$STUDY_ID+eText+tag1+Demographics	6	Language

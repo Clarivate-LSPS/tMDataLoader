@@ -23,6 +23,11 @@ abstract class AbstractData<T extends AbstractData> {
     protected abstract DataProcessor newDataProcessor(config)
     protected abstract void adaptFiles(StudyInfo oldStudyInfo)
 
+    boolean reload(config, parentNode = "Test Studies\\") {
+        Study.deleteById(config, studyId)
+        load(config, parentNode)
+    }
+
     boolean load(config, parentNode = "Test Studies\\") {
         if (!parentNode.endsWith('\\')) {
             parentNode += '\\'
