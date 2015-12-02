@@ -410,6 +410,14 @@ BEGIN
 	--	set data_label to null when it duplicates the last part of the category_path
 	--	Remove data_label from last part of category_path when they are the same
 
+	UPDATE wrk_clinical_data tmp
+	SET category_cd = replace(tmp.category_cd, '$$', '')
+	WHERE tmp.category_cd LIKE '%$$%';
+
+	stepCt := stepCt + 1;
+	get diagnostics rowCt := ROW_COUNT;
+	perform cz_write_audit(jobId,databaseName,procedureName,'Remove tag markers',rowCt,stepCt,'Done');
+
 	begin
 	update wrk_clinical_data tpm
 	--set data_label = null

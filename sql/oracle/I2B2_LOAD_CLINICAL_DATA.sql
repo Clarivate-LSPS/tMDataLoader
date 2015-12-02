@@ -407,6 +407,14 @@ BEGIN
     cz_write_audit(jobId,databaseName,procedureName,'Use single visit_name in path',0,stepCt,'Done');
   end if;
   commit;
+
+	UPDATE wrk_clinical_data tmp
+	SET category_cd = replace(tmp.category_cd, '$$', '')
+	WHERE tmp.category_cd LIKE '%$$%';
+
+	stepCt := stepCt + 1;
+	cz_write_audit(jobId,databaseName,procedureName,'Remove tag markers',SQL%ROWCOUNT,stepCt,'Done');
+	COMMIT;
 	
 	--	set data_label to null when it duplicates the last part of the category_path
 	--	Remove data_label from last part of category_path when they are the same

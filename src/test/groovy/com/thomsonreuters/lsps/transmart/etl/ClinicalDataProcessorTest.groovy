@@ -2,6 +2,8 @@ package com.thomsonreuters.lsps.transmart.etl
 
 import com.thomsonreuters.lsps.transmart.Fixtures
 import com.thomsonreuters.lsps.transmart.fixtures.ClinicalData
+import com.thomsonreuters.lsps.transmart.fixtures.Study
+import com.thomsonreuters.lsps.transmart.fixtures.StudyInfo
 import groovy.sql.Sql
 import spock.lang.Specification
 
@@ -137,16 +139,18 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
 
     void testItLoadsDataWithTags() {
         setup:
-        ClinicalData tagClinicalData = Fixtures.studiesDir.studyDir('Test Study Tag', 'GSE0TAG').clinicalData
+        def studyInfo = new StudyInfo('GSE0TAG', 'Test Study Tag')
+        ClinicalData tagClinicalData = Fixtures.studiesDir.studyDir(studyInfo.name, studyInfo.id).clinicalData
         String conceptPath = "\\Test Studies\\${tagClinicalData.studyName}\\"
         String conceptPathForPatient = conceptPath + tagClinicalData.studyId + '\\eText\\'
 
-        def result = tagClinicalData.load(config)
+        def result = tagClinicalData.reload(config)
 
         expect:
         assertThat("Clinical data loading shouldn't fail", result, equalTo(true))
-        assertThat(sql, hasPatient('HCC2935').inTrial(studyId))
-        assertThat(sql, hasNode(conceptPathForPatient + 'tag1\\').withPatientCount(5))
+        assertThat(sql, hasPatient('HCC2935').inTrial(studyInfo.id))
+        assertThat(sql, hasPatient('2SKMEL28').inTrial(studyInfo.id))
+        assertThat(sql, hasNode(conceptPathForPatient + 'tag1\\').withPatientCount(8))
         assertThat(sql, hasNode(conceptPathForPatient + 'tag2\\').withPatientCount(4))
     }
 
