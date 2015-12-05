@@ -72,7 +72,7 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
     tText := 'Start i2b2_move_study_by_path from ' || coalesce(old_path, '<NULL>') || ' to ' || coalesce(new_path, '<NULL>');
     select cz_write_audit(jobId,databaseName,procedureName,tText,0,stepCt,'Done') into rtnCd;
 
-    IF old_path = null or new_path = null
+    IF old_path is null or new_path is null
       or old_path = '' or new_path = ''
     THEN
       stepCt := stepCt + 1;
