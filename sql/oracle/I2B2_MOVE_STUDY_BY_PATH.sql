@@ -82,21 +82,21 @@ AS
 
     stepCt := 0;
 
-    stepCt := stepCt + 1;
-    tText := 'Start i2b2_move_study_by_path from ' || old_path || ' to ' || new_path;
-    cz_write_audit(jobId, databaseName, procedureName, tText, 0, stepCt, 'Done');
-
     old_path := trim(old_path_in);
     new_path := trim(new_path_in);
 
-    select sourcesystem_cd into trialId from i2b2demodata.concept_dimension
-    where concept_path = old_path;
+    stepCt := stepCt + 1;
+    tText := 'Start i2b2_move_study_by_path from ' || nvl(old_path, '<NULL>') || ' to ' || nvl(new_path, '<NULL>');
+    cz_write_audit(jobId, databaseName, procedureName, tText, 0, stepCt, 'Done');
 
-    IF old_path is null or new_path is null
-      or old_path = '' or new_path=''
-    THEN
+    IF old_path IS NULL OR new_path IS NULL THEN
       RAISE empty_paths;
     END IF;
+    old_path := regexp_replace('\' || old_path || '\', '\\{2,}', '\');
+    new_path := regexp_replace('\' || new_path || '\', '\\{2,}', '\');
+
+    select sourcesystem_cd into trialId from i2b2demodata.concept_dimension
+    where concept_path = old_path;
 
      -- check first and last /
     SELECT
