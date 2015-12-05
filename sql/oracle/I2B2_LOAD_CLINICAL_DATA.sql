@@ -1,9 +1,3 @@
-SET DEFINE ON;
-
-DEFINE TM_WZ_SCHEMA='TM_WZ';
-DEFINE TM_LZ_SCHEMA='TM_LZ';
-DEFINE TM_CZ_SCHEMA='TM_CZ';
-
 create or replace
 PROCEDURE                                                       "I2B2_LOAD_CLINICAL_DATA" 
 (
@@ -175,7 +169,7 @@ BEGIN
 	/*delete from lz_src_clinical_data
 	where study_id = TrialId;*/
 	
-	/*execute immediate('truncate table "&TM_LZ_SCHEMA".lz_src_clinical_data');
+	/*execute immediate('truncate table TM_LZ.lz_src_clinical_data');
 	
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Delete existing data from lz_src_clinical_data',SQL%ROWCOUNT,stepCt,'Done');
@@ -209,9 +203,9 @@ BEGIN
 		
 	--	truncate wrk_clinical_data and load data from external file
 	
-	execute immediate('truncate table "&TM_WZ_SCHEMA".wrk_clinical_data');
+	execute immediate('truncate table TM_WZ.wrk_clinical_data');
 	begin
-    execute immediate('drop index "&TM_WZ_SCHEMA"."IDX_WRK_CD"');
+    execute immediate('drop index TM_WZ.IDX_WRK_CD');
   exception
     when index_not_exists then null;
   end;
@@ -246,7 +240,7 @@ BEGIN
 	from lt_src_clinical_data
 	WHERE data_value is not null;
 	
-	execute immediate('CREATE INDEX "&TM_WZ_SCHEMA".IDX_WRK_CD ON "&TM_WZ_SCHEMA".WRK_CLINICAL_DATA (DATA_TYPE ASC, DATA_VALUE ASC, VISIT_NAME ASC, DATA_LABEL ASC, CATEGORY_CD ASC, USUBJID ASC)');
+	execute immediate('CREATE INDEX TM_WZ.IDX_WRK_CD ON TM_WZ.WRK_CLINICAL_DATA (DATA_TYPE ASC, DATA_VALUE ASC, VISIT_NAME ASC, DATA_LABEL ASC, CATEGORY_CD ASC, USUBJID ASC)');
 	
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Load lt_src_clinical_data to work table',SQL%ROWCOUNT,stepCt,'Done');
@@ -546,7 +540,7 @@ BEGIN
 
 -- determine numeric data types
 
-	execute immediate('truncate table "&TM_WZ_SCHEMA".wt_num_data_types');
+	execute immediate('truncate table TM_WZ.wt_num_data_types');
   
 	insert into wt_num_data_types
 	(category_cd
@@ -635,7 +629,7 @@ BEGIN
 	--	Check if any duplicate records of key columns (site_id, subject_id, visit_name, data_label, category_cd) for numeric data
 	--	exist.  Raise error if yes
 	
-	execute immediate('truncate table "&TM_WZ_SCHEMA".wt_clinical_data_dups');
+	execute immediate('truncate table TM_WZ.wt_clinical_data_dups');
 	
 	insert into wt_clinical_data_dups
 	(site_id
@@ -684,7 +678,7 @@ BEGIN
 
 	-- Build all needed leaf nodes in one pass for both numeric and text nodes
  
-	execute immediate('truncate table "&TM_WZ_SCHEMA".wt_trial_nodes');
+	execute immediate('truncate table TM_WZ.wt_trial_nodes');
 	
 	insert /*+ APPEND parallel(wt_trial_nodes, 4) */ into wt_trial_nodes nologging
 	(leaf_node
@@ -991,8 +985,8 @@ BEGIN
         exception
           when index_not_exists then null;
     end; 
-    execute immediate('analyze table "&TM_WZ_SCHEMA".wt_trial_nodes compute statistics');
-    execute immediate('analyze table "&TM_WZ_SCHEMA".WRK_CLINICAL_DATA compute statistics');
+    execute immediate('analyze table TM_WZ.wt_trial_nodes compute statistics');
+    execute immediate('analyze table TM_WZ.WRK_CLINICAL_DATA compute statistics');
   end;
 
   --execute immediate('DROP INDEX "I2B2DEMODATA"."OF_CTX_BLOB"'); 
@@ -1030,8 +1024,8 @@ BEGIN
 	cz_write_audit(jobId,databaseName,procedureName,'Delete clinical data for study from observation_fact',SQL%ROWCOUNT,stepCt,'Done');
     COMMIT;
 
-    dbms_stats.gather_table_stats('&TM_WZ_SCHEMA', 'WRK_CLINICAL_DATA', cascade => true);
-    dbms_stats.gather_table_stats('&TM_WZ_SCHEMA', 'WT_TRIAL_NODES', cascade => true);
+    dbms_stats.gather_table_stats('TM_WZ', 'WRK_CLINICAL_DATA', cascade => true);
+    dbms_stats.gather_table_stats('TM_WZ', 'WT_TRIAL_NODES', cascade => true);
     dbms_stats.gather_table_stats('I2B2METADATA', 'I2B2', cascade => true);
     dbms_stats.gather_table_stats('I2B2DEMODATA', 'PATIENT_DIMENSION', cascade => true);
 	
@@ -1111,7 +1105,7 @@ BEGIN
 	commit;
   
   	--July 2013. Performance fix by TR.
-   execute immediate('truncate table "&TM_WZ_SCHEMA".I2B2_LOAD_PATH_WITH_COUNT');
+   execute immediate('truncate table TM_WZ.I2B2_LOAD_PATH_WITH_COUNT');
    
    insert into i2b2_load_path_with_count
    select /*+ parallel(4) */ p.c_fullname, count(*) 
@@ -1125,7 +1119,7 @@ BEGIN
 				 group by P.C_FULLNAME;
     
 	commit;
-  execute immediate('analyze table "&TM_WZ_SCHEMA".I2B2_LOAD_PATH_WITH_COUNT compute statistics');
+  execute immediate('analyze table TM_WZ.I2B2_LOAD_PATH_WITH_COUNT compute statistics');
   execute immediate('analyze table I2B2METADATA.I2B2 compute statistics');
   
   	stepCt := stepCt + 1;
