@@ -152,13 +152,13 @@ AS
       RAISE old_study_missed;
     END IF;
 
-    old_root_node := REGEXP_REPLACE(old_path, '(\\(\w|\s)*\\)(.*)', '\1');
+    old_root_node := REGEXP_REPLACE(old_path, '(\\[^\\]*\\).*', '\1');
 --\Test Studies\
-    new_root_node := REGEXP_REPLACE(new_path, '(\\(\w|\s)*\\)(.*)', '\1');
+    new_root_node := REGEXP_REPLACE(new_path, '(\\[^\\]*\\).*', '\1');
 -- '\Test Studies 2\';
-    new_root_node_name := REGEXP_REPLACE(new_path, '\\((\w|\s)*)\\(.*)', '\1');
+    new_root_node_name := REGEXP_REPLACE(new_path, '\\([^\\]*)\\.*', '\1');
 --Test Studies 2
-    new_path_last_node_name := REGEXP_REPLACE(new_path, '(.*)\\((\w|\s)*)\\', '\2');
+    new_path_last_node_name := REGEXP_REPLACE(new_path, '.*\\([^\\]*)\\', '\1');
 -- ClinicalSample
 
 --check new path is not root node
