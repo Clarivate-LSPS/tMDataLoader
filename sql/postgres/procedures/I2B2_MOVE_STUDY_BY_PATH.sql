@@ -114,10 +114,10 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
       return -16;
     END IF;
 
-    old_root_node := REGEXP_REPLACE(old_path, '(\\(\w|\s)*\\)(.*)', '\1');
-    new_root_node := REGEXP_REPLACE(new_path, '(\\(\w|\s)*\\)(.*)', '\1');
-    new_root_node_name := REGEXP_REPLACE(new_path, '\\((\w|\s)*)\\(.*)', '\1');
-    new_path_last_node_name := REGEXP_REPLACE(new_path, '(.*)\\((\w|\s)*)\\', '\2');
+    old_root_node := REGEXP_REPLACE(old_path, '(\\[^\\]*\\).*', '\1');
+    new_root_node := REGEXP_REPLACE(new_path, '(\\[^\\]*\\).*', '\1');
+    new_root_node_name := REGEXP_REPLACE(new_path, '\\([^\\]*)\\.*', '\1');
+    new_path_last_node_name := REGEXP_REPLACE(new_path, '.*\\([^\\]*)\\', '\1');
 
 -- check new path is not root node
     IF new_root_node = new_path
