@@ -60,6 +60,7 @@ jar {
 
 processResources {
     expand(project.properties)
+    outputs.upToDateWhen { false }
 }
 
 [sourceSets.main, sourceSets.test].each {
