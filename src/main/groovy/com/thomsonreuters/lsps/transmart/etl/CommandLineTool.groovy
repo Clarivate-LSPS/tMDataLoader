@@ -168,13 +168,12 @@ class CommandLineTool {
             println '>>> FYI: using VISIT_NAME before DATA_VALUE as default behavior (per config or command line)'
         }
 
-        if (config?.alwaysSetVisitName) {
-            println '>>> FYI: using Set VISIT_NAME as NULL'
+        if (opts?.'always-set-visit-name'){
+            config.alwaysSetVisitName = true
         }
 
-        if (opts?.'always-set-visit-name'){
-            config.alwaysSetVisitName = true;
-            println '>>> FYI: using Set VISIT_NAME as NULL'
+        if (config?.alwaysSetVisitName) {
+            println '>>> FYI: Always add visit name to variable path, even for single visit name'
         }
 
         if (opts?.'delete-study-by-id') {
