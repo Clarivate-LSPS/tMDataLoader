@@ -3,6 +3,7 @@
 -- TM_CZ_SCHEMA) after you ran run_as_dba.sql .
 ------------------------------------------------------------------------------
 @STRING_TABLE_T.sql
+@ANALYZE_TABLE.sql
 @I2B2_ADD_LV_PARTITION.sql
 @I2B2_DELETE_LV_PARTITION.sql
 @I2B2_REBUILD_GLOBAL_INDEXES.sql

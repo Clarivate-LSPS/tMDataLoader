@@ -985,8 +985,6 @@ BEGIN
         exception
           when index_not_exists then null;
     end; 
-    execute immediate('analyze table TM_WZ.wt_trial_nodes compute statistics');
-    execute immediate('analyze table TM_WZ.WRK_CLINICAL_DATA compute statistics');
   end;
 
   --execute immediate('DROP INDEX "I2B2DEMODATA"."OF_CTX_BLOB"'); 
@@ -1024,10 +1022,10 @@ BEGIN
 	cz_write_audit(jobId,databaseName,procedureName,'Delete clinical data for study from observation_fact',SQL%ROWCOUNT,stepCt,'Done');
     COMMIT;
 
-    dbms_stats.gather_table_stats('TM_WZ', 'WRK_CLINICAL_DATA', cascade => true);
-    dbms_stats.gather_table_stats('TM_WZ', 'WT_TRIAL_NODES', cascade => true);
-    dbms_stats.gather_table_stats('I2B2METADATA', 'I2B2', cascade => true);
-    dbms_stats.gather_table_stats('I2B2DEMODATA', 'PATIENT_DIMENSION', cascade => true);
+    analyze_table('TM_WZ', 'WRK_CLINICAL_DATA', jobId);
+    analyze_table('TM_WZ', 'WT_TRIAL_NODES', jobId);
+    analyze_table('I2B2METADATA', 'I2B2', jobId);
+    analyze_table('I2B2DEMODATA', 'PATIENT_DIMENSION', jobId);
 	
     --Insert into observation_fact
 	--22 July 2013. Performace fix by TR. Set nologging.
@@ -1119,8 +1117,8 @@ BEGIN
 				 group by P.C_FULLNAME;
     
 	commit;
-  execute immediate('analyze table TM_WZ.I2B2_LOAD_PATH_WITH_COUNT compute statistics');
-  execute immediate('analyze table I2B2METADATA.I2B2 compute statistics');
+
+        analyze_table('TM_WZ', 'I2B2_LOAD_PATH_WITH_COUNT', jobId);
   
   	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Create i2b2 load path with count',SQL%ROWCOUNT,stepCt,'Done');
