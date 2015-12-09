@@ -917,10 +917,10 @@ BEGIN
 
  	execute immediate ('truncate table TM_WZ.wt_subject_mrna_probeset');
 
-        dbms_stats.gather_table_stats('TM_LZ', 'LT_SRC_MRNA_DATA', cascade => true);
-        dbms_stats.gather_table_stats('TM_LZ', 'LT_SRC_MRNA_SUBJ_SAMP_MAP', cascade => true);
-        dbms_stats.gather_table_stats('DEAPP', 'DE_SUBJECT_SAMPLE_MAPPING', cascade => true);
-        dbms_stats.gather_table_stats('DEAPP', 'DE_MRNA_ANNOTATION', cascade => true);
+        analyze_table('TM_LZ', 'LT_SRC_MRNA_DATA', jobId);
+        analyze_table('TM_LZ', 'LT_SRC_MRNA_SUBJ_SAMP_MAP', jobId);
+        analyze_table('DEAPP', 'DE_SUBJECT_SAMPLE_MAPPING', jobId);
+        analyze_table('DEAPP', 'DE_MRNA_ANNOTATION', jobId);
 
 	--	note: assay_id represents a unique subject/site/sample
 

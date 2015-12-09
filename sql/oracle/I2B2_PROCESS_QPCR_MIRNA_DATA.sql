@@ -919,10 +919,10 @@ BEGIN
 
 	execute immediate ('truncate table tm_wz.WT_SUBJECT_MIRNA_PROBESET');
 
-        dbms_stats.gather_table_stats(user, 'MIRNA_PROBESET_DEAPP', cascade => true);
-        dbms_stats.gather_table_stats('TM_LZ', 'LT_SRC_QPCR_MIRNA_DATA', cascade => true);
-        dbms_stats.gather_table_stats('TM_LZ', 'LT_SRC_MIRNA_SUBJ_SAMP_MAP', cascade => true);
-        dbms_stats.gather_table_stats('DEAPP', 'DE_SUBJECT_SAMPLE_MAPPING', cascade => true);
+        analyze_table(user, 'MIRNA_PROBESET_DEAPP', jobId);
+        analyze_table('TM_LZ', 'LT_SRC_QPCR_MIRNA_DATA', jobId);
+        analyze_table('TM_LZ', 'LT_SRC_MIRNA_SUBJ_SAMP_MAP', jobId);
+        analyze_table('DEAPP', 'DE_SUBJECT_SAMPLE_MAPPING', jobId);
 
 	--	note: assay_id represents a unique subject/site/sample
 
