@@ -315,6 +315,40 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         !actualFile.exists()
     }
 
+    def "it should load different values for different patients in same node"() {
+        given:
+        def clinicalData = ClinicalData.build('DIFVALDIFPATSN', 'Dif Values for Dif Patients in Same Node') {
+            dataFile('TST.txt', ['Visit', 'Duplicates_Cat', 'Duplicates_Num_No_Data_Value', 'Duplicates_Cat_No_Data_Value']) {
+                forSubject('TST01') {
+                    row 'Baseline', 'Active', '1', 'Active'
+                }
+                forSubject('TST02') {
+                    row 'Baseline', 'Active', '1', 'Inactive'
+                }
+            }
+
+            mappingFile {
+                forDataFile('TST.txt') {
+                    mapSpecial 'VISIT_NAME', 3
+                    map 'Clinical Data+Status+DATALABEL+DATAVALUE+$', 4, 'Duplicates_Cat'
+                    map 'Clinical Data+Status', 5, 'Duplicates_Num_No_Data_Value'
+                    map 'Clinical Data+Status+DATALABEL+$', 6, 'Duplicates_Cat_No_Data_Value'
+                }
+            }
+        }
+
+        when:
+        def successfullyLoaded = clinicalData.load(config)
+        def statusPath = "\\Test Studies\\$clinicalData.studyName\\Clinical Data\\Status"
+
+        then:
+        successfullyLoaded
+        assertThat(sql, hasNode("$statusPath\\Duplicates Cat\\Active\\").withPatientCount(2))
+        assertThat(sql, hasNode("$statusPath\\Duplicates Cat No Data Value\\").withPatientCount(2))
+        assertThat(sql, hasFact("$statusPath\\Duplicates Cat No Data Value\\", 'TST01', 'Active'))
+        assertThat(sql, hasFact("$statusPath\\Duplicates Cat No Data Value\\", 'TST02', 'Inactive'))
+    }
+
     def "it should load multiple values for same data label"() {
         given:
         def clinicalData = ClinicalData.build('GSE0DUPPATHS', 'Test Study With Duplicate Paths') {
