@@ -28,6 +28,10 @@ class SqlMatchers {
         return new HasRecord(tableName, keyAttrs, valueAttrs)
     }
 
+    public static HasFact hasFact(String conceptPath, String subjectId, Object value) {
+        return new HasFact(conceptPath, subjectId, value)
+    }
+
     public static RowMatcher matchesRow(Map<CharSequence, Object> valueAttrs) {
         return new RowMatcher(valueAttrs)
     }
