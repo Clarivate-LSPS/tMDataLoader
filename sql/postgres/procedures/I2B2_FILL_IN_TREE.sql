@@ -35,6 +35,7 @@ DECLARE
     error_number     varchar;
     error_message    varchar;
     return_code      numeric;
+    new_paths        varchar[];
     -- audit_text       varchar;
 BEGIN
     step := 0;
@@ -80,10 +81,12 @@ BEGIN
                 -- audit_text := 'Inserting ' || full_path;
                 -- step := step + 1;
                 -- select cz_write_audit(job_id, user_name, function_name, audit_text, 0, step, 'Done') into return_code;
-                select i2b2_add_node(trial_id, full_path, node_name, job_id) into return_code;
+                new_paths := array_append(new_paths, full_path);
             END IF;
         END LOOP;
     END LOOP;
+
+    PERFORM  i2b2_add_nodes(trial_id, new_paths::text[], job_id);
 
     ---Cleanup OVERALL JOB if this proc is being run standalone
     IF new_job_flag THEN

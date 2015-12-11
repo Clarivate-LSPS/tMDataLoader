@@ -42,6 +42,7 @@ Declare
   v_bio_experiment_id	numeric(18,0);
   errorNumber		character varying;
   errorMessage	character varying;
+	new_paths      text[];
   
     --Audit variables
   newJobFlag numeric(1);
@@ -50,15 +51,6 @@ Declare
   jobID numeric(18,0);
   stepCt numeric(18,0);
   rowCt numeric(18,0);
-  
-	addNodes CURSOR is
-	select distinct t.leaf_node
-          ,t.node_name
-	from  WT_PROTEOMICS_NODES t
-	where not exists
-		 (select 1 from i2b2 x
-		  where t.leaf_node = x.c_fullname);
-
  
 --	cursor to define the path for delete_one_node  this will delete any nodes that are hidden after i2b2_create_concept_counts
 
@@ -572,28 +564,39 @@ BEGIN
     get diagnostics rowCt := ROW_COUNT;
 	select cz_write_audit(jobId,databaseName,procedureName,'Updated node_name in DEAPP tmp_proteomics_nodes',rowCt,stepCt,'Done') into rtnCd;
 --	add leaf nodes for proteomics data  The cursor will only add nodes that do not already exist.
+	begin
+	new_paths := array(select distinct t.leaf_node
+                    from  WT_PROTEOMICS_NODES t
+                    	where not exists
+                    		(select 1 from i2b2 x
+                        	where t.leaf_node = x.c_fullname));
 
-	 FOR r_addNodes in addNodes Loop
 
-    --Add nodes for all types (ALSO DELETES EXISTING NODE)
+  --Add nodes for all types (ALSO DELETES EXISTING NODE)
+	if (array_length(new_paths, 1) > 0) then
+		perform cz_write_audit(jobId, databaseName, procedureName, 'Added Nodes : ' || array_to_string(new_paths, ',') , 0, stepCt, 'Done');
+		perform i2b2_add_nodes(TrialID, new_paths, jobID);
 
-		select i2b2_add_node(TrialID, r_addNodes.leaf_node, r_addNodes.node_name, jobId) into rtnCd;
-		stepCt := stepCt + 1;
-		get diagnostics rowCt := ROW_COUNT;
-		if rtnCd > 1 then
-			select cz_write_audit(jobId,databasename,procedurename,'Error while executing i2b2_add_node(' || TrialID || ',' || r_addNodes.leaf_node || ',' || r_addNodes.node_name || ',' || jobId || ')' ,1,stepCt,'ERROR') into rtnCd;
-			select cz_end_audit (jobId,'FAIL') into rtnCd;
-			return 168;
-		end if;	
-		tText := 'Added Leaf Node: ' || r_addNodes.leaf_node || '  Name: ' || r_addNodes.node_name;
-		select cz_write_audit(jobId,databaseName,procedureName,tText,rowCt,stepCt,'Done') into rtnCd;
-		select i2b2_fill_in_tree(TrialId, r_addNodes.leaf_node, jobID) into rtnCd;
-		if rtnCd > 1 then
-			select cz_write_audit(jobId,databasename,procedurename,'Error while executing i2b2_fill_in_tree(' || TrialID || ',' || r_addNodes.leaf_node || ',' || jobId || ')' ,1,stepCt,'ERROR') into rtnCd;
-			select cz_end_audit (jobId,'FAIL') into rtnCd;
-			return 170;
-		end if;	
-	END LOOP;  
+  	for i in array_lower(new_paths, 1) .. array_upper(new_paths, 1)
+    loop
+      stepCt := stepCt + 1;
+
+      tText := 'Added Leaf Node: ' || new_paths[i];
+      perform cz_write_audit(jobId, databaseName, procedureName, tText, rowCt, stepCt, 'Done');
+      perform i2b2_fill_in_tree(TrialId, new_paths[i], jobID);
+    end loop;
+	end if;
+
+  exception
+  when others then
+    errorNumber := SQLSTATE;
+    errorMessage := SQLERRM;
+    --Handle errors.
+    perform cz_error_handler (jobID, procedureName, errorNumber, errorMessage);
+    --End Proc
+    perform cz_end_audit (jobID, 'FAIL');
+    return -16;
+  end;
 	
 	--	set sourcesystem_cd, c_comment to null if any added upper-level nodes
 
