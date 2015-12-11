@@ -56,16 +56,7 @@ Declare
 	pCount			integer;
 	sCount			integer;
 	partitionId		numeric(18,0);
-
-	--	cursor to add leaf nodes, cursor is used here because there are few nodes to be added
-
-	addNodes CURSOR is
-	select distinct t.leaf_node
-          ,t.node_name
-	from  wt_mrna_nodes t
-	where not exists
-		 (select 1 from i2b2metadata.i2b2 x
-		  where t.leaf_node = x.c_fullname);
+	new_paths 		text[];
 
 	--	cursor to define the path for delete_one_node  this will delete any nodes that are hidden after i2b2_create_concept_counts
 
@@ -602,21 +593,23 @@ BEGIN
     stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Updated node_name in DEAPP tmp_mrna_nodes',rowCt,stepCt,'Done') into rtnCd;
 
-	--	add leaf nodes for mRNA data  The cursor will only add nodes that do not already exist.
+	--	add leaf nodes for mRNA data, only add nodes that do not already exist.
+  new_paths := array(select distinct t.leaf_node
+                     from  wt_mrna_nodes t
+                     where not exists
+                     (select 1 from i2b2metadata.i2b2 x
+                         where t.leaf_node = x.c_fullname));
 
-	 FOR r_addNodes in addNodes Loop
+  PERFORM cz_write_audit(jobId,databaseName,procedureName,
+                         'Added Nodes : ' || array_to_string(new_paths, ','),rowCt,stepCt,'Done');
+  IF (array_length(new_paths, 1) > 0) THEN
+    PERFORM i2b2_add_nodes(TrialID, new_paths, jobID);
 
-    --Add nodes for all types (ALSO DELETES EXISTING NODE)
-
-		select i2b2_add_node(TrialID, r_addNodes.leaf_node, r_addNodes.node_name, jobId) into rtnCd;
-		stepCt := stepCt + 1;
-		tText := 'Added Leaf Node: ' || r_addNodes.leaf_node || '  Name: ' || r_addNodes.node_name;
-
-		select cz_write_audit(jobId,databaseName,procedureName,tText,1,stepCt,'Done') into rtnCd;
-
-		select i2b2_fill_in_tree(TrialId, r_addNodes.leaf_node, jobID) into rtnCd;
-
-	END LOOP;
+    FOR i IN array_lower(new_paths, 1) .. array_upper(new_paths, 1)
+    LOOP
+      PERFORM i2b2_fill_in_tree(TrialId, new_paths[i], jobID);
+    END LOOP;
+  END IF;
 
 	begin
     update i2b2metadata.i2b2 a

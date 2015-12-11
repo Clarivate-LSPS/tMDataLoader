@@ -57,16 +57,7 @@ Declare
 	partitioniD		numeric(18,0);
 	partitionName	varchar(100);
 	partitionIndx	varchar(100);
-
-	--	cursor to add leaf nodes, cursor is used here because there are few nodes to be added
-
-	addNodes CURSOR is
-	select distinct t.leaf_node
-          ,t.node_name
-	from  wt_mrna_nodes t
-	where not exists
-		 (select 1 from i2b2metadata.i2b2 x
-		  where t.leaf_node = x.c_fullname);
+	new_paths     text[];
 
 	--	cursor to define the path for delete_one_node  this will delete any nodes that are hidden after i2b2_create_concept_counts
 
@@ -620,19 +611,38 @@ BEGIN
 
 	--	add leaf nodes for mRNA data  The cursor will only add nodes that do not already exist.
 
-	 FOR r_addNodes in addNodes Loop
+	begin
+	new_paths := array(select distinct t.leaf_node
+                      from  wt_mrna_nodes t
+                      	where not exists
+                      		(select 1 from i2b2metadata.i2b2 x
+                          	where t.leaf_node = x.c_fullname));
 
-    --Add nodes for all types (ALSO DELETES EXISTING NODE)
+  --Add nodes for all types (ALSO DELETES EXISTING NODE)
+	if (array_length(new_paths, 1) > 0) then
+		perform cz_write_audit(jobId, databaseName, procedureName, 'Added Nodes : ' || array_to_string(new_paths, ',') , 0, stepCt, 'Done');
+		perform i2b2_add_nodes(TrialID, new_paths, jobID);
 
-		select i2b2_add_node(TrialID, r_addNodes.leaf_node, r_addNodes.node_name, jobId) into rtnCd;
-		stepCt := stepCt + 1;
-		tText := 'Added Leaf Node: ' || r_addNodes.leaf_node || '  Name: ' || r_addNodes.node_name;
+  	for i in array_lower(new_paths, 1) .. array_upper(new_paths, 1)
+    loop
+      stepCt := stepCt + 1;
 
-		select cz_write_audit(jobId,databaseName,procedureName,tText,1,stepCt,'Done') into rtnCd;
+      tText := 'Added Leaf Node: ' || new_paths[i];
+      perform cz_write_audit(jobId, databaseName, procedureName, tText, rowCt, stepCt, 'Done');
+      perform i2b2_fill_in_tree(TrialId, new_paths[i], jobID);
+    end loop;
+	end if;
 
-		select i2b2_fill_in_tree(TrialId, r_addNodes.leaf_node, jobID) into rtnCd;
-
-	END LOOP;
+  exception
+  when others then
+    errorNumber := SQLSTATE;
+    errorMessage := SQLERRM;
+    --Handle errors.
+    perform cz_error_handler (jobID, procedureName, errorNumber, errorMessage);
+    --End Proc
+    perform cz_end_audit (jobID, 'FAIL');
+    return -16;
+  end;
 
 	begin
     update i2b2metadata.i2b2 a

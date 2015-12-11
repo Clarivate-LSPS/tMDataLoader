@@ -44,6 +44,7 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
     current_path_level      INTEGER;
     current_path_attr_name  VARCHAR(2000);
     tmp                     VARCHAR(2000);
+    new_paths               TEXT[];
 
   BEGIN
 
@@ -414,9 +415,9 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
     stepCt := stepCt + 1;
     select cz_write_audit(jobId, databaseName, procedureName, 'Rename paths in concept_counts', rowCt, stepCt, 'Done') into rtnCd;
 
-  genPath := '';
-  FOR x IN select unnest(string_to_array(new_path,'\',''))
-   LOOP
+    genPath := '';
+    FOR x IN select unnest(string_to_array(new_path,'\',''))
+    LOOP
       if x is not null then
         genPath := concat(genPath, '\', x);
 
@@ -425,15 +426,24 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
         if rCount = 0 THEN
           SELECT count(*) into rCount from i2b2metadata.i2b2_secure where c_fullname = (genPath || '\');
           if rCount = 0 then
-            select i2b2_add_node(trialId , genPath|| '\', x, jobId) into rtnCd;
-            PERFORM I2B2_CREATE_CONCEPT_COUNTS(genPath || '\', jobId, 'Y');
+            new_paths := array_append(new_paths,genPath || '\');
             stepCt := stepCt + 1;
-            select cz_write_audit(jobId, databaseName, procedureName, 'i2b2_add_node genPath ' || genPath , 0, stepCt, 'Done') into rtnCd;
           end if;
         end if;
 
       end if;
-   END LOOP;
+    END LOOP;
+
+    IF (array_length(new_paths, 1) > 0) THEN
+      PERFORM cz_write_audit(jobId, databaseName, procedureName,
+                             'i2b2_add_nodes  ' || array_to_string(new_paths, ',') , 0, stepCt, 'Done');
+      PERFORM i2b2_add_nodes(trialId , new_paths, jobId);
+
+      FOR i IN array_lower(new_paths, 1) .. array_upper(new_paths, 1)
+      LOOP
+        PERFORM I2B2_CREATE_CONCEPT_COUNTS(new_paths[i], jobId, 'Y');
+      END LOOP;
+    END IF;
 
     -- Fill in levels if levels are added
     select i2b2_fill_in_tree(null, new_path, jobID) into rtnCd;
