@@ -79,7 +79,7 @@ BEGIN
 	if data_type is null then
 		dataType := 'R';
 	else
-		if data_type in ('R','T','L') then
+		if data_type in ('R','T','L','Z') then
 			dataType := data_type;
 		else
 			dataType := 'R';
