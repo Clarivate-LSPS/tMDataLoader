@@ -1060,7 +1060,7 @@ BEGIN
 	,m_applied_path
 	,c_metadataxml
 	)
-    select (length(c.concept_path) - coalesce(length(replace(c.concept_path, '\','')),0)) / length('\') - 2 + root_level
+    select distinct (length(c.concept_path) - coalesce(length(replace(c.concept_path, '\','')),0)) / length('\') - 2 + root_level
 		  ,c.concept_path
 		  ,c.name_char
 		  ,'LA'
