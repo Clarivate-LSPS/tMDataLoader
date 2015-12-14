@@ -181,7 +181,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
 
     def 'it should load study with non-unique column names'() {
         when:
-        def studyId = 'GSE0'
+        def studyId = 'GSE0NQCN'
         def studyName = 'Test Study With Non Unique Column Names'
         config.allowNonUniqueColumnNames = true
         def processor = new ClinicalDataProcessor(config)
