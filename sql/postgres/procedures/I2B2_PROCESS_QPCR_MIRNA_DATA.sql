@@ -595,16 +595,7 @@ BEGIN
 
 	if (array_length(new_paths, 1) > 0) then
     perform cz_write_audit(jobId, databaseName, procedureName, 'Added Nodes : ' || array_to_string(new_paths, ',') , 0, stepCt, 'Done');
-    perform i2b2_add_nodes(TrialID, new_paths, jobID);
-
-    for i in array_lower(new_paths, 1) .. array_upper(new_paths, 1)
-    loop
-      stepCt := stepCt + 1;
-
-      tText := 'Added Leaf Node: ' || new_paths[i];
-      perform cz_write_audit(jobId, databaseName, procedureName, tText, rowCt, stepCt,'Done');
-      perform i2b2_fill_in_tree(TrialId, new_paths[i], jobID);
-    end loop;
+    perform i2b2_add_nodes(TrialID, new_paths, jobID, true);
 	end if;
 
   exception

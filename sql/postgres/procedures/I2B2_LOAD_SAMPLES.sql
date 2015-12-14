@@ -603,12 +603,7 @@ BEGIN
   PERFORM cz_write_audit(jobId,databaseName,procedureName,
                          'Added Nodes : ' || array_to_string(new_paths, ','),rowCt,stepCt,'Done');
   IF (array_length(new_paths, 1) > 0) THEN
-    PERFORM i2b2_add_nodes(TrialID, new_paths, jobID);
-
-    FOR i IN array_lower(new_paths, 1) .. array_upper(new_paths, 1)
-    LOOP
-      PERFORM i2b2_fill_in_tree(TrialId, new_paths[i], jobID);
-    END LOOP;
+    PERFORM i2b2_add_nodes(TrialID, new_paths, jobID, true);
   END IF;
 
 	begin

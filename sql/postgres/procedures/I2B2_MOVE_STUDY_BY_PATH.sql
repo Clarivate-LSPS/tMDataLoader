@@ -437,7 +437,7 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
     IF (array_length(new_paths, 1) > 0) THEN
       PERFORM cz_write_audit(jobId, databaseName, procedureName,
                              'i2b2_add_nodes  ' || array_to_string(new_paths, ',') , 0, stepCt, 'Done');
-      PERFORM i2b2_add_nodes(trialId , new_paths, jobId);
+      PERFORM i2b2_add_nodes(trialId , new_paths, jobId, false);
 
       FOR i IN array_lower(new_paths, 1) .. array_upper(new_paths, 1)
       LOOP
