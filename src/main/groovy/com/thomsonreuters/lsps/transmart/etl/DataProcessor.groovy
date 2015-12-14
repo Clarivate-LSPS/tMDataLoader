@@ -19,6 +19,7 @@
  ******************************************************************/
 
 package com.thomsonreuters.lsps.transmart.etl
+
 import com.thomsonreuters.lsps.transmart.sql.Database
 import groovy.sql.Sql
 import org.apache.commons.csv.CSVFormat
@@ -49,6 +50,17 @@ abstract class DataProcessor {
         logger.log("Connecting to database server")
         database.withSql { sql ->
             sql.connection.autoCommit = false
+
+            def currentNodePath = (studyInfo.node[studyInfo.node.size() - 1] == '\\' ?: studyInfo.node + '\\')
+
+            def row = sql.firstRow("select sourcesystem_cd from i2b2metadata.i2b2 where " +
+                    "c_fullname = ?", [currentNodePath])
+
+            if ((config?.saveSecToken) && (row != null)) {
+                def processor = new DeleteDataProcessor(config)
+                studyInfo.put('oldId', row.sourcesystem_cd)
+                processor.process('id': row.sourcesystem_cd, 'path': currentNodePath);
+            }
 
             if (processFiles(dir, sql, studyInfo)) {
                 res = new AuditableJobRunner(sql, config).runJob(procedureName) { jobId ->
@@ -85,6 +97,35 @@ abstract class DataProcessor {
                 }
             }
         }
+
+        if ((config?.saveSecToken) && (res) && (studyInfo.oldId != null)) {
+            database.withSql { sql ->
+                String newToken = ("EXP:" + studyInfo.id).toUpperCase();
+                String oldToken = "EXP:" + studyInfo.oldId;
+
+                sql.execute("DELETE FROM biomart.bio_experiment WHERE accession = :newToken",
+                        [newToken: (String) studyInfo.id.toUpperCase()])
+                sql.execute("DELETE FROM biomart.bio_data_uid WHERE unique_id = :newToken",
+                        [newToken: newToken])
+                sql.execute("DELETE FROM searchapp.search_secure_object WHERE bio_data_unique_id = :newToken",
+                        [newToken: newToken])
+
+                sql.executeUpdate("UPDATE biomart.bio_data_uid SET unique_id = :newToken WHERE unique_id = :oldToken",
+                        [newToken: newToken,
+                         oldToken: oldToken])
+
+                sql.executeUpdate("UPDATE biomart.bio_experiment SET accession = :newToken WHERE accession = :oldToken",
+                        [newToken: (String) studyInfo.id.toUpperCase(),
+                         oldToken: studyInfo.oldId]
+                )
+                sql.executeUpdate("UPDATE searchapp.search_secure_object " +
+                        "SET bio_data_unique_id = :newToken " +
+                        "WHERE bio_data_unique_id = :oldToken",
+                        [newToken: newToken,
+                         oldToken: oldToken])
+            }
+        }
+
         return res
     }
 
