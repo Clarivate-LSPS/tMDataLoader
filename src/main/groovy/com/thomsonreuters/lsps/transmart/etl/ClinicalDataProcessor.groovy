@@ -92,8 +92,8 @@ class ClinicalDataProcessor extends DataProcessor {
                                     cat_cd = cat_cd.replace('$$SUBJ_ID', cols[fMappings['SUBJ_ID']])
                                     cat_cd = cat_cd.replace('$$SAMPLE_ID', cols[fMappings['SAMPLE_ID']])
                                     //Custom tags
-                                    def groups = fMappings._DATA.collectEntries{
-                                        [(it.DATA_LABEL) : it.COLUMN]
+                                    def groups = fMappings._DATA.collectEntries {
+                                        [(it.DATA_LABEL): it.COLUMN]
                                     }
 
                                     boolean hasEmptyTags = false
@@ -204,7 +204,7 @@ class ClinicalDataProcessor extends DataProcessor {
 
     private void processFileForPostgres(f, fMappings) {
         DataLoader.start(database, "lt_src_clinical_data", ['STUDY_ID', 'SITE_ID', 'SUBJECT_ID', 'VISIT_NAME',
-                                                                                 'DATA_LABEL', 'DATA_VALUE', 'CATEGORY_CD', 'SAMPLE_CD']) {
+                                                            'DATA_LABEL', 'DATA_VALUE', 'CATEGORY_CD', 'SAMPLE_CD']) {
             st ->
                 def lineNum = processEachRow(f, fMappings) { row ->
                     st.addBatch([row.study_id, row.site_id, row.subj_id, row.visit_name, row.data_label,
@@ -244,6 +244,7 @@ class ClinicalDataProcessor extends DataProcessor {
                 def studyId = rows[0].study_id
                 if (studyId) {
                     studyInfo['id'] = studyId
+                    ckeckStudyIdExist(sql, studyInfo)
                 } else {
                     config.logger.log(LogType.ERROR, "Study ID is null!")
                     return false
