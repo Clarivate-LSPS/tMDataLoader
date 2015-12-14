@@ -2,7 +2,6 @@ package com.thomsonreuters.lsps.transmart.etl
 
 import com.thomsonreuters.lsps.transmart.Fixtures
 import com.thomsonreuters.lsps.transmart.fixtures.ClinicalData
-import com.thomsonreuters.lsps.transmart.fixtures.Study
 import com.thomsonreuters.lsps.transmart.fixtures.StudyInfo
 import groovy.sql.Sql
 import spock.lang.Specification
@@ -14,9 +13,6 @@ import static org.hamcrest.CoreMatchers.equalTo
 import static org.hamcrest.core.IsNot.not
 import static org.junit.Assert.assertThat
 
-/**
- * Created by bondarev on 2/24/14.
- */
 class ClinicalDataProcessorTest extends Specification implements ConfigAwareTestCase {
     ClinicalData clinicalData = Fixtures.clinicalData
     private ClinicalDataProcessor _processor
@@ -181,14 +177,11 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
 
     def 'it should load study with non-unique column names'() {
         when:
-        def studyId = 'GSE0NQCN'
-        def studyName = 'Test Study With Non Unique Column Names'
-        config.allowNonUniqueColumnNames = true
-        def processor = new ClinicalDataProcessor(config)
-        processor.process(new File(studyDir(studyName, studyId, additionalStudiesDir), "ClinicalDataToUpload"),
-                [name: studyName, node: "Test Studies\\${studyName}".toString()])
+        def clinicalData = additionalStudiesDir.studyDir('Test Study With Non Unique Column Names', 'GSE0NQCN').clinicalData
+        def successfullyLoaded = clinicalData.load(config + [allowNonUniqueColumnNames: true])
         then:
         noExceptionThrown()
+        successfullyLoaded
     }
 
     def 'it should load category_cd and data_label with plus sign'() {
