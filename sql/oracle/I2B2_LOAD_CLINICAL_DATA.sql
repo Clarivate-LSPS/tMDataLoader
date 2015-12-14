@@ -925,7 +925,7 @@ BEGIN
 	,i2b2_id
 	,c_metadataxml
 	)
-    select /*+ parallel(concept_dimension, 8) */  (length(c.concept_path) - nvl(length(replace(c.concept_path, '\')),0)) / length('\') - 2 + root_level
+    select /*+ parallel(concept_dimension, 8) */ (length(c.concept_path) - nvl(length(replace(c.concept_path, '\')),0)) / length('\') - 2 + root_level
 		  ,c.concept_path
 		  ,c.name_char
 		  ,'LA'
@@ -948,7 +948,7 @@ BEGIN
 		   else '<?xml version="1.0"?><ValueMetadata><Version>3.02</Version><CreationDateTime>08/14/2008 01:22:59</CreationDateTime><TestID></TestID><TestName></TestName><DataType>PosFloat</DataType><CodeType></CodeType><Loinc></Loinc><Flagstouse></Flagstouse><Oktousevalues>Y</Oktousevalues><MaxStringLength></MaxStringLength><LowofLowValue>0</LowofLowValue><HighofLowValue>0</HighofLowValue><LowofHighValue>100</LowofHighValue>100<HighofHighValue>100</HighofHighValue><LowofToxicValue></LowofToxicValue><HighofToxicValue></HighofToxicValue><EnumValues></EnumValues><CommentsDeterminingExclusion><Com></Com></CommentsDeterminingExclusion><UnitValues><NormalUnits>ratio</NormalUnits><EqualUnits></EqualUnits><ExcludingUnits></ExcludingUnits><ConvertingUnits><Units></Units><MultiplyingFactor></MultiplyingFactor></ConvertingUnits></UnitValues><Analysis><Enums /><Counts /><New /></Analysis></ValueMetadata>'
 		   end
     from concept_dimension c
-		,wt_trial_nodes t
+		,(select distinct leaf_node, data_type from wt_trial_nodes) t
     where c.concept_path = t.leaf_node
 	  and not exists
 		 (select 1 from i2b2 x
