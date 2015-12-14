@@ -113,6 +113,7 @@ public class ProteinDataProcessor extends DataProcessor {
                 } else {
                     studyInfo['id'] = studyId
                 }
+                ckeckStudyIdExist(sql, studyInfo)
             }
         }
 

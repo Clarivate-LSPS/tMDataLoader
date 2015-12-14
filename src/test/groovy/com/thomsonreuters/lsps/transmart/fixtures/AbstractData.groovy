@@ -35,6 +35,13 @@ abstract class AbstractData<T extends AbstractData> {
         newDataProcessor(config).process(dir, [name: studyName, node: "$parentNode$studyName" as String])
     }
 
+    boolean loadByPath(config, path = "Test Studies\\Test study\\"){
+        if (!path.endsWith('\\')) {
+            path += '\\'
+        }
+        newDataProcessor(config).process(dir, [name: studyName, node: "$path" as String])
+    }
+
     public T copyWithSuffix(String suffix) {
         return copyAttachedToStudy(studyInfo.withSuffix(suffix))
     }

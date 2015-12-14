@@ -123,6 +123,7 @@ public class RNASeqDataProcessor extends DataProcessor {
                 } else {
                     studyInfo['id'] = studyId
                 }
+                ckeckStudyIdExist(sql, studyInfo)
             }
         }
 

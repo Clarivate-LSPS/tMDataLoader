@@ -19,6 +19,7 @@
  ******************************************************************/
 
 package com.thomsonreuters.lsps.transmart.etl
+
 import com.thomsonreuters.lsps.transmart.sql.Database
 import groovy.sql.Sql
 import org.apache.commons.csv.CSVFormat
@@ -49,6 +50,22 @@ abstract class DataProcessor {
         logger.log("Connecting to database server")
         database.withSql { sql ->
             sql.connection.autoCommit = false
+
+            String currentNodePath = (studyInfo.node[studyInfo.node.size() - 1] == '\\' ? studyInfo.node : studyInfo.node + '\\')
+            currentNodePath = currentNodePath[0] == '\\' ? (currentNodePath) : ('\\' + currentNodePath)
+
+            def row = sql.rows("select distinct sourcesystem_cd from i2b2metadata.i2b2 where " +
+                    "c_fullname like ? ESCAPE '~'", [currentNodePath + '%'])
+
+            if (row.size() > 1) {
+                throw new Exception("This path contains several different studyId : ${currentNodePath}")
+            }
+
+            if ((config?.replaceStudy) && (row.size() != 0)) {
+                def processor = new DeleteDataProcessor(config)
+                studyInfo.put('oldId', row[0].sourcesystem_cd)
+                processor.process('id': row[0].sourcesystem_cd, 'path': currentNodePath);
+            }
 
             if (processFiles(dir, sql, studyInfo)) {
                 res = new AuditableJobRunner(sql, config).runJob(procedureName) { jobId ->
@@ -85,6 +102,35 @@ abstract class DataProcessor {
                 }
             }
         }
+
+        if ((config?.replaceStudy) && (res) && (studyInfo.oldId != null)) {
+            database.withSql { sql ->
+                String newToken = ("EXP:" + studyInfo.id).toUpperCase();
+                String oldToken = "EXP:" + studyInfo.oldId;
+
+                sql.execute("DELETE FROM biomart.bio_experiment WHERE accession = :newToken",
+                        [newToken: (String) studyInfo.id.toUpperCase()])
+                sql.execute("DELETE FROM biomart.bio_data_uid WHERE unique_id = :newToken",
+                        [newToken: newToken])
+                sql.execute("DELETE FROM searchapp.search_secure_object WHERE bio_data_unique_id = :newToken",
+                        [newToken: newToken])
+
+                sql.executeUpdate("UPDATE biomart.bio_data_uid SET unique_id = :newToken WHERE unique_id = :oldToken",
+                        [newToken: newToken,
+                         oldToken: oldToken])
+
+                sql.executeUpdate("UPDATE biomart.bio_experiment SET accession = :newToken WHERE accession = :oldToken",
+                        [newToken: (String) studyInfo.id.toUpperCase(),
+                         oldToken: (String) studyInfo.oldId]
+                )
+                sql.executeUpdate("UPDATE searchapp.search_secure_object " +
+                        "SET bio_data_unique_id = :newToken " +
+                        "WHERE bio_data_unique_id = :oldToken",
+                        [newToken: newToken,
+                         oldToken: oldToken])
+            }
+        }
+
         return res
     }
 
@@ -97,6 +143,18 @@ abstract class DataProcessor {
                 [studyInfo['id'], fullName])
         if (row) {
             throw new Exception("Other study with same id found by different path: ${row.c_fullname}")
+        }
+    }
+
+    void ckeckStudyIdExist(Sql sql, studyInfo) {
+        String fullName = "${(studyInfo['node'] =~ /^\\.*/ ? '' : '\\')}${studyInfo['node']}\\%";
+        def row = sql.firstRow("""
+                                select c_fullname
+                                from i2b2metadata.i2b2
+                                where sourcesystem_cd <> UPPER(?) and c_fullname like ? escape '`' order by c_fullname""",
+                [studyInfo['id'], fullName])
+        if (row && (!config.replaceStudy)) {
+            throw new Exception("Other study with same path found by different studyId: ${row.c_fullname}")
         }
     }
 }

@@ -43,7 +43,7 @@ class CommandLineTool {
             v longOpt: 'version', 'Display version information and exit'
             t longOpt: 'use-t', 'Do not use Z datatype for T expression data (expert option)'
             s longOpt: 'stop-on-fail', 'Stop when upload is failed'
-            m longOpt: 'move-study', args:2, valueSeparator:';', argName:'old_path new_path', 'Move study'
+            m longOpt: 'move-study', args: 2, valueSeparator: ';', argName: 'old_path new_path', 'Move study'
             _ longOpt: 'highlight-clinical-data', 'Highlight studies with clinical data'
             _ longOpt: 'alt-clinical-proc', args: 1, argName: 'proc_name', 'Name of alternative clinical stored procedure (expert option)'
             _ longOpt: 'alt-control-schema', args: 1, argName: 'schema', 'Name of alternative control schema (TM_CZ) - expert option'
@@ -56,7 +56,8 @@ class CommandLineTool {
             _ longOpt: 'force-start', 'Force TM Data Loader start (even if another instance is already running)'
             _ longOpt: 'allow-non-unique-columns', 'Allow non-unique column names in clinical data files'
             _ longOpt: 'use-first-gene-id', 'When probe maps to multiple Entrez Gene IDs use only the first one'
-            _ longOpt: 'check-duplicates', 'Check dublicates patient_id'
+            _ longOpt: 'check-duplicates', 'Check patient duplicates'
+            _ longOpt: 'replace-study', 'Upload study by same path'
         }
         // TODO: implement stop-on-fail mode!
         def opts = cli.parse(args)
@@ -106,7 +107,7 @@ class CommandLineTool {
             Logger.setInteractiveMode(true)
         }
 
-        if (opts?.'secure-study') {
+        if ((opts?.'secure-study') || (config.secureStudy)) {
             config.securitySymbol = 'Y'
             println ">>> STUDY WILL BE SECURABLE"
         } else {
@@ -211,6 +212,11 @@ class CommandLineTool {
         if (opts?.'check-duplicates') {
             println ">>> Check duplicates"
             config.checkDuplicates = true
+        }
+
+        if (opts?.'replace-study') {
+            println ">>> Save SECURITY TOKEN"
+            config.replaceStudy = true
         }
 
         def extra_args = opts.arguments()
