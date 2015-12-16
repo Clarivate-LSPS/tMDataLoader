@@ -32,241 +32,243 @@ class MetaDataProcessor extends DataProcessor {
 	}
 
 	@Override
-	public boolean processFiles(File f, Sql sql, Object studyInfo) {
+	public boolean processFiles(File dir, Sql sql, Object studyInfo) {
 		
 		sql.execute("TRUNCATE TABLE lt_src_study_metadata" as String)
-		
-		def lineNum = 0
-		
-		def header_mappings = [:]
-		
-		sql.withTransaction {
-			sql.withBatch(100, """\
-					INSERT into lt_src_study_metadata
-					(
-						STUDY_ID, 
-						TITLE, 
-						DESCRIPTION, 
-						DESIGN, 
-						START_DATE, 
-						COMPLETION_DATE, 
-						PRIMARY_INVESTIGATOR, 
-						CONTACT_FIELD, 
-						STATUS, 
-						OVERALL_DESIGN, 
-						INSTITUTION, 
-						COUNTRY, 
-						BIOMARKER_TYPE, 
-						TARGET, 
-						ACCESS_TYPE, 
-						STUDY_OWNER, 
-						STUDY_PHASE, 
-						BLINDING_PROCEDURE, 
-						STUDYTYPE, 
-						DURATION_OF_STUDY_WEEKS, 
-						NUMBER_OF_PATIENTS, 
-						NUMBER_OF_SITES, 
-						ROUTE_OF_ADMINISTRATION, 
-						DOSING_REGIMEN, 
-						GROUP_ASSIGNMENT, 
-						TYPE_OF_CONTROL, 
-						PRIMARY_END_POINTS, 
-						SECONDARY_END_POINTS, 
-						INCLUSION_CRITERIA, 
-						EXCLUSION_CRITERIA, 
-						SUBJECTS, 
-						GENDER_RESTRICTION_MFB, 
-						MIN_AGE, 
-						MAX_AGE, 
-						SECONDARY_IDS, 
-						DEVELOPMENT_PARTNER, 
-						GEO_PLATFORM, 
-						MAIN_FINDINGS, 
-						SEARCH_AREA, 
-						COMPOUND, 
-						DISEASE, 
-						PUBMED_IDS, 
-						ORGANISM
-					)
-					VALUES 
-					(
-						?, 
-						?, 
-						?, 
-						?, 
-						NULL,
-						?, 
-						?, 
-						NULL,
-						NULL,
-						NULL,
-						NULL,
-						NULL,
-						NULL,
-						NULL,
-						NULL,
-						?, 
-						?, 
-						?, 
-						?, 
-						?, 
-						?, 
-						?, 
-						?, 
-						?, 
-						?, 
-						?, 
-						?, 
-						?, 
-						?, 
-						?, 
-						?, 
-						?, 
-						?, 
-						?, 
-						?, 
-						?, 
-						?, 
-						?, 
-						?,
-						?, 
-						?, 
-						NULL,
-						?
-					)
-					""") {
-				stmt ->
-				
-				def prevCols = [] // to support multiline values
-		
-				f.splitEachLine("\t") {
-					cols ->
-					
-					lineNum++
-				
-					if (lineNum == 1) {
-						// parsing header line
-						cols.eachWithIndex {
-							val, i ->
-							
-							val = fixColumn(val)
-							
-							if (val ==~ /(?i)Accession \(Internal study_id\)/) header_mappings['study_id'] = i
-							else if (val ==~ /(?i)Title/) header_mappings['title'] = i
-							else if (val ==~ /(?i)Description/) header_mappings['description'] = i
-							else if (val ==~ /(?i)Study design/) header_mappings['study_design'] = i
-							else if (val ==~ /(?i)Completion date/) header_mappings['completion_date'] = i
-							else if (val ==~ /(?i)PI/) header_mappings['pi'] = i
-							else if (val ==~ /(?i)Study Owner/) header_mappings['study_owner'] = i
-							else if (val ==~ /(?i)Study Phase/) header_mappings['study_phase'] = i
-							else if (val ==~ /(?i)Blinding Procedure/) header_mappings['blinding_procedure'] = i
-							else if (val ==~ /(?i)Study Type/) header_mappings['study_type'] = i
-							else if (val ==~ /(?i)Duration of Study/) header_mappings['duration_of_study'] = i
-							else if (val ==~ /(?i)Number of Patients/) header_mappings['number_of_patients'] = i
-							else if (val ==~ /(?i)Number of Sites/) header_mappings['number_of_sites'] = i
-							else if (val ==~ /(?i)Route of Administration/) header_mappings['route_of_administration'] = i
-							else if (val ==~ /(?i)Dosing Regimen/) header_mappings['dosing_regimen'] = i
-							else if (val ==~ /(?i)Group Assignment/) header_mappings['group_assignment'] = i
-							else if (val ==~ /(?i)Type of Control/) header_mappings['type_of_control'] = i
-							else if (val ==~ /(?i)Primary Endpoints/) header_mappings['primary_endpoints'] = i
-							else if (val ==~ /(?i)Secondary Endpoints/) header_mappings['secondary_endpoints'] = i
-							else if (val ==~ /(?i)Inclusion Criteria/) header_mappings['inclusion_criteria'] = i
-							else if (val ==~ /(?i)Exclusion Criteria/) header_mappings['exclusion_criteria'] = i
-							else if (val ==~ /(?i)Subjects/) header_mappings['subjects'] = i
-							else if (val ==~ /(?i)Gender Restriction/) header_mappings['gender_restriction'] = i
-							else if (val ==~ /(?i)Min.* Age/) header_mappings['min_age'] = i
-							else if (val ==~ /(?i)Max.* Age/) header_mappings['max_age'] = i
-							else if (val ==~ /(?i)Secondary IDs/) header_mappings['secondary_ids'] = i
-							else if (val ==~ /(?i)Development Partner/) header_mappings['development_partner'] = i
-							else if (val ==~ /(?i)GEO Platform/) header_mappings['geo_platform'] = i
-							else if (val ==~ /(?i)Main Findings/) header_mappings['main_findings'] = i
-							else if (val ==~ /(?i)Area/) header_mappings['area'] = i
-							else if (val ==~ /(?i)Drug name/) header_mappings['drug_name'] = i
-							else if (val ==~ /(?i)Condition/) header_mappings['condition'] = i
-							else if (val ==~ /(?i)(Species|Organism)/) header_mappings['species'] = i
-						}
-						
-						if (! header_mappings.containsKey('study_id')) {
-							throw new Exception("Study ID column is not defined")
-						}
-						
-					}	
-					else {
-						// line with data
-						
-						// checking if it's continuation of multiline string
-						if (prevCols) {
-							def firstCol = cols[0]
-							prevCols[prevCols.size()-1] += "\n${firstCol}" // join last column with the first in the new batch
-							if (cols.size() > 1)
-								prevCols.addAll(cols[1..cols.size()-1]) // join other columns
-							cols = prevCols.toList().clone();
-							
-							// check if it's an ending of multiline string
-							if (firstCol ==~ /[^"]*"/) 
-								prevCols = []
-						}
-						
-						// check if it's a beginning of multiline string
-						if (cols.last() ==~ /"[^"]+/ || cols.size() < 2) {
-							prevCols = cols.toList().clone();
-							return // next loop
-						}
-						
-						if (cols[0]) // line not empty
-						{
-						
-							if (! ( getColumnValue(cols, header_mappings, 'study_id')  
-									&& getColumnValue(cols, header_mappings, 'title') ) ) {
-								throw new Exception("Study ID or Title are not defined at line ${lineNum}")
+
+		dir.eachFileMatch(~/(?i)(?!\.|_DONE_|_FAIL_|_DISABLED_).+\.txt/) { f ->
+
+			def lineNum = 0
+
+			def header_mappings = [:]
+
+			sql.withTransaction {
+				sql.withBatch(100, """\
+						INSERT into lt_src_study_metadata
+						(
+							STUDY_ID,
+							TITLE,
+							DESCRIPTION,
+							DESIGN,
+							START_DATE,
+							COMPLETION_DATE,
+							PRIMARY_INVESTIGATOR,
+							CONTACT_FIELD,
+							STATUS,
+							OVERALL_DESIGN,
+							INSTITUTION,
+							COUNTRY,
+							BIOMARKER_TYPE,
+							TARGET,
+							ACCESS_TYPE,
+							STUDY_OWNER,
+							STUDY_PHASE,
+							BLINDING_PROCEDURE,
+							STUDYTYPE,
+							DURATION_OF_STUDY_WEEKS,
+							NUMBER_OF_PATIENTS,
+							NUMBER_OF_SITES,
+							ROUTE_OF_ADMINISTRATION,
+							DOSING_REGIMEN,
+							GROUP_ASSIGNMENT,
+							TYPE_OF_CONTROL,
+							PRIMARY_END_POINTS,
+							SECONDARY_END_POINTS,
+							INCLUSION_CRITERIA,
+							EXCLUSION_CRITERIA,
+							SUBJECTS,
+							GENDER_RESTRICTION_MFB,
+							MIN_AGE,
+							MAX_AGE,
+							SECONDARY_IDS,
+							DEVELOPMENT_PARTNER,
+							GEO_PLATFORM,
+							MAIN_FINDINGS,
+							SEARCH_AREA,
+							COMPOUND,
+							DISEASE,
+							PUBMED_IDS,
+							ORGANISM
+						)
+						VALUES
+						(
+							?,
+							?,
+							?,
+							?,
+							NULL,
+							?,
+							?,
+							NULL,
+							NULL,
+							NULL,
+							NULL,
+							NULL,
+							NULL,
+							NULL,
+							NULL,
+							?,
+							?,
+							?,
+							?,
+							?,
+							?,
+							?,
+							?,
+							?,
+							?,
+							?,
+							?,
+							?,
+							?,
+							?,
+							?,
+							?,
+							?,
+							?,
+							?,
+							?,
+							?,
+							?,
+							?,
+							?,
+							?,
+							NULL,
+							?
+						)
+						""") {
+					stmt ->
+
+						def prevCols = [] // to support multiline values
+
+						f.splitEachLine("\t") {
+							cols ->
+
+								lineNum++
+
+								if (lineNum == 1) {
+									// parsing header line
+									cols.eachWithIndex {
+										val, i ->
+
+											val = fixColumn(val)
+
+											if (val ==~ /(?i)Accession \(Internal study_id\)/) header_mappings['study_id'] = i
+											else if (val ==~ /(?i)Title/) header_mappings['title'] = i
+											else if (val ==~ /(?i)Description/) header_mappings['description'] = i
+											else if (val ==~ /(?i)Study design/) header_mappings['study_design'] = i
+											else if (val ==~ /(?i)Completion date/) header_mappings['completion_date'] = i
+											else if (val ==~ /(?i)PI/) header_mappings['pi'] = i
+											else if (val ==~ /(?i)Study Owner/) header_mappings['study_owner'] = i
+											else if (val ==~ /(?i)Study Phase/) header_mappings['study_phase'] = i
+											else if (val ==~ /(?i)Blinding Procedure/) header_mappings['blinding_procedure'] = i
+											else if (val ==~ /(?i)Study Type/) header_mappings['study_type'] = i
+											else if (val ==~ /(?i)Duration of Study/) header_mappings['duration_of_study'] = i
+											else if (val ==~ /(?i)Number of Patients/) header_mappings['number_of_patients'] = i
+											else if (val ==~ /(?i)Number of Sites/) header_mappings['number_of_sites'] = i
+											else if (val ==~ /(?i)Route of Administration/) header_mappings['route_of_administration'] = i
+											else if (val ==~ /(?i)Dosing Regimen/) header_mappings['dosing_regimen'] = i
+											else if (val ==~ /(?i)Group Assignment/) header_mappings['group_assignment'] = i
+											else if (val ==~ /(?i)Type of Control/) header_mappings['type_of_control'] = i
+											else if (val ==~ /(?i)Primary Endpoints/) header_mappings['primary_endpoints'] = i
+											else if (val ==~ /(?i)Secondary Endpoints/) header_mappings['secondary_endpoints'] = i
+											else if (val ==~ /(?i)Inclusion Criteria/) header_mappings['inclusion_criteria'] = i
+											else if (val ==~ /(?i)Exclusion Criteria/) header_mappings['exclusion_criteria'] = i
+											else if (val ==~ /(?i)Subjects/) header_mappings['subjects'] = i
+											else if (val ==~ /(?i)Gender Restriction/) header_mappings['gender_restriction'] = i
+											else if (val ==~ /(?i)Min.* Age/) header_mappings['min_age'] = i
+											else if (val ==~ /(?i)Max.* Age/) header_mappings['max_age'] = i
+											else if (val ==~ /(?i)Secondary IDs/) header_mappings['secondary_ids'] = i
+											else if (val ==~ /(?i)Development Partner/) header_mappings['development_partner'] = i
+											else if (val ==~ /(?i)GEO Platform/) header_mappings['geo_platform'] = i
+											else if (val ==~ /(?i)Main Findings/) header_mappings['main_findings'] = i
+											else if (val ==~ /(?i)Area/) header_mappings['area'] = i
+											else if (val ==~ /(?i)Drug name/) header_mappings['drug_name'] = i
+											else if (val ==~ /(?i)Condition/) header_mappings['condition'] = i
+											else if (val ==~ /(?i)(Species|Organism)/) header_mappings['species'] = i
+									}
+
+									if (!(header_mappings.containsKey('study_id') && header_mappings.containsKey('title'))) {
+										throw new Exception("Study ID or Title column is not defined")
+									}
+
+								} else {
+							// line with data
+
+							// checking if it's continuation of multiline string
+							if (prevCols) {
+								def firstCol = cols[0]
+								prevCols[prevCols.size() -1] += "\n${firstCol}" // join last column with the first in the new batch
+								if (cols.size() > 1)
+									prevCols.addAll(cols[1..cols.size() -1]) // join other columns
+								cols = prevCols.toList().clone();
+
+								// check if it's an ending of multiline string
+								if (firstCol ==~ /[^"]*"/)
+									prevCols = []
 							}
-							
-							def species = getColumnValue(cols, header_mappings, 'species')?:'Homo Sapiens'		
-									
-							stmt.addBatch([
-								getColumnValue(cols, header_mappings, 'study_id'), 
-								getColumnValue(cols, header_mappings, 'title'), 
-								getColumnValue(cols, header_mappings, 'description'),
-								getColumnValue(cols, header_mappings, 'study_design'), 
-								getColumnValue(cols, header_mappings, 'completion_date'), 
-								getColumnValue(cols, header_mappings, 'pi'),
-								getColumnValue(cols, header_mappings, 'study_owner'), 
-								getColumnValue(cols, header_mappings, 'study_phase'), 
-								getColumnValue(cols, header_mappings, 'blinding_procedure'),
-								getColumnValue(cols, header_mappings, 'study_type'), 
-								getColumnValue(cols, header_mappings, 'duration_of_study'), 
-								getColumnValue(cols, header_mappings, 'number_of_patients'),
-								getColumnValue(cols, header_mappings, 'number_of_sites'), 
-								getColumnValue(cols, header_mappings, 'route_of_administration'),
-								getColumnValue(cols, header_mappings, 'dosing_regimen'), 
-								getColumnValue(cols, header_mappings, 'group_assignment'), 
-								getColumnValue(cols, header_mappings, 'type_of_control'),
-								getColumnValue(cols, header_mappings, 'primary_endpoints'), 
-								getColumnValue(cols, header_mappings, 'secondary_endpoints'),
-								getColumnValue(cols, header_mappings, 'inclusion_criteria'), 
-								getColumnValue(cols, header_mappings, 'exclusion_criteria'),
-								getColumnValue(cols, header_mappings, 'subjects'), 
-								getColumnValue(cols, header_mappings, 'gender_restriction'), 
-								getColumnValue(cols, header_mappings, 'min_age'),
-								getColumnValue(cols, header_mappings, 'max_age'), 
-								getColumnValue(cols, header_mappings, 'secondary_ids'), 
-								getColumnValue(cols, header_mappings, 'development_partner'),
-								getColumnValue(cols, header_mappings, 'geo_platform'), 
-								getColumnValue(cols, header_mappings, 'main_findings'), 
-								getColumnValue(cols, header_mappings, 'area'),
-								getColumnValue(cols, header_mappings, 'drug_name'), 
-								getColumnValue(cols, header_mappings, 'condition'), 
-								species
-							])
+
+							// check if it's a beginning of multiline string
+							if (cols.last() ==~ /"[^"]+/ || cols.size() < 2) {
+								prevCols = cols.toList().clone();
+								return // next loop
+							}
+
+							if (cols[0]) // line not empty
+							{
+
+								if (! ( getColumnValue(cols, header_mappings, 'study_id')
+										&& getColumnValue(cols, header_mappings, 'title') ) ) {
+									throw new Exception("Study ID or Title are not defined at line ${lineNum}")
+								}
+
+								def species = getColumnValue(cols, header_mappings, 'species') ?:'Homo Sapiens'
+
+								stmt.addBatch([
+									getColumnValue(cols, header_mappings, 'study_id'),
+									getColumnValue(cols, header_mappings, 'title'),
+									getColumnValue(cols, header_mappings, 'description'),
+									getColumnValue(cols, header_mappings, 'study_design'),
+									getColumnValue(cols, header_mappings, 'completion_date'),
+									getColumnValue(cols, header_mappings, 'pi'),
+									getColumnValue(cols, header_mappings, 'study_owner'),
+									getColumnValue(cols, header_mappings, 'study_phase'),
+									getColumnValue(cols, header_mappings, 'blinding_procedure'),
+									getColumnValue(cols, header_mappings, 'study_type'),
+									getColumnValue(cols, header_mappings, 'duration_of_study'),
+									getColumnValue(cols, header_mappings, 'number_of_patients'),
+									getColumnValue(cols, header_mappings, 'number_of_sites'),
+									getColumnValue(cols, header_mappings, 'route_of_administration'),
+									getColumnValue(cols, header_mappings, 'dosing_regimen'),
+									getColumnValue(cols, header_mappings, 'group_assignment'),
+									getColumnValue(cols, header_mappings, 'type_of_control'),
+									getColumnValue(cols, header_mappings, 'primary_endpoints'),
+									getColumnValue(cols, header_mappings, 'secondary_endpoints'),
+									getColumnValue(cols, header_mappings, 'inclusion_criteria'),
+									getColumnValue(cols, header_mappings, 'exclusion_criteria'),
+									getColumnValue(cols, header_mappings, 'subjects'),
+									getColumnValue(cols, header_mappings, 'gender_restriction'),
+									getColumnValue(cols, header_mappings, 'min_age'),
+									getColumnValue(cols, header_mappings, 'max_age'),
+									getColumnValue(cols, header_mappings, 'secondary_ids'),
+									getColumnValue(cols, header_mappings, 'development_partner'),
+									getColumnValue(cols, header_mappings, 'geo_platform'),
+									getColumnValue(cols, header_mappings, 'main_findings'),
+									getColumnValue(cols, header_mappings, 'area'),
+									getColumnValue(cols, header_mappings, 'drug_name'),
+									getColumnValue(cols, header_mappings, 'condition'),
+									species
+								])
+							}
 						}
 					}
 				}
 			}
+
+			sql.commit();
+			config.logger.log("Processed ${lineNum} lines")
 		}
-		
-		sql.commit();
-		config.logger.log("Processed ${lineNum} lines")
-		
+
 		return true;
 	}
 	
@@ -288,7 +290,7 @@ class MetaDataProcessor extends DataProcessor {
 
 	@Override
 	public boolean runStoredProcedures(Object jobId, Sql sql, Object studyInfo) {
-		sql.call("{call " + config.controlSchema + ".i2b2_load_study_metadata($jobId)}")
+		sql.call("{call " +  "i2b2_load_study_metadata($jobId)}")
 		return true;
 	}
 

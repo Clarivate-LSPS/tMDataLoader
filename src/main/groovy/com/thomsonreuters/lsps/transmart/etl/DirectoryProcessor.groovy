@@ -43,7 +43,7 @@ class DirectoryProcessor {
         config = conf
     }
 
-    boolean process(dir, String root = "") {           // TODO: BROKEN NOW!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    boolean process(dir, String root = "") {
         def d = dir as File
         config.logger.log("Processing directory: ${dir}")
 
@@ -109,33 +109,26 @@ class DirectoryProcessor {
     }
 
     private boolean processMetaData(dir) {
-        def isAllSuccessful = true
+        def res = false
+        config.logger.log("Processing metadata dir ${dir.name}");
 
-        dir.eachFileMatch(~/(?i)(?!\.|_DONE_|_FAIL_|_DISABLED_).+\.txt/) {
+        def metadataProcessor = new MetaDataProcessor(config)
 
-            config.logger.log("Processing metadata file ${it.name}")
-
-            def metadataProcessor = new MetaDataProcessor(config)
-            def res = false
-
-            try {
-                res = metadataProcessor.process(it, [:])
-            }
-            catch (Exception e) {
-                config.logger.log(LogType.ERROR, "Exception: ${e}")
-            }
-
-            if (res) {
-                it.renameTo(new File(dir, "_DONE_${it.name}"))
-            } else {
-                if (!config.isNoRenameOnFail)
-                    it.renameTo(new File(dir, "_FAIL_${it.name}"))
-            }
-
-            isAllSuccessful = isAllSuccessful && res
+        try {
+            res = metadataProcessor.process(dir, [:])
+        }
+        catch (Exception e) {
+            config.logger.log(LogType.ERROR, "Exception: ${e}")
         }
 
-        return isAllSuccessful
+        if (res) {
+            it.renameTo(new File(dir, "_DONE_${it.name}"))
+        } else {
+            if (!config.isNoRenameOnFail)
+                it.renameTo(new File(dir, "_FAIL_${it.name}"))
+        }
+
+        res
     }
 
     private boolean processDataDirectory(File parentDir, String dataType, Class<? extends DataProcessor> processorClass, studyInfo) {

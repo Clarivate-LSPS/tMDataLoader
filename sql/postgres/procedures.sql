@@ -47,5 +47,6 @@ $$;
 \i procedures/I2B2_PROCESS_SERIAL_HDD_DATA.sql
 \i procedures/I2B2_LOAD_CHROM_REGION.sql
 \i procedures/I2B2_PROCESS_ACGH_DATA.sql
+\i procedures/I2B2_LOAD_STUDY_METADATA.sql
 
 
