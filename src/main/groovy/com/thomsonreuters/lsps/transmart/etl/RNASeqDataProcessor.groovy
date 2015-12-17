@@ -25,20 +25,24 @@ public class RNASeqDataProcessor extends DataProcessor {
         platformList = platformList.toList()
 
         if (platformList.size() > 0) {
+            if (platformList.size() > 1) {
+                throw new DataProcessingException("More than one platform found: ${platformList}")
+            }
+            studyInfo.platform = platformList[0]
             loadPlatforms(dir, sql, platformList, studyInfo)
 
             dir.eachFileMatch(~/(?i).+_RNASeq_Data_[RLTZ](_GPL\d+)*\.txt/) {
                 processRNASeqFile(it, sql, studyInfo)
             }
         } else {
-            throw new Exception("No platforms defined")
+            throw new DataProcessingException("No platforms defined")
         }
 
         return true;
     }
 
     @Override
-    public boolean runStoredProcedures(Object jobId, Sql sql, Object studyInfo) {
+    public boolean runStoredProcedures(Object jobId, Sql sql, studyInfo) {
         def studyId = studyInfo['id']
         def studyNode = studyInfo['node']
         def studyDataType = studyInfo['datatype']
@@ -58,7 +62,7 @@ public class RNASeqDataProcessor extends DataProcessor {
             // probeset_deapp to load full annotation info
 
             if (studyInfo['runPlatformLoad']) {
-                sql.call("{call " + config.controlSchema + ".i2b2_rna_seq_annotation(?, ?)}", [Sql.NUMERIC, jobId])
+                sql.call("{call " + config.controlSchema + ".i2b2_rna_seq_annotation(?, ?, ?)}", [Sql.NUMERIC,  studyInfo.platform, jobId])
             }
         } else {
             config.logger.log(LogType.ERROR, "Study ID or Node or DataType not defined!")
