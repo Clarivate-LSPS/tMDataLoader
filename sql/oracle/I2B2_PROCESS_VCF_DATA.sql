@@ -80,7 +80,7 @@ BEGIN
   END IF;
 	stepCt := 0;
 	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Starting i2b2_process_vcf_data  '||trial_id|| ' '||top_node||' '||source_cd||' '||secure_study,0,stepCt,'Done');
+	cz_write_audit(jobId,databaseName,procedureName,'Starting i2b2_process_vcf_data  '||trial_id|| ' '||topNode||' '||source_cd||' '||secure_study,0,stepCt,'Done');
 
 	--	check if all subject_sample map records have a tissue_type, If not, abort run
 	select count(*) into pCount
@@ -114,7 +114,7 @@ BEGIN
 	-- Get study name from topNode
 	select parse_nth_value(topNode, topLevel, '\') into study_name from dual;
 	--	Add any upper level nodes as needed
-	tPath := REGEXP_REPLACE(replace(top_node,study_name,null),'(\\){2,}', '\');
+	tPath := REGEXP_REPLACE(replace(topNode,study_name,null),'(\\){2,}', '\');
 	select length(tPath) - length(replace(tPath,'\',null)) into pCount from dual;
 	if pCount > 2 then
 		i2b2_fill_in_tree(null, tPath, jobId);
