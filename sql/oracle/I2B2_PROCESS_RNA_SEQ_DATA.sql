@@ -205,7 +205,7 @@ EXECUTE IMMEDIATE 'alter session set NLS_NUMERIC_CHARACTERS=".,"';
 
 	--	Add any upper level nodes as needed
 
-	tPath := REGEXP_REPLACE(replace(top_node,study_name,null),'(\\){2,}', '\');
+	tPath := REGEXP_REPLACE(replace(topNode,study_name,null),'(\\){2,}', '\');
 	select length(tPath) - length(replace(tPath,'\',null)) into pCount from dual;
 
 	if pCount > 2 then

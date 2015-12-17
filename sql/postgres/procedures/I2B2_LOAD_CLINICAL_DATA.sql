@@ -243,12 +243,12 @@ BEGIN
 
 	--	Add any upper level nodes as needed
 
-	tPath := REGEXP_REPLACE(replace(top_node,study_name,''),'(\\){2,}', '\', 'g');
+	tPath := REGEXP_REPLACE(replace(topNode,study_name,''),'(\\){2,}', '\', 'g');
 	select length(tPath) - length(replace(tPath,'\','')) into pCount;
 
 	if pCount > 2 then
 		stepCt := stepCt + 1;
-		select cz_write_audit(jobId,databaseName,procedureName,'Adding upper-level nodes',0,stepCt,'Done') into rtnCd;
+		select cz_write_audit(jobId,databaseName,procedureName,'Adding upper-level nodes for "' || tPath || '"',0,stepCt,'Done') into rtnCd;
 		select i2b2_fill_in_tree(null, tPath, jobId) into rtnCd;
 	end if;
 
