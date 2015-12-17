@@ -3,6 +3,7 @@
 --
   CREATE OR REPLACE PROCEDURE "I2B2_RNA_SEQ_ANNOTATION"
 ( rtn_code OUT NUMBER,
+gpl_id VARCHAR2,
 currentJobID NUMBER := null
 ) AS
 gpl_rtn NUMBER;
@@ -37,40 +38,34 @@ BEGIN
 
       --select platform into gpl_id from de_gpl_info where marker_type='RNASEQ';
 
- insert into DE_RNASEQ_ANNOTATION 
- (
- TRANSCRIPT_ID 
-   ,GPL_ID
-    ,GENE_SYMBOL
-  ,GENE_ID
-  ,ORGANISM
- -- ,PROBESET_ID
-    )
-    select distinct (a.transcript_id)
-      --,g.platform
-      ,null
-          ,a.gene_symbol
-          ,null--b.primary_external_id
-          ,a.organism
-         -- ,null
-          --,pd.probeset_id
-          from LT_RNASEQ_ANNOTATION a
-              --,(select platform from de_gpl_info where marker_type='RNASEQ') g
-              -- ,bio_marker b
-             --  ,probeset_deapp pd
-                where ---b.bio_marker_name=a.gene_symbol
-               --and a.transcript_id =pd.probeset
-              --  and 
-                a.transcript_id not in (select distinct transcript_id from DE_RNASEQ_ANNOTATION);
-                
-                stepCt := stepCt + 1;
-                cz_write_audit(jobId,databaseName,procedureName,'Insert data in DE_RNASEQ_ANNOTATION',0,stepCt,'Done');
+	INSERT INTO DE_RNASEQ_ANNOTATION
+	(
+		TRANSCRIPT_ID
+		, GPL_ID
+		, GENE_SYMBOL
+		, GENE_ID
+		, ORGANISM
+	)
+		SELECT DISTINCT(a.transcript_id),
+			gpl_id,
+			a.gene_symbol,
+			NULL,
+			a.organism
+		FROM LT_RNASEQ_ANNOTATION a
+		WHERE
+			a.transcript_id NOT IN (SELECT DISTINCT transcript_id
+															FROM DE_RNASEQ_ANNOTATION);
+
+	stepCt := stepCt + 1;
+	cz_write_audit(jobId, databaseName, procedureName, 'Insert data in DE_RNASEQ_ANNOTATION', 0, stepCt, 'Done');
+
                 ---update gene_id from bio_marker  table
-                
-                
-             update DE_RNASEQ_ANNOTATION a set GENE_ID=(select primary_external_id from bio_marker b where 
-  b.bio_marker_name=a.gene_symbol and rownum=1)
-                                where a.GENE_ID is null;
+	UPDATE DE_RNASEQ_ANNOTATION a
+	SET GENE_ID = (SELECT primary_external_id
+								 FROM bio_marker b
+								 WHERE
+									 b.bio_marker_name = a.gene_symbol AND rownum = 1)
+	WHERE a.GENE_ID IS NULL;
                 
   stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'End i2b2_rna_seq_annotation',0,stepCt,'Done');

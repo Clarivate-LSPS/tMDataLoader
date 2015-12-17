@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION i2b2_rna_seq_annotation(currentjobid numeric DEFAULT NULL::numeric)
+CREATE OR REPLACE FUNCTION i2b2_rna_seq_annotation(gpl_id VARCHAR(50), currentjobid numeric DEFAULT NULL::numeric)
   RETURNS numeric AS
   $BODY$
 DECLARE
@@ -44,53 +44,25 @@ BEGIN
 	end if;
 
 	begin
-		/*insert into deapp.DE_RNASEQ_ANNOTATION
+		INSERT INTO deapp.DE_RNASEQ_ANNOTATION
 		(
-			GPL_ID
-			,TRANSCRIPT_ID
-			,GENE_SYMBOL
-			,GENE_ID
-			,ORGANISM
-			,PROBESET_ID
+			TRANSCRIPT_ID
+			, GPL_ID
+			, GENE_SYMBOL
+			, GENE_ID
+			, ORGANISM
 		)
-			select g.platform
-				,a.transcript_id
-				,a.gene_symbol
-				,b.bio_marker_id
-				,a.organism
-				,pd.probeset_id
-			from LT_RNASEQ_ANNOTATION a
-				,(select platform from deapp.de_gpl_info where marker_type='RNASEQ') as g
-				,biomart.bio_marker b
-				,probeset_deapp pd
-			where b.bio_marker_name=a.gene_symbol
-						and a.transcript_id =pd.probeset;*/
-		insert into deapp.DE_RNASEQ_ANNOTATION
-    (
-    TRANSCRIPT_ID
-      ,GPL_ID
-       ,GENE_SYMBOL
-     ,GENE_ID
-     ,ORGANISM
-    -- ,PROBESET_ID
-       )
-       select distinct (a.transcript_id)
-         --,g.platform
-         ,null
-             ,a.gene_symbol
-             ,null--b.primary_external_id
-             ,a.organism
-            -- ,null
-             --,pd.probeset_id
-             from LT_RNASEQ_ANNOTATION a
-                 --,(select platform from de_gpl_info where marker_type='RNASEQ') g
-                 -- ,bio_marker b
-                --  ,probeset_deapp pd
-                   where ---b.bio_marker_name=a.gene_symbol
-                  --and a.transcript_id =pd.probeset
-                 --  and
-                   a.transcript_id not in (select distinct transcript_id from deapp.DE_RNASEQ_ANNOTATION);
-                   ---update gene_id from bio_marker  table
+			SELECT DISTINCT
+				(a.transcript_id),
+				gpl_id,
+				a.gene_symbol,
+				NULL,
+				a.organism
+			FROM LT_RNASEQ_ANNOTATION a
+			WHERE
+				a.transcript_id NOT IN (SELECT DISTINCT transcript_id
+																FROM deapp.DE_RNASEQ_ANNOTATION);
+		---update gene_id from bio_marker  table
  	get diagnostics rowCt := ROW_COUNT;
 		exception
 		when others then
@@ -140,5 +112,5 @@ LANGUAGE plpgsql VOLATILE SECURITY DEFINER
 SET SEARCH_PATH FROM CURRENT
 COST 100;
 
-ALTER FUNCTION i2b2_rna_seq_annotation(NUMERIC)
+ALTER FUNCTION i2b2_rna_seq_annotation(VARCHAR, NUMERIC)
 OWNER TO postgres;
