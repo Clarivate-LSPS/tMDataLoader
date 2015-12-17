@@ -128,7 +128,7 @@ AS $BODY$
       CONCEPT_PATH = ANY(new_paths);
 
     -- add missing parent nodes
-    IF (add_missing_parent_nodes IS TRUE ) THEN
+    IF (add_missing_parent_nodes) THEN
       FOR i in array_lower(new_paths, 1) .. array_upper(new_paths, 1)
       LOOP
         stepCt := stepCt + 1;
