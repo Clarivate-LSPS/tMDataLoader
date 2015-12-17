@@ -51,15 +51,20 @@ abstract class DataProcessor {
         database.withSql { sql ->
             sql.connection.autoCommit = false
 
-            def currentNodePath = (studyInfo.node[studyInfo.node.size() - 1] == '\\' ?: studyInfo.node + '\\')
+            String currentNodePath = (studyInfo.node[studyInfo.node.size() - 1] == '\\' ? studyInfo.node : studyInfo.node + '\\')
+            currentNodePath = currentNodePath[0] == '\\' ? (currentNodePath) : ('\\' + currentNodePath)
 
-            def row = sql.firstRow("select sourcesystem_cd from i2b2metadata.i2b2 where " +
-                    "c_fullname = ?", [currentNodePath])
+            def row = sql.rows("select distinct sourcesystem_cd from i2b2metadata.i2b2 where " +
+                    "c_fullname like ?", [currentNodePath.replace('\\', '\\\\') + '%'])
 
-            if ((config?.saveSecToken) && (row != null)) {
+            if (row.size() > 1) {
+                throw new Exception("This path contains several different studyId : ${currentNodePath}")
+            }
+
+            if ((config?.replaceStudy) && (row.size() != 0)) {
                 def processor = new DeleteDataProcessor(config)
-                studyInfo.put('oldId', row.sourcesystem_cd)
-                processor.process('id': row.sourcesystem_cd, 'path': currentNodePath);
+                studyInfo.put('oldId', row[0].sourcesystem_cd)
+                processor.process('id': row[0].sourcesystem_cd, 'path': currentNodePath);
             }
 
             if (processFiles(dir, sql, studyInfo)) {
@@ -98,7 +103,7 @@ abstract class DataProcessor {
             }
         }
 
-        if ((config?.saveSecToken) && (res) && (studyInfo.oldId != null)) {
+        if ((config?.replaceStudy) && (res) && (studyInfo.oldId != null)) {
             database.withSql { sql ->
                 String newToken = ("EXP:" + studyInfo.id).toUpperCase();
                 String oldToken = "EXP:" + studyInfo.oldId;
@@ -116,7 +121,7 @@ abstract class DataProcessor {
 
                 sql.executeUpdate("UPDATE biomart.bio_experiment SET accession = :newToken WHERE accession = :oldToken",
                         [newToken: (String) studyInfo.id.toUpperCase(),
-                         oldToken: studyInfo.oldId]
+                         oldToken: (String) studyInfo.oldId]
                 )
                 sql.executeUpdate("UPDATE searchapp.search_secure_object " +
                         "SET bio_data_unique_id = :newToken " +
@@ -138,6 +143,18 @@ abstract class DataProcessor {
                 [studyInfo['id'], fullName])
         if (row) {
             throw new Exception("Other study with same id found by different path: ${row.c_fullname}")
+        }
+    }
+
+    void ckeckStudyIdExist(Sql sql, studyInfo) {
+        String fullName = "${(studyInfo['node'] =~ /^\\.*/ ? '' : '\\')}${studyInfo['node']}\\%";
+        def row = sql.firstRow("""
+                                select c_fullname
+                                from i2b2metadata.i2b2
+                                where sourcesystem_cd <> UPPER(?) and c_fullname like ? escape '`' order by c_fullname""",
+                [studyInfo['id'], fullName])
+        if (row && (!config.replaceStudy)) {
+            throw new Exception("Other study with same path found by different studyId: ${row.c_fullname}")
         }
     }
 }

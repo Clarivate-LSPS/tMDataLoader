@@ -305,6 +305,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
     def 'it does not produces list of duplicates if no duplicates exists'() {
         when:
         def clinicalData = Fixtures.clinicalData
+        Study.deleteByPath(config, "\\Test Studies\\${studyName}")
         def expectedFile = new File(clinicalData.dir, 'ExpectedDuplicates.csv')
         def actualFile = new File(clinicalData.dir, 'duplicates.csv')
         actualFile.delete()

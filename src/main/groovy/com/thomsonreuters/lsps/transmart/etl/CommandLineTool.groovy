@@ -56,8 +56,8 @@ class CommandLineTool {
             _ longOpt: 'force-start', 'Force TM Data Loader start (even if another instance is already running)'
             _ longOpt: 'allow-non-unique-columns', 'Allow non-unique column names in clinical data files'
             _ longOpt: 'use-first-gene-id', 'When probe maps to multiple Entrez Gene IDs use only the first one'
-            _ longOpt: 'check-duplicates', 'Check dublicates patient_id'
-            _ longOpt: 'save-security-token', 'Save old security token when upload by same path'
+            _ longOpt: 'check-duplicates', 'Check patient duplicates'
+            _ longOpt: 'replace-study', 'Upload study by same path'
         }
         // TODO: implement stop-on-fail mode!
         def opts = cli.parse(args)
@@ -215,9 +215,9 @@ class CommandLineTool {
             config.checkDuplicates = true
         }
 
-        if (opts?.'save-security-token') {
+        if (opts?.'replace-study') {
             println ">>> Save SECURITY TOKEN"
-            config.saveSecToken = true
+            config.replaceStudy = true
         }
 
         def extra_args = opts.arguments()
