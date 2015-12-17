@@ -27,6 +27,10 @@ class Database {
         }
     }
 
+    Database withCredentials(String username, String password) {
+        new Database(db: config + [username: username, password: password])
+    }
+
     def withSql(Closure block) {
         Sql sql = null
         try {
@@ -129,7 +133,7 @@ class Database {
                 break
             case DatabaseType.Oracle:
                 def command = "sqlplus -l ${config.username}/${config.password}@${host}:${port}/${database} @${preparedScript.absolutePath}"
-                runner = Runtime.runtime.exec(command)
+                runner = Runtime.runtime.exec(command, new String[0], script.parentFile)
                 break
             default:
                 throw new UnsupportedOperationException("Can't run script for database: ${databaseType}")
