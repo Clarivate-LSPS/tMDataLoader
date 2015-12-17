@@ -64,12 +64,12 @@ BEGIN
   if (trial_id is null) then
 	select count(distinct trial_name) into trialCount
 		from DEAPP.de_subject_sample_mapping where concept_code in (
-			select concept_cd from I2B2DEMODATA.concept_dimension where concept_path like path_string || '%'
+			select concept_cd from I2B2DEMODATA.concept_dimension where concept_path like pathString || '%'
 		);
 	if (trialCount = 1) then
 		select distinct trial_name into TrialId
 			from DEAPP.de_subject_sample_mapping where concept_code in (
-				select concept_cd from I2B2DEMODATA.concept_dimension where concept_path like path_string || '%'
+				select concept_cd from I2B2DEMODATA.concept_dimension where concept_path like pathString || '%'
 			);
 	ELSIF ( trialCount = 0 ) THEN
 		TrialId := null;
