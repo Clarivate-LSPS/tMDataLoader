@@ -63,6 +63,36 @@ processResources {
     outputs.upToDateWhen { false }
 }
 
+springBoot {
+    mainClass = "com.thomsonreuters.lsps.transmart.etl.CommandLineTool"
+}
+
+task runSqlScripts(type: JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+
+    main = 'com.thomsonreuters.lsps.transmart.etl.RunSqlScriptsCommand'
+
+    // arguments to pass to the application
+    if (project.hasProperty('config')) {
+        args '--config', project.'config'
+    }
+    if (project.hasProperty('dba-user') && project.hasProperty('dba-user')) {
+        args '--dba-user', project.'dba-user', '--dba-password', project.'dba-password'
+    }
+}
+
+task updateSqlProcedures(type: JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+
+    main = 'com.thomsonreuters.lsps.transmart.etl.RunSqlScriptsCommand'
+
+    // arguments to pass to the application
+    if (project.hasProperty('config')) {
+        args '--config', project.'config'
+    }
+    args '-P'
+}
+
 [sourceSets.main, sourceSets.test].each {
     it.output.resourcesDir = it.output.classesDir
 }
