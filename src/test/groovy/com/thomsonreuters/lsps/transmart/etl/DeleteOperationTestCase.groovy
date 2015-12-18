@@ -218,7 +218,7 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
 
     void testItDeleteSNPData() {
         processorLoadSNP.process(
-                new File("fixtures/Test Studies/${studyNameSNP}_${studyId}/SNPDataToUpload"),
+                new File("fixtures/Test Studies/${studyNameSNP}_${studyId}/SNPDataToUpload").toPath(),
                 [name: studyName, node: "\\Test Studies\\${studyNameSNP}".toString()])
         def inpData = ['id'  : studyId,
                        'path': "\\Test Studies\\${studyNameSNP}\\SNP\\"];
@@ -231,7 +231,7 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
     void testItDeleteSubNode() {
         expressionData.load(config)
         processorLoadSNP.process(
-                new File("fixtures/Test Studies/${studyNameSNP}_${studyId}/SNPDataToUpload"),
+                new File("fixtures/Test Studies/${studyNameSNP}_${studyId}/SNPDataToUpload").toPath(),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
 
         def inpData = ['id'  : studyId,
@@ -246,7 +246,7 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
         String conceptPathForPatient = conceptPath + "Biomarker Data\\Mutations\\TST001 (Entrez ID: 1956)\\AA mutation\\"
 
         processorLoadClinical.process(
-                new File("fixtures/Test Studies/${studyNameClinical}_${studyId}/ClinicalDataToUpload"),
+                new File("fixtures/Test Studies/${studyNameClinical}_${studyId}/ClinicalDataToUpload").toPath(),
                 [name: studyNameClinical, node: "\\Delete Operation Test\\${studyNameClinical}\\".toString()])
 
         def inpData = ['id'  : null,
@@ -258,7 +258,7 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
 
     void testItDeleteSubNodeClinicalData() {
         processorLoadClinical.process(
-                new File("fixtures/Test Studies/${studyNameClinical}_${studyId}/ClinicalDataToUpload"),
+                new File("fixtures/Test Studies/${studyNameClinical}_${studyId}/ClinicalDataToUpload").toPath(),
                 [name: studyNameClinical, node: "Test Studies\\${studyNameClinical}".toString()])
 
         def inpData = ['id'  : null,
@@ -302,7 +302,7 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
         def studyInfo = new StudyInfo('GSE37425', 'Test Protein Study')
 
         proteinDataProcessor.process(
-                new File("fixtures/Test Studies/${studyInfo.name}_${studyInfo.id}/ProteinDataToUpload"),
+                new File("fixtures/Test Studies/${studyInfo.name}_${studyInfo.id}/ProteinDataToUpload").toPath(),
                 [name: studyInfo.name, node: "Test Studies\\${studyInfo.name}".toString()])
 
         def inpData = ['id'  : studyInfo.id,
@@ -319,7 +319,7 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
         def mirnaType = 'MIRNA_QPCR'
 
         mirnaDataProcessor.process(
-                new File("fixtures/Test Studies/${mirnaStudyName}/MIRNA_QPCRDataToUpload"),
+                new File("fixtures/Test Studies/${mirnaStudyName}/MIRNA_QPCRDataToUpload").toPath(),
                 [name: mirnaStudyName, node: "Test Studies\\${mirnaStudyName}".toString(), base_datatype: mirnaType])
 
         def inpData = ['id'  : mirnaStudyId,
@@ -334,7 +334,7 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
         mirnaType = 'MIRNA_SEQ'
 
         mirnaDataProcessor.process(
-                new File("fixtures/Test Studies/${mirnaStudyName}/MIRNA_SEQDataToUpload"),
+                new File("fixtures/Test Studies/${mirnaStudyName}/MIRNA_SEQDataToUpload").toPath(),
                 [name: mirnaStudyName, node: "Test Studies\\${mirnaStudyName}".toString(), base_datatype: mirnaType])
         inpData = ['id'  : mirnaStudyId,
                    'path': "\\Test Studies\\${mirnaStudyName}\\"];
@@ -349,7 +349,7 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
         def metStudyId = 'GSE37427'
 
         metabolomicsDataProcessor.process(
-                new File("fixtures/Test Studies/${metStudyName}/MetabolomicsDataToUpload"),
+                new File("fixtures/Test Studies/${metStudyName}/MetabolomicsDataToUpload").toPath(),
                 [name: metStudyName, node: "Test Studies\\${metStudyName}".toString()])
 
         def inpData = ['id'  : metStudyId,
@@ -365,7 +365,7 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
         def rbmStudyId = 'TESTRBM'
 
         RBMDataProcessor.process(
-                new File("fixtures/Test Studies/${rbmStudyName}/RBMDataToUpload"),
+                new File("fixtures/Test Studies/${rbmStudyName}/RBMDataToUpload").toPath(),
                 [name: rbmStudyName, node: "Test Studies\\${rbmStudyName}".toString()])
 
         def inpData = ['id'  : rbmStudyId,
@@ -381,7 +381,7 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
         def rnaStudyId = 'GSE_A_37424'
 
         RNASeqProcessor.process(
-                new File("fixtures/Test Studies/${rnaStudyName}/RNASeqDataToUpload"),
+                new File("fixtures/Test Studies/${rnaStudyName}/RNASeqDataToUpload").toPath(),
                 [name: rnaStudyName, node: "Test Studies\\${rnaStudyName}".toString()])
 
         def inpData = ['id'  : rnaStudyId,

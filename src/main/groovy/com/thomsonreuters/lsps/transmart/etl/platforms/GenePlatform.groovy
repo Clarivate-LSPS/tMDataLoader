@@ -6,6 +6,9 @@ import com.thomsonreuters.lsps.transmart.files.MetaInfoHeader
 import com.thomsonreuters.lsps.transmart.util.PrepareIfRequired
 import groovy.sql.BatchingPreparedStatementWrapper
 import groovy.sql.Sql
+
+import java.nio.file.Path
+
 /**
  * Date: 19.09.2014
  * Time: 17:18
@@ -35,7 +38,7 @@ abstract class GenePlatform implements PrepareIfRequired {
         return organism
     }
 
-    File getFile() {
+    Path getFile() {
         return platformFile.file
     }
 

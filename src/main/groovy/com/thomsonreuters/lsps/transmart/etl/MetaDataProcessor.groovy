@@ -22,7 +22,7 @@ package com.thomsonreuters.lsps.transmart.etl
 
 import groovy.sql.Sql
 
-import java.io.File;
+import java.nio.file.Path;
 
 class MetaDataProcessor extends DataProcessor {
 
@@ -32,10 +32,10 @@ class MetaDataProcessor extends DataProcessor {
 	}
 
 	@Override
-	public boolean processFiles(File dir, Sql sql, Object studyInfo) {
-		sql.execute("DELETE FROM lt_src_study_metadata" as String)
+	public boolean processFiles(Path dir, Sql sql, studyInfo) {
 
 		dir.eachFileMatch(~/(?i)(?!\.|_DONE_|_FAIL_|_DISABLED_).+\.txt/) { f ->
+			sql.execute("DELETE FROM lt_src_study_metadata" as String)
 
 			def lineNum = 0
 
@@ -187,8 +187,8 @@ class MetaDataProcessor extends DataProcessor {
 											else if (val ==~ /(?i)(Species|Organism)/) header_mappings['species'] = i
 									}
 
-									if (!(header_mappings.containsKey('study_id') && header_mappings.containsKey('title'))) {
-										throw new Exception("Study ID or Title column is not defined")
+									if (!header_mappings.containsKey('study_id')) {
+										throw new Exception("Study ID column is not defined")
 									}
 
 								} else {
@@ -289,7 +289,7 @@ class MetaDataProcessor extends DataProcessor {
 
 	@Override
 	public boolean runStoredProcedures(Object jobId, Sql sql, Object studyInfo) {
-		sql.call("{call " +  "i2b2_load_study_metadata($jobId)}")
+		sql.call("{call i2b2_load_study_metadata($jobId)}")
 		return true;
 	}
 

@@ -44,7 +44,7 @@ class MIRNAQpcrDataProcessorTest extends GroovyTestCase implements ConfigAwareTe
     void testItLoadsData() {
         Study.deleteById(config, studyId)
         processor.process(
-                new File("fixtures/Test Studies/${studyName}/MIRNA_QPCRDataToUpload"),
+                new File("fixtures/Test Studies/${studyName}/MIRNA_QPCRDataToUpload").toPath(),
                 [name: studyName, node: "Test Studies\\${studyName}".toString(), base_datatype: mirnaType])
         assertThat(db, hasSample(studyId, 'GSM918938'))
         assertThat(db, hasPatient('2:S57024').inTrial(studyId))

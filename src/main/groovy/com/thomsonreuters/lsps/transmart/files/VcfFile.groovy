@@ -1,4 +1,7 @@
 package com.thomsonreuters.lsps.transmart.files
+
+import java.nio.file.Path
+
 /**
  * CelFilesConverter
  * Created by bondarev on 3/25/14.
@@ -18,7 +21,7 @@ class VcfFile extends CsvLikeFile implements MetaInfoHeader {
     private int infoColumnIndex
     private int formatColumnIndex
 
-    VcfFile(File file) {
+    VcfFile(Path file) {
         super(file, '##')
     }
 
@@ -183,7 +186,7 @@ class VcfFile extends CsvLikeFile implements MetaInfoHeader {
     private int detectColumnIndex(String columnName) {
         int idx  = header.findIndexOf(columnName.&equals)
         if (idx == -1) {
-            throw new UnsupportedOperationException("Column ${columnName} was not found in ${file.name}")
+            throw new UnsupportedOperationException("Column ${columnName} was not found in ${file.fileName}")
         }
         return idx
     }

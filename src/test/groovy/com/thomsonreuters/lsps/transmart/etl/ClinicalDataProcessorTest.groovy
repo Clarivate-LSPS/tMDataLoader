@@ -57,7 +57,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         setup:
         def processor = new ClinicalDataProcessor(config)
         database.withSql { sql ->
-            processor.processFiles(clinicalData.dir, sql as Sql,
+            processor.processFiles(clinicalData.dir.toPath(), sql as Sql,
                     [name: clinicalData.studyName, node: "\\Test Studies\\${clinicalData.studyName}\\".toString()])
         }
         def statistic = processor.statistic
@@ -126,7 +126,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         String conceptPathForPatient = conceptPath + "Biomarker Data\\Mutations\\TST001 (Entrez ID: 1956)\\AA mutation\\"
 
         processor.process(
-                new File(studyDir(studyName, studyId), "ClinicalDataToUpload"),
+                new File(studyDir(studyName, studyId), "ClinicalDataToUpload").toPath(),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
 
         assertThat(sql, hasPatient('HCC2935').inTrial(studyId))
@@ -158,7 +158,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         String subjId = 'HCC2935'
 
         processor.process(
-                new File(studyDir(studyName, studyId), "ClinicalDataToUpload"),
+                new File(studyDir(studyName, studyId), "ClinicalDataToUpload").toPath(),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
 
         assertThat(sql, hasPatient(subjId).inTrial(studyId))
@@ -166,7 +166,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat(sql, hasNode(conceptPathForPatient + 'T790M\\'))
 
         processor.process(
-                new File(studyDir(studyName, studyId, additionalStudiesDir), "ClinicalDataToUpload"),
+                new File(studyDir(studyName, studyId, additionalStudiesDir), "ClinicalDataToUpload").toPath(),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
 
         assertThat(sql, hasPatient(subjId).inTrial(studyId))

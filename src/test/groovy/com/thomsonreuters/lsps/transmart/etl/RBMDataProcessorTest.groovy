@@ -57,7 +57,7 @@ class RBMDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase
     void testItLoadsData() {
         Study.deleteById(config, studyId)
         processor.process(
-                new File("fixtures/Test Studies/${studyName}/RBMDataToUpload"),
+                new File("fixtures/Test Studies/${studyName}/RBMDataToUpload").toPath(),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
         assertThat(db, hasSample(studyId, 'GA8015ZS-06'))
         assertThat(db, hasPatient('1:S57023').inTrial(studyId))

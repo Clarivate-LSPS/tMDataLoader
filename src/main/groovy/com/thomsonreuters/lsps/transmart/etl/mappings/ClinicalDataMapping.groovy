@@ -8,6 +8,8 @@ import com.thomsonreuters.lsps.transmart.files.CsvLikeFile
 import groovy.transform.stc.ClosureParams
 import groovy.transform.stc.SimpleType
 
+import java.nio.file.Path
+
 /**
  * Date: 07.10.2014
  * Time: 16:08
@@ -45,14 +47,14 @@ class ClinicalDataMapping {
         mappings.values().each(closure)
     }
 
-    public static ClinicalDataMapping loadFromFile(File mappingFile) {
+    public static ClinicalDataMapping loadFromFile(Path mappingFile) {
         return new ClinicalDataMapping(processMappingFile(mappingFile))
     }
 
-    private static Object processMappingFile(File f) {
+    private static Object processMappingFile(Path f) {
         Map mappings = [:]
 
-        logger.log("Mapping file: ${f.name}")
+        logger.log("Mapping file: ${f.fileName}")
 
         CsvLikeFile mappingFile = new CsvLikeFile(f)
         Map<String, Integer> columnMapping = (1..<mappingFile.header.length).collectEntries { [mappingFile.header[it], it] }

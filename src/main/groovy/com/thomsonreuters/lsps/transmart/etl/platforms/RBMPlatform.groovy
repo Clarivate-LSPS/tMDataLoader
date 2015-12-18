@@ -4,8 +4,10 @@ import com.thomsonreuters.lsps.transmart.etl.LogType
 import com.thomsonreuters.lsps.transmart.files.GplFile
 import groovy.sql.Sql
 
+import java.nio.file.Path
+
 class RBMPlatform extends GenePlatform {
-    RBMPlatform(File platformFile, String id, Object config) {
+    RBMPlatform(Path platformFile, String id, Object config) {
         super(new GplFile(platformFile), "RBM", id, config)
     }
 

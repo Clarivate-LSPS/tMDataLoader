@@ -9,8 +9,8 @@ import static org.hamcrest.MatcherAssert.assertThat
  */
 class GplFileTest extends GroovyTestCase {
     void testThatItReadsMetaInfo() {
-        def tstNoMeta = new GplFile(new File("fixtures/Platforms/TST_NO_META.txt"))
-        def tst = new GplFile(new File("fixtures/Platforms/TST.txt"))
+        def tstNoMeta = new GplFile(new File("fixtures/Platforms/TST_NO_META.txt").toPath())
+        def tst = new GplFile(new File("fixtures/Platforms/TST.txt").toPath())
         assertThat(tstNoMeta.metaInfo.PLATFORM_ID, nullValue())
         assertThat(tstNoMeta.metaInfo.PLATFORM_TITLE, nullValue())
         assertThat(tstNoMeta.metaInfo.PLATFORM_SPECIES, nullValue())

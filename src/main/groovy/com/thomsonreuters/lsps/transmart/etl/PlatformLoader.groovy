@@ -1,6 +1,9 @@
 package com.thomsonreuters.lsps.transmart.etl
 import com.thomsonreuters.lsps.transmart.etl.platforms.GenePlatform
 import groovy.sql.Sql
+
+import java.nio.file.Files
+
 /**
  * Created by bondarev on 3/28/14.
  */
@@ -18,7 +21,7 @@ class PlatformLoader {
         if (!genePlatform.isLoaded(sql)) {
             // platform is not defined, loading
             config.logger.log("Loading platform: ${genePlatform.id}")
-            if (!genePlatform.file.exists()) throw new Exception("Platform file not found: ${genePlatform.file.name}")
+            if (!Files.exists(genePlatform.file)) throw new Exception("Platform file not found: ${genePlatform.file.fileName}")
 
             def row = sql.firstRow("select title, organism from deapp.de_gpl_info where platform=${genePlatform.id}")
             if (!row) {

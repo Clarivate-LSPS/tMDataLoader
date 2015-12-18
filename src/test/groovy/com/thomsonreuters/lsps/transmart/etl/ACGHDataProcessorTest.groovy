@@ -31,7 +31,7 @@ class ACGHDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCas
     void testItLoadsData() {
         Study.deleteById(config, studyId)
         withErrorLogging {
-            processor.process(new File(studyDir(studyName, 'GSE0'), "ACGHDataToUpload"),
+            processor.process(new File(studyDir(studyName, 'GSE0'), "ACGHDataToUpload").toPath(),
                     [name: studyName, node: "Test Studies\\${studyFolderName}".toString()])
         }
         assertThat(db, hasSample(studyId, 'TSGA-04-1530', platform: 'ACGH'))

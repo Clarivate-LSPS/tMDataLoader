@@ -36,7 +36,7 @@ abstract class AbstractData<T extends AbstractData> {
     }
 
     boolean loadByPath(config, String path = "Test Studies\\Test study\\"){
-        newDataProcessor(config).process(dir, [name: studyName, node: path])
+        newDataProcessor(config).process(dir.toPath(), [name: studyName, node: path])
     }
 
     public T copyWithSuffix(String suffix) {

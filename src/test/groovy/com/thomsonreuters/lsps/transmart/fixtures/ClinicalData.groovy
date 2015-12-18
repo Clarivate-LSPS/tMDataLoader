@@ -34,7 +34,7 @@ class ClinicalData extends AbstractData<ClinicalData> {
         List<File> files = dir.listFiles()
 
         File mappingFile = files.find { it.name ==~ /.*_Mapping_File\.txt$/ }
-        def mapping = ClinicalDataMapping.loadFromFile(mappingFile)
+        def mapping = ClinicalDataMapping.loadFromFile(mappingFile.toPath())
         mapping.eachFileMapping { ClinicalDataMapping.FileMapping fileMapping ->
             TdfUtils.transformColumnValue(0, new File(dir, fileMapping.fileName)) { _ -> studyId }
         }

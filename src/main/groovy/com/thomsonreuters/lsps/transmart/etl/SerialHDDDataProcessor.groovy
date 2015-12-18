@@ -4,13 +4,15 @@ import com.thomsonreuters.lsps.transmart.files.CsvLikeFile
 import com.thomsonreuters.lsps.transmart.sql.DatabaseType
 import groovy.sql.Sql
 
+import java.nio.file.Path
+
 class SerialHDDDataProcessor extends ExpressionDataProcessor {
     SerialHDDDataProcessor(Object conf) {
         super(conf)
     }
 
     @Override
-    public boolean processFiles(File dir, Sql sql, Object studyInfo) {
+    public boolean processFiles(Path dir, Sql sql, studyInfo) {
         sql.execute("DELETE FROM lt_src_mrna_subj_samp_map" as String)
         sql.execute("DELETE FROM lt_src_mrna_data" as String)
         sql.execute("DELETE FROM lt_src_mrna_xml_data" as String)
@@ -72,12 +74,12 @@ class SerialHDDDataProcessor extends ExpressionDataProcessor {
         return true;
     }
 
-    private boolean loadSerialMetadata(File dir, Sql sql, Object studyInfo) {
+    private boolean loadSerialMetadata(Path dir, Sql sql, Object studyInfo) {
         def metadataFiles = [] as Set
 
         dir.eachFileMatch(~/(?i).+_Sample_Dimensions_Mapping.txt/) {
             studyInfo['runSerialHDDLoad'] = true
-            def fileName = it.name
+            def fileName = it.getFileName().toString()
 
             config.logger.log("Processing ${fileName}")
             metadataFiles.add(fileName)
@@ -94,7 +96,7 @@ class SerialHDDDataProcessor extends ExpressionDataProcessor {
         }
     }
 
-    void processDimensionsMappingFileForPostgres(File f, studyInfo) {
+    void processDimensionsMappingFileForPostgres(Path f, studyInfo) {
         DataLoader.start(database, "lt_src_mrna_xml_data", ['STUDY_ID', 'CATEGORY_CD', 'C_METADATAXML']) {
             st ->
                 def lineNum = processEachMappingRow(f, studyInfo) { row ->
@@ -121,7 +123,7 @@ class SerialHDDDataProcessor extends ExpressionDataProcessor {
         config.logger.log("Processed ${lineNum} rows")
     }
 
-    private processEachMappingRow(File f, studyInfo, Closure<List> processRow) {
+    private processEachMappingRow(Path f, studyInfo, Closure<List> processRow) {
         def row = [studyInfo.id as String, null, null]
         def lineNum = 0
         def dataFile = new CsvLikeFile(f)

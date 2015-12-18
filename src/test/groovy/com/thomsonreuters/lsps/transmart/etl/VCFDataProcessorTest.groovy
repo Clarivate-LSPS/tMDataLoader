@@ -309,6 +309,7 @@ class VCFDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase
 
     void testItNotLoadsStudyWithWrongMapping() {
         String studyName = 'Study with Wrong Mapping';
-        assertFalse(dataProcessor.process(Fixtures.invalidStudies.VCF.getProperty(studyName) as File, [name: studyName, node: $/Invalid Studies\${studyName}/$]))
+        File studyDir = Fixtures.invalidStudies.VCF.getProperty(studyName) as File
+        assertFalse(dataProcessor.process(studyDir.toPath(), [name: studyName, node: $/Invalid Studies\${studyName}/$]))
     }
 }

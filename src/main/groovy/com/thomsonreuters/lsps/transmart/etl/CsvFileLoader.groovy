@@ -3,6 +3,8 @@ package com.thomsonreuters.lsps.transmart.etl
 import com.thomsonreuters.lsps.transmart.files.CsvLikeFile
 import groovy.sql.Sql
 
+import java.nio.file.Path
+
 /**
  * Created by bondarev on 4/8/14.
  */
@@ -18,7 +20,7 @@ class CsvFileLoader {
         this.columns = columns
     }
 
-    void loadFile(File f, Closure prepareEntry = Closure.IDENTITY) {
+    void loadFile(Path f, Closure prepareEntry = Closure.IDENTITY) {
         String insertCommand = "insert into ${table}(${columns.join(',')}) values (${columns.collect { '?' }.join(',')})"
         long lineNum = 0
         CsvLikeFile csvFile = new CsvLikeFile(f)

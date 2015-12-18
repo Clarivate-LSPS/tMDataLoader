@@ -3,12 +3,15 @@ import com.thomsonreuters.lsps.transmart.etl.LogType
 import com.thomsonreuters.lsps.transmart.files.GplFile
 import com.thomsonreuters.lsps.transmart.etl.PlatformProcessor
 import groovy.sql.Sql
+
+import java.nio.file.Path
+
 /**
  * Date: 19.09.2014
  * Time: 12:47
  */
 class GexPlatform extends GenePlatform {
-    GexPlatform(File platformFile, String id, Object config) {
+    GexPlatform(Path platformFile, String id, Object config) {
         super(new GplFile(platformFile), 'Gene Expression', id, config)
     }
 

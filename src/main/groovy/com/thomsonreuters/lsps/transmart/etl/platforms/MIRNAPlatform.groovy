@@ -4,12 +4,14 @@ import com.thomsonreuters.lsps.transmart.etl.LogType
 import com.thomsonreuters.lsps.transmart.files.GplFile
 import groovy.sql.Sql
 
+import java.nio.file.Path
+
 /**
  * Date: 19.09.2014
  * Time: 17:52
  */
 class MIRNAPlatform extends GenePlatform {
-    MIRNAPlatform(File platformFile, String id, String mirnaType, Object config) {
+    MIRNAPlatform(Path platformFile, String id, String mirnaType, Object config) {
         super(new GplFile(platformFile), mirnaType, id, config)
     }
 

@@ -5,13 +5,15 @@ import com.thomsonreuters.lsps.transmart.files.CsvLikeFile
 import com.thomsonreuters.lsps.transmart.sql.DatabaseType;
 import groovy.sql.Sql
 
+import java.nio.file.Path
+
 public class MIRNADataProcessor extends DataProcessor {
     public MIRNADataProcessor(Object conf) {
         super(conf);
     }
 
     @Override
-    public boolean processFiles(File dir, Sql sql, Object studyInfo) {
+    public boolean processFiles(Path dir, Sql sql, studyInfo) {
         sql.execute("DELETE FROM lt_src_mirna_subj_samp_map" as String)
         sql.execute("DELETE FROM lt_src_qpcr_mirna_data" as String)
 
@@ -70,11 +72,11 @@ public class MIRNADataProcessor extends DataProcessor {
         return "I2B2_PROCESS_QPCR_MIRNA_DATA";
     }
 
-    private List processMappingFile(File f, Sql sql, studyInfo) {
+    private List processMappingFile(Path f, Sql sql, studyInfo) {
         def platformList = [] as Set
         def studyIdList = [] as Set
 
-        config.logger.log("Mapping file: ${f.name}")
+        config.logger.log("Mapping file: ${f.fileName}")
 
         int lineNum = 0
         def mappingFile = new CsvLikeFile(f)
@@ -123,18 +125,18 @@ public class MIRNADataProcessor extends DataProcessor {
         return platformList
     }
 
-    private void loadPlatforms(File dir, Sql sql, List platformList, studyInfo, String mirnaType) {
+    private void loadPlatforms(Path dir, Sql sql, List platformList, studyInfo, String mirnaType) {
         platformList.each { String platform ->
-            def mirnaPlatform = new MIRNAPlatform(new File(dir, "${platform}.txt"), platform, mirnaType, config)
+            def mirnaPlatform = new MIRNAPlatform(dir.resolve("${platform}.txt"), platform, mirnaType, config)
             mirnaPlatform.load(sql, studyInfo)
         }
     }
 
-    private void processMIRNAFile(File f, Sql sql, studyInfo) {
-        config.logger.log("Processing ${f.name}")
+    private void processMIRNAFile(Path f, Sql sql, studyInfo) {
+        config.logger.log("Processing ${f.fileName}")
 
         // retrieve data type
-        def m = f.name =~ /(?i)MIRNA_Data_([RLTZ])/
+        def m = f.fileName.toString() =~ /(?i)MIRNA_Data_([RLTZ])/
         if (m[0]) {
             def dataType = m[0][1]
             if (studyInfo['datatype']) {
@@ -152,7 +154,7 @@ public class MIRNADataProcessor extends DataProcessor {
         }
     }
 
-    private void processExpressionFileForPostgres(File f, studyInfo) {
+    private void processExpressionFileForPostgres(Path f, studyInfo) {
         DataLoader.start(database, "lt_src_qpcr_mirna_data", ['TRIAL_NAME', 'PROBESET', 'EXPR_ID', 'INTENSITY_VALUE']) {
             st ->
                 def lineNum = processEachRow(f, studyInfo) { row ->
@@ -162,7 +164,7 @@ public class MIRNADataProcessor extends DataProcessor {
         }
     }
 
-    private void processExpressionFileForGeneric(File f, Sql sql, studyInfo) {
+    private void processExpressionFileForGeneric(Path f, Sql sql, studyInfo) {
         def lineNum = 0
         sql.withTransaction {
             sql.withBatch(1000, """\
@@ -180,7 +182,7 @@ public class MIRNADataProcessor extends DataProcessor {
         config.logger.log("Processed ${lineNum} rows")
     }
 
-    private long processEachRow(File f, studyInfo, Closure<List> processRow) {
+    private long processEachRow(Path f, studyInfo, Closure<List> processRow) {
         def row = [studyInfo.id as String, null, null, null]
         def lineNum = 0
         def dataFile = new CsvLikeFile(f)

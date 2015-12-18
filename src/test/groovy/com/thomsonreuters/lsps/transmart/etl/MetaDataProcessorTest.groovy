@@ -30,7 +30,7 @@ class MetaDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCas
 
     void testItLoadsData() {
         withErrorLogging {
-            processor.process(new File(studyDir(studyName, studyId), "MetaDataToUpload"),
+            processor.process(new File(studyDir(studyName, studyId), "MetaDataToUpload").toPath(),
                     [name: studyName, node: "Test Studies\\${studyName}_${studyId}".toString()])
         }
 
