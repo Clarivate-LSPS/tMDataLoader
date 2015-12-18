@@ -58,26 +58,36 @@ BEGIN
   cz_write_audit(jobId, databaseName, procedureName,'Starting I2B2_DELETE_ALL_DATA', 0, stepCt, 'Done');
 
   if (path_string is not null) then
-    select REGEXP_REPLACE('\' || path_string || '\','(\\){2,}', '\') into pathString from dual;
+		pathString := REGEXP_REPLACE('\' || path_string || '\','(\\){2,}', '\');
   end if;
 
   if (trial_id is null) then
-	select count(distinct trial_name) into trialCount
-		from DEAPP.de_subject_sample_mapping where concept_code in (
-			select concept_cd from I2B2DEMODATA.concept_dimension where concept_path like pathString || '%'
+		SELECT count(DISTINCT trial_name)
+		INTO trialCount
+		FROM DEAPP.de_subject_sample_mapping
+		WHERE concept_code IN (
+			SELECT concept_cd
+			FROM I2B2DEMODATA.concept_dimension
+			WHERE concept_path LIKE pathString || '%'
 		);
-	if (trialCount = 1) then
-		select distinct trial_name into TrialId
-			from DEAPP.de_subject_sample_mapping where concept_code in (
-				select concept_cd from I2B2DEMODATA.concept_dimension where concept_path like pathString || '%'
+		IF (trialCount = 1)
+		THEN
+			SELECT DISTINCT trial_name
+			INTO TrialId
+			FROM DEAPP.de_subject_sample_mapping
+			WHERE concept_code IN (
+				SELECT concept_cd
+				FROM I2B2DEMODATA.concept_dimension
+				WHERE concept_path LIKE pathString || '%'
 			);
-	ELSIF ( trialCount = 0 ) THEN
-		TrialId := null;
-	else
-		raise more_trial;
-	end if;
+		ELSIF (trialCount = 0)
+			THEN
+				TrialId := NULL;
+		ELSE
+			RAISE more_trial;
+		END IF;
   else
-	TrialId := trial_id;
+		TrialId := trial_id;
   end if;
 
   if (path_string is null) then
@@ -90,10 +100,10 @@ BEGIN
     If pathString is NULL THEN
       RAISE path_not_found;
     END IF;
-  else
-    pathString := path_string;
   end if;
 
+	stepCt := stepCt + 1;
+	cz_write_audit(jobId, databaseName, procedureName, 'Path: ' || pathString, 0, stepCt, 'Done');
 
   select count(parent_concept_path) into topNodeCount
     from I2B2DEMODATA.concept_counts
@@ -101,7 +111,7 @@ BEGIN
     concept_path = pathString;
 
   if (topNodeCount > 0) then
-    select parent_concept_path into topNode
+    select distinct parent_concept_path into topNode
       from I2B2DEMODATA.concept_counts
       where
       concept_path = pathString;
@@ -109,18 +119,20 @@ BEGIN
     topNode := SUBSTR(pathString,0,instr(pathString,'\',2));
   end if;
 
-  if pathString != ''  or pathString != '%'
+  if pathString != '' or pathString != '%'
   then
-	stepCt := stepCt + 1;
-	cz_write_audit(jobId, databaseName, procedureName, 'Deleting data for path: ' || pathString, 0, stepCt, 'Done');
+		stepCt := stepCt + 1;
+		cz_write_audit(jobId, databaseName, procedureName, 'Deleting data for path: ' || pathString, 0, stepCt, 'Done');
 
-	--	delete all i2b2 nodes
+		COMMIT;
 
-	i2b2_delete_all_nodes(pathString,jobId);
+		--	delete all i2b2 nodes
 
-  --	delete any table_access data
-  delete from table_access
-  where c_fullname like pathString || '%';
+		i2b2_delete_all_nodes(pathString,jobId);
+
+		--	delete any table_access data
+		delete from table_access
+		where c_fullname like pathString || '%';
 
 	--	delete any i2b2_tag data
 
@@ -304,35 +316,13 @@ BEGIN
     end if;
 	end if;
 
-  delete from deapp.de_subject_snp_dataset
-  where trial_name = trialId;
-  stepCt := stepCt + 1;
-  cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from DE_SUBJECT_SNP_DATASET',SQL%ROWCOUNT,stepCt,'Done');
-  commit;
+		delete from deapp.de_subject_snp_dataset
+		where trial_name = trialId;
+		stepCt := stepCt + 1;
+		cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from DE_SUBJECT_SNP_DATASET',SQL%ROWCOUNT,stepCt,'Done');
+		commit;
 
-	/*Check and delete top node, if remove node is last*/
-  stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Check and delete top node '||topNode||', if remove node is last',SQL%ROWCOUNT,stepCt,'Done');
-	commit;
-
-  select count(*) into countNodeUnderTop
-    from I2B2DEMODATA.concept_counts
-    where parent_concept_path = topNode;
-  stepCt := stepCt + 1;
-  cz_write_audit(jobId,databaseName,procedureName,'Check need removed top node '||topNode,SQL%ROWCOUNT,stepCt,'Done');
-  commit;
-
-  if (countNodeUnderTop = 0)
-  then
-    select count(*) into isExistTopNode
-     from I2B2METADATA.i2b2
-    where c_fullname = topNode;
-
-    if (isExistTopNode !=0 ) then
-      i2b2_delete_all_data(null, topNode, jobID);
-    end if;
-
-  end if;
+		i2b2_remove_empty_parent_nodes(pathString, jobID);
 
   end if;
 

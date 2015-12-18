@@ -150,16 +150,17 @@ abstract class DataProcessor {
 
     void checkStudyExist(Sql sql, studyInfo) {
         if (studyInfo.oldId && !config.replaceStudy && studyInfo.oldId != studyInfo.id) {
-            throw new DataProcessingException("Other study by same path found with different studyId: ${studyInfo.node}")
+            throw new DataProcessingException("Other study by same path found with different studyId: ${studyInfo.node}"  as String)
         }
 
         def row = sql.firstRow("""
-                select c_fullname
+                select distinct
+                  first_value(c_fullname) over (partition by sourcesystem_cd order by c_fullname) as c_fullname
                 from i2b2metadata.i2b2
-                where sourcesystem_cd = UPPER(?) and c_fullname not like ? || '%' escape '`' order by c_fullname""",
-                [studyInfo.id, studyInfo.node])
-        if (row) {
-            throw new DataProcessingException("Other study with same id found by different path: ${row.c_fullname}")
+                where sourcesystem_cd = UPPER(?)""",
+                [studyInfo.id])
+        if (row && row.c_fullname != studyInfo.node) {
+            throw new DataProcessingException("Other study with same id found by different path: ${row.c_fullname}" as String)
         }
     }
 }
