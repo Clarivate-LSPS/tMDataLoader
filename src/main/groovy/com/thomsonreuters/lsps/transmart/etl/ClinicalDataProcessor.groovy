@@ -172,13 +172,16 @@ class ClinicalDataProcessor extends DataProcessor {
             mapping.eachFileMapping { fileMapping ->
                 this.processFile(sql, new File(dir, fileMapping.fileName), fileMapping)
             }
-            checkStudyExist(sql, studyInfo)
         }
         new File(dir, "SummaryStatistic.txt").withWriter { writer ->
             statistic.printReport(writer)
         }
 
-        return trySetStudyId(sql, studyInfo)
+        if (!trySetStudyId(sql, studyInfo)) {
+            return false
+        }
+        checkStudyExist(sql, studyInfo)
+        return true
     }
 
     private void addStatisticVariables(TableStatistic table, CsvLikeFile csvFile, fMappings) {
@@ -244,7 +247,6 @@ class ClinicalDataProcessor extends DataProcessor {
                 def studyId = rows[0].study_id
                 if (studyId) {
                     studyInfo['id'] = studyId
-                    ckeckStudyIdExist(sql, studyInfo)
                 } else {
                     config.logger.log(LogType.ERROR, "Study ID is null!")
                     return false

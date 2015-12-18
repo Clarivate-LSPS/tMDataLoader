@@ -117,7 +117,6 @@ public class MIRNADataProcessor extends DataProcessor {
                 } else {
                     studyInfo['id'] = studyId
                 }
-                ckeckStudyIdExist(sql, studyInfo)
             }
         }
 

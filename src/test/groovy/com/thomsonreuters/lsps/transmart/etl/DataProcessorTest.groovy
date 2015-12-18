@@ -1,24 +1,15 @@
 package com.thomsonreuters.lsps.transmart.etl
-
 import com.thomsonreuters.lsps.transmart.Fixtures
 import com.thomsonreuters.lsps.transmart.fixtures.ClinicalData
 import com.thomsonreuters.lsps.transmart.fixtures.ExpressionData
 import com.thomsonreuters.lsps.transmart.fixtures.Study
-import org.junit.Assert
 import spock.lang.Specification
 
-import static org.hamcrest.CoreMatchers.equalTo
 import static org.junit.Assert.assertEquals
-import static org.junit.Assert.assertThat
-import static org.junit.Assert.assertTrue
-
 /**
  * Created by Alexander Omelchenko on 15.12.2015.
  */
 class DataProcessorTest extends Specification implements ConfigAwareTestCase {
-
-    private ClinicalDataProcessor _processor
-
     ClinicalData clinicalData = Fixtures.clinicalData
     ClinicalData secondClinicalData = clinicalData.copyAttachedToStudy(clinicalData.studyInfo.withSuffixForId("_2"))
     ClinicalData thirdClinicalData = clinicalData.copyWithSuffix('THD')
@@ -34,34 +25,36 @@ class DataProcessorTest extends Specification implements ConfigAwareTestCase {
 
     ExpressionData expressionData = Fixtures.getExpressionData()
     ExpressionData secondExpressionData = expressionData.copyAttachedToStudy(expressionData.studyInfo.withSuffixForId("_2"))
-    String studyExpressionName = expressionData.studyName
-    String studyExpressionId = expressionData.studyId
-    String platformId = 'GEX_TST'
-
 
     void setup() {
         ConfigAwareTestCase.super.setUp()
     }
 
-//    ExpressionDataProcessor getExpProcessor() {
-//        _processor ?: (_processor = new ExpressionDataProcessor(config))
-//    }
-//
-//    ClinicalDataProcessor getProcessor() {
-//        _processor ?: (_processor = new ClinicalDataProcessor(config))
-//    }
-
-    void 'Upload data with SECURITY'() {
+    def 'it should upload data with SECURITY'() {
         setup:
         cleanAll()
 
         config.securitySymbol = 'Y'
-        def result = clinicalData.load(config)
 
-        expect:
-        assertThat("Clinical data loading shouldn't fail", result, equalTo(true))
+        when:
+        def loadedSuccessfully = clinicalData.load(config)
+
+        then:
+        loadedSuccessfully
         checkSetSecurityStatus(studyId, 1)
+    }
 
+    def "it shouldn't load study if study with same id already loaded by different path"() {
+        setup:
+        clinicalData.reload(config)
+
+        when:
+        def sameStudyByDifferentPath = clinicalData.studyInfo.withName('Other Test Study Path')
+        clinicalData.copyAttachedToStudy(sameStudyByDifferentPath).load(config)
+
+        then:
+        def ex = thrown(DataProcessingException)
+        ex.message == "Other study with same id found by different path: \\Test Studies\\Test Study\\" as String
     }
 
     void 'Reupload by same path, different studyId without replace study option Clinical data'() {
@@ -71,14 +64,12 @@ class DataProcessorTest extends Specification implements ConfigAwareTestCase {
         config.securitySymbol = 'Y'
         clinicalData.load(config)
 
-        expect:
-        try{
-            secondClinicalData.load(config)
-        } catch(Exception e){
-            assertEquals((String)"Other study with same path found by different studyId: ${originalPath}", e.getMessage())
-            return
-        }
-        Assert.fail("Expected validation exception was not thrown");
+        when:
+        secondClinicalData.load(config)
+
+        then:
+        def ex = thrown(DataProcessingException)
+        ex.message == "Other study by same path found with different studyId: ${originalPath}" as String
     }
 
     void 'Reupload by same path, different studyId without replace study option Expression data'() {
@@ -87,14 +78,12 @@ class DataProcessorTest extends Specification implements ConfigAwareTestCase {
 
         expressionData.load(config)
 
-        expect:
-        try{
-            secondExpressionData.load(config)
-        } catch(Exception e){
-            assertEquals((String)"Other study with same path found by different studyId: ${originalPath}", e.getMessage())
-            return
-        }
-        Assert.fail("Expected validation exception was not thrown");
+        when:
+        secondExpressionData.load(config)
+
+        then:
+        def ex = thrown(DataProcessingException)
+        ex.message == "Other study by same path found with different studyId: ${originalPath}" as String
     }
 
     void 'Reupload by same path, different studyId with replace study option'() {
@@ -112,8 +101,8 @@ class DataProcessorTest extends Specification implements ConfigAwareTestCase {
         secondClinicalData.load(config)
 
         expect:
-        assertTrue(checkSetSecurityStatus(studyId, 0))
-        assertTrue(checkSetSecurityStatus(secondStudyId, 1))
+        checkSetSecurityStatus(studyId, 0)
+        checkSetSecurityStatus(secondStudyId, 1)
 
         def bioExpIdNew = sql.firstRow("select bio_experiment_id as bioExpId from biomart.bio_experiment where accession = ?", secondStudyId)
         def bioDataIdNew = sql.firstRow("select bio_data_id as bioDataId from biomart.bio_data_uid where unique_id = ?",
@@ -136,32 +125,29 @@ class DataProcessorTest extends Specification implements ConfigAwareTestCase {
     }
 
     private void cleanOldData(remStudyId) {
+        remStudyId = remStudyId.toUpperCase()
         def tables = [
                 ['table': 'biomart.bio_experiment', 'value': remStudyId, 'column': 'accession'],
-                ['table': 'biomart.bio_data_uid', 'value': ("EXP:" + remStudyId).toUpperCase(), 'column': 'unique_id'],
-                ['table': 'searchapp.search_secure_object', 'value': ("EXP:" + remStudyId).toUpperCase(), 'column': 'bio_data_unique_id']
+                ['table': 'biomart.bio_data_uid', 'value': "EXP:$remStudyId", 'column': 'unique_id'],
+                ['table': 'searchapp.search_secure_object', 'value': "EXP:$remStudyId", 'column': 'bio_data_unique_id']
         ]
         for (t in tables) {
-            def res = sql.execute("DELETE FROM ${t.table} WHERE ${t.column} = ?",
-                    [t.value])
+            sql.execute("DELETE FROM ${t.table} WHERE ${t.column} = ?", [t.value as String])
         }
 
     }
 
-    private Boolean checkSetSecurityStatus(checkStudyId, value) {
-
+    private void checkSetSecurityStatus(String checkStudyId, value) {
+        checkStudyId = checkStudyId.toUpperCase()
         def tables = [
                 ['table': 'biomart.bio_experiment', 'value': checkStudyId, 'column': 'accession'],
-                ['table': 'biomart.bio_data_uid', 'value': ("EXP:" + checkStudyId).toUpperCase(), 'column': 'unique_id'],
-                ['table': 'searchapp.search_secure_object', 'value': ("EXP:" + checkStudyId).toUpperCase(), 'column': 'bio_data_unique_id']
+                ['table': 'biomart.bio_data_uid', 'value': "EXP:$checkStudyId", 'column': 'unique_id'],
+                ['table': 'searchapp.search_secure_object', 'value': "EXP:$checkStudyId", 'column': 'bio_data_unique_id']
         ]
         for (t in tables) {
-            def res = sql.firstRow("SELECT COUNT(*) AS cnt FROM ${t.table} WHERE ${t.column} = ?",
-                    [t.value])
-            if (res.cnt != value) return false
+            def res = sql.firstRow("SELECT COUNT(*) AS cnt FROM ${t.table} WHERE ${t.column} = ?", [t.value as String])
+            assert res.cnt == value, "Number of records in ${t.table} (${res.cnt}) doesn't match expected ($value)"
         }
-
-        return true
     }
 
     void 'Upload study with clinical data into top directory'(){
@@ -171,15 +157,12 @@ class DataProcessorTest extends Specification implements ConfigAwareTestCase {
         clinicalData.load(config, "${originalPath}")
         fourthClinicalData.load(config,"${originalPath}")
 
+        when:
+        thirdClinicalData.loadByPath(config, originalPath)
 
-        expect:
-        try{
-            thirdClinicalData.loadByPath(config, originalPath)
-        } catch(Exception e){
-            assertEquals((String)"This path contains several different studyId : ${originalPath}", e.getMessage())
-            return
-        }
-        Assert.fail("Expected validation exception was not thrown");
+        then:
+        def ex = thrown(DataProcessingException)
+        ex.message == "'\\Test Studies\\Test Study\\' path contains several different studyIds: [GSE0, GSE0FTH]"
     }
 
 }

@@ -47,25 +47,13 @@ abstract class DataProcessor {
     boolean process(File dir, studyInfo) {
         def res = false
 
+        studyInfo.node = "\\${studyInfo.node}\\".replace("\\\\", '\\')
+
         logger.log("Connecting to database server")
-        database.withSql { sql ->
+        database.withSql { Sql sql ->
             sql.connection.autoCommit = false
 
-            String currentNodePath = (studyInfo.node[studyInfo.node.size() - 1] == '\\' ? studyInfo.node : studyInfo.node + '\\')
-            currentNodePath = currentNodePath[0] == '\\' ? (currentNodePath) : ('\\' + currentNodePath)
-
-            def row = sql.rows("select distinct sourcesystem_cd from i2b2metadata.i2b2 where " +
-                    "c_fullname like ? ESCAPE '~'", [currentNodePath + '%'])
-
-            if (row.size() > 1) {
-                throw new Exception("This path contains several different studyId : ${currentNodePath}")
-            }
-
-            if ((config?.replaceStudy) && (row.size() != 0)) {
-                def processor = new DeleteDataProcessor(config)
-                studyInfo.put('oldId', row[0].sourcesystem_cd)
-                processor.process('id': row[0].sourcesystem_cd, 'path': currentNodePath);
-            }
+            checkStudiesBySamePath(studyInfo, sql)
 
             if (processFiles(dir, sql, studyInfo)) {
                 res = new AuditableJobRunner(sql, config).runJob(procedureName) { jobId ->
@@ -134,27 +122,41 @@ abstract class DataProcessor {
         return res
     }
 
+    protected void checkStudiesBySamePath(studyInfo, sql) {
+        def row = sql.rows("""
+            select distinct sourcesystem_cd
+            from i2b2metadata.i2b2
+            where sourcesystem_cd is not null
+              and c_fullname like ? ESCAPE '`'
+            order by sourcesystem_cd
+        """, [studyInfo.node + '%'])
+
+        if (row.size() > 1) {
+            throw new DataProcessingException("'${studyInfo.node}' path contains several different studyIds: ${row*.sourcesystem_cd}")
+        }
+
+        if (row.size() == 1) {
+            studyInfo.oldId = row[0].sourcesystem_cd
+        }
+
+        if (studyInfo.oldId && (config?.replaceStudy)) {
+            logger.log(LogType.MESSAGE, "Found another study by path: '${studyInfo.node}' with ID: ${studyInfo.oldId}. Removing...")
+            new DeleteDataProcessor(config).process('id': studyInfo.oldId, 'path': studyInfo.node);
+        }
+    }
+
     void checkStudyExist(Sql sql, studyInfo) {
-        String fullName = "${(studyInfo['node'] =~ /^\\.*/ ? '' : '\\')}${studyInfo['node']}\\%";
+        if (studyInfo.oldId && !config.replaceStudy && studyInfo.oldId != studyInfo.id) {
+            throw new DataProcessingException("Other study by same path found with different studyId: ${studyInfo.node}")
+        }
+
         def row = sql.firstRow("""
                 select c_fullname
                 from i2b2metadata.i2b2
                 where sourcesystem_cd = UPPER(?) and c_fullname not like ? escape '`' order by c_fullname""",
-                [studyInfo['id'], fullName])
+                [studyInfo.id, studyInfo.node])
         if (row) {
-            throw new Exception("Other study with same id found by different path: ${row.c_fullname}")
-        }
-    }
-
-    void ckeckStudyIdExist(Sql sql, studyInfo) {
-        String fullName = "${(studyInfo['node'] =~ /^\\.*/ ? '' : '\\')}${studyInfo['node']}\\%";
-        def row = sql.firstRow("""
-                                select c_fullname
-                                from i2b2metadata.i2b2
-                                where sourcesystem_cd <> UPPER(?) and c_fullname like ? escape '`' order by c_fullname""",
-                [studyInfo['id'], fullName])
-        if (row && (!config.replaceStudy)) {
-            throw new Exception("Other study with same path found by different studyId: ${row.c_fullname}")
+            throw new DataProcessingException("Other study with same id found by different path: ${row.c_fullname}")
         }
     }
 }

@@ -1,6 +1,5 @@
 package com.thomsonreuters.lsps.transmart.etl
 
-import com.thomsonreuters.lsps.transmart.etl.platforms.GexPlatform
 import com.thomsonreuters.lsps.transmart.etl.platforms.aCGHPlatform
 import com.thomsonreuters.lsps.transmart.files.CsvLikeFile
 import groovy.sql.Sql
@@ -60,7 +59,6 @@ class ACGHDataProcessor extends DataProcessor {
                 } else {
                     studyInfo['id'] = studyId
                 }
-                ckeckStudyIdExist(sql, studyInfo)
             }
         }
 
