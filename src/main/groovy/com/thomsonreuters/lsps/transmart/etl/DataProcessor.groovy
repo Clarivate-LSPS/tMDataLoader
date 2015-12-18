@@ -25,6 +25,9 @@ import groovy.sql.Sql
 import org.apache.commons.csv.CSVFormat
 import org.apache.commons.csv.CSVPrinter
 
+import java.nio.file.Files
+import java.nio.file.Path
+
 abstract class DataProcessor {
     def config
     Database database
@@ -34,7 +37,7 @@ abstract class DataProcessor {
         database = new Database(config)
     }
 
-    abstract boolean processFiles(File dir, Sql sql, studyInfo)
+    abstract boolean processFiles(Path dir, Sql sql, studyInfo)
 
     abstract boolean runStoredProcedures(jobId, Sql sql, studyInfo)
 
@@ -44,7 +47,7 @@ abstract class DataProcessor {
         return config.logger
     }
 
-    boolean process(File dir, studyInfo) {
+    boolean process(Path dir, studyInfo) {
         def res = false
 
         studyInfo.node = "\\${studyInfo.node}\\".replace("\\\\", '\\')
@@ -70,7 +73,7 @@ abstract class DataProcessor {
                 def rows = sql.rows("select * from wt_clinical_data_dups" as String)
                 CSVFormat csvFormat = CSVFormat.DEFAULT.withRecordSeparator('\n')
                 try {
-                    new File(dir, 'duplicates.csv').withWriter { fileWriter ->
+                    Files.newBufferedWriter(dir.resolve('duplicates.csv')).withWriter { fileWriter ->
                         new CSVPrinter(fileWriter, csvFormat).withCloseable { CSVPrinter csvFilePrinter ->
                             Object[] FILE_HEADER = ["site_id", "subject_id", "visit_name", "data_label", "category_cd", "modifier_cd", "link_value"]
                             csvFilePrinter.printRecord(FILE_HEADER);

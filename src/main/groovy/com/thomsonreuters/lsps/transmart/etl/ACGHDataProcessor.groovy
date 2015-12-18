@@ -4,6 +4,9 @@ import com.thomsonreuters.lsps.transmart.etl.platforms.aCGHPlatform
 import com.thomsonreuters.lsps.transmart.files.CsvLikeFile
 import groovy.sql.Sql
 
+import java.nio.file.Files
+import java.nio.file.Path
+
 /**
  * Created by transmart on 3/6/15.
  */
@@ -12,11 +15,11 @@ class ACGHDataProcessor extends DataProcessor {
         super(conf)
     }
 
-    private List processMappingFile(File f, Sql sql, studyInfo){
+    private List processMappingFile(Path f, Sql sql, studyInfo){
         def platformList = [] as Set
         def studyIdList = [] as Set
 
-        config.logger.log("Mapping file: ${f.name}")
+        config.logger.log("Mapping file: ${f.fileName}")
 
         int lineNum = 0
         def mappingFile = new CsvLikeFile(f)
@@ -66,7 +69,7 @@ class ACGHDataProcessor extends DataProcessor {
     }
 
     @Override
-    boolean processFiles(File dir, Sql sql, Object studyInfo) {
+    boolean processFiles(Path dir, Sql sql, studyInfo) {
         sql.execute("DELETE FROM lt_src_mrna_subj_samp_map" as String)
         sql.execute("DELETE FROM lt_src_acgh_data" as String)
 
@@ -91,15 +94,15 @@ class ACGHDataProcessor extends DataProcessor {
         return true;
     }
 
-    private void loadPlatforms(File dir, Sql sql, List platformList, studyInfo) {
+    private void loadPlatforms(Path dir, Sql sql, List platformList, studyInfo) {
         platformList.each { String platform ->
 
-            File acghPlatformFile;
+            Path acghPlatformFile;
             dir.eachFileMatch(~/${platform}_region_platform.txt|${platform}.txt/){
-                acghPlatformFile = new File('', it)
+                acghPlatformFile = it.resolve('')
             }
 
-            if (acghPlatformFile.exists()){
+            if (Files.exists(acghPlatformFile)) {
                 def acghPlatform = new aCGHPlatform(acghPlatformFile, platform, config)
                 studyInfo['loadaCGHPlatform'] = !acghPlatform.isLoaded(sql)
                 acghPlatform.load(sql, studyInfo)
@@ -114,8 +117,8 @@ class ACGHDataProcessor extends DataProcessor {
 
 
 
-    void processACGHFile(File f, Sql sql, studyInfo) {
-        config.logger.log("Processing ${f.name}")
+    void processACGHFile(Path f, Sql sql, studyInfo) {
+        config.logger.log("Processing ${f.fileName}")
 
         DataLoader.start(database, "lt_src_acgh_data", ['TRIAL_NAME', 'REGION_NAME', 'EXPR_ID', 'CHIP', 'SEGMENTED', 'FLAG', 'PROBLOSS', 'PROBNORM', 'PROBGAIN', 'PROBAMP']) {
             st ->
@@ -126,7 +129,7 @@ class ACGHDataProcessor extends DataProcessor {
         }
     }
 
-    long processEachRow(File f, studyInfo, Closure<List> processRow) {
+    long processEachRow(Path f, studyInfo, Closure<List> processRow) {
         def row = [studyInfo.id as String, null, null, null, null, null, null, null, null, null]
         def lineNum = 0
         def dataFile = new CsvLikeFile(f)

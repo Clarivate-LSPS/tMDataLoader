@@ -4,8 +4,10 @@ import com.thomsonreuters.lsps.transmart.etl.LogType
 import com.thomsonreuters.lsps.transmart.files.GplFile
 import groovy.sql.Sql
 
+import java.nio.file.Path
+
 class RNASeqPlatform extends GenePlatform {
-    RNASeqPlatform(File platformFile, String id, Object config) {
+    RNASeqPlatform(Path platformFile, String id, Object config) {
         super(new GplFile(platformFile), "RNASEQ", id, config)
     }
 

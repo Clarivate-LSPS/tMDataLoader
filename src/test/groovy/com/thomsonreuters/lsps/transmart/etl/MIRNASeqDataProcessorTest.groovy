@@ -45,7 +45,7 @@ class MIRNASeqDataProcessorTest extends GroovyTestCase implements ConfigAwareTes
 
     void testItLoadsData() {
         processor.process(
-                new File("fixtures/Test Studies/${studyName}/MIRNA_SEQDataToUpload"),
+                new File("fixtures/Test Studies/${studyName}/MIRNA_SEQDataToUpload").toPath(),
                 [name: studyName, node: "Test Studies\\${studyName}".toString(), base_datatype: mirnaType])
         assertThat(db, hasSample(studyId, 'GSM918946'))
         assertThat(db, hasPatient('GSM918943').inTrial(studyId))
@@ -65,7 +65,7 @@ class MIRNASeqDataProcessorTest extends GroovyTestCase implements ConfigAwareTes
 
     void testItLoadsLog2Data() {
         processor.process(
-                new File("fixtures/Test Studies/${studyName}/MIRNA_SEQDataToUpload_Log2"),
+                new File("fixtures/Test Studies/${studyName}/MIRNA_SEQDataToUpload_Log2").toPath(),
                 [name: studyName, node: "Test Studies\\${studyName}".toString(), base_datatype: mirnaType])
         assertThat(db, hasSample(studyId, 'GSM918946'))
         assertThat(db, hasPatient('GSM918943').inTrial(studyId))

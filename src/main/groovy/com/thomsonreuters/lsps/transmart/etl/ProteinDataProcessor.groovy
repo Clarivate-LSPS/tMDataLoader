@@ -5,6 +5,8 @@ import com.thomsonreuters.lsps.transmart.files.CsvLikeFile
 import com.thomsonreuters.lsps.transmart.sql.DatabaseType;
 import groovy.sql.Sql
 
+import java.nio.file.Path
+
 public class ProteinDataProcessor extends DataProcessor {
     private int havePeptide = 1 // 1 - if peptide is defined, 0 - else
 
@@ -13,7 +15,7 @@ public class ProteinDataProcessor extends DataProcessor {
     }
 
     @Override
-    public boolean processFiles(File dir, Sql sql, Object studyInfo) {
+    public boolean processFiles(Path dir, Sql sql, studyInfo) {
         sql.execute("DELETE FROM lt_src_proteomics_sub_sam_map" as String)
         sql.execute("DELETE FROM lt_src_proteomics_data" as String)
 
@@ -66,11 +68,11 @@ public class ProteinDataProcessor extends DataProcessor {
         return "I2B2_PROCESS_PROTEOMICS_DATA";
     }
 
-    private List processMappingFile(File f, Sql sql, studyInfo) {
+    private List processMappingFile(Path f, Sql sql, studyInfo) {
         def platformList = [] as Set
         def studyIdList = [] as Set
 
-        config.logger.log("Mapping file: ${f.name}")
+        config.logger.log("Mapping file: ${f.fileName}")
 
         int lineNum = 0
         def mappingFile = new CsvLikeFile(f)
@@ -119,18 +121,18 @@ public class ProteinDataProcessor extends DataProcessor {
         return platformList
     }
 
-    private void loadPlatforms(File dir, Sql sql, List platformList, studyInfo) {
+    private void loadPlatforms(Path dir, Sql sql, List platformList, studyInfo) {
         platformList.each { String platform ->
-            def proteinPlatform = new ProteinPlatform(new File(dir, "${platform}.txt"), platform, config)
+            def proteinPlatform = new ProteinPlatform(dir.resolve("${platform}.txt"), platform, config)
             proteinPlatform.load(sql, studyInfo)
         }
     }
 
-    private void processProteinFile(File f, Sql sql, studyInfo) {
-        config.logger.log("Processing ${f.name}")
+    private void processProteinFile(Path f, Sql sql, studyInfo) {
+        config.logger.log("Processing ${f.fileName}")
 
         // retrieve data type
-        def m = f.name =~ /(?i)PROTEIN_Data_([RLT])/
+        def m = f.fileName.toString() =~ /(?i)PROTEIN_Data_([RLT])/
         if (m[0]) {
             def dataType = m[0][1]
             if (studyInfo['datatype']) {
@@ -148,7 +150,7 @@ public class ProteinDataProcessor extends DataProcessor {
         }
     }
 
-    private void processProteinFileForPostgres(File f, studyInfo) {
+    private void processProteinFileForPostgres(Path f, studyInfo) {
         DataLoader.start(database, "lt_src_proteomics_data", ['TRIAL_NAME', 'PEPTIDE', 'M_P_ID', 'INTENSITY_VALUE']) {
             st ->
                 def lineNum = processEachRow(f, studyInfo) { row ->
@@ -158,7 +160,7 @@ public class ProteinDataProcessor extends DataProcessor {
         }
     }
 
-    private void processProteinFileForGeneric(File f, Sql sql, studyInfo) {
+    private void processProteinFileForGeneric(Path f, Sql sql, studyInfo) {
         def lineNum = 0
         sql.withTransaction {
             sql.withBatch(1000, """\
@@ -175,7 +177,7 @@ public class ProteinDataProcessor extends DataProcessor {
         config.logger.log("Processed ${lineNum} rows")
     }
 
-    private long processEachRow(File f, studyInfo, Closure<List> processRow) {
+    private long processEachRow(Path f, studyInfo, Closure<List> processRow) {
         def row = [studyInfo.id as String, null, null, null]
         def lineNum = 0
         def dataFile = new CsvLikeFile(f)

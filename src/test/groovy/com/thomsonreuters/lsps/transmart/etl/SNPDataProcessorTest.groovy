@@ -31,7 +31,7 @@ class SNPDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase
 
     void testItLoadsData() {
         withErrorLogging {
-            processor.process(new File(studyDir(studyName, studyId), "SNPDataToUpload"),
+            processor.process(new File(studyDir(studyName, studyId), "SNPDataToUpload").toPath(),
                     [name: studyName, node: "Test Studies\\${studyName}".toString()])
         }
         assertThat(db, hasSample(studyId, 'TST001', platform: 'SNP'))
@@ -47,14 +47,14 @@ class SNPDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase
 
     void testItMergeSamples() {
         withErrorLogging {
-            processor.process(new File(studyDir(studyName, studyId), "SNPDataToUpload"),
+            processor.process(new File(studyDir(studyName, studyId), "SNPDataToUpload").toPath(),
                     [name: studyName, node: "Test Studies\\${studyName}".toString()])
         }
         assertThat(db, hasCopyNumber('TST001', 'SNP_A-4265338', 0.628913))
         assertThat(db, hasCopyNumber('TST002', 'CN_497981', 0.057206))
         assertThat(db, hasNode($/\Test Studies\${studyName}\SNP\${platformId}\Unknown\/$).withPatientCount(3))
 
-        processor.process(new File(studyDir(studyName, studyId, additionalStudiesDir), "SNPDataToUpload"),
+        processor.process(new File(studyDir(studyName, studyId, additionalStudiesDir), "SNPDataToUpload").toPath(),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
         assertThat(db, hasCopyNumber('TST001', 'SNP_A-4265338', 0.528913))
         assertThat(db, hasCopyNumber('TST002', 'CN_497981', 0.057206))

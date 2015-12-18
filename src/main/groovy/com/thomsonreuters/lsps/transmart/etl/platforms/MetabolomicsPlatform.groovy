@@ -4,8 +4,10 @@ import com.thomsonreuters.lsps.transmart.etl.LogType
 import com.thomsonreuters.lsps.transmart.files.GplFile
 import groovy.sql.Sql
 
+import java.nio.file.Path
+
 class MetabolomicsPlatform extends GenePlatform {
-    MetabolomicsPlatform(File platformFile, String id, Object config) {
+    MetabolomicsPlatform(Path platformFile, String id, Object config) {
         super(new GplFile(platformFile), "METABOLOMICS", id, config)  // METABOLOMICS_ANNOT ?
     }
 

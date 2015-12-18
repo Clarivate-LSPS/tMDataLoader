@@ -53,7 +53,7 @@ class MetabolomicsDataProcessorTest extends GroovyTestCase implements ConfigAwar
     void testItLoadsData() {
         Study.deleteById(config, studyId)
         processor.process(
-                new File("fixtures/Test Studies/${studyName}/MetabolomicsDataToUpload"),
+                new File("fixtures/Test Studies/${studyName}/MetabolomicsDataToUpload").toPath(),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
         assertThat(db, hasSample(studyId, '18PP'))
         assertThat(db, hasPatient('null:GSM918960').inTrial(studyId))

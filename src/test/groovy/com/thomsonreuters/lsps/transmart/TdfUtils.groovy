@@ -31,7 +31,7 @@ class TdfUtils {
             oldFile = new File(oldFile.parentFile, "${oldFile.name}.bak")
             newFile.renameTo(oldFile)
         }
-        CsvLikeFile csvMappingFile = new CsvLikeFile(oldFile)
+        CsvLikeFile csvMappingFile = new CsvLikeFile(oldFile.toPath())
         newFile.withWriter { expr ->
             def printer = new CSVPrinter(expr, CSVFormat.TDF.withHeader(csvMappingFile.header))
             csvMappingFile.eachEntry { String[] values ->

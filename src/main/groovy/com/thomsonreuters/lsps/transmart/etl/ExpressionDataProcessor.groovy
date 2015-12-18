@@ -25,6 +25,8 @@ import com.thomsonreuters.lsps.transmart.files.CsvLikeFile
 import com.thomsonreuters.lsps.transmart.sql.DatabaseType
 import groovy.sql.Sql
 
+import java.nio.file.Path
+
 class ExpressionDataProcessor extends DataProcessor {
 
     public static final String DEFAULT_TISSUE_TYPE = 'Blood'
@@ -34,7 +36,7 @@ class ExpressionDataProcessor extends DataProcessor {
     }
 
     @Override
-    public boolean processFiles(File dir, Sql sql, Object studyInfo) {
+    public boolean processFiles(Path dir, Sql sql, studyInfo) {
         sql.execute("DELETE FROM lt_src_mrna_subj_samp_map" as String)
         sql.execute("DELETE FROM lt_src_mrna_data" as String)
 
@@ -92,11 +94,11 @@ class ExpressionDataProcessor extends DataProcessor {
         return "I2B2_PROCESS_MRNA_DATA";
     }
 
-    List processMappingFile(File f, Sql sql, studyInfo) {
+    List processMappingFile(Path f, Sql sql, studyInfo) {
         def platformList = [] as Set
         def studyIdList = [] as Set
 
-        config.logger.log("Mapping file: ${f.name}")
+        config.logger.log("Mapping file: ${f.getFileName()}")
 
         int lineNum = 0
         def mappingFile = new CsvLikeFile(f)
@@ -151,18 +153,18 @@ class ExpressionDataProcessor extends DataProcessor {
         return platformList
     }
 
-    void loadPlatforms(File dir, Sql sql, List platformList, studyInfo) {
+    void loadPlatforms(Path dir, Sql sql, List platformList, studyInfo) {
         platformList.each { String platform ->
-            def gexPlatform = new GexPlatform(new File(dir, "${platform}.txt"), platform, config)
+            def gexPlatform = new GexPlatform(dir.resolve("${platform}.txt"), platform, config)
             gexPlatform.load(sql, studyInfo)
         }
     }
 
-    void processExpressionFile(File f, Sql sql, studyInfo) {
-        config.logger.log("Processing ${f.name}")
+    void processExpressionFile(Path f, Sql sql, studyInfo) {
+        config.logger.log("Processing ${f.getFileName()}")
 
         // retrieve data type
-        def m = f.name =~ /(?i)Gene_Expression_Data_([RLTZ])/
+        def m = f.getFileName().toString() =~ /(?i)Gene_Expression_Data_([RLTZ])/
         if (m[0]) {
             def dataType = m[0][1]
             if (studyInfo['datatype']) {
@@ -180,7 +182,7 @@ class ExpressionDataProcessor extends DataProcessor {
         }
     }
 
-    void processExpressionFileForPostgres(File f, studyInfo) {
+    void processExpressionFileForPostgres(Path f, studyInfo) {
         DataLoader.start(database, "lt_src_mrna_data", ['TRIAL_NAME', 'PROBESET', 'EXPR_ID', 'INTENSITY_VALUE']) {
             st ->
                 def lineNum = processEachRow(f, studyInfo) { row ->
@@ -190,7 +192,7 @@ class ExpressionDataProcessor extends DataProcessor {
         }
     }
 
-    void processExpressionFileForGeneric(File f, Sql sql, studyInfo) {
+    void processExpressionFileForGeneric(Path f, Sql sql, studyInfo) {
         def lineNum = 0
         sql.withTransaction {
             sql.withBatch(1000, """\
@@ -207,7 +209,7 @@ class ExpressionDataProcessor extends DataProcessor {
         config.logger.log("Processed ${lineNum} rows")
     }
 
-    long processEachRow(File f, studyInfo, Closure<List> processRow) {
+    long processEachRow(Path f, studyInfo, Closure<List> processRow) {
         def row = [studyInfo.id as String, null, null, null]
         def lineNum = 0
         def dataFile = new CsvLikeFile(f)

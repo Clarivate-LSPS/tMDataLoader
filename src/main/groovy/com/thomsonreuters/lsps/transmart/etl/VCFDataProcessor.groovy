@@ -7,6 +7,9 @@ import com.thomsonreuters.lsps.transmart.sql.SqlMethods
 import groovy.io.FileType
 import groovy.sql.Sql
 
+import java.nio.file.Files
+import java.nio.file.Path
+
 /**
  * Created by bondarev on 4/3/14.
  */
@@ -15,7 +18,7 @@ class VCFDataProcessor extends DataProcessor {
         super(conf)
     }
 
-    private void loadMappingFile(File mappingFile, studyInfo) {
+    private void loadMappingFile(Path mappingFile, studyInfo) {
         def csv = new CsvLikeFile(mappingFile, '#')
         if (!studyInfo.id) {
             def metaInfo = (csv as MetaInfoHeader).metaInfo
@@ -57,9 +60,9 @@ class VCFDataProcessor extends DataProcessor {
     }
 
     @Override
-    boolean processFiles(File dir, Sql sql, studyInfo) {
-        File mappingFile = new File(dir, 'Subject_Sample_Mapping_File.txt')
-        if (!mappingFile.exists()) {
+    boolean processFiles(Path dir, Sql sql, studyInfo) {
+        Path mappingFile = dir.resolve('Subject_Sample_Mapping_File.txt')
+        if (Files.notExists(mappingFile)) {
             logger.log(LogType.ERROR, "Mapping file not found")
             return false
         }
@@ -100,18 +103,18 @@ class VCFDataProcessor extends DataProcessor {
         return true
     }
 
-    def processFile(File inputFile, Sql sql, SamplesLoader samplesLoader, studyInfo) {
+    def processFile(Path inputFile, Sql sql, SamplesLoader samplesLoader, studyInfo) {
         def vcfFile = new VcfFile(inputFile)
         vcfFile.validate()
         def sampleMapping = studyInfo.sampleMapping
         if (!checkAllSamplesMapped(vcfFile, sampleMapping as Map)) {
             return false
         }
-        String vcfName = inputFile.name.replaceFirst(/\.\w+$/, '').replaceAll(/\./, '_')
+        String vcfName = inputFile.fileName.toString().replaceFirst(/\.\w+$/, '').replaceAll(/\./, '_')
         String sourceCd = vcfName.toUpperCase()
         studyInfo.sources << sourceCd
         String dataSetId = createDataSet(sql, studyInfo.id, sourceCd)
-        logger.log(LogType.MESSAGE, "Processing file ${inputFile.getName()}")
+        logger.log(LogType.MESSAGE, "Processing file ${inputFile.fileName}")
         use(SqlMethods) {
             long siRecords, piRecords, sdRecords, ssRecords, pdRecords
             siRecords = DataLoader.start(database, 'deapp.de_variant_subject_idx', ['DATASET_ID', 'SUBJECT_ID', 'POSITION']) { st ->
@@ -154,7 +157,7 @@ class VCFDataProcessor extends DataProcessor {
                 }
             }
             logger.log(LogType.PROGRESS, '')
-            logger.log(LogType.MESSAGE, "File ${inputFile.name} loaded. Added records: subject index - ${siRecords}, population info - ${piRecords},  subject detail - ${sdRecords}, subject summary - ${ssRecords}, population data - ${pdRecords}")
+            logger.log(LogType.MESSAGE, "File ${inputFile.fileName} loaded. Added records: subject index - ${siRecords}, population info - ${piRecords},  subject detail - ${sdRecords}, subject summary - ${ssRecords}, population data - ${pdRecords}")
         }
         return true
     }

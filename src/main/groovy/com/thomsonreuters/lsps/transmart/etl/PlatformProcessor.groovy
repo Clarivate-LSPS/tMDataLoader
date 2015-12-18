@@ -2,11 +2,13 @@ package com.thomsonreuters.lsps.transmart.etl
 
 import com.thomsonreuters.lsps.transmart.files.GplFile
 
+import java.nio.file.Path
+
 /**
  * Created by bondarev on 3/28/14.
  */
 class PlatformProcessor {
-    static long eachPlatformEntry(File platformFile, config, Closure processEntry) {
+    static long eachPlatformEntry(Path platformFile, config, Closure processEntry) {
         long lineNum = 0
         GplFile gplFile = new GplFile(platformFile)
         int entrezGeneIdIdx = -1, geneSymbolIdx = -1, speciesIdx = -1

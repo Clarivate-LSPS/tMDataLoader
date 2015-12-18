@@ -4,8 +4,10 @@ import com.thomsonreuters.lsps.transmart.etl.LogType
 import com.thomsonreuters.lsps.transmart.files.GplFile
 import groovy.sql.Sql
 
+import java.nio.file.Path
+
 class ProteinPlatform extends GenePlatform {
-    ProteinPlatform(File platformFile, String id, Object config) {
+    ProteinPlatform(Path platformFile, String id, Object config) {
         super(new GplFile(platformFile), "PROTEOMICS", id, config)
     }
 

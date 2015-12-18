@@ -8,13 +8,15 @@ import org.apache.commons.csv.CSVFormat
 import org.apache.commons.csv.CSVParser
 import org.apache.commons.csv.CSVRecord
 
+import java.nio.file.Path
+
 /**
  * Created by bondarev on 3/28/14.
  */
 class CsvLikeFile implements PrepareIfRequired {
     private static final Logger logger = Logger.getLogger(CsvLikeFile.class)
 
-    File file
+    Path file
     protected String lineComment
     private List<String> header
     private boolean allowNonUniqueColumnNames
@@ -40,7 +42,7 @@ class CsvLikeFile implements PrepareIfRequired {
         }
     }
 
-    CsvLikeFile(File file, String lineComment = null, boolean allowNonUniqueColumnNames = false) {
+    CsvLikeFile(Path file, String lineComment = null, boolean allowNonUniqueColumnNames = false) {
         this.file = file
         this.lineComment = lineComment
         this.allowNonUniqueColumnNames = allowNonUniqueColumnNames

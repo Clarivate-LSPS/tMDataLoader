@@ -64,7 +64,7 @@ class RNASeqDataProcessorTest extends GroovyTestCase implements ConfigAwareTestC
     void testItLoadsData() {
         Study.deleteById(config, studyId)
         processor.process(
-                new File("fixtures/Test Studies/${studyName}/RNASeqDataToUpload"),
+                new File("fixtures/Test Studies/${studyName}/RNASeqDataToUpload").toPath(),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
         assertThat(db, hasSample(studyId, 'S57024'))
         assertThat(db, hasPatient('0:1').inTrial(studyId))
@@ -78,7 +78,7 @@ class RNASeqDataProcessorTest extends GroovyTestCase implements ConfigAwareTestC
 
     void testItLoadsLog2Data() {
         processor.process(
-                new File("fixtures/Test Studies/${studyName}/RNASeqDataToUpload_Log2"),
+                new File("fixtures/Test Studies/${studyName}/RNASeqDataToUpload_Log2").toPath(),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
         assertThat(db, hasSample(studyId, 'S57024'))
         assertThat(db, hasPatient('0:1').inTrial(studyId))

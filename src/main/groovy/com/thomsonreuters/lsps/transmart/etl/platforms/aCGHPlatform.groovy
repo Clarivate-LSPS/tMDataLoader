@@ -4,12 +4,14 @@ import com.thomsonreuters.lsps.transmart.files.CsvLikeFile
 import com.thomsonreuters.lsps.transmart.files.GplFile
 import groovy.sql.Sql
 
+import java.nio.file.Path
+
 /**
  * Created by transmart on 3/5/15.
  */
 class aCGHPlatform extends GenePlatform{
 
-    aCGHPlatform(File platformFile, String id, Object config) {
+    aCGHPlatform(Path platformFile, String id, Object config) {
         super(new GplFile(platformFile), 'aCGH', id, config)
     }
 

@@ -5,13 +5,15 @@ import com.thomsonreuters.lsps.transmart.files.CsvLikeFile
 import com.thomsonreuters.lsps.transmart.sql.DatabaseType;
 import groovy.sql.Sql
 
+import java.nio.file.Path
+
 public class RNASeqDataProcessor extends DataProcessor {
     public RNASeqDataProcessor(Object conf) {
         super(conf);
     }
 
     @Override
-    public boolean processFiles(File dir, Sql sql, Object studyInfo) {
+    public boolean processFiles(Path dir, Sql sql, studyInfo) {
         sql.execute("DELETE FROM lt_src_rna_seq_subj_samp_map" as String)
         sql.execute("DELETE FROM lt_src_rna_seq_data" as String)
 
@@ -76,11 +78,11 @@ public class RNASeqDataProcessor extends DataProcessor {
         return "I2B2_PROCESS_RNA_SEQ_DATA";
     }
 
-    private List processMappingFile(File f, Sql sql, studyInfo) {
+    private List processMappingFile(Path f, Sql sql, studyInfo) {
         def platformList = [] as Set
         def studyIdList = [] as Set
 
-        config.logger.log("Mapping file: ${f.name}")
+        config.logger.log("Mapping file: ${f.getFileName()}")
 
         int lineNum = 0
         def mappingFile = new CsvLikeFile(f)
@@ -129,18 +131,18 @@ public class RNASeqDataProcessor extends DataProcessor {
         return platformList
     }
 
-    private void loadPlatforms(File dir, Sql sql, List platformList, studyInfo) {
+    private void loadPlatforms(Path dir, Sql sql, List platformList, studyInfo) {
         platformList.each { String platform ->
-            def rnaSeqPlatform = new RNASeqPlatform(new File(dir, "${platform}.txt"), platform, config)
+            def rnaSeqPlatform = new RNASeqPlatform(dir.resolve("${platform}.txt"), platform, config)
             rnaSeqPlatform.load(sql, studyInfo)
         }
     }
 
-    private void processRNASeqFile(File f, Sql sql, studyInfo) {
-        config.logger.log("Processing ${f.name}")
+    private void processRNASeqFile(Path f, Sql sql, studyInfo) {
+        config.logger.log("Processing ${f.fileName}")
 
         // retrieve data type
-        def m = f.name =~ /(?i)RNASeq_Data_([RLTZ])/
+        def m = f.fileName.toString() =~ /(?i)RNASeq_Data_([RLTZ])/
         if (m[0]) {
             def dataType = m[0][1]
             if (studyInfo['datatype']) {
@@ -158,7 +160,7 @@ public class RNASeqDataProcessor extends DataProcessor {
         }
     }
 
-    private void processRNASeqFileForPostgres(File f, studyInfo) {
+    private void processRNASeqFileForPostgres(Path f, studyInfo) {
         DataLoader.start(database, "lt_src_rna_seq_data", ['TRIAL_NAME', 'PROBESET', 'EXPR_ID', 'INTENSITY_VALUE']) {
             st ->
                 def lineNum = processEachRow(f, studyInfo) { row ->
@@ -168,7 +170,7 @@ public class RNASeqDataProcessor extends DataProcessor {
         }
     }
 
-    private void processRNASeqFileForGeneric(File f, Sql sql, studyInfo) {
+    private void processRNASeqFileForGeneric(Path f, Sql sql, studyInfo) {
         def lineNum = 0
         sql.withTransaction {
             sql.withBatch(1000, """\
@@ -185,7 +187,7 @@ public class RNASeqDataProcessor extends DataProcessor {
         config.logger.log("Processed ${lineNum} rows")
     }
 
-    private long processEachRow(File f, studyInfo, Closure<List> processRow) {
+    private long processEachRow(Path f, studyInfo, Closure<List> processRow) {
         def row = [studyInfo.id as String, null, null, null]
         def lineNum = 0
         def dataFile = new CsvLikeFile(f)

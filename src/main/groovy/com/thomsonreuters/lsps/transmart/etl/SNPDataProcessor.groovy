@@ -24,6 +24,8 @@ import com.thomsonreuters.lsps.transmart.etl.platforms.GexPlatform
 import com.thomsonreuters.lsps.transmart.files.CsvLikeFile
 import groovy.sql.Sql
 
+import java.nio.file.Path
+
 class SNPDataProcessor extends DataProcessor {
 
     public SNPDataProcessor(Object conf) {
@@ -31,7 +33,7 @@ class SNPDataProcessor extends DataProcessor {
     }
 
     @Override
-    public boolean processFiles(File dir, Sql sql, Object studyInfo) {
+    public boolean processFiles(Path dir, Sql sql, studyInfo) {
         sql.execute("DELETE FROM lt_src_mrna_subj_samp_map" as String)
         sql.execute("DELETE FROM lt_src_mrna_data" as String)
 
@@ -58,14 +60,14 @@ class SNPDataProcessor extends DataProcessor {
             def callsFileList = studyInfo['callsFileNameList'] as List
             if (callsFileList.size() > 0) {
                 callsFileList.each { String name ->
-                    processSnpCallsFile(sql, new File(dir as File, name))
+                    processSnpCallsFile(sql, dir.resolve(name))
                 }
             }
 
             def copyNumberFileList = studyInfo['copyNumberFileList'] as List
             if (copyNumberFileList.size() > 0) {
                 copyNumberFileList.each { String name ->
-                    processSnpCopyNumberFile(sql, new File(dir as File, name))
+                    processSnpCopyNumberFile(sql, dir.resolve(name))
                 }
             }
 
@@ -76,20 +78,20 @@ class SNPDataProcessor extends DataProcessor {
         return true;
     }
 
-    private void processSnpCallsFile(Sql sql, File f) {
-        config.logger.log(LogType.MESSAGE, "Processing calls for ${f.getName()}")
+    private void processSnpCallsFile(Sql sql, Path f) {
+        config.logger.log(LogType.MESSAGE, "Processing calls for ${f.getFileName()}")
         loadFileToTable(sql, f, "lt_snp_calls_by_gsm", ['GSM_NUM', 'SNP_NAME', 'SNP_CALLS'])
     }
 
-    private void processSnpCopyNumberFile(Sql sql, File f) {
-        config.logger.log(LogType.MESSAGE, "Processing copy number for ${f.getName()}")
+    private void processSnpCopyNumberFile(Sql sql, Path f) {
+        config.logger.log(LogType.MESSAGE, "Processing copy number for ${f.getFileName()}")
         loadFileToTable(sql, f, "lt_snp_copy_number",
                 ['GSM_NUM', 'SNP_NAME', 'CHROM', 'CHROM_POS', 'COPY_NUMBER']) {
             [it[0], it[1], it[2], it[3] as long, it[4] as double]
         }
     }
 
-    private void loadFileToTable(Sql sql, File f, String table, columns, Closure prepareEntry = Closure.IDENTITY) {
+    private void loadFileToTable(Sql sql, Path f, String table, columns, Closure prepareEntry = Closure.IDENTITY) {
         new CsvFileLoader(sql, table, columns).with { loader ->
             loader.logger = config.logger
             loader.loadFile(f, prepareEntry)
@@ -128,13 +130,13 @@ class SNPDataProcessor extends DataProcessor {
         return "I2B2_PROCESS_SNP_DATA";
     }
 
-    private List processMappingFile(File f, Sql sql, studyInfo) {
+    private List processMappingFile(Path f, Sql sql, studyInfo) {
         def platformList = [] as Set
         def studyIdList = [] as Set
         def callsFileList = [] as Set
         def copyNumberFileList = [] as Set
 
-        config.logger.log("Mapping file: ${f.name}")
+        config.logger.log("Mapping file: ${f.fileName}")
 
         def lineNum = 0
 
@@ -200,7 +202,7 @@ class SNPDataProcessor extends DataProcessor {
         return platformList
     }
 
-    private void loadSNPGeneMap(Sql sql, File platformFile) {
+    private void loadSNPGeneMap(Sql sql, Path platformFile) {
         config.logger.log('Loading SNP Gene Map')
         sql.execute("delete from lt_snp_gene_map" as String)
         config.logger.log('Processing platform file')
@@ -223,9 +225,9 @@ class SNPDataProcessor extends DataProcessor {
         sql.commit()
     }
 
-    private void loadPlatforms(File dir, Sql sql, List platformList, studyInfo) {
+    private void loadPlatforms(Path dir, Sql sql, List platformList, studyInfo) {
         platformList.each { String platform ->
-            File platformFile = new File(dir, "${platform}.txt")
+            Path platformFile = dir.resolve("${platform}.txt")
             loadSNPGeneMap(sql, platformFile)
             def gexPlatform = new GexPlatform(platformFile, platform, config)
             gexPlatform.load(sql, studyInfo)

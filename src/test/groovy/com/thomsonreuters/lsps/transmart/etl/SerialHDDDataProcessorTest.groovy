@@ -60,7 +60,7 @@ class SerialHDDDataProcessorTest extends GroovyTestCase implements ConfigAwareTe
 
     void testItLoadsData() {
         processor.process(
-                new File("fixtures/Test Studies/${studyName}/SerialHDDDataToUpload"),
+                new File("fixtures/Test Studies/${studyName}/SerialHDDDataToUpload").toPath(),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
 
         def testNodeName = "\\Test Studies\\Test SerialHDD Study\\Sample Factors Week 1\\"

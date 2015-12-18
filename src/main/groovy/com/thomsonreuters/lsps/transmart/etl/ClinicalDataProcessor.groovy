@@ -28,6 +28,8 @@ import com.thomsonreuters.lsps.transmart.files.CsvLikeFile
 import com.thomsonreuters.lsps.transmart.sql.DatabaseType
 import groovy.sql.Sql
 
+import java.nio.file.Files
+import java.nio.file.Path
 import java.util.regex.Pattern
 
 class ClinicalDataProcessor extends DataProcessor {
@@ -39,12 +41,12 @@ class ClinicalDataProcessor extends DataProcessor {
         super(conf);
     }
 
-    private long processEachRow(File f, fMappings, Closure<List> processRow) {
+    private long processEachRow(Path f, fMappings, Closure<List> processRow) {
         def lineNum = 1L
         def _DATA = fMappings['_DATA']
 
         CsvLikeFile csvFile = new CsvLikeFile(f, '# ', config.allowNonUniqueColumnNames.asBoolean())
-        statistic.collectForTable(f.name) { table ->
+        statistic.collectForTable(f.fileName.toString()) { table ->
             addStatisticVariables(table, csvFile, fMappings)
             csvFile.eachEntry { String[] data ->
                 def cols = [''] // to support 0-index properly (we use it for empty data values)
@@ -157,7 +159,7 @@ class ClinicalDataProcessor extends DataProcessor {
     }
 
     @Override
-    public boolean processFiles(File dir, Sql sql, studyInfo) {
+    public boolean processFiles(Path dir, Sql sql, studyInfo) {
         // read mapping file first
         // then parse files that are specified there (to allow multiple files per study)
 
@@ -170,10 +172,10 @@ class ClinicalDataProcessor extends DataProcessor {
             ClinicalDataMapping mapping = ClinicalDataMapping.loadFromFile(it)
 
             mapping.eachFileMapping { fileMapping ->
-                this.processFile(sql, new File(dir, fileMapping.fileName), fileMapping)
+                this.processFile(sql, dir.resolve(fileMapping.fileName), fileMapping)
             }
         }
-        new File(dir, "SummaryStatistic.txt").withWriter { writer ->
+        dir.resolve("SummaryStatistic.txt").withWriter { writer ->
             statistic.printReport(writer)
         }
 
@@ -191,11 +193,11 @@ class ClinicalDataProcessor extends DataProcessor {
         }
     }
 
-    private void processFile(sql, f, fMappings) {
-        config.logger.log("Processing ${f.getName()}")
-        if (!f.exists()) {
-            config.logger.log("File ${f.getName()} doesn't exist!")
-            throw new Exception("File ${f.getName()} doesn't exist")
+    private void processFile(sql,Path f, fMappings) {
+        config.logger.log("Processing ${f.fileName}")
+        if (Files.notExists(f)) {
+            config.logger.log("File ${f.fileName} doesn't exist!")
+            throw new Exception("File ${f.fileName} doesn't exist")
         }
 
         if (database?.databaseType == DatabaseType.Postgres) {
@@ -205,7 +207,7 @@ class ClinicalDataProcessor extends DataProcessor {
         }
     }
 
-    private void processFileForPostgres(f, fMappings) {
+    private void processFileForPostgres(Path f, fMappings) {
         DataLoader.start(database, "lt_src_clinical_data", ['STUDY_ID', 'SITE_ID', 'SUBJECT_ID', 'VISIT_NAME',
                                                             'DATA_LABEL', 'DATA_VALUE', 'CATEGORY_CD', 'SAMPLE_CD']) {
             st ->

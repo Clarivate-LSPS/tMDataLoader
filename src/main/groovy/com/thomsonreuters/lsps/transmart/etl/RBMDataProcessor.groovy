@@ -5,13 +5,15 @@ import com.thomsonreuters.lsps.transmart.files.CsvLikeFile
 import com.thomsonreuters.lsps.transmart.sql.DatabaseType;
 import groovy.sql.Sql
 
+import java.nio.file.Path
+
 public class RBMDataProcessor extends DataProcessor {
     public RBMDataProcessor(Object conf) {
         super(conf);
     }
 
     @Override
-    public boolean processFiles(File dir, Sql sql, Object studyInfo) {
+    public boolean processFiles(Path dir, Sql sql, studyInfo) {
         sql.execute("DELETE FROM lt_src_rbm_subj_samp_map" as String)
         sql.execute("DELETE FROM lt_src_rbm_data" as String)
 
@@ -69,11 +71,11 @@ public class RBMDataProcessor extends DataProcessor {
         return "I2B2_LOAD_RBM_DATA";
     }
 
-    private List processMappingFile(File f, Sql sql, studyInfo) {
+    private List processMappingFile(Path f, Sql sql, studyInfo) {
         def platformList = [] as Set
         def studyIdList = [] as Set
 
-        config.logger.log("Mapping file: ${f.name}")
+        config.logger.log("Mapping file: ${f.getFileName()}")
 
         int lineNum = 0
         def mappingFile = new CsvLikeFile(f)
@@ -122,18 +124,18 @@ public class RBMDataProcessor extends DataProcessor {
         return platformList
     }
 
-    private void loadPlatforms(File dir, Sql sql, List platformList, studyInfo) {
+    private void loadPlatforms(Path dir, Sql sql, List platformList, studyInfo) {
         platformList.each { String platform ->
-            def rbmPlatform = new RBMPlatform(new File(dir, "${platform}.txt"), platform, config)
+            def rbmPlatform = new RBMPlatform(dir.resolve("${platform}.txt"), platform, config)
             rbmPlatform.load(sql, studyInfo)
         }
     }
 
-    private void processRBMFile(File f, Sql sql, studyInfo) {
-        config.logger.log("Processing ${f.name}")
+    private void processRBMFile(Path f, Sql sql, studyInfo) {
+        config.logger.log("Processing ${f.fileName}")
 
         // retrieve data type
-        def m = f.name =~ /(?i)RBM_Data_([RLTZ])/
+        def m = f.fileName.toString() =~ /(?i)RBM_Data_([RLTZ])/
         if (m[0]) {
             def dataType = m[0][1]
             if (studyInfo['datatype']) {
@@ -151,7 +153,7 @@ public class RBMDataProcessor extends DataProcessor {
         }
     }
 
-    private void processRBMFileForPostgres(File f, studyInfo) {
+    private void processRBMFileForPostgres(Path f, studyInfo) {
         DataLoader.start(database, "lt_src_rbm_data", ['TRIAL_ID', 'SAMPLE_ID', 'ANALYTE', 'AVALUE']) {
             st ->
                 def lineNum = processEachRow(f, studyInfo) { row ->
@@ -161,7 +163,7 @@ public class RBMDataProcessor extends DataProcessor {
         }
     }
 
-    private void processRBMFileForGeneric(File f, Sql sql, studyInfo) {
+    private void processRBMFileForGeneric(Path f, Sql sql, studyInfo) {
         def lineNum = 0
         sql.withTransaction {
             sql.withBatch(1000, """\
@@ -178,7 +180,7 @@ public class RBMDataProcessor extends DataProcessor {
         config.logger.log("Processed ${lineNum} rows")
     }
 
-    private long processEachRow(File f, studyInfo, Closure<List> processRow) {
+    private long processEachRow(Path f, studyInfo, Closure<List> processRow) {
         def row = [studyInfo.id as String, null, null, null]
         def lineNum = 0
         def dataFile = new CsvLikeFile(f)
