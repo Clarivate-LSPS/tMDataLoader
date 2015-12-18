@@ -1,5 +1,4 @@
 package com.thomsonreuters.lsps.transmart.etl
-
 import com.thomsonreuters.lsps.transmart.Fixtures
 import com.thomsonreuters.lsps.transmart.fixtures.ClinicalData
 import com.thomsonreuters.lsps.transmart.fixtures.Study
@@ -40,7 +39,6 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
         moveStudy(originalPath, newPath)
 
         assertMovement(originalPath, newPath)
-        removeStudy(newPath)
     }
 
     void testMoveStudyWithCreatingNewRoot() {
@@ -50,7 +48,6 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
 
         assertMovement(originalPath, newPath)
         assertRootNodeExisting(newPath)
-        removeStudy(newPath)
     }
 
     void testMoveStudyWithCreatingNewLevel() {
@@ -60,7 +57,6 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
 
         assertNewLevelIsAdded(newPath)
         assertConceptCounts(newPath)
-        removeStudy(newPath)
     }
 
     void assertConceptCounts(String newPath) {
@@ -75,7 +71,6 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
         moveStudy(newPath, newPathShort)
 
         assertNewLevelWasDeleted(newPath)
-        removeStudy(newPathShort)
     }
 
     void testMoveStudyWithoutTrailingSlash() {
@@ -91,8 +86,6 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
 
         moveStudy(newPath, newPathWoSlash)
         assertMovement(newPath, newPathWoSlash)
-
-        removeStudy(newPathWoSlash)
     }
 
 
@@ -101,7 +94,7 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
         otherClinicalData.load(config, rootName)
 
         // Expect error of trying addition to exists node
-        moveStudy(otherStudyPath, originalPath)
+        assertFalse("Shouldn't move to existing path", moveStudyProcessor.process(old_path: otherStudyPath, new_path: originalPath))
 
         /*def errStudyPath1 = "\\$rootName\\New level\\Test Study 2\\"
         input = ['old_path': oldPath,
@@ -111,13 +104,10 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
 
         def errStudyPath2 = "\\$rootName\\"
         // Expect error of trying addition to root node
-        moveStudy(originalPath, errStudyPath2)
+        assertFalse("Shouldn't move to invalid path", moveStudyProcessor.process(old_path: originalPath, new_path: errStudyPath2))
 
         assertThat(db, hasNode(originalPath).withPatientCount(9))
         assertThat(db, hasNode(otherStudyPath).withPatientCount(9))
-
-        removeStudy(otherStudyPath)
-        removeStudy(originalPath)
     }
 
 
@@ -140,9 +130,6 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
 
         assertMovement(path1, path3)
         assertMovement(path1, path4)
-
-        removeStudy(path3)
-        removeStudy(path4)
     }
 
     def assertRootNodeExisting(String newPath) {
@@ -218,12 +205,10 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
         }
     }
 
-    private void moveStudy(oldPath, newPath) {
-        moveStudyProcessor.process(old_path: oldPath, new_path: newPath)
-    }
-
-    private void removeStudy(String pathToRemove) {
-        Study.deleteByPath(config, pathToRemove)
+    private boolean moveStudy(oldPath, newPath) {
+        def result = moveStudyProcessor.process(old_path: oldPath, new_path: newPath)
+        assert result, "Moving study from '${oldPath}' to '$newPath' failed"
+        result
     }
 
     void testMoveSubfolder(){
@@ -239,7 +224,6 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
                  'Demographics new\\Language\\Spain\\':1,
                 ]
         assertConceptcounts("\\$rootName\\$studyName\\Subjects\\", m)
-        removeStudy(newPath)
     }
 
     void testMoveSubfolder2(){
@@ -257,7 +241,6 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
                  'Subjects\\Demographics\\Sex (SEX)\\Male\\':2
         ]
         assertConceptcounts("\\$rootName\\$studyName\\", m)
-        removeStudy(newPath)
     }
 
     void testMoveSubfolder3(){
@@ -275,6 +258,5 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
                  'Subjects\\Demographics\\Sex (SEX)\\Male\\':2
         ]
         assertConceptcounts("\\$rootName\\$studyName\\", m)
-        removeStudy(newPath)
     }
 }
