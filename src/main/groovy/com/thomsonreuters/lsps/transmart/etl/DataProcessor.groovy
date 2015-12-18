@@ -61,6 +61,9 @@ abstract class DataProcessor {
                     runStoredProcedures(jobId, sql, studyInfo)
                 }
             }
+            if (res) {
+                postProcessData(studyInfo, sql)
+            }
         }
         if ((config?.checkDuplicates) && (!res)) {
             database.withSql { sql ->
@@ -91,35 +94,35 @@ abstract class DataProcessor {
             }
         }
 
-        if ((config?.replaceStudy) && (res) && (studyInfo.oldId != null)) {
-            database.withSql { sql ->
-                String newToken = ("EXP:" + studyInfo.id).toUpperCase();
-                String oldToken = "EXP:" + studyInfo.oldId;
-
-                sql.execute("DELETE FROM biomart.bio_experiment WHERE accession = :newToken",
-                        [newToken: (String) studyInfo.id.toUpperCase()])
-                sql.execute("DELETE FROM biomart.bio_data_uid WHERE unique_id = :newToken",
-                        [newToken: newToken])
-                sql.execute("DELETE FROM searchapp.search_secure_object WHERE bio_data_unique_id = :newToken",
-                        [newToken: newToken])
-
-                sql.executeUpdate("UPDATE biomart.bio_data_uid SET unique_id = :newToken WHERE unique_id = :oldToken",
-                        [newToken: newToken,
-                         oldToken: oldToken])
-
-                sql.executeUpdate("UPDATE biomart.bio_experiment SET accession = :newToken WHERE accession = :oldToken",
-                        [newToken: (String) studyInfo.id.toUpperCase(),
-                         oldToken: (String) studyInfo.oldId]
-                )
-                sql.executeUpdate("UPDATE searchapp.search_secure_object " +
-                        "SET bio_data_unique_id = :newToken " +
-                        "WHERE bio_data_unique_id = :oldToken",
-                        [newToken: newToken,
-                         oldToken: oldToken])
-            }
-        }
-
         return res
+    }
+
+    protected void postProcessData(studyInfo, Sql sql) {
+        if ((config?.replaceStudy) && (studyInfo.oldId) && studyInfo.id != studyInfo.oldId) {
+            String newToken = ("EXP:" + studyInfo.id).toUpperCase();
+            String oldToken = "EXP:" + studyInfo.oldId;
+
+            sql.execute("DELETE FROM biomart.bio_experiment WHERE accession = :newToken",
+                    [newToken: (String) studyInfo.id.toUpperCase()])
+            sql.execute("DELETE FROM biomart.bio_data_uid WHERE unique_id = :newToken",
+                    [newToken: newToken])
+            sql.execute("DELETE FROM searchapp.search_secure_object WHERE bio_data_unique_id = :newToken",
+                    [newToken: newToken])
+
+            sql.executeUpdate("UPDATE biomart.bio_data_uid SET unique_id = :newToken WHERE unique_id = :oldToken",
+                    [newToken: newToken,
+                     oldToken: oldToken])
+
+            sql.executeUpdate("UPDATE biomart.bio_experiment SET accession = :newToken WHERE accession = :oldToken",
+                    [newToken: (String) studyInfo.id.toUpperCase(),
+                     oldToken: (String) studyInfo.oldId]
+            )
+            sql.executeUpdate("UPDATE searchapp.search_secure_object " +
+                    "SET bio_data_unique_id = :newToken " +
+                    "WHERE bio_data_unique_id = :oldToken",
+                    [newToken: newToken,
+                     oldToken: oldToken])
+        }
     }
 
     protected void checkStudiesBySamePath(studyInfo, sql) {

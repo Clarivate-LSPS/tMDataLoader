@@ -2,6 +2,7 @@ package com.thomsonreuters.lsps.transmart.etl
 
 import com.thomsonreuters.lsps.transmart.Fixtures
 import com.thomsonreuters.lsps.transmart.fixtures.ClinicalData
+import com.thomsonreuters.lsps.transmart.fixtures.Study
 import com.thomsonreuters.lsps.transmart.fixtures.StudyInfo
 import groovy.sql.Sql
 import spock.lang.Specification
@@ -57,7 +58,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         def processor = new ClinicalDataProcessor(config)
         database.withSql { sql ->
             processor.processFiles(clinicalData.dir, sql as Sql,
-                    [name: clinicalData.studyName, node: "Test Studies\\${clinicalData.studyName}".toString()])
+                    [name: clinicalData.studyName, node: "\\Test Studies\\${clinicalData.studyName}\\".toString()])
         }
         def statistic = processor.statistic
 
