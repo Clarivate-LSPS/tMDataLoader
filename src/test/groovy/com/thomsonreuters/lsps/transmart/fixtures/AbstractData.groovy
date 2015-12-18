@@ -23,23 +23,20 @@ abstract class AbstractData<T extends AbstractData> {
     protected abstract DataProcessor newDataProcessor(config)
     protected abstract void adaptFiles(StudyInfo oldStudyInfo)
 
-    boolean reload(config, parentNode = "Test Studies\\") {
+    boolean reload(config, String parentNode = "Test Studies\\") {
         Study.deleteById(config, studyId)
         load(config, parentNode)
     }
 
-    boolean load(config, parentNode = "Test Studies\\") {
+    boolean load(config, String parentNode = "Test Studies\\") {
         if (!parentNode.endsWith('\\')) {
             parentNode += '\\'
         }
-        newDataProcessor(config).process(dir, [name: studyName, node: "$parentNode$studyName" as String])
+        loadByPath(config, "$parentNode$studyName")
     }
 
-    boolean loadByPath(config, path = "Test Studies\\Test study\\"){
-        if (!path.endsWith('\\')) {
-            path += '\\'
-        }
-        newDataProcessor(config).process(dir, [name: studyName, node: "$path" as String])
+    boolean loadByPath(config, String path = "Test Studies\\Test study\\"){
+        newDataProcessor(config).process(dir, [name: studyName, node: path])
     }
 
     public T copyWithSuffix(String suffix) {

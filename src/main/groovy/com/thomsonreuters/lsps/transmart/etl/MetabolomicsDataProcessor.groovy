@@ -116,7 +116,6 @@ public class MetabolomicsDataProcessor extends DataProcessor {
                 } else {
                     studyInfo['id'] = studyId
                 }
-                ckeckStudyIdExist(sql, studyInfo)
             }
         }
 
