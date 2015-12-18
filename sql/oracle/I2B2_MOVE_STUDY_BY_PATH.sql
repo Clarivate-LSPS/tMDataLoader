@@ -41,6 +41,7 @@ AS
 	new_node_root_exception EXCEPTION;
 	new_path_exists_exception EXCEPTION;
 	subnode_exists_exception EXCEPTION;
+  subfolder_outside_of_study EXCEPTION;
 
   cursor r1(path VARCHAR2) is
     select regexp_substr(path,'[^\\]+', 1, level) as res from dual
@@ -161,7 +162,9 @@ AS
 
 		is_sub_node := old_path <> old_study_path;
 
-		-- TODO: Check if sub node path outside of study root
+    IF is_sub_node and (instr(new_path, old_study_path) = 0 or new_path = old_study_path) THEN
+      RAISE subfolder_outside_of_study;
+    END IF;
 
 
 -- check new path exists
@@ -327,6 +330,12 @@ AS
     cz_error_handler(jobid, procedurename);
     cz_end_audit(jobId, 'FAIL');
     DBMS_OUTPUT.PUT_LINE('subnode_exists_exception');
+
+    WHEN subfolder_outside_of_study THEN
+    cz_write_audit(jobId, databasename, procedurename, 'Invalid target path: new subfolder path should be inside of study root', 1, stepCt, 'ERROR');
+    cz_error_handler(jobid, procedurename);
+    cz_end_audit(jobId, 'FAIL');
+    DBMS_OUTPUT.PUT_LINE('subfolder_outside_of_study');
 
     WHEN OTHERS THEN
 --Handle errors.

@@ -29,6 +29,7 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
     old_path                VARCHAR(2000);
     new_path                VARCHAR(2000);
     old_root_node           VARCHAR(2000);
+    old_study_path					VARCHAR(2000);
     new_root_node           VARCHAR(2000);
     new_root_node_name      VARCHAR(2000);
     new_path_last_node_name VARCHAR(2000);
@@ -45,6 +46,7 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
     current_path_attr_name  VARCHAR(2000);
     tmp                     VARCHAR(2000);
     new_paths               TEXT[];
+    is_sub_node							BOOLEAN;
 
   BEGIN
 
@@ -131,6 +133,22 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
       return -16;
     END IF;
 
+    select distinct
+      first_value(c_fullname) over (partition by sourcesystem_cd order by c_fullname) into old_study_path
+    from i2b2metadata.i2b2
+    where sourcesystem_cd = trialId;
+
+    is_sub_node := old_path <> old_study_path;
+
+    IF is_sub_node and (position(old_study_path in new_path) = 0 or old_study_path = new_path) THEN
+      stepCt := stepCt + 1;
+      select cz_write_audit(jobId,databaseName,procedureName,
+                            'Invalid target path: new subfolder path should be inside of study root',0,stepCt,'Done') into rtnCd;
+      select cz_error_handler (jobID, procedureName, '-1', 'Application raised error') into rtnCd;
+      select cz_end_audit (jobID, 'FAIL') into rtnCd;
+      return -16;
+    END IF;
+
 -- check new path exists
     SELECT
       count(*)
@@ -150,68 +168,9 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
       return -16;
     END IF;
 
--- check that new path is not subnode of exists study
-        -- parse new_path to levels
-        /*DROP TABLE IF EXISTS temp_t CASCADE;
-        CREATE TEMP TABLE temp_t AS SELECT node_name
-        FROM regexp_split_to_table(new_path, '\\') AS node_name;
+    -- TODO: check that new path is not subnode of exists study
 
-        DELETE FROM temp_t WHERE node_name='';
-
-        DROP TABLE IF EXISTS temp_t_levels CASCADE;
-        CREATE TEMP TABLE temp_t_levels (lvl integer, parent_lvl integer,node_name varchar);
-
-        FOR i IN 0..((select count(*) from temp_t)-1) LOOP
-           INSERT INTO temp_t_levels (node_name) SELECT node_name FROM temp_t LIMIT 1 OFFSET i;
-           UPDATE temp_t_levels SET lvl=i+1, parent_lvl=i  WHERE node_name=(SELECT node_name FROM temp_t LIMIT 1 OFFSET i);
-        END LOOP;
-
-        DROP TABLE IF EXISTS temp_t_paths CASCADE;
-        CREATE TEMP TABLE temp_t_paths (lvl integer, parent_lvl integer,node_name varchar,node_path varchar);
-
-        WITH RECURSIVE temp_t_paths ("lvl", "parent_lvl", "node_name", "node_path") AS (
-        SELECT  T1.lvl,T1.parent_lvl, T1.node_name,  '\'|| T1.node_name
-            FROM temp_t_levels T1 WHERE T1.lvl=1
-        union
-        select T2.lvl, T2.parent_lvl, T2.node_name, temp_t_paths.node_path ||'\'|| T2.node_name
-             FROM temp_t_levels T2 INNER JOIN temp_t_paths ON (temp_t_paths.lvl= T2.parent_lvl))
-             INSERT INTO temp_t_paths (select * from temp_t_paths);
-
-        UPDATE temp_t_paths set node_path=node_path || '\';
-
-        select count(*) INTO counter from temp_t_paths where lvl > 1;
-        IF counter > 0
-          THEN
-          FOR i IN 1..counter LOOP
-              SELECT node_path INTO current_path FROM temp_t_paths WHERE lvl=i+1;
-
-              SELECT
-                count(*)
-              INTO rowsExists
-              FROM i2b2metadata.i2b2
-              WHERE c_fullname = current_path;
-
-              -- check cases with adding/removing new level /a/b/c/ -> /a/b/ and reverse /a/b/-> /a/b/c/
-              SELECT position (current_path in old_path)
-              INTO substringPos;
-
-              SELECT position (old_path in current_path)
-              INTO substringPos2;
-
-              IF rowsExists > 0 and substringPos = 0 and substringPos2 = 0
-              THEN
-                stepCt := stepCt + 1;
-                select cz_write_audit(jobId,databaseName,procedureName,
-                'Please select new study target path: target path can not be subnode of exists study',0,stepCt,'Done') into rtnCd;
-                select cz_error_handler (jobID, procedureName, '-1', 'Application raised error') into rtnCd;
-                select cz_end_audit (jobID, 'FAIL') into rtnCd;
-                return -16;
-              END IF;
-
-          END LOOP;
-        END IF;*/
-
--- check new root node exists
+    -- check new root node exists
 
     SELECT
       count(*)
@@ -415,38 +374,40 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
     stepCt := stepCt + 1;
     select cz_write_audit(jobId, databaseName, procedureName, 'Rename paths in concept_counts', rowCt, stepCt, 'Done') into rtnCd;
 
-    genPath := '';
-    FOR x IN select unnest(string_to_array(new_path,'\',''))
-    LOOP
-      if x is not null then
-        genPath := concat(genPath, '\', x);
-
-        SELECT count(*) into rCount from i2b2demodata.concept_counts where concept_path = (genPath || '\') ;
-
-        if rCount = 0 THEN
-          SELECT count(*) into rCount from i2b2metadata.i2b2_secure where c_fullname = (genPath || '\');
-          if rCount = 0 then
-            new_paths := array_append(new_paths,genPath || '\');
-            stepCt := stepCt + 1;
-          end if;
-        end if;
-
-      end if;
-    END LOOP;
-
-    IF (array_length(new_paths, 1) > 0) THEN
-      PERFORM cz_write_audit(jobId, databaseName, procedureName,
-                             'i2b2_add_nodes  ' || array_to_string(new_paths, ',') , 0, stepCt, 'Done');
-      PERFORM i2b2_add_nodes(trialId , new_paths, jobId, false);
-
-      FOR i IN array_lower(new_paths, 1) .. array_upper(new_paths, 1)
+    if is_sub_node then
+      genPath := '';
+      FOR x IN select unnest(string_to_array(new_path,'\',''))
       LOOP
-        PERFORM I2B2_CREATE_CONCEPT_COUNTS(new_paths[i], jobId, 'Y');
+        if x is not null then
+          genPath := concat(genPath, '\', x);
+
+          SELECT count(*) into rCount from i2b2demodata.concept_counts where concept_path = (genPath || '\') ;
+
+          if rCount = 0 THEN
+            SELECT count(*) into rCount from i2b2metadata.i2b2_secure where c_fullname = (genPath || '\');
+            if rCount = 0 then
+              new_paths := array_append(new_paths,genPath || '\');
+              stepCt := stepCt + 1;
+            end if;
+          end if;
+
+        end if;
       END LOOP;
-    END IF;
+
+      IF (array_length(new_paths, 1) > 0) THEN
+        PERFORM cz_write_audit(jobId, databaseName, procedureName,
+                               'i2b2_add_nodes  ' || array_to_string(new_paths, ',') , 0, stepCt, 'Done');
+        PERFORM i2b2_add_nodes(trialId , new_paths, jobId, false);
+
+        FOR i IN array_lower(new_paths, 1) .. array_upper(new_paths, 1)
+        LOOP
+          PERFORM I2B2_CREATE_CONCEPT_COUNTS(new_paths[i], jobId, 'Y');
+        END LOOP;
+      END IF;
+    end if; -- sub node
 
     -- Fill in levels if levels are added
-    select i2b2_fill_in_tree(null, new_path, jobID) into rtnCd;
+    select i2b2_fill_in_tree(case when is_sub_node then trialId else null end, new_path, jobID) into rtnCd;
 
     -- Remove empty levels
     IF new_level_num <= old_level_num

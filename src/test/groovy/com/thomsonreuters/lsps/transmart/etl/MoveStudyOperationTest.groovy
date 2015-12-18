@@ -88,7 +88,6 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
         assertMovement(newPath, newPathWoSlash)
     }
 
-
     void testMoveStudyToExistingNode() {
         def otherStudyPath = "\\$rootName\\${otherClinicalData.studyName}\\"
         otherClinicalData.load(config, rootName)
@@ -205,9 +204,11 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
         }
     }
 
-    private boolean moveStudy(oldPath, newPath) {
+    private boolean moveStudy(oldPath, newPath, boolean checkResult = true) {
         def result = moveStudyProcessor.process(old_path: oldPath, new_path: newPath)
-        assert result, "Moving study from '${oldPath}' to '$newPath' failed"
+        if (checkResult) {
+            assert result, "Moving study from '${oldPath}' to '$newPath' failed"
+        }
         result
     }
 
@@ -258,5 +259,12 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
                  'Subjects\\Demographics\\Sex (SEX)\\Male\\':2
         ]
         assertConceptcounts("\\$rootName\\$studyName\\", m)
+    }
+
+    void testItDoesntMoveSubfolderOutsideOfStudy() {
+        def oldPath = "\\$rootName\\$studyName\\Subjects\\Demographics\\Language\\"
+        def newPath = "\\$rootName\\Other Study\\Subjects\\Demographics\\Language\\"
+
+        assertFalse("Shouldn't move subfolder outside of study", moveStudy(oldPath, newPath, false))
     }
 }
