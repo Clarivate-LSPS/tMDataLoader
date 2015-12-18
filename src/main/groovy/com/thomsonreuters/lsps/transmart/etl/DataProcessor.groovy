@@ -55,7 +55,7 @@ abstract class DataProcessor {
             currentNodePath = currentNodePath[0] == '\\' ? (currentNodePath) : ('\\' + currentNodePath)
 
             def row = sql.rows("select distinct sourcesystem_cd from i2b2metadata.i2b2 where " +
-                    "c_fullname like ?", [currentNodePath.replace('\\', '\\\\') + '%'])
+                    "c_fullname like ? ESCAPE '~'", [currentNodePath + '%'])
 
             if (row.size() > 1) {
                 throw new Exception("This path contains several different studyId : ${currentNodePath}")
