@@ -10,7 +10,7 @@ import static org.junit.Assert.assertEquals
  * Created by Alexander Omelchenko on 15.12.2015.
  */
 class DataProcessorTest extends Specification implements ConfigAwareTestCase {
-    ClinicalData clinicalData = Fixtures.clinicalData
+    ClinicalData clinicalData = Fixtures.clinicalData.copyWithSuffix('DP')
     ClinicalData secondClinicalData = clinicalData.copyAttachedToStudy(clinicalData.studyInfo.withSuffixForId("_2"))
     ClinicalData thirdClinicalData = clinicalData.copyWithSuffix('THD')
     ClinicalData fourthClinicalData = clinicalData.copyWithSuffix('FTH')
@@ -54,7 +54,7 @@ class DataProcessorTest extends Specification implements ConfigAwareTestCase {
 
         then:
         def ex = thrown(DataProcessingException)
-        ex.message == "Other study with same id found by different path: \\Test Studies\\Test Study\\" as String
+        ex.message == "Other study with same id found by different path: \\Test Studies\\Test Study DP\\" as String
     }
 
     void 'Reupload by same path, different studyId without replace study option Clinical data'() {
@@ -69,7 +69,7 @@ class DataProcessorTest extends Specification implements ConfigAwareTestCase {
 
         then:
         def ex = thrown(DataProcessingException)
-        ex.message == "Other study by same path found with different studyId: ${originalPath}" as String
+        ex.message == "Other study by same path found with different studyId: \\Test Studies\\Test Study DP\\" as String
     }
 
     void 'Reupload by same path, different studyId without replace study option Expression data'() {
@@ -83,7 +83,7 @@ class DataProcessorTest extends Specification implements ConfigAwareTestCase {
 
         then:
         def ex = thrown(DataProcessingException)
-        ex.message == "Other study by same path found with different studyId: ${originalPath}" as String
+        ex.message == "Other study by same path found with different studyId: \\Test Studies\\Test Study\\" as String
     }
 
     void 'Reupload by same path, different studyId with replace study option'() {
@@ -119,6 +119,7 @@ class DataProcessorTest extends Specification implements ConfigAwareTestCase {
         Study.deleteById(config, secondStudyId)
         Study.deleteById(config, thirdClinicalDataStudyId)
         Study.deleteById(config, fourthClinicalDataStudyId)
+        Study.deleteById(config, secondExpressionData.studyInfo.id)
 
         cleanOldData(studyId)
         cleanOldData(secondStudyId)
@@ -162,7 +163,7 @@ class DataProcessorTest extends Specification implements ConfigAwareTestCase {
 
         then:
         def ex = thrown(DataProcessingException)
-        ex.message == "'\\Test Studies\\Test Study\\' path contains several different studyIds: [GSE0, GSE0FTH]"
+        ex.message == "'\\Test Studies\\Test Study DP\\' path contains several different studyIds: [GSE0DP, GSE0DPFTH]"
     }
 
 }

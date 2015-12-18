@@ -127,9 +127,9 @@ abstract class DataProcessor {
             select distinct sourcesystem_cd
             from i2b2metadata.i2b2
             where sourcesystem_cd is not null
-              and c_fullname like ? ESCAPE '`'
+              and c_fullname like ? || '%' ESCAPE '`'
             order by sourcesystem_cd
-        """, [studyInfo.node + '%'])
+        """, [studyInfo.node])
 
         if (row.size() > 1) {
             throw new DataProcessingException("'${studyInfo.node}' path contains several different studyIds: ${row*.sourcesystem_cd}")
@@ -153,7 +153,7 @@ abstract class DataProcessor {
         def row = sql.firstRow("""
                 select c_fullname
                 from i2b2metadata.i2b2
-                where sourcesystem_cd = UPPER(?) and c_fullname not like ? escape '`' order by c_fullname""",
+                where sourcesystem_cd = UPPER(?) and c_fullname not like ? || '%' escape '`' order by c_fullname""",
                 [studyInfo.id, studyInfo.node])
         if (row) {
             throw new DataProcessingException("Other study with same id found by different path: ${row.c_fullname}")
