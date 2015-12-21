@@ -13,11 +13,6 @@ class RunSqlScriptsCommand {
         List<File> userScripts = []
     }
 
-    List<File> getScripts(File lstFile, List<String> defaultScripts) {
-        List<String> scripts = lstFile.exists() ? lstFile.readLines() : defaultScripts
-        return scripts.collect { new File(lstFile.parentFile, it) }
-    }
-
     def runScripts(Database database, Scripts scripts, String dbaUser, String dbaPassword) {
         if (scripts.dbaScripts) {
             if (!dbaUser || !dbaPassword) {
@@ -48,7 +43,7 @@ class RunSqlScriptsCommand {
                         new File(scriptsDir, it)
                     })
                 }
-                scripts.userScripts.addAll(['procedures.sql'].collect { new File(scriptsDir, it) })
+                scripts.dbaScripts.addAll(['procedures.sql'].collect { new File(scriptsDir, it) })
                 break
             case DatabaseType.Oracle:
                 def scriptsDir = new File(sqlDir, 'oracle')
