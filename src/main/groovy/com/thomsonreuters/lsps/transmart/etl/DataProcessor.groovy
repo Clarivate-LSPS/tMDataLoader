@@ -51,18 +51,18 @@ abstract class DataProcessor {
 
         logger.log("Connecting to database server")
         database.withSql { Sql sql ->
-            sql.connection.autoCommit = false
+            sql.withTransaction {
+                checkStudiesBySamePath(studyInfo, sql)
 
-            checkStudiesBySamePath(studyInfo, sql)
-
-            if (processFiles(dir, sql, studyInfo)) {
-                res = new AuditableJobRunner(sql, config).runJob(procedureName) { jobId ->
-                    logger.log("Run procedures: ${getProcedureName()}")
-                    runStoredProcedures(jobId, sql, studyInfo)
+                if (processFiles(dir, sql, studyInfo)) {
+                    res = new AuditableJobRunner(sql, config).runJob(procedureName) { jobId ->
+                        logger.log("Run procedures: ${getProcedureName()}")
+                        runStoredProcedures(jobId, sql, studyInfo)
+                    }
                 }
-            }
-            if (res) {
-                postProcessData(studyInfo, sql)
+                if (res) {
+                    postProcessData(studyInfo, sql)
+                }
             }
         }
         if ((config?.checkDuplicates) && (!res)) {
@@ -99,29 +99,26 @@ abstract class DataProcessor {
 
     protected void postProcessData(studyInfo, Sql sql) {
         if ((config?.replaceStudy) && (studyInfo.oldId) && studyInfo.id != studyInfo.oldId) {
-            String newToken = ("EXP:" + studyInfo.id).toUpperCase();
-            String oldToken = "EXP:" + studyInfo.oldId;
+            String studyId = studyInfo.id.toUpperCase()
+            String oldStudyId = studyInfo.oldId.toUpperCase()
+            String newToken = "EXP:$studyId"
+            String oldToken = "EXP:$oldStudyId"
 
-            sql.execute("DELETE FROM biomart.bio_experiment WHERE accession = :newToken",
-                    [newToken: (String) studyInfo.id.toUpperCase()])
-            sql.execute("DELETE FROM biomart.bio_data_uid WHERE unique_id = :newToken",
-                    [newToken: newToken])
+            sql.execute("DELETE FROM biomart.bio_experiment WHERE accession = :studyId", [studyId: studyId])
+            sql.execute("DELETE FROM biomart.bio_data_uid WHERE unique_id = :newToken", [newToken: newToken])
             sql.execute("DELETE FROM searchapp.search_secure_object WHERE bio_data_unique_id = :newToken",
                     [newToken: newToken])
 
+            sql.executeUpdate("UPDATE biomart.bio_experiment SET accession = :studyId WHERE accession = :oldStudyId",
+                    [studyId: studyId,
+                     oldStudyId: oldStudyId])
             sql.executeUpdate("UPDATE biomart.bio_data_uid SET unique_id = :newToken WHERE unique_id = :oldToken",
                     [newToken: newToken,
                      oldToken: oldToken])
-
-            sql.executeUpdate("UPDATE biomart.bio_experiment SET accession = :newToken WHERE accession = :oldToken",
-                    [newToken: (String) studyInfo.id.toUpperCase(),
-                     oldToken: (String) studyInfo.oldId]
-            )
-            sql.executeUpdate("UPDATE searchapp.search_secure_object " +
-                    "SET bio_data_unique_id = :newToken " +
-                    "WHERE bio_data_unique_id = :oldToken",
-                    [newToken: newToken,
-                     oldToken: oldToken])
+            sql.executeUpdate("""
+                UPDATE searchapp.search_secure_object SET bio_data_unique_id = :newToken
+                WHERE bio_data_unique_id = :oldToken
+            """, [newToken: newToken, oldToken: oldToken])
         }
     }
 
