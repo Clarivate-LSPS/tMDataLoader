@@ -768,9 +768,9 @@ BEGIN
     Case
     	--	Text data_type (default node)
     	When a.data_type = 'T'
-      then regexp_replace(topNode || replace(replace(replace(coalesce(a.category_path, ''),'DATALABEL',coalesce(a.data_label, '')),'VISITNAME',coalesce(a.visit_name, '')), 'DATAVALUE',coalesce(a.data_value, ''))  || '\','(\\){2,}', '\')
+      then regexp_replace(topNode || replace(replace(replace(coalesce(a.category_path, ''),'DATALABEL',coalesce(a.data_label, '')),'VISITNAME',coalesce(a.visit_name, '')), 'DATAVALUE',coalesce(a.data_value, ''))  || '\','(\\){2,}', '\', 'g')
     	--	else is numeric data_type and default_node
-      else regexp_replace(topNode || replace(replace(coalesce(a.category_path, ''),'DATALABEL',coalesce(a.data_label, '')),'VISITNAME',coalesce(a.visit_name, '')) || '\','(\\){2,}', '\')
+      else regexp_replace(topNode || replace(replace(coalesce(a.category_path, ''),'DATALABEL',coalesce(a.data_label, '')),'VISITNAME',coalesce(a.visit_name, '')) || '\','(\\){2,}', '\', 'g')
     end as leaf_node
     ,a.category_cd
     ,a.visit_name
