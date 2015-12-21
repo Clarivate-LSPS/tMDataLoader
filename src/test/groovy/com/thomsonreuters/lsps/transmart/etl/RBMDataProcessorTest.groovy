@@ -1,5 +1,6 @@
 package com.thomsonreuters.lsps.transmart.etl
 
+import com.thomsonreuters.lsps.transmart.fixtures.Study
 import com.thomsonreuters.lsps.transmart.sql.DatabaseType
 
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasNode
@@ -54,6 +55,7 @@ class RBMDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase
 
 
     void testItLoadsData() {
+        Study.deleteById(config, studyId)
         processor.process(
                 new File("fixtures/Test Studies/${studyName}/RBMDataToUpload"),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])

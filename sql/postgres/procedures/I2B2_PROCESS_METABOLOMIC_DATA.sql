@@ -572,7 +572,7 @@ category_cd,'PLATFORM',title),'ATTR1',coalesce(attribute_1,'')),'ATTR2',coalesce
                      		(select 1 from i2b2 x
                          	where t.leaf_node = x.c_fullname));
 	select i2b2_add_trial_nodes(TrialID, topNode, new_paths, jobID) into rtnCd;
-	IF rtnCd < 0 THEN
+	IF rtnCd <> 1 THEN
 		RETURN rtnCd;
 	END IF;
 		

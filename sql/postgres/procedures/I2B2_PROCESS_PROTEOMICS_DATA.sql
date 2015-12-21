@@ -17,12 +17,8 @@ CREATE OR REPLACE FUNCTION i2b2_process_proteomics_data(trial_id character varyi
 --		atrribute_2	=>	timepoint	
 Declare
   TrialID		character varying(100);
-  RootNode		character varying(2000);
-  root_level	integer;
   topNode		character varying(2000);
   topLevel		integer;
-  tPath			character varying(2000);
-  study_name	character varying(100);
   sourceCd		character varying(50);
   secureStudy	character varying(1);
   rtnCd			integer;
@@ -177,35 +173,6 @@ BEGIN
 		select CZ_ERROR_HANDLER(JOBID,PROCEDURENAME, '-1', 'Application raised error') into rtnCd;
 		select cz_end_audit (jobId,'FAIL') into rtnCd;
 		return 164;
-	end if;
-		
-	-- Get root_node from topNode
-  
-	select parse_nth_value(topNode, 2, '\') into RootNode;
-	
-	select count(*) into pExists
-	from table_access
-	where c_name = rootNode;
-	
-	if pExists = 0 then
-		select i2b2_add_root_node(rootNode, jobId) into rtnCd;
-	end if;
-	
-	select c_hlevel into root_level
-	from i2b2
-	where c_name = RootNode;
-	
-	-- Get study name from topNode
-  
-	select parse_nth_value(topNode, topLevel, '\') into study_name;
-	
-	--	Add any upper level nodes as needed
-	
-	tPath := REGEXP_REPLACE(replace(topNode,study_name,''),'(\\){2,}', '\', 'g');
-	select length(tPath) - length(replace(tPath,'\','')) into pCount;
-
-	if pCount > 2 then
-		select i2b2_fill_in_tree(null, tPath, jobId) into rtnCd;
 	end if;
 
 	--	uppercase study_id in LT_SRC_PROTEOMICS_SUB_SAM_MAP in case curator forgot
@@ -564,48 +531,17 @@ BEGIN
     get diagnostics rowCt := ROW_COUNT;
 	select cz_write_audit(jobId,databaseName,procedureName,'Updated node_name in DEAPP tmp_proteomics_nodes',rowCt,stepCt,'Done') into rtnCd;
 --	add leaf nodes for proteomics data  The cursor will only add nodes that do not already exist.
-	begin
 	new_paths := array(select distinct t.leaf_node
                     from  WT_PROTEOMICS_NODES t
                     	where not exists
                     		(select 1 from i2b2 x
                         	where t.leaf_node = x.c_fullname));
 
+	select i2b2_add_trial_nodes(TrialID, topNode, new_paths, jobID) into rtnCd;
+	IF rtnCd <> 1 THEN
+		RETURN rtnCd;
+	END IF;
 
-  --Add nodes for all types (ALSO DELETES EXISTING NODE)
-	if (array_length(new_paths, 1) > 0) then
-		perform cz_write_audit(jobId, databaseName, procedureName, 'Added Nodes : ' || array_to_string(new_paths, ',') , 0, stepCt, 'Done');
-		perform i2b2_add_nodes(TrialID, new_paths, jobID, true);
-	end if;
-
-  exception
-  when others then
-    errorNumber := SQLSTATE;
-    errorMessage := SQLERRM;
-    --Handle errors.
-    perform cz_error_handler (jobID, procedureName, errorNumber, errorMessage);
-    --End Proc
-    perform cz_end_audit (jobID, 'FAIL');
-    return -16;
-  end;
-	
-	--	set sourcesystem_cd, c_comment to null if any added upper-level nodes
-
-	begin
-	update i2b2 b
-	set sourcesystem_cd=null,c_comment=null
-	where b.sourcesystem_cd = TrialId
-	  and length(b.c_fullname) < length(topNode);
-	exception
-	when others then
-		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform cz_end_audit (jobID, 'FAIL');
-		return -16;
-	end;
-	  	
-	stepCt := stepCt + 1;
-	get diagnostics rowCt := ROW_COUNT;
-	select cz_write_audit(jobId,databaseName,procedureName,'Set sourcesystem_cd to null for added upper level nodes',rowCt,stepCt,'Done') into rtnCd;
 --	update concept_cd for nodes, this is done to make the next insert easier
 
 	begin
@@ -953,21 +889,6 @@ BEGIN
 	stepCt := stepCt + 1;
 	get diagnostics rowCt := ROW_COUNT;
 	select cz_write_audit(jobId,databaseName,procedureName,'Update visual attributes for leaf nodes in I2B2METADATA i2b2',rowCt,stepCt,'Done') into rtnCd;
-  
-        begin
-	update i2b2 a
-	set c_visualattributes='FAS'
-        where a.c_fullname = topNode;
-        exception
-	when others then
-		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
-		perform cz_end_audit (jobID, 'FAIL');
-		return -16;
-	end;
-        
-  stepCt := stepCt + 1;
-  get diagnostics rowCt := ROW_COUNT;
-	select cz_write_audit(jobId,databaseName,procedureName,'Update visual attributes for study nodes in I2B2METADATA i2b2',rowCt,stepCt,'Done') into rtnCd;
   
   --Build concept Counts
   --Also marks any i2B2 records with no underlying data as Hidden, need to do at Trial level because there may be multiple platform and there is no longer

@@ -94,7 +94,7 @@ BEGIN
         END LOOP;
     END LOOP;
 
-    PERFORM i2b2_add_nodes(trial_id, new_paths::text[], job_id, false);
+    PERFORM i2b2_add_nodes(trial_id, new_paths::text[], job_id);
 
     ---Cleanup OVERALL JOB if this proc is being run standalone
     IF new_job_flag THEN

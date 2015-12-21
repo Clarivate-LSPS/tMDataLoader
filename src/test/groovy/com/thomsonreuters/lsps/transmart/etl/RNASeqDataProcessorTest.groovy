@@ -62,6 +62,7 @@ class RNASeqDataProcessorTest extends GroovyTestCase implements ConfigAwareTestC
     }
 
     void testItLoadsData() {
+        Study.deleteById(config, studyId)
         processor.process(
                 new File("fixtures/Test Studies/${studyName}/RNASeqDataToUpload"),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])

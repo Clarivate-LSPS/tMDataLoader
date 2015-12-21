@@ -19,12 +19,8 @@ CREATE OR REPLACE FUNCTION i2b2_process_qpcr_mirna_data(trial_id character varyi
 --		atrribute_2	=>	timepoint	
 Declare
   TrialID		varchar(100);
-  RootNode		varchar(2000);
-  root_level	integer;
   topNode		varchar(2000);
   topLevel		integer;
-  tPath			varchar(2000);
-  study_name	varchar(100);
   sourceCd		varchar(50);
   secureStudy	varchar(1);
 
@@ -55,6 +51,7 @@ Declare
   rowCt	integer;
   errorNumber		character varying;
   errorMessage	character varying;
+	rtnCd			integer;
  
 --	cursor to define the path for delete_one_node  this will delete any nodes that are hidden after i2b2_create_concept_counts
 
@@ -182,34 +179,6 @@ BEGIN
 		perform cz_error_handler(jobid,procedurename, '-1', 'Application raised error');
 		perform cz_end_audit (jobId,'FAIL');
 		return 165;
-	end if;
-		
-	-- Get root_node from topNode
-  
-	select parse_nth_value(topNode, 2, '\') into RootNode ;
-	
-	select count(*) into pExists
-	from table_access
-	where c_name = rootNode;
-	
-	if pExists = 0 then
-		perform i2b2_add_root_node(rootNode, jobId);
-	end if;
-	
-	select c_hlevel into root_level
-	from i2b2
-	where c_name = RootNode;
-	
-	-- Get study name from topNode
-  
-	select parse_nth_value(topNode, topLevel, '\') into study_name ;
-	
-	--	Add any upper level nodes as needed
-	
-	tPath := REGEXP_REPLACE(replace(topNode,study_name,''),'(\\){2,}', '\', 'g');
-	select length(tPath) - length(replace(tPath,'\','')) into pCount ;
-	if pCount > 2 then
-		perform i2b2_fill_in_tree(null, tPath, jobId);
 	end if;
 
 	--	uppercase study_id in lt_src_mirna_subj_samp_map in case curator forgot
@@ -585,47 +554,16 @@ BEGIN
 	
 		
 --	add leaf nodes for miRNA data  The cursor will only add nodes that do not already exist.
-
-	begin
  	new_paths := array(select distinct t.leaf_node
                      from  wt_qpcr_mirna_nodes t
                      	where not exists
                      		(select 1 from i2b2 x
                          	where t.leaf_node = x.c_fullname));
 
-	if (array_length(new_paths, 1) > 0) then
-    perform cz_write_audit(jobId, databaseName, procedureName, 'Added Nodes : ' || array_to_string(new_paths, ',') , 0, stepCt, 'Done');
-    perform i2b2_add_nodes(TrialID, new_paths, jobID, true);
-	end if;
-
-  exception
-  when others then
-    errorNumber := SQLSTATE;
-    errorMessage := SQLERRM;
-    --Handle errors.
-  	perform cz_error_handler (jobID, procedureName, errorNumber, errorMessage);
-    --End Proc
-    perform cz_end_audit (jobID, 'FAIL');
-    return -16;
-  end;
-	
-	--	set sourcesystem_cd, c_comment to null if any added upper-level nodes
-	begin
-	update i2b2 b
-	set sourcesystem_cd=null,c_comment=null
-	where b.sourcesystem_cd = TrialId
-	  and length(b.c_fullname) < length(topNode);
-	exception
-	when others then
-		errorNumber := SQLSTATE;
-		errorMessage := SQLERRM;
-		perform cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
-		perform cz_end_audit (jobID, 'FAIL');
-		return -16;
-	end;
-	
-	stepCt := stepCt + 1; get diagnostics rowCt := ROW_COUNT;
-	perform cz_write_audit(jobId,databaseName,procedureName,'Set sourcesystem_cd to null for added upper level nodes',rowCt,stepCt,'Done');
+	select i2b2_add_trial_nodes(TrialID, topNode, new_paths, jobID) into rtnCd;
+	IF rtnCd <> 1 THEN
+		RETURN rtnCd;
+	END IF;
 
 	begin
 	update WT_QPCR_MIRNA_NODES t
@@ -981,31 +919,12 @@ BEGIN
 
 	stepCt := stepCt + 1; get diagnostics rowCt := ROW_COUNT;
 	perform cz_write_audit(jobId,databaseName,procedureName,'Update visual attributes for leaf nodes in I2B2METADATA i2b2',rowCt,stepCt,'Done');
-
-	begin
-    update i2b2 a
-	set c_visualattributes='FAS'
-        where a.c_fullname = topNode;
-        exception
-	when others then
-		errorNumber := SQLSTATE;
-		errorMessage := SQLERRM;
-		perform cz_error_handler (jobID, procedureName, errorNumber, errorMessage);	
-		perform cz_end_audit (jobID, 'FAIL');
-		return -16;
-	end;
-        
-  stepCt := stepCt + 1; get diagnostics rowCt := ROW_COUNT;
-	perform cz_write_audit(jobId,databaseName,procedureName,'Update visual attributes for study nodes in I2B2METADATA i2b2',rowCt,stepCt,'Done');
-    
-	
-
   
   --Build concept Counts
   --Also marks any i2B2 records with no underlying data as Hidden, need to do at Trial level because there may be multiple platform and there is no longer
   -- a unique top-level node for miRNA data
   
-        perform i2b2_create_concept_counts(topNode ,jobID );
+  perform i2b2_create_concept_counts(topNode ,jobID );
 	stepCt := stepCt + 1; get diagnostics rowCt := ROW_COUNT;
 	perform cz_write_audit(jobId,databaseName,procedureName,'Create concept counts',0,stepCt,'Done');
 	
