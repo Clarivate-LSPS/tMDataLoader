@@ -90,6 +90,9 @@ task updateSqlProcedures(type: JavaExec) {
     if (project.hasProperty('config')) {
         args '--config', project.'config'
     }
+    if (project.hasProperty('dba-user') && project.hasProperty('dba-user')) {
+        args '--dba-user', project.'dba-user', '--dba-password', project.'dba-password'
+    }
     args '-P'
 }
 
