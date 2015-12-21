@@ -61,6 +61,14 @@ BEGIN
         ) foo where length(txt_path) > 0;
 
     select max(array_length(node_path, 1)) into max_path_len from tmp_i2b2_paths;
+    IF max_path_len IS NULL THEN
+        step := step + 1;
+        PERFORM cz_write_audit(job_id, current_schema()::varchar, function_name,
+                               'No nodes found by path ''' || COALESCE(path, '<<null>>') || ''' found',1,step,'ERROR');
+        PERFORM cz_error_handler(job_id, function_name, '-1', 'Application raised error');
+        PERFORM cz_end_audit(job_id,'FAIL');
+        return -16;
+    END IF;
     FOR path_len IN 2 .. max_path_len LOOP
         FOR dir_path, node_name IN
             select distinct
@@ -86,7 +94,7 @@ BEGIN
         END LOOP;
     END LOOP;
 
-    PERFORM  i2b2_add_nodes(trial_id, new_paths::text[], job_id, false);
+    PERFORM i2b2_add_nodes(trial_id, new_paths::text[], job_id, false);
 
     ---Cleanup OVERALL JOB if this proc is being run standalone
     IF new_job_flag THEN

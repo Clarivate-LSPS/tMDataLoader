@@ -14,8 +14,10 @@ $$;
 \i procedures/I2B2_CREATE_CONCEPT_COUNTS.sql
 \i procedures/I2B2_DELETE_1_NODE.sql
 \i procedures/I2B2_GET_HLEVEL.sql
+\i procedures/I2B2_GET_NODE_NAME.sql
 \i procedures/I2B2_ADD_NODES.sql
 \i procedures/I2B2_FILL_IN_TREE.sql
+\i procedures/I2B2_ADD_TRIAL_NODES.sql
 \i procedures/I2B2_LOAD_SECURITY_DATA.sql
 \i procedures/I2B2_LOAD_SAMPLES.sql
 \i procedures/I2B2_LOAD_ANNOTATION_DEAPP.sql

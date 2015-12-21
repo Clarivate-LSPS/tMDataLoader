@@ -40,18 +40,12 @@ Declare
 	rtnCd			integer;
 
 	TrialID			varchar(100);
-	RootNode		varchar(2000);
-	root_level		integer;
 	topNode			varchar(2000);
-	topLevel		integer;
-	tPath			varchar(2000);
-	study_name		varchar(100);
 	sourceCd		varchar(50);
 	secureStudy		varchar(1);
 	markerType  varchar(100);
 
 	tText			varchar(1000);
-	pExists			numeric;
 	partExists 		numeric;
 	pCount			integer;
 	sCount			integer;
@@ -94,7 +88,6 @@ BEGIN
 	end if;
 
 	topNode := REGEXP_REPLACE('\' || top_node || '\','(\\){2,}', '\','g');
-	select length(topNode)-length(replace(topNode,'\','')) into topLevel;
 
 	sourceCd := upper(coalesce(source_cd,'STD'));
 
@@ -196,37 +189,7 @@ BEGIN
 		return -16;
 	end if;
 
-	-- Get root_node from topNode
-
-	select parse_nth_value(topNode, 2, '\') into RootNode;
-
-	select count(*) into pExists
-	from i2b2metadata.i2b2 i2, i2b2metadata.table_access ta
-	where i2.c_name = rootNode and ta.c_name = rootNode;
-
-	if pExists = 0 then
-		select i2b2_add_root_node(rootNode, jobId) into rtnCd;
-	end if;
-
-	select c_hlevel into root_level
-	from i2b2metadata.table_access
-	where c_name = RootNode;
-
-	-- Get study name from topNode
-
-	select parse_nth_value(topNode, topLevel, '\') into study_name;
-
-	--	Add any upper level nodes as needed
-
-	tPath := REGEXP_REPLACE(replace(topNode,study_name,''),'(\\){2,}', '\', 'g');
-	select length(tPath) - length(replace(tPath,'\','')) into pCount;
-
-	if pCount > 2 then
-		select i2b2_fill_in_tree('', tPath, jobId) into rtnCd;
-	end if;
-
 	--	uppercase study_id in lt_src_mrna_subj_samp_map in case curator forgot
-
 	begin
 	update lt_src_mrna_subj_samp_map
 	set trial_name=upper(trial_name);
@@ -296,7 +259,7 @@ BEGIN
 
 	--	add security for trial if new subjects added to patient_dimension
 
-	if pCount > 0 then
+	if rowCt > 0 then
 		select i2b2_create_security_for_trial(TrialId, secureStudy, jobID) into rtnCd;
 	end if;
 
@@ -578,7 +541,7 @@ BEGIN
 
 	begin
 	update wt_mrna_nodes
-	set node_name=parse_nth_value(leaf_node,length(leaf_node)-length(replace(leaf_node,'\','')),'\');
+	set node_name=i2b2_get_node_name(leaf_node);
 	get diagnostics rowCt := ROW_COUNT;
 	exception
 	when others then
@@ -599,51 +562,12 @@ BEGIN
                      where not exists
                      (select 1 from i2b2metadata.i2b2 x
                          where t.leaf_node = x.c_fullname));
-
-  PERFORM cz_write_audit(jobId,databaseName,procedureName,
-                         'Added Nodes : ' || array_to_string(new_paths, ','),rowCt,stepCt,'Done');
-  IF (array_length(new_paths, 1) > 0) THEN
-    PERFORM i2b2_add_nodes(TrialID, new_paths, jobID, true);
-  END IF;
-
-	begin
-    update i2b2metadata.i2b2 a
-		set c_visualattributes='FAS'
-    where a.c_fullname = topNode;
-  exception
-  when others then
-		errorNumber := SQLSTATE;
-		errorMessage := SQLERRM;
-		perform cz_error_handler (jobID, procedureName, errorNumber, errorMessage);
-		perform cz_end_audit (jobID, 'FAIL');
-		return -16;
-	end;
-
-	stepCt := stepCt + 1;
-	get diagnostics rowCt := ROW_COUNT;
-	perform cz_write_audit(jobId,databaseName,procedureName,'Update visual attributes for study nodes in I2B2METADATA i2b2',rowCt,stepCt,'Done');
-
-	--	set sourcesystem_cd, c_comment to null if any added upper-level nodes
-
-	begin
-	update i2b2metadata.i2b2 b
-	set sourcesystem_cd=null,c_comment=null
-	where b.sourcesystem_cd = TrialId
-	  and length(b.c_fullname) < length(topNode);
-	get diagnostics rowCt := ROW_COUNT;
-	exception
-	when others then
-		errorNumber := SQLSTATE;
-		errorMessage := SQLERRM;
-		perform cz_error_handler (jobID, procedureName, errorNumber, errorMessage);
-		perform cz_end_audit (jobID, 'FAIL');
-		return -16;
-	end;
-	stepCt := stepCt + 1;
-	select cz_write_audit(jobId,databaseName,procedureName,'Set sourcesystem_cd to null for added upper level nodes',rowCt,stepCt,'Done') into rtnCd;
+  SELECT i2b2_add_trial_nodes(TrialID, topNode, new_paths, jobID) INTO rtnCd;
+	IF rtnCd < 0 THEN
+		RETURN rtnCd;
+	END IF;
 
 	--	update concept_cd for nodes, this is done to make the next insert easier
-
 	begin
 	update wt_mrna_nodes t
 	set concept_cd=(select c.concept_cd from i2b2demodata.concept_dimension c
