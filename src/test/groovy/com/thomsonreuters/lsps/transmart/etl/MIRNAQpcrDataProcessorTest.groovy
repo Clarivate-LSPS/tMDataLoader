@@ -1,5 +1,7 @@
 package com.thomsonreuters.lsps.transmart.etl
 
+import com.thomsonreuters.lsps.transmart.fixtures.Study
+
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.*
 import static org.hamcrest.CoreMatchers.equalTo
 import static org.hamcrest.CoreMatchers.notNullValue
@@ -19,8 +21,6 @@ class MIRNAQpcrDataProcessorTest extends GroovyTestCase implements ConfigAwareTe
     @Override
     void setUp() {
         ConfigAwareTestCase.super.setUp()
-        sql.execute('delete from i2b2demodata.observation_fact where modifier_cd = ? or sourcesystem_cd = ?', studyId, studyId)
-        sql.execute('delete from deapp.de_subject_sample_mapping where trial_name = ?', studyId)
         runScript('I2B2_PROCESS_QPCR_MIRNA_DATA.sql')
         runScript('I2B2_MIRNA_ZSCORE_CALC.sql')
     }
@@ -42,6 +42,7 @@ class MIRNAQpcrDataProcessorTest extends GroovyTestCase implements ConfigAwareTe
 
 
     void testItLoadsData() {
+        Study.deleteById(config, studyId)
         processor.process(
                 new File("fixtures/Test Studies/${studyName}/MIRNA_QPCRDataToUpload"),
                 [name: studyName, node: "Test Studies\\${studyName}".toString(), base_datatype: mirnaType])

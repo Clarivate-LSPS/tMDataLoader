@@ -62,7 +62,7 @@ BEGIN
 	end if;
 
 	IF (array_length(paths, 1) > 0) THEN
-		select i2b2_add_nodes(trialId, paths, jobID, false) into rtnCd;
+		select i2b2_add_nodes(trialId, paths, jobID) into rtnCd;
 		if rtnCd >= 0 then
 			select i2b2_fill_in_tree(trialId, trialPath, jobID) INTO rtnCd;
 		end if;

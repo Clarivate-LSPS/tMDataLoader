@@ -32,12 +32,8 @@ Declare
 	rtnCd			integer;
 
 	TrialID			varchar(100);
-	RootNode		varchar(2000);
-	root_level		integer;
 	topNode			varchar(2000);
 	topLevel		integer;
-	tPath			varchar(2000);
-	study_name		varchar(100);
 	sourceCd		varchar(50);
 	secureStudy		varchar(1);
 
@@ -204,37 +200,7 @@ BEGIN
 		return -16;
 	end if;
 
-	-- Get root_node from topNode
-
-	select parse_nth_value(topNode, 2, '\') into RootNode;
-
-	select count(*) into pExists
-	from i2b2metadata.i2b2
-	where c_name = rootNode;
-
-	if pExists = 0 then
-		select i2b2_add_root_node(rootNode, jobId) into rtnCd;
-	end if;
-
-	select c_hlevel into root_level
-	from i2b2metadata.i2b2
-	where c_name = RootNode;
-
-	-- Get study name from topNode
-
-	select parse_nth_value(topNode, topLevel, '\') into study_name;
-
-	--	Add any upper level nodes as needed
-
-	tPath := REGEXP_REPLACE(replace(topNode,study_name,''),'(\\){2,}', '\', 'g');
-	select length(tPath) - length(replace(tPath,'\','')) into pCount;
-
-	if pCount > 2 then
-		select i2b2_fill_in_tree('', tPath, jobId) into rtnCd;
-	end if;
-
 	--	uppercase study_id in lt_src_mrna_subj_samp_map in case curator forgot
-
 	begin
 	update lt_src_mrna_subj_samp_map
 	set trial_name=upper(trial_name);
@@ -611,49 +577,18 @@ BEGIN
 
 	--	add leaf nodes for mRNA data  The cursor will only add nodes that do not already exist.
 
-	begin
 	new_paths := array(select distinct t.leaf_node
                       from  wt_mrna_nodes t
                       	where not exists
                       		(select 1 from i2b2metadata.i2b2 x
                           	where t.leaf_node = x.c_fullname));
 
-  --Add nodes for all types (ALSO DELETES EXISTING NODE)
-	if (array_length(new_paths, 1) > 0) then
-		perform cz_write_audit(jobId, databaseName, procedureName, 'Added Nodes : ' || array_to_string(new_paths, ',') , 0, stepCt, 'Done');
-		perform i2b2_add_nodes(TrialID, new_paths, jobID, true);
-	end if;
-
-  exception
-  when others then
-    errorNumber := SQLSTATE;
-    errorMessage := SQLERRM;
-    --Handle errors.
-    perform cz_error_handler (jobID, procedureName, errorNumber, errorMessage);
-    --End Proc
-    perform cz_end_audit (jobID, 'FAIL');
-    return -16;
-  end;
-
-	begin
-    update i2b2metadata.i2b2 a
-		set c_visualattributes='FAS'
-    where a.c_fullname = topNode;
-  exception
-  when others then
-		errorNumber := SQLSTATE;
-		errorMessage := SQLERRM;
-		perform cz_error_handler (jobID, procedureName, errorNumber, errorMessage);
-		perform cz_end_audit (jobID, 'FAIL');
-		return -16;
-	end;
-
-	stepCt := stepCt + 1;
-	get diagnostics rowCt := ROW_COUNT;
-	perform cz_write_audit(jobId,databaseName,procedureName,'Update visual attributes for study nodes in I2B2METADATA i2b2',rowCt,stepCt,'Done');
+	select i2b2_add_trial_nodes(TrialID, topNode, new_paths, jobID) into rtnCd;
+	IF rtnCd <> 1 THEN
+		RETURN rtnCd;
+	END IF;
 
 	--	update concept_cd for nodes, this is done to make the next insert easier
-
 	begin
 	update wt_mrna_nodes t
 	set concept_cd=(select c.concept_cd from i2b2demodata.concept_dimension c

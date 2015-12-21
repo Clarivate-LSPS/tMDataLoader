@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION I2B2_ADD_NODES(trialid CHARACTER VARYING,new_paths TEXT[], currentjobid NUMERIC,add_missing_parent_nodes BOOLEAN)
+CREATE OR REPLACE FUNCTION I2B2_ADD_NODES(trialid CHARACTER VARYING,new_paths TEXT[], currentjobid NUMERIC)
 RETURNS NUMERIC
 SET search_path FROM CURRENT
 AS $BODY$
@@ -127,17 +127,6 @@ AS $BODY$
     WHERE
       CONCEPT_PATH = ANY(new_paths);
 
-    -- add missing parent nodes
-    IF (add_missing_parent_nodes) THEN
-      FOR i in array_lower(new_paths, 1) .. array_upper(new_paths, 1)
-      LOOP
-        stepCt := stepCt + 1;
-
-        PERFORM cz_write_audit(jobId, databaseName, procedureName, 'Added Leaf Node: ' || new_paths[i], rowCt, stepCt, 'Done');
-        PERFORM i2b2_fill_in_tree(TrialId, new_paths[i], jobID);
-      END LOOP;
-    END IF;
-
     ---Cleanup OVERALL JOB if this proc is being run standalone
     IF newJobFlag = 1
     THEN
@@ -162,4 +151,4 @@ LANGUAGE plpgsql VOLATILE SECURITY DEFINER
 SET search_path FROM CURRENT
 COST 100;
 
-ALTER FUNCTION I2B2_ADD_NODES(CHARACTER VARYING, TEXT[], NUMERIC, BOOLEAN) OWNER TO postgres;
+ALTER FUNCTION I2B2_ADD_NODES(CHARACTER VARYING, TEXT[], NUMERIC) OWNER TO postgres;

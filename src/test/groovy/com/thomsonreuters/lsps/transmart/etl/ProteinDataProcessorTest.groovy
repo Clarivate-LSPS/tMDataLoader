@@ -1,6 +1,7 @@
 package com.thomsonreuters.lsps.transmart.etl
 import com.thomsonreuters.lsps.transmart.Fixtures
 import com.thomsonreuters.lsps.transmart.fixtures.ProteinData
+import com.thomsonreuters.lsps.transmart.fixtures.Study
 
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.*
 import static org.hamcrest.CoreMatchers.equalTo
@@ -37,6 +38,7 @@ class ProteinDataProcessorTest extends GroovyTestCase implements ConfigAwareTest
     }
 
     void testItLoadsData() {
+        Study.deleteById(config, studyId)
         proteinData.load(config)
         assertThat(db, hasSample(studyId, 'P50440'))
         assertThat(db, hasPatient('GSM918945').inTrial(studyId))
