@@ -33,8 +33,7 @@ class MetaDataProcessor extends DataProcessor {
 
 	@Override
 	public boolean processFiles(File dir, Sql sql, Object studyInfo) {
-		
-		sql.execute("TRUNCATE TABLE lt_src_study_metadata" as String)
+		sql.execute("DELETE FROM lt_src_study_metadata" as String)
 
 		dir.eachFileMatch(~/(?i)(?!\.|_DONE_|_FAIL_|_DISABLED_).+\.txt/) { f ->
 
