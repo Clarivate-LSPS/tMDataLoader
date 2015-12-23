@@ -22,7 +22,8 @@ AS
 	tmp_compound		varchar2(200);
 	tmp_disease			varchar2(200);
 	tmp_pubmed			varchar2(200);
-	pubmed_id			varchar2(200);
+	tmp_organism		varchar2(200);
+	pubmed_id			  varchar2(200);
 	pubmed_title		varchar2(200);
 	
 	Type study_compound_rec is record
@@ -51,6 +52,15 @@ AS
 	Type study_pubmed_tab is table of study_pubmed_rec;
   
 	study_pubmed_array study_pubmed_tab;
+
+	Type study_organism_rec is record
+	(study_id	varchar2(200)
+	,organism	varchar2(500)
+	);
+
+	Type study_organism_tab is table of study_organism_rec;
+
+	study_organism_array study_organism_tab;
 
 BEGIN
     
@@ -109,7 +119,7 @@ order by c_fullname
 	
 	--	Update existing bio_clinical_trial data only for true Clinical Trials or JnJ Experimental Medicine Studies
 
-	update biomart.bio_clinical_trial b
+	/*update biomart.bio_clinical_trial b
 	set (study_owner
 	    ,study_phase
 		,blinding_procedure
@@ -175,7 +185,7 @@ order by c_fullname
 	;
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Updated trial data in BIOMART bio_clinical_trial',SQL%ROWCOUNT,stepCt,'Done');
-	commit;
+	commit;*/
 	
 	--	Add new trial data to bio_experiment
 	
@@ -219,7 +229,7 @@ order by c_fullname
 		
 	--	Add new trial data to bio_clinical_trial
 	
-	insert into biomart.bio_clinical_trial
+	/*insert into biomart.bio_clinical_trial
 	(trial_number
 	,study_owner
 	,study_phase
@@ -286,7 +296,7 @@ order by c_fullname
 		   where m.study_id = x.trial_number);
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Inserted trial data in BIOMART bio_clinical_trial',SQL%ROWCOUNT,stepCt,'Done');
-	commit;
+	commit;*/
 	
 	--	Insert new trial into bio_data_uid
 	
@@ -461,6 +471,82 @@ order by c_fullname
 				cz_write_audit(jobId,databaseName,procedureName,'Inserted trial data in BIOMART bio_data_disease',SQL%ROWCOUNT,stepCt,'Done');
 				commit;
 				
+				dcount := dcount - 1;
+			end loop;
+		end loop;
+	end if;
+
+	--	delete existing taxonomy data for studies
+
+	delete from biomart.bio_data_taxonomy dc
+	 where dc.bio_data_id in
+	 (select x.bio_experiment_id
+		  from biomart.bio_experiment x, lt_src_study_metadata y
+		 where x.accession = y.study_id
+		   and x.etl_id = 'METADATA:' || y.study_id);
+
+	stepCt := stepCt + 1;
+	cz_write_audit(jobId,databaseName,procedureName,'Delete existing data from bio_data_taxonomy',SQL%ROWCOUNT,stepCt,'Done');
+	commit;
+
+	-- add study organism to taxonomy
+
+	select distinct study_id, organism
+	bulk collect into study_organism_array
+	from lt_src_study_metadata
+	where organism is not null;
+
+	if SQL%ROWCOUNT > 0 then
+		for i in study_organism_array.first .. study_organism_array.last
+		loop
+			select length(study_organism_array(i).organism) -
+						 length(replace(study_organism_array(i).organism,';',null))+1
+			into dcount
+			from dual;
+
+			while dcount > 0
+			loop
+				select parse_nth_value(study_organism_array(i).organism,dcount,';') into tmp_organism
+				from dual;
+
+				--	add new organism
+				insert into biomart.bio_taxonomy
+					(taxon_name
+						,taxon_label)
+				select tmp_organism
+							,tmp_organism
+				  from dual
+				 where not exists
+					(select 1 from biomart.bio_taxonomy x
+					  where upper(x.taxon_name) = upper(tmp_organism))
+					    and tmp_organism is not null;
+				stepCt := stepCt + 1;
+				cz_write_audit(jobId,databaseName,procedureName,'Added organism to bio_taxonomy',SQL%ROWCOUNT,stepCt,'Done');
+				commit;
+
+				--	Insert new trial data into bio_data_taxonomy
+				insert into biomart.bio_data_taxonomy
+					(bio_data_id
+						,bio_taxonomy_id
+						,etl_source
+					)
+						select b.bio_experiment_id
+								,c.bio_taxonomy_id
+								,'METADATA:' || study_organism_array(i).study_id
+						  from biomart.bio_experiment b
+									,biomart.bio_taxonomy c
+						 where upper(tmp_organism) = upper(c.taxon_name)
+							 and tmp_organism is not null
+							 and b.accession = study_organism_array(i).study_id
+							 and not exists
+							  (select 1 from biomart.bio_data_taxonomy x
+								  where b.bio_experiment_id = x.bio_data_id
+									  and c.bio_taxonomy_id = x.bio_taxonomy_id);
+
+				stepCt := stepCt + 1;
+				cz_write_audit(jobId,databaseName,procedureName,'Inserted trial data in BIOMART bio_data_taxonomy',SQL%ROWCOUNT,stepCt,'Done');
+				commit;
+
 				dcount := dcount - 1;
 			end loop;
 		end loop;
@@ -688,7 +774,7 @@ order by c_fullname
 					 
 	--	Insert trial data tags - COMPOUND
 	
-  delete from i2b2_tags where tag_type = 'Compound';
+ /* delete from i2b2_tags where tag_type = 'Compound';
 
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Delete existing Compound tags in I2B2METADATA i2b2_tags',SQL%ROWCOUNT,stepCt,'Done');
@@ -747,7 +833,8 @@ order by c_fullname
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'End i2b2_load_study_metadata',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
-	
+	*/
+
     ---Cleanup OVERALL JOB if this proc is being run standalone
 	IF newJobFlag = 1
 	THEN
