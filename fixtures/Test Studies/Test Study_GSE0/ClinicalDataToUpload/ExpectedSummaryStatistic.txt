@@ -1,11 +1,11 @@
-Table	Variable	Variable Type	N	null	Mean	Median	IQR	Min	Max	SD	Count	Required	Validation rule	QC missing data	QC data range
-TST001.txt	SUBJ_ID	ID	12	0								Yes		OK
-TST001.txt	Mutant Allele (Genomic)	Text	12	0
-TST001.txt	Mutant Allele (cDNA)	Text	12	0
-TST001.txt	Mutation Type	Text	12	0
-TST001.txt	Variant Type	Text	12	0
-TST_DEMO.txt	SUBJ_ID	ID	9	0								Yes		OK
-TST_DEMO.txt	Age In Years	Numerical	9	0	30.555556	20.9	11.1	11.5	90.0	23.734843		Yes		OK	"Range checks failed: >30 ('HCC2935', 'HCC4006', 'HCC827', 'NCIH3255', 'PC14', 'SW48'); 30-50 ('HCC2935', 'HCC4006', 'HCC827', 'NCIH3255', 'PC14', 'SKMEL28', 'SW48'); Between 30 to 50 ('HCC2935', 'HCC4006', 'HCC827', 'NCIH3255', 'PC14', 'SKMEL28', 'SW48'); Lesser than or equal to 20 ('HCC4006', 'HCC827', 'NCIH1650', 'NCIH1975', 'PC14', 'SKMEL28'); <=20 ('HCC4006', 'HCC827', 'NCIH1650', 'NCIH1975', 'PC14', 'SKMEL28'); Greater than 30, when ""Sex"" is equal to ""Male"" ('HCC827', 'NCIH3255'); Greater than or equal to 20 ('NCIH3255', 'SW48'); >=20 ('NCIH3255', 'SW48'); Lesser than 50 ('SKMEL28'); <50 ('SKMEL28')"
-TST_DEMO.txt	Sex	Categorical	7	2							Female: 5, Male: 2	Yes		2 missing ('HCC4006', 'SW48')
-TST_DEMO.txt	Assessment Date	Date	9	0
-TST_DEMO.txt	Language	Text	3	6
+File	Variable	Variable Type	N	null	Mean	Median	IQR	Min	Max	SD	Count	Required	Validation rule	QC missing data	QC data range
+TST001.txt	SUBJ_ID	ID	12	0								Yes		OK	
+TST001.txt	Mutant Allele (Genomic)	Text	12	0											
+TST001.txt	Mutant Allele (cDNA)	Text	12	0											
+TST001.txt	Mutation Type	Text	12	0											
+TST001.txt	Variant Type	Text	12	0											
+TST_DEMO.txt	SUBJ_ID	ID	9	0								Yes		OK	
+TST_DEMO.txt	Age In Years	Numerical	9	0	30.555556	20.9	11.1	11.5	90.0	23.734843		Yes	"Greater than 30, when ""Sex"" is equal to ""Male""; Lesser than 50; Greater than or equal to 20; Lesser than or equal to 20; >30; <50; >=20; <=20; 30-50; Between 30 to 50"	OK	"Range checks failed: >30 ('HCC2935', 'HCC4006', 'HCC827', 'NCIH3255', 'PC14', 'SW48'); 30-50 ('HCC2935', 'HCC4006', 'HCC827', 'NCIH3255', 'PC14', 'SKMEL28', 'SW48'); Between 30 to 50 ('HCC2935', 'HCC4006', 'HCC827', 'NCIH3255', 'PC14', 'SKMEL28', 'SW48'); Lesser than or equal to 20 ('HCC4006', 'HCC827', 'NCIH1650', 'NCIH1975', 'PC14', 'SKMEL28'); <=20 ('HCC4006', 'HCC827', 'NCIH1650', 'NCIH1975', 'PC14', 'SKMEL28'); Greater than 30, when ""Sex"" is equal to ""Male"" ('HCC827', 'NCIH3255'); Greater than or equal to 20 ('NCIH3255', 'SW48'); >=20 ('NCIH3255', 'SW48'); Lesser than 50 ('SKMEL28'); <50 ('SKMEL28')"
+TST_DEMO.txt	Sex	Categorical	7	2							Female: 5, Male: 2	Yes		2 missing ('HCC4006', 'SW48')	
+TST_DEMO.txt	Assessment Date	Date	9	0											
+TST_DEMO.txt	Language	Text	3	6											
