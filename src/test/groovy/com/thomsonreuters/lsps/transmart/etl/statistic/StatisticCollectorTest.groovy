@@ -30,7 +30,54 @@ class StatisticCollectorTest extends Specification {
         [vars.cat.name, vars.cat.type, vars.cat.emptyValuesCount, vars.cat.notEmptyValuesCount, vars.cat.required, vars.cat.missingValueIds, vars.cat.factor] ==
                 ['cat', VariableType.Categorical, 0, 3, false, null, new Factor(cat1: 2, cat2: 1)]
         [vars.num.name, vars.num.type, vars.num.emptyValuesCount, vars.num.notEmptyValuesCount, vars.num.required, vars.num.missingValueIds,
-         vars.num.mean, vars.num.median, vars.num.min, vars.num.max, Math.round(vars.num.standardDerivation * 1000) / 1000] ==
+         vars.num.mean, vars.num.median, vars.num.min, vars.num.max, vars.num.standardDerivation.round(3)] ==
                 ['num', VariableType.Numerical, 0, 3, false, null, 40.0, 50.0, 10.0, 60.0, 26.458]
+    }
+
+    def 'it should calculate IQR'() {
+        given:
+        def table = new TableStatistic()
+        table.withRecordStatisticForVariables(id: VariableType.ID, num: VariableType.Numerical)
+
+        when:
+        def num = table.variables.num
+
+        then:
+        num.iqr == Double.NaN
+
+        when:
+        table.collectForRecord(id: '1', num: '100')
+
+        then:
+        num.iqr == 0
+
+        when:
+        table.collectForRecord(id: '1', num: '500')
+
+        then:
+        num.iqr == 400
+
+        when:
+        table.collectForRecord(id: '1', num: '300')
+
+        then:
+        num.lowerQuartile == 200
+        num.upperQuartile == 400
+        num.iqr == 200
+
+        when:
+        table.collectForRecord(id: '1', num: '200')
+        table.collectForRecord(id: '1', num: '400')
+
+        then:
+        num.iqr == 200
+
+        when:
+        table.collectForRecord(id: '1', num: '600')
+
+        then:
+        num.lowerQuartile == 200
+        num.upperQuartile == 500
+        num.iqr == 300
     }
 }

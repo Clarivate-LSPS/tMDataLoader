@@ -10,6 +10,13 @@ class TableStatistic {
 
     private Map currentVariableValues
 
+    TableStatistic withRecordStatisticForVariables(Map<String, VariableType> variables) {
+        variables.each {
+            withRecordStatisticForVariable(it.key, it.value)
+        }
+        this
+    }
+
     TableStatistic withRecordStatisticForVariable(String name, VariableType variableType) {
         withRecordStatisticForVariable(name, variableType, [])
     }
