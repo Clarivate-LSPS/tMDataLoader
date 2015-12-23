@@ -70,7 +70,7 @@ class StatisticCollector {
 
     void printReport(Appendable out) {
         CSVFormat format = CSVFormat.TDF.withRecordSeparator(System.getProperty("line.separator")).
-                withHeader('Table', 'Variable', 'Variable Type', 'N', 'null', 'Mean', 'Median', 'IQR', 'Min', 'Max', 'SD', 'Count', 'Required', 'Validation rule', 'QC missing data', 'QC data range')
+                withHeader('File', 'Variable', 'Variable Type', 'N', 'null', 'Mean', 'Median', 'IQR', 'Min', 'Max', 'SD', 'Count', 'Required', 'Validation rule', 'QC missing data', 'QC data range')
         CSVPrinter printer = new CSVPrinter(out, format)
         tables.each { tableName, table ->
             table.variables.each { _, var ->
@@ -100,7 +100,7 @@ class StatisticCollector {
                     printer.print('')
                 }
                 printer.print(var.required ? 'Yes' : '')
-                printer.print('')
+                printer.print(var.validationRules.findAll { it.type != ValidationRuleType.Required }*.description.join('; '))
                 printer.print(getQCMissingData(var))
                 printer.print(getQCRangeCheck(var))
                 printer.println()

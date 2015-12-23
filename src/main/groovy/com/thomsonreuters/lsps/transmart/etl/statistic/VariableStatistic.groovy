@@ -15,7 +15,7 @@ class VariableStatistic {
     private double prevMean, prevSDBase
     private List<Double> doubleValues
     private boolean valuesSorted
-    private List<RangeValidationRule> rangeValidationRules;
+    private List<RangeValidationRule> rangeValidationRules
     private ValidationRule requiredRule;
     double mean, median, min = Double.MAX_VALUE, max = Double.MIN_VALUE, sdBase
     private Map<ValidationRule, List<String>> violatedRules = [:]
@@ -38,7 +38,12 @@ class VariableStatistic {
             factor = new Factor()
         } else if (type == VariableType.Numerical) {
             doubleValues = []
-            this.rangeValidationRules = validationRules.findAll { it.type == ValidationRuleType.RangeCheck }
+            this.rangeValidationRules = []
+            for (def rule : validationRules) {
+                if (rule.type == ValidationRuleType.RangeCheck) {
+                    rangeValidationRules.add(rule as RangeValidationRule)
+                }
+            }
         }
     }
 
