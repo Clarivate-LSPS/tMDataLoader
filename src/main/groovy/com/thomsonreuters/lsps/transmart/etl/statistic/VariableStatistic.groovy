@@ -42,17 +42,43 @@ class VariableStatistic {
         }
     }
 
-    double getMedian() {
+    private List<Double> getSortedDoubleValues() {
         if (!valuesSorted) {
             Collections.sort(doubleValues)
             valuesSorted = true
         }
-        int middle = doubleValues.size() / 2
-        if ((doubleValues.size() & 1) == 1) {
-            return doubleValues.get(middle)
+        doubleValues
+    }
+
+    private static double getMedianImpl(List<Double> sortedValues) {
+        if (sortedValues.size() == 0)
+            return Double.NaN
+        int middle = sortedValues.size() / 2
+        if ((sortedValues.size() & 1) == 1) {
+            return sortedValues.get(middle)
         } else {
-            return (doubleValues.get(middle - 1) + doubleValues.get(middle)) / 2
+            return (sortedValues.get(middle - 1) + sortedValues.get(middle)) / 2
         }
+    }
+
+    // Tukey's hinges method
+    double getLowerQuartile() {
+        def values = sortedDoubleValues
+        getMedianImpl(values.subList(0, (int) (values.size() + 1) / 2))
+    }
+
+    // Tukey's hinges method
+    double getUpperQuartile() {
+        def values = sortedDoubleValues
+        getMedianImpl(values.subList((int) values.size() / 2, values.size()))
+    }
+
+    double getIqr() {
+        getUpperQuartile() - getLowerQuartile()
+    }
+
+    double getMedian() {
+        getMedianImpl(sortedDoubleValues)
     }
 
     double getStandardDerivation() {
