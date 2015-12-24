@@ -913,8 +913,12 @@ BEGIN
 	--	Create i2b2_tags
 
 	begin
-		delete from i2b2metadata.i2b2_tags
-		where upper(tag_type) = 'TRIAL';
+		delete from i2b2metadata.i2b2_tags t
+		      where upper(t.tag_type) = 'TRIAL'
+						and t.path = (select min(b.c_fullname)
+                            from lt_src_study_metadata m,i2b2 b
+                           where m.study_id = b.sourcesystem_cd
+                             and m.study_id is not null);
 		exception
 		when others then
 			errorNumber := SQLSTATE;
@@ -955,67 +959,112 @@ BEGIN
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Add study to i2b2_tags',rowCt,stepCt,'Done') into rtnCd;
 
-	/*
 		--	Insert trial data tags - COMPOUND
-
+  begin
 		delete from i2b2_tags t
-		where upper(t.tag_type) = 'COMPOUND';
+	        where upper(t.tag_type) = 'COMPOUND'
+            and t.path = (select min(b.c_fullname)
+                            from lt_src_study_metadata m,i2b2 b
+                           where m.study_id = b.sourcesystem_cd
+                             and m.study_id is not null);
+    exception
+    when others then
+      errorNumber := SQLSTATE;
+      errorMessage := SQLERRM;
+      --Handle errors.
+      select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+      --End Proc
+      select cz_end_audit (jobID, 'FAIL') into rtnCd;
+      return -16;
+      get diagnostics rowCt := ROW_COUNT;
+	end;
 
-		stepCt := stepCt + 1;
-		cz_write_audit(jobId,databaseName,procedureName,'Delete existing Compound tags in I2B2METADATA i2b2_tags',SQL%ROWCOUNT,stepCt,'Done');
-		commit;
+	stepCt := stepCt + 1;
+	select cz_write_audit(jobId,databaseName,procedureName,'Delete existing Compound tags in I2B2METADATA i2b2_tags',rowCt,stepCt,'Done') into rtnCd;
 
-		insert into i2b2_tags
-		(path, tag, tag_type, tags_idx)
-		select distinct min(o.c_fullname) as path
-				,decode(x.rec_num,1,c.generic_name,c.brand_name) as tag
-				,'Compound' as tag_type
-				,1 as tags_idx
-		from bio_experiment be
-			,bio_data_compound bc
-			,bio_compound c
-			,i2b2 o
-			,(select rownum as rec_num from table_access where rownum < 3) x
-		where be.bio_experiment_id = bc.bio_data_id
-				 and bc.bio_compound_id = c.bio_compound_id
-				 and be.accession = o.sourcesystem_cd
-				 and decode(x.rec_num,1,c.generic_name,c.brand_name) is not null
-		group by decode(x.rec_num,1,c.generic_name,c.brand_name);
-
-		stepCt := stepCt + 1;
-		cz_write_audit(jobId,databaseName,procedureName,'Insert Compound tags in I2B2METADATA i2b2_tags',SQL%ROWCOUNT,stepCt,'Done');
-		commit;
+	begin
+    insert into i2b2_tags
+    (path, tag, tag_type, tags_idx)
+      select distinct min(o.c_fullname) as path
+        ,coalesce(c.generic_name,c.brand_name) as tag
+        ,'Compound' as tag_type
+        ,1 as tags_idx
+      from biomart.bio_experiment be
+        ,biomart.bio_data_compound bc
+        ,biomart.bio_compound c
+        ,i2b2 o
+      where be.bio_experiment_id = bc.bio_data_id
+            and bc.bio_compound_id = c.bio_compound_id
+            and be.accession = o.sourcesystem_cd
+            and coalesce(c.generic_name,c.brand_name) is not null
+      group by coalesce(c.generic_name,c.brand_name);
+    exception
+    when others then
+      errorNumber := SQLSTATE;
+      errorMessage := SQLERRM;
+      --Handle errors.
+      select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+      --End Proc
+      select cz_end_audit (jobID, 'FAIL') into rtnCd;
+      return -16;
+      get diagnostics rowCt := ROW_COUNT;
+	end;
+	stepCt := stepCt + 1;
+	select cz_write_audit(jobId,databaseName,procedureName,'Insert Compound tags in I2B2METADATA i2b2_tags',rowCt,stepCt,'Done') into rtnCd;
 
 		--	Insert trial data tags - DISEASE
-
+	begin
 		delete from i2b2_tags t
-		where upper(t.tag_type) = 'DISEASE';
+					where upper(t.tag_type) = 'DISEASE'
+						and t.path = (select min(b.c_fullname)
+									 from lt_src_study_metadata m, i2b2 b
+								   where m.study_id = b.sourcesystem_cd
+									   and m.study_id is not null);
+    exception
+    when others then
+      errorNumber := SQLSTATE;
+      errorMessage := SQLERRM;
+      --Handle errors.
+      select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+      --End Proc
+      select cz_end_audit (jobID, 'FAIL') into rtnCd;
+      return -16;
+      get diagnostics rowCt := ROW_COUNT;
+	end;
 
-		stepCt := stepCt + 1;
-		cz_write_audit(jobId,databaseName,procedureName,'Delete existing DISEASE tags in I2B2METADATA i2b2_tags',SQL%ROWCOUNT,stepCt,'Done');
-		commit;
+	stepCt := stepCt + 1;
+	select cz_write_audit(jobId,databaseName,procedureName,'Delete existing DISEASE tags in I2B2METADATA i2b2_tags',rowCt,stepCt,'Done') into rtnCd;
 
+	begin
 		insert into i2b2_tags
-		(path, tag, tag_type, tags_idx)
-		select distinct min(o.c_fullname) as path
-				 ,c.prefered_name
-				 ,'Disease' as tag_type
-				 ,1 as tags_idx
-		from bio_experiment be
-			,bio_data_disease bc
-			,bio_disease c
-			,i2b2 o
-				--,(select rownum as rec_num from table_access where rownum < 3) x
-		where be.bio_experiment_id = bc.bio_data_id
-				and bc.bio_disease_id = c.bio_disease_id
-				and be.accession = o.sourcesystem_cd
-			--and decode(x.rec_num,1,c.generic_name,c.brand_name) is not null
-		group by c.prefered_name;
+			(path, tag, tag_type, tags_idx)
+			select distinct min(o.c_fullname) as path
+					 ,c.prefered_name
+					 ,'Disease' as tag_type
+					 ,2 as tags_idx
+			from biomart.bio_experiment be
+				,biomart.bio_data_disease bc
+				,biomart.bio_disease c
+				,i2b2 o
+			where be.bio_experiment_id = bc.bio_data_id
+					and bc.bio_disease_id = c.bio_disease_id
+					and be.accession = o.sourcesystem_cd
+					and c.prefered_name is not null
+			group by c.prefered_name;
+    exception
+    when others then
+      errorNumber := SQLSTATE;
+      errorMessage := SQLERRM;
+      --Handle errors.
+      select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+      --End Proc
+      select cz_end_audit (jobID, 'FAIL') into rtnCd;
+      return -16;
+      get diagnostics rowCt := ROW_COUNT;
+	end;
 
-		stepCt := stepCt + 1;
-		cz_write_audit(jobId,databaseName,procedureName,'Insert Disease tags in I2B2METADATA i2b2_tags',SQL%ROWCOUNT,stepCt,'Done');
-		commit;
-	*/
+	stepCt := stepCt + 1;
+	select cz_write_audit(jobId,databaseName,procedureName,'Insert Disease tags in I2B2METADATA i2b2_tags',rowCt,stepCt,'Done') into rtnCd;
 
 	---Cleanup OVERALL JOB if this proc is being run standalone
 
