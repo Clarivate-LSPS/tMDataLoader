@@ -12,13 +12,14 @@ import static org.junit.Assert.assertThat
 class MetaDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase {
     private MetaDataProcessor _processor;
 
+    String root = 'Test Studies'
     String studyName = 'Test Study'
     String studyId = 'GSE0'
 
     @Override
     void setUp() {
         ConfigAwareTestCase.super.setUp()
-        Study.deleteById(config, 'GSE0')
+        Study.deleteById(config, studyId)
         Fixtures.clinicalData.load(config)
         runScript('i2b2_load_study_metadata.sql')
     }
@@ -36,10 +37,13 @@ class MetaDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCas
         use(SqlMethods) {
             def studyMetaData = db.findRecord('tm_lz.lt_src_study_metadata',
                     study_id: studyId)
+
             def experimentId = db.findRecord('biomart.bio_experiment',
                     accession : studyId)?.'bio_experiment_id'
+
             def bioCompoundId = db.findRecord('biomart.bio_compound',
                     generic_name: studyMetaData.compound)?.'bio_compound_id'
+
             def bioDiseaseId = db.findRecord('biomart.bio_disease',
                     disease: studyMetaData.disease)?.'bio_disease_id'
 
@@ -66,11 +70,17 @@ class MetaDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCas
             assertThat(db, hasRecord('biomart.bio_data_taxonomy', [bio_taxonomy_id: bioTaxonomyId],
                     [etl_source: "METADATA:${studyId}"]))
 
-            assertNotNull('NCBI content repository not exist',NCBIRepositoryId)
+            assertNotNull('NCBI content repository not exist', NCBIRepositoryId)
             assertThat(db, hasRecord('biomart.bio_content', [location: "geo/query/acc.cgi?acc=${studyId}"],
                     [repository_id : NCBIRepositoryId]))
 
-            assertThat(db, hasRecord('i2b2metadata.i2b2_tags', [tag : studyId], [:]))
+            assertThat(db, hasRecord('i2b2metadata.i2b2_tags',
+                    [path : "\\${root}\\${studyName}\\", tag_type : 'Trial'], [tag : "${studyId}"]))
+            assertThat(db, hasRecord('i2b2metadata.i2b2_tags',
+                    [path : "\\${root}\\${studyName}\\", tag_type : 'Compound'], [tag : "${studyMetaData.compound}"]))
+            assertThat(db, hasRecord('i2b2metadata.i2b2_tags',
+                    [path : "\\${root}\\${studyName}\\", tag_type : 'Disease'], [tag : "${studyMetaData.disease}"]))
+
         }
 
     }

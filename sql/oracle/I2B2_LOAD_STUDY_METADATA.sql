@@ -732,12 +732,16 @@ order by c_fullname
 			end loop;
 		end loop;
 	end if;
-	
-  -- Create i2b2_tags, we only want to delete existing tags that we are currently uploading and we do not
-  -- want to delete any existing tags that may be in the table
 
-	delete from i2b2_tags where tag_type = 'Trial';
-	
+	-- Insert trial tags
+
+	delete from i2b2_tags t
+	      where t.tag_type = 'Trial'
+	        and t.path = (select min(b.c_fullname)
+				            from lt_src_study_metadata m, i2b2 b
+					       where m.study_id = b.sourcesystem_cd
+						     and m.study_id is not null);
+
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Delete existing Trial tags in i2b2_tags',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
@@ -756,25 +760,19 @@ order by c_fullname
 		,i2b2 b
 	where be.accession = b.sourcesystem_cd
 	group by be.accession;
-  
-  insert into i2b2_tags
-	(path, tag, tag_type, tags_idx)
-	select min(b.c_fullname) as path
-		  ,be.accession as tag
-		  ,'Trial' as tag_type
-		  ,1 as tags_idx
-	from bio_experiment be
-		,i2b2 b
-	where be.accession = b.sourcesystem_cd
-	group by be.accession;
 	
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Add Trial tags in i2b2_tags',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
 					 
 	--	Insert trial data tags - COMPOUND
-	
- /* delete from i2b2_tags where tag_type = 'Compound';
+
+  delete from i2b2_tags t
+	    where t.tag_type = 'Compound'
+		  and t.path = (select min(b.c_fullname)
+				          from lt_src_study_metadata m,i2b2 b
+					     where m.study_id = b.sourcesystem_cd
+						   and m.study_id is not null);
 
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Delete existing Compound tags in I2B2METADATA i2b2_tags',SQL%ROWCOUNT,stepCt,'Done');
@@ -785,7 +783,7 @@ order by c_fullname
 	select distinct min(o.c_fullname) as path
 		  ,decode(x.rec_num,1,c.generic_name,c.brand_name) as tag
 		  ,'Compound' as tag_type
-		  ,2 as tags_idx
+		  ,1 as tags_idx
 	from bio_experiment be
 		,bio_data_compound bc
 		,bio_compound c
@@ -803,7 +801,12 @@ order by c_fullname
 					 
 	--	Insert trial data tags - DISEASE
 	
-  delete from i2b2_tags where tag_type = 'Disease';
+  delete from i2b2_tags t
+	    where t.tag_type = 'Disease'
+		  and t.path = (select min(b.c_fullname)
+	                      from lt_src_study_metadata m,i2b2 b
+						 where m.study_id = b.sourcesystem_cd
+					       and m.study_id is not null);
 
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Delete existing DISEASE tags in I2B2METADATA i2b2_tags',SQL%ROWCOUNT,stepCt,'Done');
@@ -814,7 +817,7 @@ order by c_fullname
 	select distinct min(o.c_fullname) as path
 		   ,c.prefered_name
 		   ,'Disease' as tag_type
-		   ,3 as tags_idx
+		   ,2 as tags_idx
 	from bio_experiment be
 		,bio_data_disease bc
 		,bio_disease c
@@ -833,7 +836,6 @@ order by c_fullname
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'End i2b2_load_study_metadata',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
-	*/
 
     ---Cleanup OVERALL JOB if this proc is being run standalone
 	IF newJobFlag = 1
