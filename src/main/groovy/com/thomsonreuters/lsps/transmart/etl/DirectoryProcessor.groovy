@@ -122,10 +122,10 @@ class DirectoryProcessor {
         }
 
         if (res) {
-            it.renameTo(new File(dir, "_DONE_${it.name}"))
+            dir.renameTo(new File(dir, "_DONE_${dir.name}"))
         } else {
             if (!config.isNoRenameOnFail)
-                it.renameTo(new File(dir, "_FAIL_${it.name}"))
+                dir.renameTo(new File(dir, "_FAIL_${dir.name}"))
         }
 
         res
