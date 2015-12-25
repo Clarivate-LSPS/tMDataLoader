@@ -781,19 +781,18 @@ order by c_fullname
 	insert into i2b2_tags
 	(path, tag, tag_type, tags_idx)
 	select distinct min(o.c_fullname) as path
-		  ,decode(x.rec_num,1,c.generic_name,c.brand_name) as tag
+		  ,coalesce(c.generic_name,c.brand_name) as tag
 		  ,'Compound' as tag_type
 		  ,1 as tags_idx
 	from bio_experiment be
 		,bio_data_compound bc
 		,bio_compound c
 		,i2b2 o
-		,(select rownum as rec_num from table_access where rownum < 3) x
 	where be.bio_experiment_id = bc.bio_data_id
        and bc.bio_compound_id = c.bio_compound_id
        and be.accession = o.sourcesystem_cd
-       and decode(x.rec_num,1,c.generic_name,c.brand_name) is not null
-	group by decode(x.rec_num,1,c.generic_name,c.brand_name);
+       and coalesce(c.generic_name,c.brand_name) is not null
+	group by coalesce(c.generic_name,c.brand_name);
 
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Insert Compound tags in I2B2METADATA i2b2_tags',SQL%ROWCOUNT,stepCt,'Done');
@@ -822,11 +821,9 @@ order by c_fullname
 		,bio_data_disease bc
 		,bio_disease c
 		,i2b2 o
-      --,(select rownum as rec_num from table_access where rownum < 3) x
 	where be.bio_experiment_id = bc.bio_data_id
       and bc.bio_disease_id = c.bio_disease_id
       and be.accession = o.sourcesystem_cd
-    --and decode(x.rec_num,1,c.generic_name,c.brand_name) is not null
 	group by c.prefered_name;
 
 	stepCt := stepCt + 1;
