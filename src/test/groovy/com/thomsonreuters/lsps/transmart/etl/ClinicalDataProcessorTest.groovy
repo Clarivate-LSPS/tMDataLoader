@@ -50,7 +50,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         then:
         assertThat("Clinical data loading shouldn't fail", result, equalTo(true))
         actualFile.exists()
-        actualFile.text == expectedFile.text
+        actualFile.readLines() == expectedFile.readLines()
     }
 
     def "it should collect statistic"() {
