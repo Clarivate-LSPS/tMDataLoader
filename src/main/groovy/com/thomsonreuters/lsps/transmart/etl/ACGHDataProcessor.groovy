@@ -99,7 +99,7 @@ class ACGHDataProcessor extends DataProcessor {
 
             Path acghPlatformFile;
             dir.eachFileMatch(~/${platform}_region_platform.txt|${platform}.txt/){
-                acghPlatformFile = it.resolve('')
+                acghPlatformFile = it
             }
 
             if (Files.exists(acghPlatformFile)) {
