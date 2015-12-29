@@ -25,6 +25,7 @@ AS
 	tmp_organism		varchar2(200);
 	pubmed_id			  varchar2(200);
 	pubmed_title		varchar2(200);
+	tag_path				varchar(400);
 	
 	Type study_compound_rec is record
 	(study_id	varchar2(200)
@@ -734,16 +735,18 @@ order by c_fullname
 	end if;
 
 	-- Insert trial tags
+	select min(b.c_fullname)
+	  into tag_path
+	  from lt_src_study_metadata m,i2b2 b
+	 where m.study_id = b.sourcesystem_cd
+		 and m.study_id is not null;
 
 	delete from i2b2_tags t
-	      where t.tag_type = 'Trial'
-	        and t.path = (select min(b.c_fullname)
-				            from lt_src_study_metadata m, i2b2 b
-					       where m.study_id = b.sourcesystem_cd
-						     and m.study_id is not null);
+	 where t.tag_type in ('Trial', 'Compound', 'Disease')
+	   and t.path = tag_path;
 
 	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Delete existing Trial tags in i2b2_tags',SQL%ROWCOUNT,stepCt,'Done');
+	cz_write_audit(jobId,databaseName,procedureName,'Delete existing tags in i2b2_tags',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
 	
 	-- PP: Some pre-1.1 version systems of tranSMART have Trial as tags_idx=0 and some have tags_idx=1.  There was a change
@@ -752,7 +755,7 @@ order by c_fullname
   -- add a row for both 0 and 1.  This duplication does not harm the application.
   insert into i2b2_tags
 	(path, tag, tag_type, tags_idx)
-	select min(b.c_fullname) as path
+	select tag_path as path
 		  ,be.accession as tag
 		  ,'Trial' as tag_type
 		  ,0 as tags_idx
@@ -766,21 +769,10 @@ order by c_fullname
 	commit;
 					 
 	--	Insert trial data tags - COMPOUND
-
-  delete from i2b2_tags t
-	    where t.tag_type = 'Compound'
-		  and t.path = (select min(b.c_fullname)
-				          from lt_src_study_metadata m,i2b2 b
-					     where m.study_id = b.sourcesystem_cd
-						   and m.study_id is not null);
-
-	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Delete existing Compound tags in I2B2METADATA i2b2_tags',SQL%ROWCOUNT,stepCt,'Done');
-	commit;	
 	
 	insert into i2b2_tags
 	(path, tag, tag_type, tags_idx)
-	select distinct min(o.c_fullname) as path
+	select distinct tag_path as path
 		  ,coalesce(c.generic_name,c.brand_name) as tag
 		  ,'Compound' as tag_type
 		  ,1 as tags_idx
@@ -799,21 +791,10 @@ order by c_fullname
 	commit;	
 					 
 	--	Insert trial data tags - DISEASE
-	
-  delete from i2b2_tags t
-	    where t.tag_type = 'Disease'
-		  and t.path = (select min(b.c_fullname)
-	                      from lt_src_study_metadata m,i2b2 b
-						 where m.study_id = b.sourcesystem_cd
-					       and m.study_id is not null);
 
-	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Delete existing DISEASE tags in I2B2METADATA i2b2_tags',SQL%ROWCOUNT,stepCt,'Done');
-	commit;	
-		
 	insert into i2b2_tags
 	(path, tag, tag_type, tags_idx)
-	select distinct min(o.c_fullname) as path
+	select distinct tag_path as path
 		   ,c.prefered_name
 		   ,'Disease' as tag_type
 		   ,2 as tags_idx

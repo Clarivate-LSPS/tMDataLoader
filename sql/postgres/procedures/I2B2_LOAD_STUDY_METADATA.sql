@@ -39,8 +39,9 @@ declare
 	tmp_disease			varchar(200);
 	tmp_organism		varchar(200);
 	tmp_pubmed			varchar(2000);
-	pubmed_id			varchar(200);
+	pubmed_id				varchar(200);
 	pubmed_title		varchar(2000);
+	tag_path				varchar(400);
 
 	study_compound_rec	record;
 	study_disease_rec	record;
@@ -912,13 +913,16 @@ BEGIN
 
 	--	Create i2b2_tags
 
+  select min(b.c_fullname)
+	  into tag_path
+    from lt_src_study_metadata m,i2b2 b
+   where m.study_id = b.sourcesystem_cd
+     and m.study_id is not null;
+
 	begin
 		delete from i2b2metadata.i2b2_tags t
-		      where upper(t.tag_type) = 'TRIAL'
-						and t.path = (select min(b.c_fullname)
-                            from lt_src_study_metadata m,i2b2 b
-                           where m.study_id = b.sourcesystem_cd
-                             and m.study_id is not null);
+		      where upper(t.tag_type) in ('TRIAL','COMPOUND','DISEASE')
+						and t.path = tag_path;
 		exception
 		when others then
 			errorNumber := SQLSTATE;
@@ -937,7 +941,7 @@ BEGIN
 		insert into i2b2metadata.i2b2_tags
 		(tag_id, path, tag, tag_type, tags_idx)
 			select nextval('i2b2metadata.sq_i2b2_tag_id')
-				,min(b.c_fullname) as path
+				,tag_path as path
 				,be.accession as tag
 				,'Trial' as tag_type
 				,0 as tags_idx
@@ -960,32 +964,10 @@ BEGIN
 	select cz_write_audit(jobId,databaseName,procedureName,'Add study to i2b2_tags',rowCt,stepCt,'Done') into rtnCd;
 
 		--	Insert trial data tags - COMPOUND
-  begin
-		delete from i2b2_tags t
-	        where upper(t.tag_type) = 'COMPOUND'
-            and t.path = (select min(b.c_fullname)
-                            from lt_src_study_metadata m,i2b2 b
-                           where m.study_id = b.sourcesystem_cd
-                             and m.study_id is not null);
-    exception
-    when others then
-      errorNumber := SQLSTATE;
-      errorMessage := SQLERRM;
-      --Handle errors.
-      select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
-      --End Proc
-      select cz_end_audit (jobID, 'FAIL') into rtnCd;
-      return -16;
-      get diagnostics rowCt := ROW_COUNT;
-	end;
-
-	stepCt := stepCt + 1;
-	select cz_write_audit(jobId,databaseName,procedureName,'Delete existing Compound tags in I2B2METADATA i2b2_tags',rowCt,stepCt,'Done') into rtnCd;
-
 	begin
     insert into i2b2_tags
     (path, tag, tag_type, tags_idx)
-      select distinct min(o.c_fullname) as path
+      select distinct tag_path as path
         ,coalesce(c.generic_name,c.brand_name) as tag
         ,'Compound' as tag_type
         ,1 as tags_idx
@@ -1013,32 +995,11 @@ BEGIN
 	select cz_write_audit(jobId,databaseName,procedureName,'Insert Compound tags in I2B2METADATA i2b2_tags',rowCt,stepCt,'Done') into rtnCd;
 
 		--	Insert trial data tags - DISEASE
-	begin
-		delete from i2b2_tags t
-					where upper(t.tag_type) = 'DISEASE'
-						and t.path = (select min(b.c_fullname)
-									 from lt_src_study_metadata m, i2b2 b
-								   where m.study_id = b.sourcesystem_cd
-									   and m.study_id is not null);
-    exception
-    when others then
-      errorNumber := SQLSTATE;
-      errorMessage := SQLERRM;
-      --Handle errors.
-      select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
-      --End Proc
-      select cz_end_audit (jobID, 'FAIL') into rtnCd;
-      return -16;
-      get diagnostics rowCt := ROW_COUNT;
-	end;
-
-	stepCt := stepCt + 1;
-	select cz_write_audit(jobId,databaseName,procedureName,'Delete existing DISEASE tags in I2B2METADATA i2b2_tags',rowCt,stepCt,'Done') into rtnCd;
 
 	begin
 		insert into i2b2_tags
 			(path, tag, tag_type, tags_idx)
-			select distinct min(o.c_fullname) as path
+			select distinct tag_path as path
 					 ,c.prefered_name
 					 ,'Disease' as tag_type
 					 ,2 as tags_idx
