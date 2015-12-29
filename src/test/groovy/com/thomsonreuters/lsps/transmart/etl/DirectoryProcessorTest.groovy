@@ -35,16 +35,17 @@ class DirectoryProcessorTest extends Specification {
             }
 
             directoryProcessor = new DirectoryProcessor(config)
-            File zip = createZipFile(new File('fixtures', 'Test Directory Processor/Test Studies/Test Folder Study'))
+
+            File etlDir = new File('fixtures', 'Test Directory Processor')
+            File studyFolder = createTestStudyFolder(new File(etlDir ,'Test Studies/Test Folder Study'))
+            createZipFile(studyFolder)
         when:
-            boolean result = directoryProcessor.process(new File('fixtures', 'Test Directory Processor'))
+            boolean result = directoryProcessor.process(etlDir)
         then:
             result
             allStudyFolderMarking(Paths.get('fixtures', 'Test Directory Processor/Test Studies'), Mark.DONE)
         cleanup:
-            deleteStudyMarkers(Paths.get('fixtures', 'Test Directory Processor/Test Studies'), Mark.DONE)
-            File markZipFile = new File(zip.parentFile, "${Mark.DONE.value}${zip.name}")
-            markZipFile.delete()
+            deleteTestDirectory(etlDir)
     }
 
     private boolean allStudyFolderMarking(Path dir, Mark mark) {
@@ -75,24 +76,16 @@ class DirectoryProcessorTest extends Specification {
         return true
     }
 
-    private def deleteStudyMarkers(Path dir, Mark mark) {
-        Files.newDirectoryStream(dir).withCloseable {
-            it.each { Path study ->
+    private File createTestStudyFolder(File studyFolder) {
+        studyFolder.mkdirs()
 
-                if (study.fileName.toString().endsWith('.zip')) {
-                    return
-                }
+        new File(studyFolder,'ACGHDataToUpload').mkdir()
+        new File(studyFolder,'ClinicalDataToUpload').mkdir()
+        new File(studyFolder,'ExpressionDataToUpload').mkdir()
+        new File(studyFolder,'MetaDataToUpload').mkdir()
+        new File(studyFolder,'SNPDataToUpload').mkdir()
 
-                Files.newDirectoryStream(study).withCloseable {
-                    it.each { Path studyData ->
-                        Files.move(studyData, studyData.resolveSibling(studyData.fileName.toString().replace(mark.value, '')))
-                    }
-                }
-
-                Files.move(study, study.resolveSibling(study.fileName.toString().replace(mark.value, '')))
-            }
-        }
-
+        studyFolder
     }
 
     private File createZipFile(File sourceDir) {
@@ -102,5 +95,15 @@ class DirectoryProcessorTest extends Specification {
         result
     }
 
+    private deleteTestDirectory(File dir) {
+        for (File child : dir.listFiles()) {
+            if (child.isDirectory())
+                deleteTestDirectory(child)
+            else
+                child.delete()
+        }
+
+        dir.delete()
+    }
 
 }
