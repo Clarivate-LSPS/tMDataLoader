@@ -20,7 +20,6 @@
 
 package com.thomsonreuters.lsps.transmart.etl
 
-import com.thomsonreuters.lsps.transmart.util.PathUtils
 import groovy.io.FileType
 
 import java.nio.file.DirectoryStream
@@ -42,22 +41,25 @@ class DirectoryProcessor {
 
         try {
 
-            // looping through top nodes
-            d.eachDirMatch(~/[^\._].+/) {
-                if (!checkIfStudyFolder(it)) { // break the recursion at study level
-                    def node = root + "\\${it.name}"
+            Files.newDirectoryStream(d.toPath(), new DirectoryStream.Filter<Path> () {
+                @Override
+                boolean accept(Path entry) throws IOException {
+                    return entry.getFileName().toString() ==~ /[^\._].+/
+                }
 
-                    if (checkIfHasStudies(it)) {
-                        if (!processStudies(it, node) && config.stopOnFail) {
-                            throw new Exception("Processing failed")
-                        }
+            }).withCloseable { directories ->
+                for (Path directory : directories) {
+                    def node = root + "\\${directory.fileName}"
+                    List studies = getStudies(directory)
 
-                        // just in case there are any nested folders there
-                        process(it, node)
-                    } else {
-                        // nested directory
-                        process(it, node)
+                    if (studies.empty) {
+                        process(directory.toFile(), node)
+                        continue
                     }
+
+                    if (!processStudies(studies, node) && config.stopOnFail)
+                        throw new Exception("Processing failed")
+
                 }
             }
 
@@ -71,30 +73,29 @@ class DirectoryProcessor {
             }
 
             return true
-        }
-        catch (Exception ignored) {
+
+        } catch (Exception ignored) {
             return false
         }
     }
 
-    private boolean checkIfHasStudies(dir) {
-        def res = false
-        // looping through the files, looking for study folders
+    private List getStudies(Path dir) {
+        List result = []
         dir.eachFileMatch(FileType.ANY,~/[^\._].+/) {
             if (checkIfStudyFolder(it)) {
-                res = true // can't break out of closure easily other than using exception
+                result.add(it)
             }
         }
 
-        return res
+        result
     }
 
-    private boolean checkIfStudyFolder(File file) {
+    private boolean checkIfStudyFolder(Path file) {
         boolean result = false
 
         if (isZipFile(file)) {
-            FileSystems.newFileSystem(file.toPath(), null).withCloseable { FileSystem zipFileSystem ->
-                Path path = zipFileSystem.getPath(file.name.replace('.zip', ''))
+            FileSystems.newFileSystem(file, null).withCloseable { FileSystem zipFileSystem ->
+                Path path = zipFileSystem.getPath(file.fileName.toString().replace('.zip', ''))
                 path.eachDirMatch(~/[^\._].+/) { Path childFile ->
                     if (childFile.fileName.toString() ==~
                             /^(?i)(${DataProcessorFactory.processorsType.join('|')})Data(ToUpload)?\b.*/) {
@@ -102,26 +103,22 @@ class DirectoryProcessor {
                     }
                 }
             }
-
-            return result
         }
 
-        if ( file.isDirectory() ) {
-            file.eachDirMatch(~/[^\._].+/) {
-                if (it.name ==~ /^(?i)(${DataProcessorFactory.processorsType.join('|')})Data(ToUpload)?\b.*/) {
+        if ( Files.isDirectory(file) ) {
+            file.eachDirMatch(~/[^\._].+/) { Path childFile ->
+                if (childFile.fileName.toString() ==~
+                        /^(?i)(${DataProcessorFactory.processorsType.join('|')})Data(ToUpload)?\b.*/) {
                     result = true
                 }
             }
-
-            return result
         }
-
 
         return result
     }
 
-    private boolean isZipFile(File file) {
-        return file.name.endsWith('.zip');
+    private boolean isZipFile(Path file) {
+        return file.fileName.toString().endsWith('.zip');
     }
 
     private boolean processMetaData(File dir) {
@@ -146,136 +143,27 @@ class DirectoryProcessor {
         res
     }
 
-
-    private boolean processStudies(File studiesParentDir, String parentNode) {
+    private boolean processStudies(List studies, String parentNode) {
         config.logger.log("=== PROCESSING STUDIES IN ${parentNode} ===")
         def isAllSuccessful = true
-        studiesParentDir.eachFileMatch(FileType.ANY,~/(?!\.|_DONE_|_FAIL_|_DISABLED_).+/) {
+        studies.each { Path studyPath ->
             // looping through studies
             // dir name is the study
 
-            def studyName = it.name
+            String studyName = studyPath.fileName.toString()
             config.logger.log "== Found study: ${studyName} =="
+            StudyProcessor studyProcessor =
+                    isZipFile(studyPath) ? new ZipStudyProcessor(config) : new StudyProcessor(config)
 
-            try {
-            boolean studyProcessSuccessful = isZipFile(it) ? processZipStudy(it.toPath()) : processFolderStudy(it.toPath());
+            boolean studyProcessSuccessful = studyProcessor.
+                    processStudy(studyPath, studyPath.parent.fileName.toString())
             isAllSuccessful = isAllSuccessful && studyProcessSuccessful
-            } catch (Exception e) {
-                e.printStackTrace()
-            }
+
         }
 
         config.logger.log("=== FINISHED PROCESSING ${parentNode} ===")
         return isAllSuccessful
     }
 
-    private boolean processFolderStudy(Path path) {
-        boolean isStudyUploadSuccessful = true
-        String studyName = path.fileName.toString()
-
-        DataProcessorFactory.processorsType.each { processorType ->
-            def studyInfo = ['name': studyName, 'node': "${path.getParent().fileName}\\${studyName}".toString()]
-            if (!processDataDirectory(path, processorType, studyInfo)) {
-                isStudyUploadSuccessful = false
-            }
-        }
-
-        if (isStudyUploadSuccessful) {
-            Files.move(path, path.resolveSibling("_DONE_${path.fileName}"))
-        } else {
-            if (!config.isNoRenameOnFail)
-                Files.move(path, path.resolveSibling("_FAIL_${path.fileName}"))
-        }
-
-        isStudyUploadSuccessful
-    }
-
-    private boolean processZipStudy(Path path) {
-        boolean isStudyUploadSuccessful = true
-
-        FileSystems.newFileSystem(path, null).withCloseable { FileSystem zipFileSystem ->
-            Path ziPath = zipFileSystem.getPath(path.fileName.toString().replace('.zip', ''))
-            String studyName = ziPath.getFileName().toString()
-
-            DataProcessorFactory.processorsType.each { processorType ->
-                def studyInfo = ['name': studyName,
-                                 'node': "${path.parent.fileName}\\${studyName}".toString(),
-                                 'isZip': true]
-                if (!processDataDirectory(ziPath, processorType, studyInfo)) {
-                    isStudyUploadSuccessful = false
-                }
-            }
-
-            //rename zip entry
-            if (isStudyUploadSuccessful) {
-                markZipPath(ziPath, '_DONE_')
-            } else {
-                if (!config.isNoRenameOnFail)
-                    markZipPath(ziPath, '_FAIL_')
-
-            }
-        }
-
-        //rename zip file
-        if (isStudyUploadSuccessful) {
-            Files.move(path, path.resolveSibling("_DONE_${path.fileName}"))
-        } else {
-            if (!config.isNoRenameOnFail)
-                Files.move(path, path.resolveSibling("_FAIL_${path.fileName}"))
-
-        }
-
-        isStudyUploadSuccessful
-    }
-
-    private boolean processDataDirectory(Path parentDir, String dataType, studyInfo) {
-        def res = true
-
-        Files.newDirectoryStream(parentDir, new DirectoryStream.Filter<Path> () {
-            @Override
-            boolean accept(Path entry) throws IOException {
-                return Files.isDirectory(entry) &&
-                        entry.getFileName().toString() ==~ /^(?:${dataType}|${dataType.toLowerCase().capitalize()})Data(?:ToUpload)?\b.*/
-            }
-
-        }).withCloseable { dataDirs ->
-            for (Path dataDir : dataDirs) {
-                config.logger.log "Processing ${dataType} data"
-                def dataProcessor = DataProcessorFactory.newDataProcessor(dataType, config)
-                try {
-                    studyInfo['base_datatype'] = dataType
-                    res = res && dataProcessor.process(dataDir, studyInfo)
-                }
-                catch (Exception e) {
-                    res = false
-                    config.logger.log(LogType.ERROR, e)
-                }
-
-                if (res) {
-                    studyInfo.isZip ? markZipPath(dataDir, '_DONE_') :
-                            Files.move(dataDir, dataDir.resolveSibling("_DONE_${dataDir.fileName}"))
-                } else {
-                    if (!config.isNoRenameOnFail)
-                        studyInfo.isZip ? markZipPath(dataDir, '_FAIL_') :
-                                Files.move(dataDir, dataDir.resolveSibling("_FAIL_${dataDir.fileName}"))
-
-                    if (config.stopOnFail)
-                        break
-                }
-            }
-        }
-
-        res
-    }
-
-    private Path markZipPath(Path dir,String mark) {
-        Path markingPath = dir.resolveSibling("${mark}${dir.fileName}")
-        Files.createDirectory(markingPath)
-
-        PathUtils.movePath(dir, markingPath)
-        PathUtils.deletePath(dir)
-
-        markingPath
-    }
 
 }
