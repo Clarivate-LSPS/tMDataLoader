@@ -18,7 +18,7 @@ class DataProcessorFactory {
             ACGH        : ACGHDataProcessor
     ]
 
-    static Set<String> getProcessorsType() {
+    static Set<String> getProcessorTypes() {
         return dataProcessors.keySet()
     }
 

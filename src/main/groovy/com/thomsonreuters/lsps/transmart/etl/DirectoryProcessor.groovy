@@ -22,7 +22,6 @@ package com.thomsonreuters.lsps.transmart.etl
 
 import groovy.io.FileType
 
-import java.nio.file.DirectoryStream
 import java.nio.file.FileSystem
 import java.nio.file.FileSystems
 import java.nio.file.Files
@@ -35,36 +34,44 @@ class DirectoryProcessor {
         config = conf
     }
 
-    boolean process(dir, String root = "") {
-        def d = dir as File
+    boolean process(Path dir, String root = "") {
         config.logger.log("Processing directory: ${dir}")
 
         try {
-
-            Files.newDirectoryStream(d.toPath(), new DirectoryStream.Filter<Path> () {
-                @Override
-                boolean accept(Path entry) throws IOException {
-                    return entry.getFileName().toString() ==~ /[^\._].+/
+            List<Path> studies = []
+            List<Path> nestedDirs = []
+            List<Path> metaDataDirs = []
+            dir.eachDir { Path directory ->
+                String name = directory.fileName.toString()
+                if (name ==~ /^(\.|_DONE_|_FAIL_|_DISABLED_).*/) {
+                    return
                 }
 
-            }).withCloseable { directories ->
-                for (Path directory : directories) {
-                    def node = root + "\\${directory.fileName}"
-                    List studies = getStudies(directory)
-
-                    if (studies.empty) {
-                        process(directory.toFile(), node)
-                        continue
-                    }
-
-                    if (!processStudies(studies, node) && config.stopOnFail)
-                        throw new Exception("Processing failed")
-
+                // FIXME: Do we really need it on this level?
+                if (name ==~ /(?i)_MetaData/) {
+                    metaDataDirs << directory
+                } else if (checkIfStudyPath(directory)) {
+                    studies << directory
+                } else {
+                    nestedDirs << directory
+                }
+            }
+            dir.eachFileMatch(FileType.FILES, ~/.+\.zip$/) { Path it ->
+                if (checkIfStudyPath(it)) {
+                    studies.add(it)
                 }
             }
 
+            if (!studies.empty) {
+                if (!processStudies(studies, root) && config.stopOnFail)
+                    throw new Exception("Processing failed")
+            }
+            nestedDirs.each {
+                process(it, "$root\\${it.fileName}")
+            }
+
             // looping through MetaData nodes (well, only one)
-            d.eachDirMatch(~/(?i)_MetaData/) {
+            metaDataDirs.each {
                 config.logger.log("=== PROCESSING METADATA FOLDER ===")
                 if (!processMetaData(it) && config.stopOnFail) {
                     throw new Exception("Processing failed")
@@ -79,36 +86,24 @@ class DirectoryProcessor {
         }
     }
 
-    private List getStudies(Path dir) {
-        List result = []
-        dir.eachFileMatch(FileType.ANY,~/[^\._].+/) {
-            if (checkIfStudyFolder(it)) {
-                result.add(it)
-            }
-        }
-
-        result
+    boolean process(dir, String root = "") {
+        process(dir.asType(File).toPath(), root)
     }
 
-    private boolean checkIfStudyFolder(Path file) {
+    private boolean checkIfStudyPath(Path file) {
         boolean result = false
 
         if (isZipFile(file)) {
-            FileSystems.newFileSystem(file, null).withCloseable { FileSystem zipFileSystem ->
-                Path path = zipFileSystem.getPath(file.fileName.toString().replace('.zip', ''))
-                path.eachDirMatch(~/[^\._].+/) { Path childFile ->
-                    if (childFile.fileName.toString() ==~
-                            /^(?i)(${DataProcessorFactory.processorsType.join('|')})Data(ToUpload)?\b.*/) {
-                        result = true
-                    }
-                }
+            return FileSystems.newFileSystem(file, null).withCloseable { zipFileSystem ->
+                Path path = ((FileSystem) zipFileSystem).getPath(file.fileName.toString().replace('.zip', ''))
+                return checkIfStudyPath(path)
             }
         }
 
-        if ( Files.isDirectory(file) ) {
+        if (Files.isDirectory(file)) {
             file.eachDirMatch(~/[^\._].+/) { Path childFile ->
                 if (childFile.fileName.toString() ==~
-                        /^(?i)(${DataProcessorFactory.processorsType.join('|')})Data(ToUpload)?\b.*/) {
+                        /^(?i)(${DataProcessorFactory.processorTypes.join('|')})Data(ToUpload)?\b.*/) {
                     result = true
                 }
             }
@@ -121,9 +116,9 @@ class DirectoryProcessor {
         return file.fileName.toString().endsWith('.zip');
     }
 
-    private boolean processMetaData(File dir) {
+    private boolean processMetaData(Path dir) {
         def res = false
-        config.logger.log("Processing metadata dir ${dir.name}");
+        config.logger.log("Processing metadata dir ${dir.fileName}");
 
         def metadataProcessor = new MetaDataProcessor(config)
 
@@ -134,36 +129,37 @@ class DirectoryProcessor {
         }
 
         if (res) {
-            dir.renameTo(new File(dir, "_DONE_${dir.name}"))
+            Files.move(dir, dir.resolveSibling("_DONE_${dir.fileName}"))
         } else {
             if (!config.isNoRenameOnFail)
-                dir.renameTo(new File(dir, "_FAIL_${dir.name}"))
+                Files.move(dir, dir.resolveSibling("_FAIL_${dir.fileName}"))
         }
 
         res
     }
 
-    private boolean processStudies(List studies, String parentNode) {
-        config.logger.log("=== PROCESSING STUDIES IN ${parentNode} ===")
+    private boolean processStudies(List<Path> studies, String parentNode) {
+        config.logger.log("=== PROCESSING STUDIES IN '${parentNode}' ===")
         def isAllSuccessful = true
-        studies.each { Path studyPath ->
-            // looping through studies
+        // looping through studies
+        for (def studyPath : studies) {
             // dir name is the study
 
-            String studyName = studyPath.fileName.toString()
-            config.logger.log "== Found study: ${studyName} =="
-            StudyProcessor studyProcessor =
-                    isZipFile(studyPath) ? new ZipStudyProcessor(config) : new StudyProcessor(config)
-
-            boolean studyProcessSuccessful = studyProcessor.
-                    processStudy(studyPath, studyPath.parent.fileName.toString())
+            config.logger.log "== Found study: ${studyPath.fileName} =="
+            StudyProcessor studyProcessor
+            if (isZipFile(studyPath)) {
+                studyProcessor = new ZipStudyProcessor(config)
+            } else {
+                studyProcessor = new StudyProcessor(config)
+            }
+            boolean studyProcessSuccessful = studyProcessor.processStudy(studyPath, parentNode)
             isAllSuccessful = isAllSuccessful && studyProcessSuccessful
-
+            if (!isAllSuccessful && config.stopOnFail) {
+                break
+            }
         }
 
         config.logger.log("=== FINISHED PROCESSING ${parentNode} ===")
         return isAllSuccessful
     }
-
-
 }
