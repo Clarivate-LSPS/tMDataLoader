@@ -19,13 +19,12 @@
  ******************************************************************/
 
 package com.thomsonreuters.lsps.transmart.etl
-
 import com.thomsonreuters.lsps.transmart.sql.Database
 import groovy.sql.Sql
 import org.apache.commons.csv.CSVFormat
 import org.apache.commons.csv.CSVPrinter
 
-import java.nio.charset.Charset
+import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -74,7 +73,7 @@ abstract class DataProcessor {
                 def rows = sql.rows("select * from wt_clinical_data_dups" as String)
                 CSVFormat csvFormat = CSVFormat.DEFAULT.withRecordSeparator('\n')
                 try {
-                    Files.newBufferedWriter(dir.resolve('duplicates.csv'), Charset.defaultCharset()).withWriter { fileWriter ->
+                    Files.newBufferedWriter(dir.resolve('duplicates.csv'), StandardCharsets.UTF_8).withWriter { fileWriter ->
                         new CSVPrinter(fileWriter, csvFormat).withCloseable { CSVPrinter csvFilePrinter ->
                             Object[] FILE_HEADER = ["site_id", "subject_id", "visit_name", "data_label", "category_cd", "modifier_cd", "link_value"]
                             csvFilePrinter.printRecord(FILE_HEADER);
