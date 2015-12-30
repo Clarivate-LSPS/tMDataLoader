@@ -120,7 +120,7 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
         def path3 = "\\$rootName\\A\\C\\Another Test Study"
         moveStudy(path2, path3)
 
-        assertMovement(path2, path3)
+        assertMovement(path2, path3, "\\$rootName\\A\\B\\")
         assertMovement(path2, path1)
 
         def path4 = "\\$rootName\\A\\C\\Test Study"
@@ -163,16 +163,40 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
 
     }
 
-    private void assertMovement(String oldPath, String newPath) {
-        def tablesToAttr = ['i2b2metadata.i2b2'             : 'c_fullname',
-                            'i2b2metadata.i2b2_secure'      : 'c_fullname',
-                            'i2b2demodata.concept_dimension': 'concept_path',
-                            'i2b2demodata.concept_counts'   : 'concept_path']
+    private static List<String> collectPaths(String path) {
+        def pathHierarchy = []
+        def parts = path.split("\\\\")
+        def basePath = '\\'
+        for (def part : parts) {
+            if (!part) {
+                continue
+            }
+            pathHierarchy << (basePath = "${basePath}${part}\\" as String)
+        }
+        pathHierarchy
+    }
 
-        checkPaths(tablesToAttr, 'New paths were not added to ', newPath, 1);
-        checkChildNodes(tablesToAttr, 'Child nodes was not added to ', newPath)
+    private void assertMovement(String oldPath, String newPath, String keepPath = null) {
+        def i2b2TablesToAttr = ['i2b2metadata.i2b2'       : 'c_fullname',
+                                'i2b2metadata.i2b2_secure': 'c_fullname']
+        def conceptTablesToAttr = ['i2b2demodata.concept_dimension': 'concept_path',
+                                   'i2b2demodata.concept_counts'   : 'concept_path']
+
+        List<String> newPaths = collectPaths(newPath)
+        for (def path : newPaths) {
+            checkPaths(i2b2TablesToAttr, 'New paths were not added to ', path, 1)
+        }
+        checkPaths(conceptTablesToAttr, 'New paths were not added to ', newPath, 1)
+        checkChildNodes(i2b2TablesToAttr + conceptTablesToAttr, 'Child nodes was not added to ', newPath)
         if (oldPath != null) {
-            checkPaths(tablesToAttr, "Old path (${oldPath}) were not updated in ", oldPath, 0);
+            def oldPaths = collectPaths(oldPath) - newPaths
+            if (keepPath) {
+                oldPaths -= collectPaths(keepPath)
+            }
+            for (def path : oldPaths) {
+                checkPaths(i2b2TablesToAttr, "Old path (${oldPath}) were not updated in ", path, 0)
+            }
+            checkPaths(i2b2TablesToAttr, "Old path (${oldPath}) were not updated in ", oldPath, 0);
         }
     }
 
@@ -187,26 +211,9 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
 
     private void checkPaths(Map tablesToAttr, String errorMessage, String checkedPath, int correctCount) {
         checkedPath = checkedPath.charAt(checkedPath.length() - 1) != '\\' ? checkedPath + '\\' : checkedPath
-        def pathHierarchy = []
-        def parts = checkedPath.split("\\\\")
-        def basePath = '\\'
-        for (def part : parts) {
-            if (!part) {
-                continue
-            }
-            pathHierarchy << (basePath = "${basePath}${part}\\")
-        }
         for (t in tablesToAttr) {
-            def paths
-            if (correctCount == 1 && (t.key as String).split('\\.')[-1].toUpperCase() in ['I2B2', 'I2B2_SECURE']) {
-                paths = pathHierarchy
-            } else {
-                paths = [checkedPath]
-            }
-            for (def path : paths) {
-                def c = sql.firstRow('select count(*) from ' + t.key + ' where ' + t.value + ' = ?', path as String)
-                assertEquals("$errorMessage$t.key ($path)", correctCount, c[0] as Integer)
-            }
+            def c = sql.firstRow('select count(*) from ' + t.key + ' where ' + t.value + ' = ?', checkedPath as String)
+            assertEquals("$errorMessage$t.key ($checkedPath)", correctCount, c[0] as Integer)
         }
     }
 
@@ -235,7 +242,7 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
 
         moveStudy(oldPath, newPath)
 
-        assertMovement(oldPath, newPath)
+        assertMovement(oldPath, newPath, "\\$rootName\\$studyName\\Subjects\\Demographics\\")
         def m = ['Demographics new\\':3,
                  'Demographics new\\Language\\':3,
                  'Demographics new\\Language\\English\\':2,
@@ -250,7 +257,7 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
 
         moveStudy(oldPath, newPath)
 
-        assertMovement(oldPath, newPath)
+        assertMovement(oldPath, newPath, "\\$rootName\\$studyName\\Subjects\\Demographics\\")
         def m = ['Subjects new\\Demographics\\':3,
                  'Subjects new\\Demographics\\Language\\':3,
                  'Subjects new\\Demographics\\Language\\English\\':2,
@@ -267,7 +274,7 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
 
         moveStudy(oldPath, newPath)
 
-        assertMovement(oldPath, newPath)
+        assertMovement(oldPath, newPath, "\\$rootName\\$studyName\\Subjects\\Demographics\\")
         def m = ['Subjects new\\Demographics new\\':3,
                  'Subjects new\\Demographics new\\Language\\':3,
                  'Subjects new\\Demographics new\\Language\\English\\':2,
