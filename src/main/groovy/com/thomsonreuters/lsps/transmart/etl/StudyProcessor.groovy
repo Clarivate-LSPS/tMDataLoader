@@ -12,14 +12,14 @@ class StudyProcessor {
         this.config = config
     }
 
-    boolean processStudy(Path studyPath, String parentDir) {
+    boolean processStudy(Path studyPath, String parentNode) {
         if (!studyPath || Files.notExists(studyPath))
             throw new IllegalArgumentException('Study path incorrect')
 
         boolean isStudyUploadSuccessful = true
         String studyName = studyPath.fileName.toString()
-        DataProcessorFactory.processorsType.each { processorType ->
-            def studyInfo = ['name': studyName, 'node': "${parentDir}\\${studyName}".toString()]
+        DataProcessorFactory.processorTypes.each { processorType ->
+            def studyInfo = ['name': studyName, 'node': "${parentNode}\\${studyName}".toString()]
             if (!processDataDirectory(studyPath, processorType, studyInfo)) {
                 isStudyUploadSuccessful = false
             }

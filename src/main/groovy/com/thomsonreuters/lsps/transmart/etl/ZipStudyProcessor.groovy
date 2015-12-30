@@ -14,7 +14,7 @@ class ZipStudyProcessor extends StudyProcessor {
     }
 
     @Override
-    boolean processStudy(Path zipStudyPath, String parentDir) {
+    boolean processStudy(Path zipStudyPath, String parentNode) {
         if (!zipStudyPath || Files.notExists(zipStudyPath))
             throw new IllegalArgumentException('Zip study path incorrect')
 
@@ -22,7 +22,7 @@ class ZipStudyProcessor extends StudyProcessor {
 
         FileSystems.newFileSystem(zipStudyPath, null).withCloseable { FileSystem zipFileSystem ->
             Path studyPath = zipFileSystem.getPath(zipStudyPath.fileName.toString().replace('.zip', ''))
-            isStudyUploadSuccessful = super.processStudy(studyPath, parentDir)
+            isStudyUploadSuccessful = super.processStudy(studyPath, parentNode)
         }
 
         if (isStudyUploadSuccessful) {

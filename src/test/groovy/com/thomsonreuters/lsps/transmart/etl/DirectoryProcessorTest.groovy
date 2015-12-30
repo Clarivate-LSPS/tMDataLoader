@@ -40,9 +40,9 @@ class DirectoryProcessorTest extends Specification {
             File studyFolder = createTestStudyFolder(new File(etlDir ,'Test Studies/Test Folder Study'))
             createZipFile(studyFolder)
         when:
-            boolean result = directoryProcessor.process(etlDir)
+            boolean successfullyProcessed = directoryProcessor.process(etlDir.absolutePath)
         then:
-            result
+            successfullyProcessed
             allStudyFolderMarking(Paths.get('fixtures', 'Test Directory Processor/Test Studies'), Mark.DONE)
         cleanup:
             deleteTestDirectory(etlDir)
