@@ -114,34 +114,6 @@ BEGIN
     cz_write_audit(l_job_id, current_schema_name, procedure_name, 'Inserted paths into I2B2METADATA i2b2', SQL%ROWCOUNT, step, 'Done');
     COMMIT;
 
-    FORALL i IN INDICES OF new_nodes
-        INSERT INTO i2b2_secure (c_hlevel, c_fullname, c_name, c_visualattributes, c_synonym_cd, c_facttablecolumn, c_tablename, c_columnname, c_dimcode,
-            c_tooltip, update_date, download_date, import_date, sourcesystem_cd, c_basecode, c_operator, c_columndatatype, c_comment, m_applied_path, secure_obj_token)
-        SELECT (LENGTH(concept_path) - NVL(LENGTH(REPLACE(concept_path, '\')), 0)) / LENGTH('\') - 2 + root_level,
-               concept_path,
-               name_char,
-               'FA',
-               'N',
-               'CONCEPT_CD',
-               'CONCEPT_DIMENSION',
-               'CONCEPT_PATH',
-               concept_path,
-               concept_path,
-               sysdate,
-               sysdate,
-               sysdate,
-               sourcesystem_cd,
-               concept_cd,
-               'LIKE',
-               'T',
-               DECODE(Trial_id, NULL, NULL, 'trial:' || Trial_id),
-               '@',
-               'EXP:PUBLIC'
-          FROM concept_dimension WHERE concept_path = New_paths(i);
-    step := step + 1;
-    cz_write_audit(l_job_id, current_schema_name, procedure_name, 'Inserted paths into I2B2METADATA i2b2_secure', SQL%ROWCOUNT, step, 'Done');
-    COMMIT;
-
     ---Cleanup OVERALL JOB if this proc is being run standalone
     <<cleanup>>
     IF job_was_created THEN
