@@ -768,7 +768,7 @@ BEGIN
     cz_write_audit(jobId,databaseName,procedureName,'Insert into DE_SNP_PROBE_SORTED_DEF',SQL%ROWCOUNT,stepCt,'Done');
     commit;*/
 	--	delete each node that is hidden
-/* FOR r_delNodes in delNodes Loop
+ FOR r_delNodes in delNodes Loop
     --	deletes hidden nodes for a trial one at a time
 		i2b2_delete_1_node(r_delNodes.c_fullname);
 		stepCt := stepCt + 1;
@@ -776,11 +776,11 @@ BEGIN
 		cz_write_audit(jobId,databaseName,procedureName,tText,SQL%ROWCOUNT,stepCt,'Done');
 	END LOOP;
   --Reload Security: Inserts one record for every I2B2 record into the security table
-    i2b2_load_security_data(jobId);
+  i2b2_load_security_data(jobId);
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Load security data',0,stepCt,'Done');
---	tag data with probeset_id from reference.probeset_deapp
-	execute immediate ('truncate table TM_WZ.wt_subject_mrna_probeset');    */
+	/*--	tag data with probeset_id from reference.probeset_deapp
+		execute immediate ('truncate table TM_WZ.wt_subject_mrna_probeset');    */
 	--	note: assay_id represents a unique subject/site/sample
 
 
