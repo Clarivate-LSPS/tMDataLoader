@@ -32,11 +32,15 @@ class Database {
     }
 
     void truncateTable(Sql sql, String tableName) {
-        if (databaseType == DatabaseType.Postgres) {
-            sql.execute("truncate table $tableName" as String)
-        } else {
-            sql.execute("delete from $tableName" as String)
+        if (databaseType == DatabaseType.Oracle) {
+            tableName = tableName.toUpperCase()
+            def row = sql.firstRow(
+                    "select table_owner || '.' || table_name from user_synonyms where synonym_name = $tableName")
+            if (row) {
+                tableName = row.getAt(0)
+            }
         }
+        sql.execute("truncate table $tableName" as String)
     }
 
     def withSql(Closure block) {
