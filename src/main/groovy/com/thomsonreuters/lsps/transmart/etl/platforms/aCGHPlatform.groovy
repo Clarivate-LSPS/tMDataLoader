@@ -1,11 +1,9 @@
 package com.thomsonreuters.lsps.transmart.etl.platforms
 
-import com.thomsonreuters.lsps.transmart.files.CsvLikeFile
 import com.thomsonreuters.lsps.transmart.files.GplFile
 import groovy.sql.Sql
 
 import java.nio.file.Path
-
 /**
  * Created by transmart on 3/5/15.
  */
@@ -17,7 +15,7 @@ class aCGHPlatform extends GenePlatform{
 
     @Override
     void cleanupTempTables(Sql sql) {
-        sql.execute("DELETE FROM lt_chromosomal_region" as String)
+        database.truncateTable(sql, 'lt_chromosomal_region')
     }
 
     @Override

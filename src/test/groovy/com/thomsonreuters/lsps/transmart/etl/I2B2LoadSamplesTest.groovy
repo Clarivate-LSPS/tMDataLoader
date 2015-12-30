@@ -29,7 +29,7 @@ class I2B2LoadSamplesTest extends GroovyTestCase implements ConfigAwareTestCase 
         def samplesLoader = new SamplesLoader(trialId)
         samplesLoader.addSample('LDR+PLATFORM+TISSUETYPE', 'LDR_TST_SUBJ_001', 'LDR_TST_SMP_001', platform)
         samplesLoader.addSample('LDR+PLATFORM+TISSUETYPE', 'LDR_TST_SUBJ_002', 'LDR_TST_SMP_002', null, tissueType: 'Blood')
-        samplesLoader.loadSamples(db)
+        samplesLoader.loadSamples(database, db)
 
         insertIfNotExists('deapp.de_gpl_info', [platform: platform, title: 'Loader Test Platform',
                                                 organism: 'Homo Sapiens', marker_type: 'Gene Expression'])

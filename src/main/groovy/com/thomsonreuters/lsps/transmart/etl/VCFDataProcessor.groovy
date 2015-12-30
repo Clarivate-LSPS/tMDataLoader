@@ -76,7 +76,7 @@ class VCFDataProcessor extends DataProcessor {
         if (!files.every { processFile(it, sql, samplesLoader, studyInfo) }) {
             return false
         }
-        samplesLoader.loadSamples(sql)
+        samplesLoader.loadSamples(database, sql)
         return true
     }
 

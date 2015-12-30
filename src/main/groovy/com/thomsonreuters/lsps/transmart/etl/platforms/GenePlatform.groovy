@@ -3,6 +3,7 @@ import com.thomsonreuters.lsps.transmart.etl.LogType
 import com.thomsonreuters.lsps.transmart.etl.PlatformLoader
 import com.thomsonreuters.lsps.transmart.files.CsvLikeFile
 import com.thomsonreuters.lsps.transmart.files.MetaInfoHeader
+import com.thomsonreuters.lsps.transmart.sql.Database
 import com.thomsonreuters.lsps.transmart.util.PrepareIfRequired
 import groovy.sql.BatchingPreparedStatementWrapper
 import groovy.sql.Sql
@@ -20,12 +21,14 @@ abstract class GenePlatform implements PrepareIfRequired {
     String organism
     protected def config
     protected CsvLikeFile platformFile
+    protected Database database
 
     GenePlatform(CsvLikeFile platformFile, String platformType, String id, config) {
         this.platformFile = platformFile
         this.platformType = platformType
         this.id = id
         this.config = config
+        this.database = new Database(config)
     }
 
     String getTitle() {

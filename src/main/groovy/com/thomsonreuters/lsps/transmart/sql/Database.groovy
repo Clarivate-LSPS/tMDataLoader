@@ -31,6 +31,14 @@ class Database {
         new Database(db: config + [username: username, password: password])
     }
 
+    void truncateTable(Sql sql, String tableName) {
+        if (databaseType == DatabaseType.Postgres) {
+            sql.execute("truncate table $tableName" as String)
+        } else {
+            sql.execute("delete from $tableName" as String)
+        }
+    }
+
     def withSql(Closure block) {
         Sql sql = null
         try {

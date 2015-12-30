@@ -163,7 +163,7 @@ class ClinicalDataProcessor extends DataProcessor {
         // read mapping file first
         // then parse files that are specified there (to allow multiple files per study)
 
-        sql.execute("DELETE FROM lt_src_clinical_data" as String)
+        database.truncateTable(sql, 'lt_src_clinical_data')
         if (!sql.connection.autoCommit) {
             sql.commit()
         }

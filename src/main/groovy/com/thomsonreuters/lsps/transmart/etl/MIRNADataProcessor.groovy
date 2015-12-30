@@ -14,8 +14,8 @@ public class MIRNADataProcessor extends DataProcessor {
 
     @Override
     public boolean processFiles(Path dir, Sql sql, studyInfo) {
-        sql.execute("DELETE FROM lt_src_mirna_subj_samp_map" as String)
-        sql.execute("DELETE FROM lt_src_qpcr_mirna_data" as String)
+        database.truncateTable(sql, 'lt_src_mirna_subj_samp_map')
+        database.truncateTable(sql, 'lt_src_qpcr_mirna_data')
 
         def platformList = [] as Set
 
