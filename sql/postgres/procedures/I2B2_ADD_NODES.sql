@@ -49,9 +49,6 @@ AS $BODY$
     DELETE FROM i2b2metadata.I2B2
       WHERE c_fullname = ANY(new_paths);
 
-    DELETE FROM i2b2metadata.I2B2_SECURE
-    WHERE c_fullname = ANY(new_paths);
-
     -- Insert new node
     INSERT INTO i2b2demodata.CONCEPT_DIMENSION
     (CONCEPT_CD,
@@ -94,35 +91,6 @@ AS $BODY$
       'T',
       case when trialid is null then null else 'trial:' || trialid end,
       '@'
-    FROM i2b2demodata.CONCEPT_DIMENSION
-    WHERE
-      CONCEPT_PATH = ANY(new_paths);
-
-    INSERT INTO i2b2metadata.I2B2_SECURE
-    (c_hlevel, C_FULLNAME, C_NAME, C_VISUALATTRIBUTES, c_synonym_cd, C_FACTTABLECOLUMN, C_TABLENAME, C_COLUMNNAME,
-     C_DIMCODE, C_TOOLTIP, UPDATE_DATE, DOWNLOAD_DATE, IMPORT_DATE, SOURCESYSTEM_CD, c_basecode, C_OPERATOR,
-     c_columndatatype, c_comment,m_applied_path, secure_obj_token)
-    SELECT
-      i2b2_get_hlevel(concept_path),
-      CONCEPT_PATH,
-      NAME_CHAR,
-      'FA',
-      'N',
-      'CONCEPT_CD',
-      'CONCEPT_DIMENSION',
-      'CONCEPT_PATH',
-      CONCEPT_PATH,
-      CONCEPT_PATH,
-      current_timestamp,
-      current_timestamp,
-      current_timestamp,
-      SOURCESYSTEM_CD,
-      CONCEPT_CD,
-      'LIKE',
-      'T',
-      case when trialid is null then null else 'trial:' || trialid end,
-      '@',
-      'EXP:PUBLIC'
     FROM i2b2demodata.CONCEPT_DIMENSION
     WHERE
       CONCEPT_PATH = ANY(new_paths);

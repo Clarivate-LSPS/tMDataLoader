@@ -41,11 +41,12 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
     old_level_num           INTEGER;
     new_level_num           INTEGER;
     parent_path_node        VARCHAR(2000);
-    current_path            VARCHAR(2000);
+    current_path            TEXT;
     current_path_level      INTEGER;
     current_path_attr_name  VARCHAR(2000);
     tmp                     VARCHAR(2000);
     new_paths               TEXT[];
+    old_paths               TEXT[];
     is_sub_node							BOOLEAN;
 
   BEGIN
@@ -213,7 +214,7 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
     IF old_root_node <> new_root_node AND counter = 1
     THEN
 
-    -- if has not - remove old root node from i2b2, i2b2_secure, table_access
+    -- if has not - remove old root node from i2b2, table_access
       begin
       DELETE FROM i2b2metadata.i2b2
       WHERE c_fullname = old_root_node;
@@ -237,7 +238,7 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
       end;
 
       stepCt := stepCt + 1;
-      select cz_write_audit(jobId, databaseName, procedureName, 'Remove old root node from i2b2, i2b2_secure, table_access',
+      select cz_write_audit(jobId, databaseName, procedureName, 'Remove old root node from i2b2, table_access',
                      rowCt, stepCt, 'Done')  into rtnCd;
 
 
@@ -253,20 +254,13 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
       length(new_path) - length(replace(new_path, '\', ''))
     INTO new_level_num;
 
--- rename paths in i2b2 and i2b2_secure
+    -- rename paths in i2b2
     begin
     UPDATE i2b2metadata.i2b2
     SET c_fullname=replace(c_fullname, old_path, new_path),
       c_dimcode=replace(c_dimcode, old_path, new_path),
       c_tooltip=replace(c_tooltip, old_path, new_path)
     WHERE c_fullname LIKE old_path || '%' ESCAPE '`';
-
-    UPDATE i2b2metadata.i2b2_secure
-    SET c_fullname=replace(c_fullname, old_path, new_path),
-      c_dimcode=replace(c_dimcode, old_path, new_path),
-      c_tooltip=replace(c_tooltip, old_path, new_path)
-    WHERE c_fullname LIKE old_path || '%' ESCAPE '`';
-
 
     get diagnostics rowCt := ROW_COUNT;
     exception
@@ -281,16 +275,13 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
     end;
 
     stepCt := stepCt + 1;
-    select cz_write_audit(jobId, databaseName, procedureName, 'Rename paths in i2b2 and i2b2_secure', rowCt, stepCt,
+    select cz_write_audit(jobId, databaseName, procedureName, 'Rename paths in i2b2', rowCt, stepCt,
                    'Done') into rtnCd;
 
 
--- rename c_name in i2b2 and i2b2_secure
+-- rename c_name in i2b2
     begin
     UPDATE i2b2metadata.i2b2
-    SET c_name=new_path_last_node_name
-    WHERE c_fullname = new_path;
-    UPDATE i2b2metadata.i2b2_secure
     SET c_name=new_path_last_node_name
     WHERE c_fullname = new_path;
 
@@ -307,7 +298,7 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
     end;
 
     stepCt := stepCt + 1;
-    select cz_write_audit(jobId, databaseName, procedureName, 'Update c_name in i2b2 and i2b2_secure', rowCt, stepCt,
+    select cz_write_audit(jobId, databaseName, procedureName, 'Update c_name in i2b2', rowCt, stepCt,
                    'Done') into rtnCd;
 
 --rename paths in concept_dimension
@@ -384,7 +375,7 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
           SELECT count(*) into rCount from i2b2demodata.concept_counts where concept_path = (genPath || '\') ;
 
           if rCount = 0 THEN
-            SELECT count(*) into rCount from i2b2metadata.i2b2_secure where c_fullname = (genPath || '\');
+            SELECT count(*) into rCount from i2b2metadata.i2b2 where c_fullname = (genPath || '\');
             if rCount = 0 then
               new_paths := array_append(new_paths,genPath || '\');
               stepCt := stepCt + 1;
@@ -410,56 +401,36 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
     select i2b2_fill_in_tree(case when is_sub_node then trialId else null end, new_path, jobID) into rtnCd;
 
     -- Remove empty levels
-    IF new_level_num <= old_level_num
-    THEN
-        DROP TABLE IF EXISTS temp_t CASCADE;
-        CREATE TEMP TABLE temp_t AS SELECT node_name
-        FROM regexp_split_to_table(old_path, '\\') AS node_name;
+    old_paths := array(
+        with paths_a as (
+          select string_to_array(substring(old_path from 2 for char_length(old_path) - 2), '\', '') as path
+        )
+        select
+          p.c_fullname::text
+        from
+          (
+             select
+               '\' || array_to_string(paths_a.path[1:n], '\') || '\' as c_fullname
+             from paths_a, generate_series(array_length(paths_a.path, 1), 1, -1) n
+           ) p
+          inner join i2b2 i2
+            on p.c_fullname = i2.c_fullname
+    );
 
-        DELETE FROM temp_t WHERE node_name='';
-
-        DROP TABLE IF EXISTS temp_t_levels CASCADE;
-        CREATE TEMP TABLE temp_t_levels (lvl integer, parent_lvl integer,node_name varchar);
-
-        FOR i IN 0..((select count(*) from temp_t)-1) LOOP
-           INSERT INTO temp_t_levels (node_name) SELECT node_name FROM temp_t LIMIT 1 OFFSET i;
-           UPDATE temp_t_levels SET lvl=i+1, parent_lvl=i  WHERE node_name=(SELECT node_name FROM temp_t LIMIT 1 OFFSET i);
-        END LOOP;
-
-        DROP TABLE IF EXISTS temp_t_paths CASCADE;
-        CREATE TEMP TABLE temp_t_paths (lvl integer, parent_lvl integer,node_name varchar,node_path varchar);
-
-        WITH RECURSIVE temp_t_paths ("lvl", "parent_lvl", "node_name", "node_path") AS (
-        SELECT  T1.lvl,T1.parent_lvl, T1.node_name,  '\'|| T1.node_name
-            FROM temp_t_levels T1 WHERE T1.lvl=1
-        union
-        select T2.lvl, T2.parent_lvl, T2.node_name, temp_t_paths.node_path ||'\'|| T2.node_name
-             FROM temp_t_levels T2 INNER JOIN temp_t_paths ON (temp_t_paths.lvl= T2.parent_lvl))
-             INSERT INTO temp_t_paths (select * from temp_t_paths);
-
-        UPDATE temp_t_paths set node_path=node_path || '\';
-
-        FOR i IN REVERSE (select count(*) from temp_t_paths)..1 LOOP
-              SELECT node_path INTO current_path FROM temp_t_paths WHERE lvl=i;
-              SELECT count(*) INTO rowsExists FROM i2b2metadata.i2b2
-              WHERE c_fullname LIKE current_path || '%' ESCAPE '`';
-
-              IF rowsExists = 1
-              THEN
-                select i2b2_delete_1_node(current_path) into rtnCd;
-                select cz_write_audit(jobId, databaseName, procedureName,
-                                 'Remove empty level: ' || current_path, rowCt, stepCt,
-                                 'Done') into rtnCd;
-              END IF;
-         END LOOP;
+    FOREACH current_path IN ARRAY old_paths LOOP
+      IF NOT EXISTS(SELECT c_fullname FROM i2b2 WHERE c_fullname LIKE current_path || '_%' ESCAPE '`') THEN
+        PERFORM i2b2_delete_1_node(current_path);
 
         stepCt := stepCt + 1;
         select cz_write_audit(jobId, databaseName, procedureName,
-                                 'Remove empty levels from i2b2', rowCt, stepCt,
-                                 'Done') into rtnCd;
-    END IF;
+                              'Remove empty level: ' || current_path, rowCt, stepCt,
+                              'Done') into rtnCd;
+      END IF;
+    END LOOP;
 
-    -- Update c_hlevels in i2b2 and i2b2_secure
+      --where (select count(*) from i2b2 where i2b2.c_fullname like i2.c_fullname || '%' escape '`') <= expected_childs;
+
+    -- Update c_hlevels in i2b2
     begin
       UPDATE i2b2metadata.i2b2
       SET C_HLEVEL = (length(C_FULLNAME) - coalesce(length(replace(C_FULLNAME, '\', '')), 0)) / length('\') - 2
@@ -481,27 +452,71 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
                                  'Update levels in i2b2metadata.i2b2', rowCt, stepCt,
                                  'Done') into rtnCd;
 
-    begin
-      UPDATE i2b2metadata.i2b2_secure
-      SET C_HLEVEL = (length(C_FULLNAME) - coalesce(length(replace(C_FULLNAME, '\', '')), 0)) / length('\') - 2
-      WHERE c_fullname LIKE new_path || '%' ESCAPE '`';
-      get diagnostics rowCt := ROW_COUNT;
-      exception
-          when others then
-            errorNumber := SQLSTATE;
-            errorMessage := SQLERRM;
-            --Handle errors.
-            select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
-            --End Proc
-            select cz_end_audit (jobID, 'FAIL') into rtnCd;
-            return -16;
+    perform i2b2_load_security_data(trialId, jobID);
+    if not is_sub_node then
+      with paths_a as (
+          select string_to_array(substring(new_path from 2 for char_length(new_path) - 2), '\', '') as path
+      )
+      insert into i2b2_secure
+      (
+        c_hlevel
+        ,c_fullname
+        ,c_name
+        ,c_synonym_cd
+        ,c_visualattributes
+        ,c_totalnum
+        ,c_basecode
+        ,c_metadataxml
+        ,c_facttablecolumn
+        ,c_tablename
+        ,c_columnname
+        ,c_columndatatype
+        ,c_operator
+        ,c_dimcode
+        ,c_comment
+        ,c_tooltip
+        ,update_date
+        ,download_date
+        ,import_date
+        ,sourcesystem_cd
+        ,valuetype_cd
+        ,secure_obj_token
+      )
+      select
+         i2.c_hlevel as c_hlevel
+        ,i2.c_fullname as c_fullname
+        ,i2.c_name as c_name
+        ,i2.c_synonym_cd as c_synonym_cd
+        ,i2.c_visualattributes
+        ,i2.c_totalnum
+        ,i2.c_basecode
+        ,i2.c_metadataxml
+        ,i2.c_facttablecolumn
+        ,i2.c_tablename
+        ,i2.c_columnname
+        ,i2.c_columndatatype
+        ,i2.c_operator
+        ,i2.c_dimcode
+        ,i2.c_comment
+        ,i2.c_tooltip
+        ,i2.update_date
+        ,i2.download_date
+        ,i2.import_date
+        ,i2.sourcesystem_cd
+        ,i2.valuetype_cd
+        ,'EXP:PUBLIC' as secure_obj_token
+      from
+        (
+          select '\' || array_to_string(paths_a.path[1:n], '\') || '\' as c_fullname
+          from paths_a, generate_series(1, array_length(paths_a.path, 1)) n
+        ) p
+        inner join i2b2 i2
+          on p.c_fullname = i2.c_fullname
+        left join i2b2_secure i2s
+          on p.c_fullname = i2s.c_fullname
+      where i2s.c_fullname is null;
+    end if;
 
-    end;
-
-     stepCt := stepCt + 1;
-     select cz_write_audit(jobId, databaseName, procedureName,
-                                 'Update levels in i2b2metadata.i2b2_secure', rowCt, stepCt,
-                                 'Done') into rtnCd;
 
     ---Cleanup OVERALL JOB if this proc is being run standalone
     IF newJobFlag = 1
