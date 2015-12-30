@@ -293,6 +293,9 @@ AS
     -- Remove empty levels
     i2b2_remove_empty_parent_nodes(old_path, jobID);
 
+    -- Update security data
+    i2b2_load_security_data(jobID);
+
     EXCEPTION
     WHEN old_study_missed THEN
     cz_write_audit(jobId, databasename, procedurename, 'Please select exists study path to move', 1, stepCt, 'ERROR');

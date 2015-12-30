@@ -23,7 +23,6 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
         _moveStudyProcessor ?: (_moveStudyProcessor = new MoveStudyProcessor(config))
     }
 
-
     @Override
     public void setUp() {
         ConfigAwareTestCase.super.setUp()
@@ -147,7 +146,7 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
         def secondLevelNode = '\\' + newPath.split('\\\\')[1] + "\\" + newPath.split('\\\\')[2] + "\\"
 
         def tablesToAttr = ['i2b2metadata.i2b2'             : 'c_fullname',
-//                            'i2b2metadata.i2b2_secure'      : 'c_fullname',
+                            'i2b2metadata.i2b2_secure'      : 'c_fullname',
                             'i2b2demodata.concept_dimension': 'concept_path']
 
         checkPaths(tablesToAttr, 'Second level node was not found in ', secondLevelNode, 1);
@@ -166,6 +165,7 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
 
     private void assertMovement(String oldPath, String newPath) {
         def tablesToAttr = ['i2b2metadata.i2b2'             : 'c_fullname',
+                            'i2b2metadata.i2b2_secure'      : 'c_fullname',
                             'i2b2demodata.concept_dimension': 'concept_path',
                             'i2b2demodata.concept_counts'   : 'concept_path']
 
@@ -187,9 +187,26 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
 
     private void checkPaths(Map tablesToAttr, String errorMessage, String checkedPath, int correctCount) {
         checkedPath = checkedPath.charAt(checkedPath.length() - 1) != '\\' ? checkedPath + '\\' : checkedPath
+        def pathHierarchy = []
+        def parts = checkedPath.split("\\\\")
+        def basePath = '\\'
+        for (def part : parts) {
+            if (!part) {
+                continue
+            }
+            pathHierarchy << (basePath = "${basePath}${part}\\")
+        }
         for (t in tablesToAttr) {
-            def c = sql.firstRow('select count(*) from ' + t.key + ' where ' + t.value + ' = ?', checkedPath)
-            assertEquals(errorMessage + t.key, correctCount, c[0] as Integer)
+            def paths
+            if (correctCount == 1 && (t.key as String).split('\\.')[-1].toUpperCase() in ['I2B2', 'I2B2_SECURE']) {
+                paths = pathHierarchy
+            } else {
+                paths = [checkedPath]
+            }
+            for (def path : paths) {
+                def c = sql.firstRow('select count(*) from ' + t.key + ' where ' + t.value + ' = ?', path as String)
+                assertEquals("$errorMessage$t.key ($path)", correctCount, c[0] as Integer)
+            }
         }
     }
 
