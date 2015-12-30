@@ -13,7 +13,7 @@ class ProteinPlatform extends GenePlatform {
 
     @Override
     void cleanupTempTables(Sql sql) {
-        sql.execute("DELETE FROM lt_protein_annotation" as String)
+        database.truncateTable(sql, 'lt_protein_annotation')
     }
 
     @Override

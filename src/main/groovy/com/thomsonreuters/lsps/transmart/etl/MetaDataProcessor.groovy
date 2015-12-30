@@ -35,7 +35,7 @@ class MetaDataProcessor extends DataProcessor {
 	public boolean processFiles(Path dir, Sql sql, studyInfo) {
 
 		dir.eachFileMatch(~/(?i)(?!\.|_DONE_|_FAIL_|_DISABLED_).+\.txt/) { f ->
-			sql.execute("DELETE FROM lt_src_study_metadata" as String)
+			database.truncateTable(sql, 'lt_src_study_metadata')
 
 			def lineNum = 0
 

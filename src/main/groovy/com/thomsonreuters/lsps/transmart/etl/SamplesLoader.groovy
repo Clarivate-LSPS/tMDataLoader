@@ -1,5 +1,6 @@
 package com.thomsonreuters.lsps.transmart.etl
 
+import com.thomsonreuters.lsps.transmart.sql.Database
 import groovy.sql.BatchingPreparedStatementWrapper
 import groovy.sql.Sql
 
@@ -21,8 +22,8 @@ class SamplesLoader {
                     categoryCd, attrs.sourceCd ?: 'STD']
     }
 
-    void loadSamples(Sql sql) {
-        sql.execute("delete from lt_src_mrna_subj_samp_map" as String)
+    void loadSamples(Database database, Sql sql) {
+        database.truncateTable(sql, 'lt_src_mrna_subj_samp_map')
         sql.withBatch(
                 """
                 INSERT into lt_src_mrna_subj_samp_map

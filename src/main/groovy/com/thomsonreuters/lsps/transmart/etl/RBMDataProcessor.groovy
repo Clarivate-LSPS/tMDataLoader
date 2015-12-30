@@ -14,8 +14,8 @@ public class RBMDataProcessor extends DataProcessor {
 
     @Override
     public boolean processFiles(Path dir, Sql sql, studyInfo) {
-        sql.execute("DELETE FROM lt_src_rbm_subj_samp_map" as String)
-        sql.execute("DELETE FROM lt_src_rbm_data" as String)
+        database.truncateTable(sql, 'lt_src_rbm_subj_samp_map')
+        database.truncateTable(sql, 'lt_src_rbm_data')
 
         def platformList = [] as Set
 

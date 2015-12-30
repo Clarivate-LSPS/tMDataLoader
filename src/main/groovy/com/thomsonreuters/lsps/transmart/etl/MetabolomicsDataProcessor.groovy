@@ -14,8 +14,8 @@ public class MetabolomicsDataProcessor extends DataProcessor {
 
     @Override
     public boolean processFiles(Path dir, Sql sql, studyInfo) {
-        sql.execute("DELETE FROM lt_src_metabolomic_map" as String)
-        sql.execute("DELETE FROM lt_src_metabolomic_data" as String)
+        database.truncateTable(sql, 'lt_src_metabolomic_map')
+        database.truncateTable(sql, 'lt_src_metabolomic_data')
 
         def platformList = [] as Set
 
