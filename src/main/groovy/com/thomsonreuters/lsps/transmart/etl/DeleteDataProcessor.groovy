@@ -18,7 +18,7 @@ class DeleteDataProcessor extends DataOperationProcessor {
 
     @Override
     public boolean runStoredProcedures(jobId, Sql sql, data) {
-        def trialId = data.id?.toString()
+        def trialId = data.id?.toString()?.toUpperCase()
         def path = data.path?.toString()
         if (trialId || path) {
             sql.call("{call " + config.controlSchema + "." + getProcedureName() + "(?,?,?)}", [trialId, path, jobId])
