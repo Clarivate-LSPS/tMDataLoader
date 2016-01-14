@@ -1,6 +1,7 @@
 package com.thomsonreuters.lsps.transmart.etl
 
 import com.thomsonreuters.lsps.transmart.Fixtures
+import com.thomsonreuters.lsps.transmart.etl.statistic.VariableType
 import com.thomsonreuters.lsps.transmart.fixtures.ClinicalData
 import com.thomsonreuters.lsps.transmart.fixtures.Study
 import com.thomsonreuters.lsps.transmart.fixtures.StudyInfo
@@ -347,10 +348,10 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
     def "it should load multiple values for same data label"() {
         given:
         def clinicalData = ClinicalData.build('GSE0DUPPATHS', 'Test Study With Duplicate Paths') {
-            dataFile('AESTATUS.txt', ['System', 'Active']) {
+            dataFile('AESTATUS.txt', ['System', 'Condition']) {
                 forSubject('50015') {
-                    row 'Neuro', 'Headache', ''
-                    row 'Neuro', 'Unsteadiness', ''
+                    row 'Neuro', 'Headache'
+                    row 'Neuro', 'Unsteadiness'
                 }
             }
 
@@ -371,5 +372,28 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
 
         assertThat(sql, hasNode("$medHistoryPath\\Active\\Neuro\\Headache\\"))
         assertThat(sql, hasNode("$medHistoryPath\\Active\\Neuro\\Unsteadiness\\"))
+    }
+
+    def "it should track missing column's value as blank for summary statistic"() {
+        given:
+        def clinicalData = ClinicalData.build('GSE0SS', 'Test Study Summary Statistic') {
+            dataFile('TEST.txt', ['Column', 'Variable']) {
+                forSubject('TST1') { row 'Value 1' }
+                forSubject('TST2') { row 'Value 2' }
+            }
+
+            mappingFile {
+                forDataFile('TEST.txt') {
+                    map('Vars', 3, 'Column')
+                    map('Vars', 4, 'Variable', VariableType.Numerical, 'Required; >10')
+                }
+            }
+        }
+
+        when:
+        def loadedSuccessfully = clinicalData.load(config)
+
+        then:
+        loadedSuccessfully
     }
 }

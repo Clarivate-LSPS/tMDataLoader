@@ -80,4 +80,19 @@ class StatisticCollectorTest extends Specification {
         num.upperQuartile == 500
         num.iqr == 300
     }
+
+    def 'it should validate variable type'() {
+        given:
+        def table = new TableStatistic()
+        table.withRecordStatisticForVariables(id: VariableType.ID, num: VariableType.Numerical)
+        def num = table.variables.num
+
+        when:
+        table.collectForRecord(id: '1', num: 'a')
+        table.collectForRecord(id: '2', num: 'b')
+
+        then:
+        num.min == Float.NaN
+        num.violatedRangeChecks == ['Type is Numerical': ['1', '2']]
+    }
 }
