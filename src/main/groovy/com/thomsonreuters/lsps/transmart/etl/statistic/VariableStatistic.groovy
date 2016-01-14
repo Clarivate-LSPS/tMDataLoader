@@ -1,9 +1,12 @@
 package com.thomsonreuters.lsps.transmart.etl.statistic
 
+import groovy.transform.CompileStatic
+
 /**
  * Date: 06.10.2014
  * Time: 14:58
  */
+@CompileStatic
 class VariableStatistic {
     final String name
     final VariableType type
@@ -16,8 +19,9 @@ class VariableStatistic {
     private List<Double> doubleValues
     private boolean valuesSorted
     private List<RangeValidationRule> rangeValidationRules
-    private ValidationRule requiredRule;
-    double mean, median, min = Double.MAX_VALUE, max = Double.MIN_VALUE, sdBase
+    private ValidationRule requiredRule
+    private ValidationRule typeRule
+    double mean, median, min = Double.POSITIVE_INFINITY, max = Double.NEGATIVE_INFINITY, sdBase
     private Map<ValidationRule, List<String>> violatedRules = [:]
     boolean unique
 
@@ -26,7 +30,10 @@ class VariableStatistic {
         this.type = type
         this.validationRules = Collections.unmodifiableList(validationRules)
         requiredRule = validationRules.find { it.type == ValidationRuleType.Required }
-        this.unique = validationRules.any { it.type == ValidationRuleType.Unique }
+        if (type in [VariableType.Numerical, VariableType.Date]) {
+            typeRule = new ValidationRule(ValidationRuleType.Type, String.format("Type is %s", type.name()))
+        }
+        unique = validationRules.any { it.type == ValidationRuleType.Unique }
         if (type == VariableType.ID) {
             if (!requiredRule) {
                 requiredRule = new ValidationRule(ValidationRuleType.Required, "ID is required")
@@ -58,12 +65,20 @@ class VariableStatistic {
     private static double getMedianImpl(List<Double> sortedValues) {
         if (sortedValues.size() == 0)
             return Double.NaN
-        int middle = sortedValues.size() / 2
+        int middle = (int) (sortedValues.size() / 2)
         if ((sortedValues.size() & 1) == 1) {
             return sortedValues.get(middle)
         } else {
             return (sortedValues.get(middle - 1) + sortedValues.get(middle)) / 2
         }
+    }
+
+    double getMin() {
+        Double.isInfinite(min) ? Double.NaN : min
+    }
+
+    double getMax() {
+        Double.isInfinite(max) ? Double.NaN : max
     }
 
     // Tukey's hinges method
@@ -111,8 +126,13 @@ class VariableStatistic {
     }
 
     Map<String, List<String>> getViolatedRangeChecks() {
-        violatedRules.findAll { it.key.type == ValidationRuleType.RangeCheck }.
-                collectEntries { rule, ids -> [rule.description, ids] }
+        Map<String, List<String>> violatedRangeChecks = [:]
+        for (def entry : violatedRules.entrySet()) {
+            if (entry.key.type == ValidationRuleType.RangeCheck || entry.key.type == ValidationRuleType.Type) {
+                violatedRangeChecks.put(entry.key.description, entry.value)
+            }
+        }
+        violatedRangeChecks
     }
 
     private boolean isRuleApplicable(ValidationRule rule, Map<String, String> variableValues) {
@@ -135,9 +155,13 @@ class VariableStatistic {
                     collectCategoricalValue(value)
                     break
                 case VariableType.Numerical:
-                    double doubleValue = Double.parseDouble(value)
-                    checkValueInRange(id, doubleValue, variableValues)
-                    collectNumericalValue(doubleValue)
+                    try {
+                        double doubleValue = Double.parseDouble(value)
+                        checkValueInRange(id, doubleValue, variableValues)
+                        collectNumericalValue(doubleValue)
+                    } catch (NumberFormatException ex) {
+                        addRuleViolation(typeRule, id)
+                    }
                     break
             }
         } else if (required && isRuleApplicable(requiredRule, variableValues)) {

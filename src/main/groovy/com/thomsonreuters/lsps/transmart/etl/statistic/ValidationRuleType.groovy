@@ -7,5 +7,6 @@ package com.thomsonreuters.lsps.transmart.etl.statistic
 enum ValidationRuleType {
     Required,
     Unique,
+    Type,
     RangeCheck
 }

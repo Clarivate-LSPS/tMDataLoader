@@ -79,7 +79,7 @@ class StatisticCollector {
                 printer.print(var.type.name())
                 printer.print(var.notEmptyValuesCount)
                 printer.print(var.emptyValuesCount)
-                if (var.type == VariableType.Numerical) {
+                if (var.type == VariableType.Numerical && var.notEmptyValuesCount > 0) {
                     printer.print(var.mean.round(6))
                     printer.print(var.median.round(6))
                     printer.print(var.iqr.round(6))

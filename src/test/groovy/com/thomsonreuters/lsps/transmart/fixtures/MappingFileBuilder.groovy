@@ -1,5 +1,7 @@
 package com.thomsonreuters.lsps.transmart.fixtures
 
+import com.thomsonreuters.lsps.transmart.etl.statistic.VariableType
+
 /**
  * Date: 03.11.2015
  * Time: 13:38
@@ -7,6 +9,7 @@ package com.thomsonreuters.lsps.transmart.fixtures
 class MappingFileBuilder {
     private String dataFileName
     private List<List<String>> mappings = []
+    private boolean hasVariablesInfo
 
     def forDataFile(String dataFileName, Closure block) {
         this.dataFileName = dataFileName
@@ -20,16 +23,26 @@ class MappingFileBuilder {
         }
     }
 
-    def map(String categoryCd, int column, String label) {
-        mappings.add([dataFileName, categoryCd, column.toString(), label, ''])
+    private def mapInternal(String categoryCd, int column, String label, String labelSource, VariableType variableType, String validationRules) {
+        def row = [dataFileName, categoryCd, column.toString(), label, labelSource]
+        if (variableType) {
+            hasVariablesInfo = true
+            row.add(variableType.name())
+            row.add(validationRules)
+        }
+        mappings.add(row)
     }
 
-    def mapLabelSource(String categoryCd, int column, String labelSource) {
-        mappings.add([dataFileName, categoryCd, column.toString(), '\\', labelSource])
+    def map(String categoryCd, int column, String label, VariableType variableType = null, String validationRules = null) {
+        mapInternal(categoryCd, column, label, '', variableType, validationRules)
+    }
+
+    def mapLabelSource(String categoryCd, int column, String labelSource, VariableType variableType = null, String validationRules = null) {
+        mapInternal(categoryCd, column, '\\', labelSource, variableType, validationRules)
     }
 
     def mapSpecial(String name, int column) {
-        mappings.add([dataFileName, '', column.toString(), name, ''])
+        mapInternal('', column, name, '', null, null)
     }
 
     static build(Closure block) {
@@ -40,7 +53,12 @@ class MappingFileBuilder {
     }
 
     void writeTo(PrintWriter writer) {
-        writer.println(['filename', 'category_cd', 'col_nbr', 'data_label', 'data_label_source'].join('\t'))
+        def columns = ['filename', 'category_cd', 'col_nbr', 'data_label', 'data_label_source']
+        if (hasVariablesInfo) {
+            columns.add('variable_type')
+            columns.add('validation_rules')
+        }
+        writer.println(columns.join('\t'))
         for (def mapping : mappings) {
             writer.println(mapping.join('\t'))
         }
