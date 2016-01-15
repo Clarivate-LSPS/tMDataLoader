@@ -44,6 +44,10 @@ class ClinicalDataProcessor extends DataProcessor {
     private long processEachRow(Path f, fMappings, Closure<List> processRow) {
         def lineNum = 1L
         def _DATA = fMappings['_DATA']
+        //Custom tags
+        Map tagToColumn = fMappings._DATA.collectEntries {
+            [(it.DATA_LABEL): it.COLUMN]
+        }
 
         CsvLikeFile csvFile = new CsvLikeFile(f, '# ', config.allowNonUniqueColumnNames.asBoolean())
         statistic.collectForTable(f.fileName.toString()) { table ->
@@ -93,14 +97,13 @@ class ClinicalDataProcessor extends DataProcessor {
                                     cat_cd = cat_cd.replace('$$SITE_ID', cols[fMappings['SITE_ID']])
                                     cat_cd = cat_cd.replace('$$SUBJ_ID', cols[fMappings['SUBJ_ID']])
                                     cat_cd = cat_cd.replace('$$SAMPLE_ID', cols[fMappings['SAMPLE_ID']])
-                                    //Custom tags
-                                    def groups = fMappings._DATA.collectEntries {
-                                        [(it.DATA_LABEL): it.COLUMN]
-                                    }
 
                                     boolean hasEmptyTags = false
                                     cat_cd = cat_cd.replaceAll(/\$\$([A-z0-9_\"\s\(\)]+)/) { match, name ->
-                                        def tagValue = cols[groups[name]] as String
+                                        if (!tagToColumn.containsKey(name)) {
+                                            throw new DataProcessingException("$f.fileName: cat_cd '$cat_cd' contains not-existing tag: '$name'")
+                                        }
+                                        def tagValue = cols[tagToColumn[name] as Integer] as String
                                         if (!tagValue) {
                                             hasEmptyTags = true
                                             return
@@ -197,7 +200,7 @@ class ClinicalDataProcessor extends DataProcessor {
         config.logger.log("Processing ${f.fileName}")
         if (Files.notExists(f)) {
             config.logger.log("File ${f.fileName} doesn't exist!")
-            throw new Exception("File ${f.fileName} doesn't exist")
+            throw new DataProcessingException("File ${f.fileName} doesn't exist")
         }
 
         if (database?.databaseType == DatabaseType.Postgres) {

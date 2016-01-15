@@ -3,6 +3,7 @@ package com.thomsonreuters.lsps.transmart.etl
 import com.thomsonreuters.lsps.transmart.Fixtures
 import com.thomsonreuters.lsps.transmart.etl.statistic.VariableType
 import com.thomsonreuters.lsps.transmart.fixtures.ClinicalData
+import com.thomsonreuters.lsps.transmart.fixtures.MappingFileBuilder
 import com.thomsonreuters.lsps.transmart.fixtures.Study
 import com.thomsonreuters.lsps.transmart.fixtures.StudyInfo
 import groovy.sql.Sql
@@ -395,5 +396,113 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
 
         then:
         loadedSuccessfully
+    }
+
+    private static ClinicalData buildClinicalDataWithTwoVariablesAndMapping(
+            @DelegatesTo(MappingFileBuilder) Closure mappingFileBuilder) {
+        ClinicalData.build('GSE0SS', 'Test Study Summary Statistic') {
+            dataFile('TEST.txt', ['v1', 'v23']) {
+                forSubject('TST1') { row 'Value 1', 'Value 2' }
+                forSubject('TST2') { row 'Value 3', 'Value 4' }
+            }
+
+            mappingFile(mappingFileBuilder)
+        }
+    }
+
+    def 'it should validate mapping file with duplicate columns'() {
+        given:
+        def clinicalData = buildClinicalDataWithTwoVariablesAndMapping {
+            forDataFile('TEST.txt') {
+                map('Vars', 3, 'v1')
+                map('Vars', 3, 'v2')
+            }
+        }
+
+        when:
+        clinicalData.load(config)
+
+        then:
+        thrown(DataProcessingException)
+    }
+
+    def 'it should validate mapping file with missing column index'() {
+        given:
+        def clinicalData = buildClinicalDataWithTwoVariablesAndMapping {
+            addMappingRow(['TEST.txt', 'Vars', '', 'Var'])
+            forDataFile('TEST.txt') {
+                map('Vars', 4, 'v2')
+            }
+        }
+
+        when:
+        clinicalData.load(config)
+
+        then:
+        thrown(DataProcessingException)
+    }
+
+    def 'it should validate mapping file with missing reference to data_label_source'() {
+        given:
+        def clinicalData = buildClinicalDataWithTwoVariablesAndMapping {
+            forDataFile('TEST.txt') {
+                mapLabelSource('Vars', 3, 'A')
+                mapLabelSource('Vars', 4, '')
+            }
+        }
+
+        when:
+        clinicalData.load(config)
+
+        then:
+        thrown(DataProcessingException)
+    }
+
+    def 'it should validate that mapping refers to existing file'() {
+        given:
+        def clinicalData = buildClinicalDataWithTwoVariablesAndMapping {
+            forDataFile('TEST2.txt') {
+                map('Vars', 3, 'v1')
+                map('Vars', 4, 'v2')
+            }
+        }
+
+        when:
+        clinicalData.load(config)
+
+        then:
+        thrown(DataProcessingException)
+    }
+
+    def 'it should validate mapping column numbers is not out of bound'() {
+        given:
+        def clinicalData = buildClinicalDataWithTwoVariablesAndMapping {
+            forDataFile('TEST.txt') {
+                map('Vars', 3, 'v1')
+                map('Vars', 6, 'v2')
+            }
+        }
+
+        when:
+        clinicalData.load(config)
+
+        then:
+        thrown(DataProcessingException)
+    }
+
+    def 'it should validate that tags refers to existing columns'() {
+        given:
+        def clinicalData = buildClinicalDataWithTwoVariablesAndMapping {
+            forDataFile('TEST.txt') {
+                map('Vars+$$v3', 3, 'v1')
+                map('Vars', 4, 'v2')
+            }
+        }
+
+        when:
+        clinicalData.load(config)
+
+        then:
+        thrown(DataProcessingException)
     }
 }
