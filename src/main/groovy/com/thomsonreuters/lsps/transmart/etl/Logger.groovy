@@ -74,6 +74,11 @@ class Logger {
         log(ltype, stringWriter.toString())
     }
 
+	void logAndThrow(Exception ex) {
+		log(LogType.ERROR, ex.message)
+		throw ex
+	}
+
 	void log(LogType ltype, str) {
 		if (ltype != LogType.PROGRESS) {
 			str = timestamp(ltype) + str

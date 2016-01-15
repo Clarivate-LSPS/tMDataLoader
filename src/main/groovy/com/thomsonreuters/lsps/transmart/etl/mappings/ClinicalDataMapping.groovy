@@ -1,5 +1,5 @@
 package com.thomsonreuters.lsps.transmart.etl.mappings
-
+import com.thomsonreuters.lsps.transmart.etl.DataProcessingException
 import com.thomsonreuters.lsps.transmart.etl.LogType
 import com.thomsonreuters.lsps.transmart.etl.Logger
 import com.thomsonreuters.lsps.transmart.etl.statistic.ValidationRule
@@ -8,8 +8,8 @@ import com.thomsonreuters.lsps.transmart.files.CsvLikeFile
 import groovy.transform.stc.ClosureParams
 import groovy.transform.stc.SimpleType
 
+import java.nio.file.Files
 import java.nio.file.Path
-
 /**
  * Date: 07.10.2014
  * Time: 16:08
@@ -17,7 +17,7 @@ import java.nio.file.Path
 class ClinicalDataMapping {
     private static final Logger logger = Logger.getLogger(ClinicalDataMapping.class)
 
-    private Map<String, FileMapping> mappings;
+    private Map<String, FileMapping> mappings
 
     public static final class Entry {
         String CATEGORY_CD
@@ -51,44 +51,74 @@ class ClinicalDataMapping {
         return new ClinicalDataMapping(processMappingFile(mappingFile))
     }
 
-    private static Object processMappingFile(Path f) {
-        Map mappings = [:]
+    private static class FileParsingInfo {
+        FileMapping fileMapping
+        Set<Integer> mappedColumns = new HashSet<>()
+        int actualColumnsCount = -1
+    }
+
+    private static Map<String, FileMapping> processMappingFile(Path f) {
+        Map<String, FileParsingInfo> mappings = [:]
 
         logger.log("Mapping file: ${f.fileName}")
 
+        List<String> mappingErrors = []
         CsvLikeFile mappingFile = new CsvLikeFile(f)
         Map<String, Integer> columnMapping = (1..<mappingFile.header.length).collectEntries { [mappingFile.header[it], it] }
         int variableTypeIdx = columnMapping.variable_type ?: -1
         int validationRulesIdx = columnMapping.validation_rules ?: -1
         mappingFile.eachEntry { cols, lineNum ->
             String fileName = cols[0]
-            if (!mappings.containsKey(fileName)) {
-                mappings[fileName] = new FileMapping(fileName: fileName)
+            FileParsingInfo parsingInfo = mappings[fileName]
+            if (!parsingInfo) {
+                mappings[fileName] = parsingInfo = new FileParsingInfo(fileMapping: new FileMapping(fileName: fileName))
+                Path dataFile = f.resolveSibling(fileName)
+                if (Files.exists(dataFile)) {
+                    parsingInfo.actualColumnsCount = new CsvLikeFile(dataFile, '# ').header.size()
+                } else {
+                    mappingErrors.add("File '$fileName' doesn't exists")
+                }
             }
 
-            FileMapping curMapping = mappings[fileName]
-
+            FileMapping curMapping = parsingInfo.fileMapping
             def dataLabel = cols[3]
             if (dataLabel != 'OMIT' && dataLabel != 'DATA_LABEL') {
                 def variableType = variableTypeIdx >= 0 ?
                         VariableType.tryParse(cols[variableTypeIdx].capitalize(), VariableType.Text) :
                         VariableType.Text
                 def validationRules = validationRulesIdx >= 0 ? ValidationRule.parseList(cols[validationRulesIdx]) : []
+                Integer columnIndex
+                try {
+                    columnIndex = (cols[2] as String).toInteger()
+                } catch (NumberFormatException ex) {
+                    mappingErrors.add("Invalid or empty column index '${cols[2]}' for row: ${cols}")
+                    return
+                }
+                if (!parsingInfo.mappedColumns.add(columnIndex)) {
+                    mappingErrors.add("Column index '${columnIndex}' is already mapped in other row for row: ${cols}")
+                    return
+                }
+                if (columnIndex < 0 || (parsingInfo.actualColumnsCount >= 0 && columnIndex > parsingInfo.actualColumnsCount)) {
+                    mappingErrors.add("Column index '${columnIndex}' is out of bounds of data file columns (1-$parsingInfo.actualColumnsCount) for row: ${cols}")
+                    return
+                }
                 if (dataLabel == '\\') {
                     // the actual data label should be taken from a specified column [4]
                     def dataLabelSource = 0
                     def dataLabelSourceType = ''
 
                     def m = cols[4] =~ /^(\d+)(A|B){0,1}$/
-                    if (m.size() > 0) {
-                        dataLabelSource = m[0][1].toInteger()
-                        dataLabelSourceType = (m[0][2] in ['A', 'B']) ? m[0][2] : 'A'
+                    if (!m) {
+                        mappingErrors.add("Invalid data_label_source '${cols[4]}' for row: ${cols}")
+                        return
                     }
+                    dataLabelSource = m[0][1].toInteger()
+                    dataLabelSourceType = (m[0][2] in ['A', 'B']) ? m[0][2] : 'A'
 
-                    if (cols[1] && cols[2].toInteger() > 0 && dataLabelSource > 0) {
+                    if (cols[1] && columnIndex > 0 && dataLabelSource > 0) {
                         curMapping._DATA.add(new Entry(
                                 CATEGORY_CD           : cols[1],
-                                COLUMN                : cols[2].toInteger(),
+                                COLUMN                : columnIndex,
                                 DATA_LABEL_SOURCE     : dataLabelSource,
                                 DATA_LABEL_SOURCE_TYPE: dataLabelSourceType,
                                 variableType: variableType,
@@ -99,11 +129,11 @@ class ClinicalDataMapping {
                     if (curMapping.hasProperty(dataLabel)) {
                         curMapping[dataLabel] = cols[2].toInteger()
                     } else {
-                        if (cols[2].toInteger() > 0) {
+                        if (columnIndex > 0) {
                             curMapping._DATA.add(new Entry(
                                     DATA_LABEL: dataLabel,
                                     CATEGORY_CD: cols[1],
-                                    COLUMN: cols[2].toInteger(),
+                                    COLUMN: columnIndex,
                                     variableType: variableType,
                                     validationRules: validationRules
                             ))
@@ -116,11 +146,19 @@ class ClinicalDataMapping {
             }
         }
 
-        if (mappings.size() <= 0) {
-            logger.log(LogType.ERROR, "Empty mappings file!")
-            throw new Exception("Empty mapping file")
+        if (mappingErrors.size() > 0) {
+            logger.logAndThrow(new DataProcessingException("Mapping file has errors:\n${mappingErrors.join('\n')}"))
         }
 
-        return mappings
+        if (mappings.size() <= 0) {
+            logger.log(LogType.ERROR, "Empty mappings file!")
+            throw new DataProcessingException("Empty mapping file")
+        }
+
+        Map<String, FileMapping> result = [:]
+        for (def entry : mappings.entrySet()) {
+            result.put(entry.key, entry.value.fileMapping)
+        }
+        return result
     }
 }

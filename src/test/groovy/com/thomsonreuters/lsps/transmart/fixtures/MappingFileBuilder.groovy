@@ -23,6 +23,10 @@ class MappingFileBuilder {
         }
     }
 
+    def addMappingRow(List<String> row) {
+        mappings.add(row)
+    }
+
     private def mapInternal(String categoryCd, int column, String label, String labelSource, VariableType variableType, String validationRules) {
         def row = [dataFileName, categoryCd, column.toString(), label, labelSource]
         if (variableType) {
