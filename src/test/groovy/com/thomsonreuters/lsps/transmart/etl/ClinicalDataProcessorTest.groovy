@@ -10,6 +10,7 @@ import groovy.sql.Sql
 import spock.lang.Specification
 
 import static com.thomsonreuters.lsps.transmart.Fixtures.getAdditionalStudiesDir
+import static com.thomsonreuters.lsps.transmart.Fixtures.getStudiesForMerge
 import static com.thomsonreuters.lsps.transmart.Fixtures.studyDir
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.*
 import static org.hamcrest.CoreMatchers.equalTo
@@ -176,6 +177,94 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat(sql, hasNode(conceptPathForPatient + 'T790M TEST\\'))
 
         assertThat(sql, hasNode($/${conceptPath}Biomarker Data\Mutations\TST002 (Entrez ID: 324)\/$))
+    }
+
+    def 'it should load study with REPLACE merge mode'() {
+        expect:
+        String subjId = 'HCC2935'
+        String rootConcept = "\\Test Studies\\${studyName}\\"
+
+        String demographicConcept = rootConcept + "Subjects\\Demographics\\"
+
+        processor.process(new File(studyDir(studyName, studyId), "ClinicalDataToUpload").toPath(),
+                [name: studyName, node: "Test Studies\\${studyName}".toString()])
+
+        assertThat(sql, hasPatient(subjId).inTrial(studyId))
+        assertThat(sql, hasNode(demographicConcept).withPatientCount(9))
+
+        processor.process(
+                new File(studyDir(studyName, studyId, studiesForMerge.replace), "ClinicalDataToUpload").toPath(),
+                [name: studyName, node: "Test Studies\\${studyName}".toString()])
+
+        assertThat(sql, hasPatient(subjId).inTrial(studyId))
+        assertThat(sql, hasNode(demographicConcept).withPatientCount(1))
+    }
+
+    def 'it should load study with UPDATE merge mode'() {
+        expect:
+        String subjId = 'HCC2935'
+        String rootConcept = "\\Test Studies\\${studyName}\\"
+
+        String maleConcept = rootConcept + "Subjects\\Demographics\\Sex (SEX)\\Male\\"
+        String femaleConcept = rootConcept + "Subjects\\Demographics\\Sex (SEX)\\Female\\"
+        String languageConcept = rootConcept + "Subjects\\Demographics\\Language\\"
+        String ageConcept = rootConcept + "Subjects\\Demographics\\Age (AGE)\\"
+        String assessmentDateConcept = rootConcept + "Subjects\\Demographics\\Assessment Date\\"
+
+        processor.process(new File(studyDir(studyName, studyId), "ClinicalDataToUpload").toPath(),
+                [name: studyName, node: "Test Studies\\${studyName}".toString()])
+
+        assertThat(sql, hasPatient(subjId).inTrial(studyId))
+        assertThat(sql, hasNode(maleConcept).withPatientCount(2))
+        assertThat(sql, hasNode(femaleConcept).withPatientCount(5))
+        assertThat(sql, hasNode(languageConcept).withPatientCount(3))
+        assertThat(sql, hasNode(assessmentDateConcept + "09/15/2014\\"))
+        assertThat(sql, hasFact(ageConcept, subjId, 20))
+
+        processor.process(
+                new File(studyDir(studyName, studyId, studiesForMerge.update), "ClinicalDataToUpload").toPath(),
+                [name: studyName, node: "Test Studies\\${studyName}".toString()])
+
+        assertThat(sql, hasPatient(subjId).inTrial(studyId))
+        assertThat(sql, hasNode(maleConcept).withPatientCount(3))
+        assertThat(sql, hasNode(femaleConcept).withPatientCount(4))
+        assertThat(sql, hasNode(languageConcept).withPatientCount(4))
+        assertThat(sql, hasNode(assessmentDateConcept + "09/15/2015\\"))
+        assertThat(sql, hasFact(ageConcept, subjId, 21))
+    }
+
+    def 'it should load study with APPEND merge mode'() {
+        expect:
+        String subjId = 'HCC2935'
+        String rootConcept = "\\Test Studies\\${studyName}\\"
+
+        String maleConcept = rootConcept + "Subjects\\Demographics\\Sex (SEX)\\Male\\"
+        String femaleConcept = rootConcept + "Subjects\\Demographics\\Sex (SEX)\\Female\\"
+        String languageConcept = rootConcept + "Subjects\\Demographics\\Language\\"
+        String ageConcept = rootConcept + "Subjects\\Demographics\\Age (AGE)\\"
+        String assessmentDateConcept = rootConcept + "Subjects\\Demographics\\Assessment Date\\"
+
+        processor.process(new File(studyDir(studyName, studyId), "ClinicalDataToUpload").toPath(),
+                [name: studyName, node: "Test Studies\\${studyName}".toString()])
+
+        assertThat(sql, hasPatient(subjId).inTrial(studyId))
+        assertThat(sql, hasNode(maleConcept).withPatientCount(2))
+        assertThat(sql, hasNode(femaleConcept).withPatientCount(5))
+        assertThat(sql, hasNode(languageConcept).withPatientCount(3))
+        assertThat(sql, hasNode(assessmentDateConcept + "09/15/2014\\"))
+        assertThat(sql, hasFact(ageConcept, subjId, 20))
+
+        processor.process(
+                new File(studyDir(studyName, studyId, studiesForMerge.append), "ClinicalDataToUpload").toPath(),
+                [name: studyName, node: "Test Studies\\${studyName}".toString()])
+
+        assertThat(sql, hasPatient(subjId).inTrial(studyId))
+        assertThat(sql, hasNode(maleConcept).withPatientCount(3))
+        assertThat(sql, hasNode(femaleConcept).withPatientCount(5))
+        assertThat(sql, hasNode(languageConcept).withPatientCount(4))
+        assertThat(sql, hasNode(assessmentDateConcept + "09/15/2014\\"))
+        assertThat(sql, hasNode(assessmentDateConcept + "09/15/2015\\"))
+        assertThat(sql, hasFact(ageConcept, subjId, 21))
     }
 
     def 'it should load study with non-unique column names'() {

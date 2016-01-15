@@ -47,7 +47,12 @@ class ClinicalDataMapping {
         mappings.values().each(closure)
     }
 
-    public static ClinicalDataMapping loadFromFile(Path mappingFile) {
+    public static ClinicalDataMapping loadFromFile(Path f) {
+        CsvLikeFile mappingFile = new CsvLikeFile(f, "#")
+        return new ClinicalDataMapping(processMappingFile(mappingFile))
+    }
+
+    public static ClinicalDataMapping loadFromCsvLikeFile(CsvLikeFile mappingFile) {
         return new ClinicalDataMapping(processMappingFile(mappingFile))
     }
 
@@ -57,13 +62,12 @@ class ClinicalDataMapping {
         int actualColumnsCount = -1
     }
 
-    private static Map<String, FileMapping> processMappingFile(Path f) {
+    private static Map<String, FileMapping> processMappingFile(CsvLikeFile mappingFile) {
         Map<String, FileParsingInfo> mappings = [:]
 
-        logger.log("Mapping file: ${f.fileName}")
+        logger.log("Mapping file: ${mappingFile.file.fileName}")
 
         List<String> mappingErrors = []
-        CsvLikeFile mappingFile = new CsvLikeFile(f)
         Map<String, Integer> columnMapping = (1..<mappingFile.header.length).collectEntries { [mappingFile.header[it], it] }
         int variableTypeIdx = columnMapping.variable_type ?: -1
         int validationRulesIdx = columnMapping.validation_rules ?: -1
@@ -72,7 +76,7 @@ class ClinicalDataMapping {
             FileParsingInfo parsingInfo = mappings[fileName]
             if (!parsingInfo) {
                 mappings[fileName] = parsingInfo = new FileParsingInfo(fileMapping: new FileMapping(fileName: fileName))
-                Path dataFile = f.resolveSibling(fileName)
+                Path dataFile = mappingFile.file.resolveSibling(fileName)
                 if (Files.exists(dataFile)) {
                     parsingInfo.actualColumnsCount = new CsvLikeFile(dataFile, '# ').header.size()
                 } else {

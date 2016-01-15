@@ -32,6 +32,8 @@ abstract class DataProcessor {
     def config
     Database database
 
+    MergeMode mergeMode = MergeMode.REPLACE
+
     DataProcessor(conf) {
         config = conf
         database = new Database(config)

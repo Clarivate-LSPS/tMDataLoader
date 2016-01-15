@@ -1,0 +1,4 @@
+STUDY_ID	SUBJ_ID	Age In Years	Sex	Assessment Date	Language
+GSE0	HCC2935	21	Male	09/15/2015	English
+
+

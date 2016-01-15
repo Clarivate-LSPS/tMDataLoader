@@ -25,6 +25,7 @@ import com.thomsonreuters.lsps.transmart.etl.statistic.StatisticCollector
 import com.thomsonreuters.lsps.transmart.etl.statistic.TableStatistic
 import com.thomsonreuters.lsps.transmart.etl.statistic.VariableType
 import com.thomsonreuters.lsps.transmart.files.CsvLikeFile
+import com.thomsonreuters.lsps.transmart.files.MetaInfoHeader
 import com.thomsonreuters.lsps.transmart.sql.DatabaseType
 import groovy.sql.Sql
 
@@ -172,7 +173,10 @@ class ClinicalDataProcessor extends DataProcessor {
         }
 
         dir.eachFileMatch(~/(?i).+_Mapping_File\.txt/) {
-            ClinicalDataMapping mapping = ClinicalDataMapping.loadFromFile(it)
+            CsvLikeFile mappingFile = new CsvLikeFile(it, '#')
+            ClinicalDataMapping mapping = ClinicalDataMapping.loadFromCsvLikeFile(mappingFile)
+
+            mergeMode = getMergeMode(mappingFile)
 
             mapping.eachFileMapping { fileMapping ->
                 this.processFile(sql, dir.resolve(fileMapping.fileName), fileMapping)
@@ -187,6 +191,16 @@ class ClinicalDataProcessor extends DataProcessor {
         }
         checkStudyExist(sql, studyInfo)
         return true
+    }
+
+    private MergeMode getMergeMode(CsvLikeFile mappingFile) {
+        def metaInfo = (mappingFile as MetaInfoHeader).metaInfo
+        String modeName = metaInfo.MERGE_MODE
+
+        if (!modeName)
+            return MergeMode.REPLACE
+
+        return MergeMode.valueOf(modeName)
     }
 
     private void addStatisticVariables(TableStatistic table, CsvLikeFile csvFile, fMappings) {
@@ -281,7 +295,7 @@ class ClinicalDataProcessor extends DataProcessor {
             config.logger.log("Study ID=${studyId}; Node=${studyNode}")
             def highlightFlag = config.highlightClinicalData.is(true) ? 'Y' : 'N'
             def alwaysSetVisitName = config.alwaysSetVisitName.is(true) ? 'Y' : 'N'
-            sql.call("{call " + config.controlSchema + "." + getProcedureName() + "(?,?,?,?,?,?)}", [studyId, studyNode, config.securitySymbol, highlightFlag, alwaysSetVisitName, jobId])
+            sql.call("{call " + config.controlSchema + "." + getProcedureName() + "(?,?,?,?,?,?,?)}", [studyId, studyNode, config.securitySymbol, highlightFlag, alwaysSetVisitName, jobId, mergeMode.name()])
         } else {
             config.logger.log(LogType.ERROR, "Study ID or Node not defined!")
             return false;
