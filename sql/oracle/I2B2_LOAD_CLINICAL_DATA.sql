@@ -1,12 +1,13 @@
 create or replace
 PROCEDURE                                                       "I2B2_LOAD_CLINICAL_DATA" 
 (
-  trial_id 			IN	VARCHAR2
- ,top_node			in  varchar2
- ,secure_study		in varchar2 := 'N'
- ,highlight_study	in	varchar2 := 'N'
- ,alwaysSetVisitName in varchar2 := 'N'
- ,currentJobID		IN	NUMBER := null
+	trial_id 			IN	VARCHAR2,
+  top_node			in  varchar2,
+ 	secure_study		in varchar2 := 'N',
+ 	highlight_study	in	varchar2 := 'N',
+ 	alwaysSetVisitName in varchar2 := 'N',
+ 	currentJobID		IN	NUMBER := null,
+	merge_mode	in varchar := 'REPLACE'
 )
 AS
 
@@ -751,22 +752,25 @@ BEGIN
 	cz_write_audit(jobId,databaseName,procedureName,'Insert subject information into temp table',SQL%ROWCOUNT,stepCt,'Done');
 	
 	commit;
+
+
 	
 	--	Delete dropped subjects from patient_dimension if they do not exist in de_subject_sample_mapping
-	
-	delete /*+ parallel(patient_dimension, 8) */ patient_dimension
-	where sourcesystem_cd in
-		 (select distinct pd.sourcesystem_cd from patient_dimension pd
-		  where pd.sourcesystem_cd like TrialId || ':%'
-		  minus 
-		  select distinct cd.usubjid from wrk_clinical_data cd)
-	  and patient_num not in
-		  (select distinct sm.patient_id from de_subject_sample_mapping sm);
-		  
-	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Delete dropped subjects from patient_dimension',SQL%ROWCOUNT,stepCt,'Done');
-	
-	commit;	
+	if (merge_mode = 'REPLACE') then
+		delete /*+ parallel(patient_dimension, 8) */ patient_dimension
+		where sourcesystem_cd in
+			 (select distinct pd.sourcesystem_cd from patient_dimension pd
+				where pd.sourcesystem_cd like TrialId || ':%'
+				minus
+				select distinct cd.usubjid from wrk_clinical_data cd)
+			and patient_num not in
+				(select distinct sm.patient_id from de_subject_sample_mapping sm);
+
+		stepCt := stepCt + 1;
+		cz_write_audit(jobId,databaseName,procedureName,'Delete dropped subjects from patient_dimension',SQL%ROWCOUNT,stepCt,'Done');
+
+		commit;
+	end if;
 	
 	--	update patients with changed information
 	
@@ -825,16 +829,38 @@ BEGIN
 	commit;
 		
 	--	delete leaf nodes that will not be reused, if any
-	
-	 FOR r_delUnusedLeaf in delUnusedLeaf Loop
+	if (merge_mode = 'REPLACE') then
+		FOR r_delUnusedLeaf in delUnusedLeaf Loop
 
-    --	deletes unused leaf nodes for a trial one at a time
+		--	deletes unused leaf nodes for a trial one at a time
 
-		i2b2_delete_1_node(r_delUnusedLeaf.c_fullname);
-		stepCt := stepCt + 1;	
-		cz_write_audit(jobId,databaseName,procedureName,'Deleted unused node: ' || r_delUnusedLeaf.c_fullname,SQL%ROWCOUNT,stepCt,'Done');
+			i2b2_delete_1_node(r_delUnusedLeaf.c_fullname);
+			stepCt := stepCt + 1;
+			cz_write_audit(jobId,databaseName,procedureName,'Deleted unused node: ' || r_delUnusedLeaf.c_fullname,SQL%ROWCOUNT,stepCt,'Done');
 
-	END LOOP;	
+		END LOOP;
+	end if;
+
+
+	if (merge_mode = 'UPDATE') then
+		for x in ( select cd.concept_path
+					 from concept_dimension cd, observation_fact fact
+					where fact.patient_num in (select pat.patient_num
+												 from tmp_subject_info si, patient_dimension pat
+					                            where si.usubjid = pat.sourcesystem_cd)
+				      and cd.concept_cd = fact.concept_cd
+				      and not exists (select 1
+										from observation_fact f
+									   where f.concept_cd = cd.concept_cd
+										 and f.patient_num in (select pat.patient_num
+																 from tmp_subject_info si, patient_dimension pat
+																where si.usubjid = pat.sourcesystem_cd))) loop
+			i2b2_delete_1_node(x.concept_path);
+			stepCt := stepCt + 1;
+			cz_write_audit(jobId,databaseName,procedureName,'Deleted old version updated node: ' || x.concept_path,SQL%ROWCOUNT,stepCt,'Done');
+
+		end loop;
+	end if;
 	
 	--	bulk insert leaf nodes
 	
@@ -990,39 +1016,74 @@ BEGIN
   --execute immediate('DROP INDEX "I2B2DEMODATA"."OF_CTX_BLOB"'); 
   
 	--	delete from observation_fact all concept_cds for trial that are clinical data, exclude concept_cds from biomarker data
-	
-	delete /*+ parallel(observation_fact, 4) */ from OBSERVATION_FACT F
-	where f.modifier_cd = TrialId
-	  and F.CONCEPT_CD not in
-		 (select /*+ parallel(de_subject_sample_mapping, 4) */ distinct concept_code as concept_cd from de_subject_sample_mapping
-		  where trial_name = TrialId
-		    and concept_code is not null
-		  union
-		  select /*+ parallel(de_subject_sample_mapping, 4) */ distinct platform_cd as concept_cd from de_subject_sample_mapping
-		  where trial_name = TrialId
-		    and platform_cd is not null
-		  union
-		  select /*+ parallel(de_subject_sample_mapping, 4) */ distinct sample_type_cd as concept_cd from de_subject_sample_mapping
-		  where trial_name = TrialId
-		    and sample_type_cd is not null
-		  union
-		  select /*+ parallel(de_subject_sample_mapping, 4) */ distinct tissue_type_cd as concept_cd from de_subject_sample_mapping
-		  where trial_name = TrialId
-		    and tissue_type_cd is not null
-		  union
-		  select /*+ parallel(de_subject_sample_mapping, 4) */ distinct timepoint_cd as concept_cd from de_subject_sample_mapping
-		  where trial_name = TrialId
-		    and timepoint_cd is not null
-		  union
-		  select /*+ parallel(de_subject_sample_mapping, 4) */ distinct concept_cd as concept_cd from de_subject_snp_dataset
-		  where trial_name = TrialId
-		    and concept_cd is not null);
-		  
-	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Delete clinical data for study from observation_fact',SQL%ROWCOUNT,stepCt,'Done');
-    COMMIT;
+	if (merge_mode = 'REPLACE') then
+		delete /*+ parallel(observation_fact, 4) */ from OBSERVATION_FACT F
+		where f.modifier_cd = TrialId
+			and F.CONCEPT_CD not in
+			 (select /*+ parallel(de_subject_sample_mapping, 4) */ distinct concept_code as concept_cd from de_subject_sample_mapping
+				where trial_name = TrialId
+					and concept_code is not null
+				union
+				select /*+ parallel(de_subject_sample_mapping, 4) */ distinct platform_cd as concept_cd from de_subject_sample_mapping
+				where trial_name = TrialId
+					and platform_cd is not null
+				union
+				select /*+ parallel(de_subject_sample_mapping, 4) */ distinct sample_type_cd as concept_cd from de_subject_sample_mapping
+				where trial_name = TrialId
+					and sample_type_cd is not null
+				union
+				select /*+ parallel(de_subject_sample_mapping, 4) */ distinct tissue_type_cd as concept_cd from de_subject_sample_mapping
+				where trial_name = TrialId
+					and tissue_type_cd is not null
+				union
+				select /*+ parallel(de_subject_sample_mapping, 4) */ distinct timepoint_cd as concept_cd from de_subject_sample_mapping
+				where trial_name = TrialId
+					and timepoint_cd is not null
+				union
+				select /*+ parallel(de_subject_sample_mapping, 4) */ distinct concept_cd as concept_cd from de_subject_snp_dataset
+				where trial_name = TrialId
+					and concept_cd is not null);
 
-    analyze_table('TM_WZ', 'WRK_CLINICAL_DATA', jobId);
+		stepCt := stepCt + 1;
+		cz_write_audit(jobId,databaseName,procedureName,'Delete clinical data for study from observation_fact',SQL%ROWCOUNT,stepCt,'Done');
+		commit;
+	end if;
+
+	-- delete old fact records for updated data
+	if (merge_mode = 'UPDATE') then
+		delete from observation_fact f
+		 where f.modifier_cd = TrialId
+		   and f.patient_num in (select pat.patient_num
+								   from tmp_subject_info si, patient_dimension pat
+								  where si.usubjid = pat.sourcesystem_cd);
+
+		stepCt := stepCt + 1;
+		cz_write_audit(jobId,databaseName,procedureName,'Delete old fact records for updated data',SQL%ROWCOUNT,stepCt,'Done');
+		commit;
+	end if;
+
+	if (merge_mode = 'APPEND') then
+		delete from observation_fact f
+		 where f.modifier_cd = TrialId
+		   and f.valtype_cd = 'N'
+		   and f.patient_num in (select pat.patient_num
+								   from tmp_subject_info si, patient_dimension pat
+								  where si.usubjid = pat.sourcesystem_cd)
+			and f.concept_cd in (select cd.concept_cd
+								   from observation_fact fact, concept_dimension cd, wt_trial_nodes node
+								  where fact.patient_num in (select pat.patient_num
+															   from tmp_subject_info si, patient_dimension pat
+															  where si.usubjid = pat.sourcesystem_cd)
+									and fact.concept_cd = cd.concept_cd
+									and cd.name_char = node.node_name
+									and node.data_type = 'N');
+
+		stepCt := stepCt + 1;
+		cz_write_audit(jobId,databaseName,procedureName,'Delete old numerical fact records for append data',SQL%ROWCOUNT,stepCt,'Done');
+		commit;
+	end if;
+
+  	analyze_table('TM_WZ', 'WRK_CLINICAL_DATA', jobId);
     analyze_table('TM_WZ', 'WT_TRIAL_NODES', jobId);
     analyze_table('I2B2METADATA', 'I2B2', jobId);
     analyze_table('I2B2DEMODATA', 'PATIENT_DIMENSION', jobId);

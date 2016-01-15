@@ -8,7 +8,8 @@ CREATE OR REPLACE FUNCTION i2b2_load_clinical_data(
   secure_study character varying DEFAULT 'N'::character varying,
   highlight_study character varying DEFAULT 'N'::character varying,
   alwaysSetVisitName character varying DEFAULT 'N'::character varying,
-  currentjobid numeric DEFAULT (-1))
+  currentjobid numeric DEFAULT (-1),
+  merge_mode character varying DEFAULT 'REPLACE'::character varying)
   RETURNS numeric AS
 $BODY$
 /*************************************************************************
@@ -53,6 +54,8 @@ Declare
 	tText			varchar(2000);
 	recreateIndexes boolean;
 	recreateIndexesSql text;
+	leaf_fullname varchar(700);
+	updated_patient_nums integer[];
 
 	addNodes CURSOR is
 	select DISTINCT leaf_node, node_name
@@ -83,6 +86,7 @@ Declare
 		  where sm.trial_name = TrialId
 		    and sm.concept_code = m.c_basecode
 			and m.c_visualattributes like 'L%');
+
 BEGIN
 
 	TrialID := upper(trial_id);
@@ -851,30 +855,37 @@ BEGIN
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Insert subject information into temp table',rowCt,stepCt,'Done') into rtnCd;
 
-	--	Delete dropped subjects from patient_dimension if they do not exist in de_subject_sample_mapping
+  updated_patient_nums := array(
+      select pat.patient_num
+      from wt_subject_info si, patient_dimension pat
+      where si.usubjid = pat.sourcesystem_cd
+  );
 
-	begin
-	delete from i2b2demodata.patient_dimension
-	where sourcesystem_cd in
-		 (select distinct pd.sourcesystem_cd from i2b2demodata.patient_dimension pd
-		  where pd.sourcesystem_cd like TrialId || ':%'
-		  except
-		  select distinct cd.usubjid from wrk_clinical_data cd)
-	  and patient_num not in
-		  (select distinct sm.patient_id from deapp.de_subject_sample_mapping sm);
-	get diagnostics rowCt := ROW_COUNT;
-	exception
-	when others then
-		errorNumber := SQLSTATE;
-		errorMessage := SQLERRM;
-		--Handle errors.
-		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
-		--End Proc
-		select cz_end_audit (jobID, 'FAIL') into rtnCd;
-		return -16;
-	end;
-	stepCt := stepCt + 1;
-	select cz_write_audit(jobId,databaseName,procedureName,'Delete dropped subjects from patient_dimension',rowCt,stepCt,'Done') into rtnCd;
+	--	Delete dropped subjects from patient_dimension if they do not exist in de_subject_sample_mapping
+	if (merge_mode = 'REPLACE') then
+		begin
+		delete from i2b2demodata.patient_dimension
+		where sourcesystem_cd in
+			 (select distinct pd.sourcesystem_cd from i2b2demodata.patient_dimension pd
+				where pd.sourcesystem_cd like TrialId || ':%'
+				except
+				select distinct cd.usubjid from wrk_clinical_data cd)
+			and patient_num not in
+				(select distinct sm.patient_id from deapp.de_subject_sample_mapping sm);
+		get diagnostics rowCt := ROW_COUNT;
+		exception
+		when others then
+			errorNumber := SQLSTATE;
+			errorMessage := SQLERRM;
+			--Handle errors.
+			select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+			--End Proc
+			select cz_end_audit (jobID, 'FAIL') into rtnCd;
+			return -16;
+		end;
+		stepCt := stepCt + 1;
+		select cz_write_audit(jobId,databaseName,procedureName,'Delete dropped subjects from patient_dimension',rowCt,stepCt,'Done') into rtnCd;
+	end if;
 
 	--	update patients with changed information
 	begin
@@ -941,37 +952,35 @@ BEGIN
 	select cz_write_audit(jobId,databaseName,procedureName,'Insert new subjects into patient_dimension',rowCt,stepCt,'Done') into rtnCd;
 
 	--	delete leaf nodes that will not be reused, if any
-
-	 FOR r_delUnusedLeaf in delUnusedLeaf Loop
+	if (merge_mode = 'REPLACE') then
+		for r_delUnusedLeaf in delUnusedLeaf loop
 
     --	deletes unused leaf nodes for a trial one at a time
 
-		select i2b2_delete_1_node(r_delUnusedLeaf.c_fullname) into rtnCd;
-		stepCt := stepCt + 1;
-		select cz_write_audit(jobId,databaseName,procedureName,'Deleted unused leaf node: ' || r_delUnusedLeaf.c_fullname,1,stepCt,'Done') into rtnCd;
+			select i2b2_delete_1_node(r_delUnusedLeaf.c_fullname) into rtnCd;
+			stepCt := stepCt + 1;
+			select cz_write_audit(jobId,databaseName,procedureName,'Deleted unused leaf node: ' || r_delUnusedLeaf.c_fullname,1,stepCt,'Done') into rtnCd;
 
-	END LOOP;
+		end loop;
+	end if;
 
-	--	bulk insert leaf nodes
-	begin
-	with ncd as (select t.leaf_node, t.node_name from wt_trial_nodes t)
-	update i2b2demodata.concept_dimension
-	set name_char=ncd.node_name
-	from ncd
-	where concept_path = ncd.leaf_node;
-	get diagnostics rowCt := ROW_COUNT;
-	exception
-	when others then
-		errorNumber := SQLSTATE;
-		errorMessage := SQLERRM;
-		--Handle errors.
-		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
-		--End Proc
-		select cz_end_audit (jobID, 'FAIL') into rtnCd;
-		return -16;
-	end;
-	stepCt := stepCt + 1;
-	select cz_write_audit(jobId,databaseName,procedureName,'Update name_char in concept_dimension for changed names',rowCt,stepCt,'Done') into rtnCd;
+  -- delete old leaf nodes for updated subjects
+	if (merge_mode = 'UPDATE') then
+    for leaf_fullname in ( select cd.concept_path
+                             from concept_dimension cd, observation_fact fact
+                            where fact.patient_num = any(updated_patient_nums)
+                              and cd.concept_cd = fact.concept_cd
+							  and not exists ( select 1
+												 from observation_fact f
+												where f.concept_cd = cd.concept_cd
+												  and f.patient_num <> any(updated_patient_nums) ) ) loop
+
+      select i2b2_delete_1_node(leaf_fullname) into rtnCd;
+      stepCt := stepCt + 1;
+      select cz_write_audit(jobId,databaseName,procedureName,'Deleted old version updated node: ' || leaf_fullname,1,stepCt,'Done') into rtnCd;
+
+    end loop;
+	end if;
 
 	begin
 	insert into i2b2demodata.concept_dimension
@@ -1107,47 +1116,95 @@ BEGIN
 	select i2b2_fill_in_tree(TrialId, topNode, jobID) into rtnCd;
 
 	--	delete from observation_fact all concept_cds for trial that are clinical data, exclude concept_cds from biomarker data
+	if (merge_mode = 'REPLACE') then
+		begin
+		delete from i2b2demodata.observation_fact f
+		where f.modifier_cd = TrialId
+			and f.concept_cd not in
+			 (select distinct concept_code as concept_cd from deapp.de_subject_sample_mapping
+				where trial_name = TrialId
+					and concept_code is not null
+				union
+				select distinct platform_cd as concept_cd from deapp.de_subject_sample_mapping
+				where trial_name = TrialId
+					and platform_cd is not null
+				union
+				select distinct sample_type_cd as concept_cd from deapp.de_subject_sample_mapping
+				where trial_name = TrialId
+					and sample_type_cd is not null
+				union
+				select distinct tissue_type_cd as concept_cd from deapp.de_subject_sample_mapping
+				where trial_name = TrialId
+					and tissue_type_cd is not null
+				union
+				select distinct timepoint_cd as concept_cd from deapp.de_subject_sample_mapping
+				where trial_name = TrialId
+					and timepoint_cd is not null
+				union
+				select distinct concept_cd as concept_cd from deapp.de_subject_snp_dataset
+				where trial_name = TrialId
+					and concept_cd is not null);
+		get diagnostics rowCt := ROW_COUNT;
+		exception
+		when others then
+			errorNumber := SQLSTATE;
+			errorMessage := SQLERRM;
+			--Handle errors.
+			select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+			--End Proc
+			select cz_end_audit (jobID, 'FAIL') into rtnCd;
+			return -16;
+		end;
+		stepCt := stepCt + 1;
+		select cz_write_audit(jobId,databaseName,procedureName,'Delete clinical data for study from observation_fact',rowCt,stepCt,'Done') into rtnCd;
+	end if;
 
-	begin
-	delete from i2b2demodata.observation_fact f
-	where f.modifier_cd = TrialId
-	  and f.concept_cd not in
-		 (select distinct concept_code as concept_cd from deapp.de_subject_sample_mapping
-		  where trial_name = TrialId
-		    and concept_code is not null
-		  union
-		  select distinct platform_cd as concept_cd from deapp.de_subject_sample_mapping
-		  where trial_name = TrialId
-		    and platform_cd is not null
-		  union
-		  select distinct sample_type_cd as concept_cd from deapp.de_subject_sample_mapping
-		  where trial_name = TrialId
-		    and sample_type_cd is not null
-		  union
-		  select distinct tissue_type_cd as concept_cd from deapp.de_subject_sample_mapping
-		  where trial_name = TrialId
-		    and tissue_type_cd is not null
-		  union
-		  select distinct timepoint_cd as concept_cd from deapp.de_subject_sample_mapping
-		  where trial_name = TrialId
-		    and timepoint_cd is not null
-		  union
-		  select distinct concept_cd as concept_cd from deapp.de_subject_snp_dataset
-		  where trial_name = TrialId
-		    and concept_cd is not null);
-	get diagnostics rowCt := ROW_COUNT;
-	exception
-	when others then
-		errorNumber := SQLSTATE;
-		errorMessage := SQLERRM;
-		--Handle errors.
-		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
-		--End Proc
-		select cz_end_audit (jobID, 'FAIL') into rtnCd;
-		return -16;
-	end;
-	stepCt := stepCt + 1;
-	select cz_write_audit(jobId,databaseName,procedureName,'Delete clinical data for study from observation_fact',rowCt,stepCt,'Done') into rtnCd;
+  -- delete old fact records for updated data
+	if (merge_mode = 'UPDATE') then
+    begin
+    delete from observation_fact f
+		  where f.modifier_cd = TrialId
+            and f.patient_num = any(updated_patient_nums);
+    exception
+    when others then
+    	errorNumber := SQLSTATE;
+      errorMessage := SQLERRM;
+      --Handle errors.
+      select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+      --End Proc
+      select cz_end_audit (jobID, 'FAIL') into rtnCd;
+      return -16;
+    end;
+    stepCt := stepCt + 1;
+    select cz_write_audit(jobId,databaseName,procedureName,'Delete old fact records for updated data',rowCt,stepCt,'Done') into rtnCd;
+
+	end if;
+
+	if (merge_mode = 'APPEND') then
+    begin
+		delete from observation_fact f
+		 where f.modifier_cd = TrialId
+		   and f.valtype_cd = 'N'
+		   and f.patient_num = any(updated_patient_nums)
+		   and f.concept_cd in (select cd.concept_cd
+								  from observation_fact fact, concept_dimension cd, wt_trial_nodes node
+								 where fact.patient_num = any(updated_patient_nums)
+								   and fact.concept_cd = cd.concept_cd
+								   and cd.name_char = node.node_name
+								   and node.data_type = 'N');
+    exception
+    when others then
+    	errorNumber := SQLSTATE;
+      errorMessage := SQLERRM;
+      --Handle errors.
+      select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+      --End Proc
+      select cz_end_audit (jobID, 'FAIL') into rtnCd;
+      return -16;
+    end;
+    stepCt := stepCt + 1;
+    select cz_write_audit(jobId,databaseName,procedureName,'Delete old numerical fact records for append data',rowCt,stepCt,'Done') into rtnCd;
+  end if;
 
 	analyze wrk_clinical_data;
 	analyze wt_trial_nodes;
@@ -1193,7 +1250,8 @@ BEGIN
 			select 1 from wt_trial_nodes x
 			where regexp_replace(x.leaf_node, '[^\\]+\\$', '') = t.leaf_node
 		)
-	  and a.data_value is not null AND NOT (a.data_type = 'N' AND a.data_value = '');
+	  and a.data_value is not null
+		and not (a.data_type = 'N' and a.data_value = '');
 	get diagnostics rowCt := ROW_COUNT;
 	stepCt := stepCt + 1;
 	set enable_mergejoin to default;
@@ -1256,7 +1314,6 @@ BEGIN
 	end;
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Insert trial into I2B2DEMODATA observation_fact',rowCt,stepCt,'Done') into rtnCd;
-
 
 	--July 2013. Performance fix by TR. Prepare precompute tree
 	SELECT I2B2_CREATE_FULL_TREE(topNode, jobId) INTO rtnCd;
@@ -1392,5 +1449,5 @@ $BODY$
   SET search_path FROM CURRENT
   COST 100;
 
-ALTER FUNCTION i2b2_load_clinical_data(character varying, character varying, character varying, character varying, character varying, numeric)
+ALTER FUNCTION i2b2_load_clinical_data(character varying, character varying, character varying, character varying, character varying, numeric, character varying)
   OWNER TO postgres;

@@ -54,6 +54,12 @@ class Fixtures {
         return new StudiesDirFile(['fixtures', 'Additional Test Studies'].join(File.separator))
     }
 
+    static def getStudiesForMerge() {
+        return [update : new StudiesDirFile(['fixtures', 'Test Studies For Merge', 'Update'].join(File.separator)),
+                append : new StudiesDirFile(['fixtures', 'Test Studies For Merge', 'Append'].join(File.separator)),
+                replace : new StudiesDirFile(['fixtures', 'Test Studies For Merge', 'Replace'].join(File.separator))]
+    }
+
     static StudyDirFile studyDir(String studyName, String studyId, File studiesDir = Fixtures.studiesDir) {
         return new StudyDirFile(studiesDir, studyId, studyName)
     }
