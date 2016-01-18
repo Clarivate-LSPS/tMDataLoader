@@ -95,4 +95,21 @@ class StatisticCollectorTest extends Specification {
         num.min == Float.NaN
         num.violatedRangeChecks == ['Type is Numerical': ['1', '2']]
     }
+
+    def 'it should report if all variable values are empty'() {
+        given:
+        def table = new TableStatistic()
+        table.withRecordStatisticForVariables(id: VariableType.ID, num: VariableType.Numerical).
+                withRecordStatisticForVariable('numWithChecks', VariableType.Numerical, ValidationRule.parseList('>10'))
+        def num = table.variables.num
+        def numWithChecks = table.variables.numWithChecks
+
+        when:
+        table.collectForRecord(id: '1', num: '', numWithChecks: '')
+        table.collectForRecord(id: '2', num: '', numWithChecks: '')
+
+        then:
+        num.QCRangeCheck == 'All values are empty'
+        numWithChecks.QCRangeCheck == 'All values are empty'
+    }
 }

@@ -204,6 +204,34 @@ class VariableStatistic {
         ids.add(id)
     }
 
+    private static String idList(ids) {
+        ids.collect { "'${it}'" }.join(', ')
+    }
+
+    String getQCMissingData() {
+        if (required) {
+            hasMissingData ? "${emptyValuesCount} missing (${idList(missingValueIds)})" : 'OK'
+        } else {
+            ''
+        }
+    }
+
+    String getQCRangeCheck() {
+        if (notEmptyValuesCount == 0) {
+            return 'All values are empty'
+        }
+        if (hasRangeChecks) {
+            def violatedRangeChecks = violatedRangeChecks
+            if (violatedRangeChecks) {
+                "Range checks failed: ${violatedRangeChecks.collect { desc, ids -> "${desc} (${idList(ids)})" }.join('; ')}"
+            } else {
+                'OK'
+            }
+        } else {
+            ''
+        }
+    }
+
     @Override
     String toString() {
         return "${name}(${type.name()})"
