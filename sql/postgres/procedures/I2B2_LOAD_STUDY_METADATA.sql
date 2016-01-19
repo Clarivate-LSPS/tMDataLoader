@@ -42,11 +42,14 @@ declare
 	pubmed_id				varchar(200);
 	pubmed_title		varchar(2000);
 	tag_path				varchar(400);
+	etl_program_id 	int;
+	study_folder_id int;
 
 	study_compound_rec	record;
 	study_disease_rec	record;
 	study_taxonomy_rec  record;
 	study_pubmed_rec 	record;
+	bio_experiment_rec record;
 
 BEGIN
 
@@ -67,13 +70,43 @@ BEGIN
 
 	select clock_timestamp() into upload_date;
 
-	--	Update existing bio_experiment data
+	-- create etl program if necessary
+	select folder_id
+	  into etl_program_id
+	  from fmapp.fm_folder
+	 where folder_name = 'etl-program'
+		 and folder_type = 'PROGRAM';
 
+	if (etl_program_id is null) then
+		begin
+			insert into fmapp.fm_folder (folder_id, folder_name, folder_level, folder_type, active_ind, description)
+				 values (nextval('FMAPP.SEQ_FM_ID'),'etl-program', 0, 'PROGRAM', true,
+									 'Special program. Create automatically when tmDataloader load metadata for study. ' ||
+									 'Necessary for support study filters')
+			  returning folder_id
+				   into etl_program_id ;
+			exception
+			when others then
+				errorNumber := SQLSTATE;
+				errorMessage := SQLERRM;
+				--Handle errors.
+				select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+				--End Proc
+				select cz_end_audit (jobID, 'FAIL') into rtnCd;
+				return -16;
+				get diagnostics rowCt := ROW_COUNT;
+		end;
+    stepCt := stepCt + 1;
+    select cz_write_audit(jobId,databaseName,procedureName,'Create etl program',rowCt,stepCt,'Done') into rtnCd;
+	end if;
+
+	--	Update existing bio_experiment data
 	begin
 		with upd as (select m.study_id
 									 ,m.title
 									 ,m.description
-									 ,m.design
+									 ,case when m.design is null then null
+										else 'STUDY_DESIGN:' || upper(m.design) end as design
 									 ,case when is_date(m.start_date,'YYYYMMDD') = 1 then null
 										else to_date(m.start_date,'YYYYMMDD') end as start_date
 									 ,case when is_date(m.completion_date,'YYYYMMDD') = 1 then null
@@ -81,7 +114,8 @@ BEGIN
 									 ,coalesce(m.primary_investigator,m.study_owner) as primary_investigator
 									 ,m.overall_design
 									 ,m.institution
-									 ,m.country
+									 ,case when m.country is null then null
+								 		else 'COUNTRY:' || upper(m.country) end as country
 								 from lt_src_study_metadata m
 								 where m.study_id is not null)
 		update biomart.bio_experiment b
@@ -111,78 +145,6 @@ BEGIN
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Updated trial data in BIOMART bio_experiment',rowCt,stepCt,'Done') into rtnCd;
 
-	/*
-		--	Update existing bio_clinical_trial data only for true Clinical Trials or JnJ Experimental Medicine Studies
-
-		update biomart.bio_clinical_trial b
-		set (study_owner
-				,study_phase
-			,blinding_procedure
-			,studytype
-			,duration_of_study_weeks
-			,number_of_patients
-			,number_of_sites
-			,route_of_administration
-			,dosing_regimen
-			,group_assignment
-			,type_of_control
-			,completion_date
-			,primary_end_points
-			,secondary_end_points
-			,inclusion_criteria
-			,exclusion_criteria
-			,subjects
-			,gender_restriction_mfb
-			,min_age
-			,max_age
-			,secondary_ids
-			,development_partner
-			,main_findings
-			,geo_platform
-			--,platform_name
-			,search_area
-					) =
-			(select m.study_owner
-					 ,m.study_phase
-					 ,m.blinding_procedure
-					 ,m.studytype
-					 ,decode(is_number(m.duration_of_study_weeks),1,null,to_number(m.duration_of_study_weeks))
-					 ,decode(is_number(m.number_of_patients),1,null,to_number(m.number_of_patients))
-					 ,decode(is_number(m.number_of_sites),1,null,to_number(m.number_of_sites))
-					 ,m.route_of_administration
-					 ,m.dosing_regimen
-					 ,m.group_assignment
-					 ,m.type_of_control
-					 ,decode(is_date(m.completion_date,'YYYYMMDD'),1,null,to_date(m.completion_date,'YYYYMMDD'))
-					 ,m.primary_end_points
-					 ,m.secondary_end_points
-					 ,m.inclusion_criteria
-					 ,m.exclusion_criteria
-					 ,m.subjects
-					 ,m.gender_restriction_mfb
-					 ,decode(is_number(m.min_age),1,null,to_number(m.min_age))
-					 ,decode(is_number(m.max_age),1,null,to_number(m.max_age))
-					 ,m.secondary_ids
-					 ,m.development_partner
-					 ,m.main_findings
-					 ,m.geo_platform
-					 --,m.platform_name
-					 ,m.search_area
-			 from lt_src_study_metadata m
-			 where m.study_id is not null
-				 and b.trial_number = m.study_id
-			)
-		where exists
-				 (select 1 from lt_src_study_metadata x
-				where b.trial_number = x.study_id
-					and x.study_id is not null
-			 )
-		;
-		stepCt := stepCt + 1;
-		cz_write_audit(jobId,databaseName,procedureName,'Updated study data in BIOMART bio_clinical_trial',SQL%ROWCOUNT,stepCt,'Done');
-		commit;
-	*/
-
 	--	Add new trial data to bio_experiment
 
 	begin
@@ -204,7 +166,8 @@ BEGIN
 			select 'Experiment'
 				,m.title
 				,m.description
-				,m.design
+				,case when m.design is null then null
+         else 'STUDY_DESIGN:' || upper(m.design) end as design
 				,case when is_date(m.start_date,'YYYYMMDD') = 1 then null
 				 else to_date(m.start_date,'YYYYMMDD') end as start_date
 				,case when is_date(m.completion_date,'YYYYMMDD') = 1 then null
@@ -215,7 +178,8 @@ BEGIN
 				,m.study_id
 				,m.overall_design
 				,m.study_id
-				,m.country
+				,case when m.country is null then null
+         else 'COUNTRY:' || upper(m.country) end as country
 				,m.institution
 			from lt_src_study_metadata m
 			where m.study_id is not null
@@ -236,79 +200,6 @@ BEGIN
 	end;
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Add study to BIOMART bio_experiment',rowCt,stepCt,'Done') into rtnCd;
-
-	/*
-		--	Add new trial data to bio_clinical_trial
-
-		insert into biomart.bio_clinical_trial
-		(trial_number
-		,study_owner
-		,study_phase
-		,blinding_procedure
-		,studytype
-		,duration_of_study_weeks
-		,number_of_patients
-		,number_of_sites
-		,route_of_administration
-		,dosing_regimen
-		,group_assignment
-		,type_of_control
-		,completion_date
-		,primary_end_points
-		,secondary_end_points
-		,inclusion_criteria
-		,exclusion_criteria
-		,subjects
-		,gender_restriction_mfb
-		,min_age
-		,max_age
-		,secondary_ids
-		,bio_experiment_id
-		,development_partner
-		,main_findings
-		,geo_platform
-		--,platform_name
-		,search_area
-		)
-		select m.study_id
-						,m.study_owner
-						,m.study_phase
-						,m.blinding_procedure
-						,m.studytype
-				,decode(is_number(m.duration_of_study_weeks),1,null,to_number(m.duration_of_study_weeks))
-				,decode(is_number(m.number_of_patients),1,null,to_number(m.number_of_patients))
-				,decode(is_number(m.number_of_sites),1,null,to_number(m.number_of_sites))
-						,m.route_of_administration
-						,m.dosing_regimen
-						,m.group_assignment
-						,m.type_of_control
-						,decode(is_date(m.completion_date,'YYYYMMDD'),1,null,to_date(m.completion_date,'YYYYMMDD'))
-						,m.primary_end_points
-						,m.secondary_end_points
-						,m.inclusion_criteria
-						,m.exclusion_criteria
-						,m.subjects
-						,m.gender_restriction_mfb
-				,decode(is_number(m.min_age),1,null,to_number(m.min_age))
-				,decode(is_number(m.max_age),1,null,to_number(m.max_age))
-						,m.secondary_ids
-						,b.bio_experiment_id
-				,m.development_partner
-				,m.main_findings
-				,m.geo_platform
-				--,m.platform_name
-				,m.search_area
-		from lt_src_study_metadata m
-				,biomart.bio_experiment b
-		where m.study_id is not null
-			and m.study_id = b.accession
-			and not exists
-					(select 1 from biomart.bio_clinical_trial x
-				 where m.study_id = x.trial_number);
-		stepCt := stepCt + 1;
-		cz_write_audit(jobId,databaseName,procedureName,'Inserted trial data in BIOMART bio_clinical_trial',SQL%ROWCOUNT,stepCt,'Done');
-		commit;
-	*/
 
 	--	Insert new trial into bio_data_uid
 
@@ -341,6 +232,39 @@ BEGIN
 	end;
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Added study to bio_data_uid',rowCt,stepCt,'Done') into rtnCd;
+
+	-- Create study folder
+	begin
+		for bio_experiment_rec in (select dat.unique_id, exp.title, exp.description
+									 from biomart.bio_experiment exp, lt_src_study_metadata met, biomart.bio_data_uid dat
+									where exp.accession = met.study_id
+									  and exp.bio_experiment_id = dat.bio_data_id
+									  and not exists (select 1
+														from fmapp.fm_folder_association
+													   where object_uid = dat.unique_id)) loop
+
+			insert into fmapp.fm_folder (folder_id, folder_name, folder_level, folder_type, active_ind, parent_id, description)
+				 values (nextval('FMAPP.SEQ_FM_ID'), bio_experiment_rec.title, 1,'STUDY', true, etl_program_id, bio_experiment_rec.description)
+			  returning folder_id
+				   into study_folder_id;
+
+			insert into fmapp.fm_folder_association (folder_id, object_uid, object_type)
+				 values (study_folder_id, bio_experiment_rec.unique_id, 'org.transmart.biomart.Experiment');
+
+			stepCt := stepCt + 1;
+			select cz_write_audit(jobId,databaseName,procedureName,'Add study folder:' || bio_experiment_rec.title,rowCt,stepCt,'Done') into rtnCd;
+		end loop;
+    exception
+    when others then
+      errorNumber := SQLSTATE;
+      errorMessage := SQLERRM;
+      --Handle errors.
+      select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+      --End Proc
+      select cz_end_audit (jobID, 'FAIL') into rtnCd;
+      return -16;
+      get diagnostics rowCt := ROW_COUNT;
+	end;
 
 	--	delete existing compound data for study, compound list may change
 
