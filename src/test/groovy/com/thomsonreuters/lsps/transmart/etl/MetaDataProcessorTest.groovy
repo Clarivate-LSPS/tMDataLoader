@@ -56,6 +56,7 @@ class MetaDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCas
 
 
             assertNotNull('Experiment not exist' ,experimentId)
+            assertThat(db, hasRecord('biomart.bio_experiment', [bio_experiment_id : experimentId], [design : 'STUDY_DESIGN:INTERVENTIONAL']))
             assertThat(db, hasRecord('biomart.bio_data_uid', [bio_data_id: experimentId], [:]))
 
             assertNotNull('Compound load fail', bioCompoundId)
@@ -83,5 +84,31 @@ class MetaDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCas
 
         }
 
+    }
+
+    void testCreateStudyFolder() {
+        withErrorLogging {
+            processor.process(new File(studyDir(studyName, studyId), "MetaDataToUpload").toPath(),
+                    [name: studyName, node: "Test Studies\\${studyName}_${studyId}".toString()])
+        }
+
+        use(SqlMethods) {
+            def experimentId = db.findRecord('biomart.bio_experiment',
+                    accession : studyId)?.'bio_experiment_id'
+            assertNotNull('Experiment not exist', experimentId)
+
+            def bioDataUniqueId = db.findRecord('biomart.bio_data_uid', bio_data_id : experimentId)?.'unique_id'
+            assertNotNull('Data uid not exist', bioDataUniqueId)
+
+            def etlProgramId = db.findRecord('fmapp.fm_folder', folder_name: 'etl-program',
+                    folder_type: 'PROGRAM',  folder_level: 0)?.'folder_id';
+            assertNotNull('Etl program folder not exist', etlProgramId)
+
+            def studyFolderId = db.findRecord('fmapp.fm_folder', folder_name: 'GSE0',
+                    folder_type: 'STUDY',  folder_level: 1, parent_id: etlProgramId)?.'folder_id';
+            assertNotNull('Study folder not exist', studyFolderId)
+
+            assertThat(db, hasRecord('fmapp.fm_folder_association', [folder_id: studyFolderId, object_uid : bioDataUniqueId], [:]))
+        }
     }
 }
