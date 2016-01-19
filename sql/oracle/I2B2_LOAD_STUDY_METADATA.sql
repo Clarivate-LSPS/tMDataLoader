@@ -26,6 +26,8 @@ AS
 	pubmed_id			  varchar2(200);
 	pubmed_title		varchar2(200);
 	tag_path				varchar(400);
+	etl_program_id 	int;
+	study_folder_id int;
 	
 	Type study_compound_rec is record
 	(study_id	varchar2(200)
@@ -88,6 +90,31 @@ where c_hlevel = 0
 order by c_fullname
 */
 
+	-- create etl program if necessary
+	begin
+		select folder_id
+		  into etl_program_id
+		  from fmapp.fm_folder
+		 where folder_name = 'etl-program'
+		   and folder_type = 'PROGRAM';
+		exception
+		when no_data_found then
+		etl_program_id := null;
+	end;
+
+	if (etl_program_id is null) then
+		insert into fmapp.fm_folder (folder_id, folder_name, folder_level, folder_type, active_ind, description)
+			 values (fmapp.seq_fm_id.nextval,'etl-program', 0, 'PROGRAM', 1,
+						'Special program. Create automatically when tmDataloader load metadata for study. ' ||
+						'Necessary for support study filters')
+		  returning folder_id
+			   into etl_program_id ;
+
+		stepCt := stepCt + 1;
+		cz_write_audit(jobId,databaseName,procedureName,'Create etl program',SQL%ROWCOUNT,stepCt,'Done');
+		commit;
+	end if;
+
 	--	Update existing bio_experiment data
 	
 	update biomart.bio_experiment b
@@ -99,7 +126,8 @@ order by c_fullname
 		,overall_design) =
 	    (select m.title
 		       ,m.description
-			   ,m.design
+			   ,case when m.design is null then null
+				else 'STUDY_DESIGN:' || upper(m.design) end as design
 			   ,decode(is_date(m.completion_date,'YYYYMMDD'),1,null,to_date(m.completion_date,'YYYYMMDD'))
 			   ,m.primary_investigator
 			   ,substr(decode(m.primary_end_points,null,null,'N/A',null,m.primary_end_points) ||
@@ -117,76 +145,6 @@ order by c_fullname
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Updated trial data in BIOMART bio_experiment',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
-	
-	--	Update existing bio_clinical_trial data only for true Clinical Trials or JnJ Experimental Medicine Studies
-
-	/*update biomart.bio_clinical_trial b
-	set (study_owner
-	    ,study_phase
-		,blinding_procedure
-		,studytype
-		,duration_of_study_weeks
-		,number_of_patients
-		,number_of_sites
-		,route_of_administration
-		,dosing_regimen
-		,group_assignment
-		,type_of_control
-		,completion_date
-		,primary_end_points
-		,secondary_end_points
-		,inclusion_criteria
-		,exclusion_criteria
-		,subjects
-		,gender_restriction_mfb
-		,min_age
-		,max_age
-		,secondary_ids
-		,development_partner
-		,main_findings
-		,geo_platform
-		--,platform_name
-		,search_area
-        ) =
-		(select m.study_owner
-			   ,m.study_phase
-			   ,m.blinding_procedure
-			   ,m.studytype
-			   ,decode(is_number(m.duration_of_study_weeks),1,null,to_number(m.duration_of_study_weeks))
-			   ,decode(is_number(m.number_of_patients),1,null,to_number(m.number_of_patients))
-			   ,decode(is_number(m.number_of_sites),1,null,to_number(m.number_of_sites))
-			   ,m.route_of_administration
-			   ,m.dosing_regimen
-			   ,m.group_assignment
-			   ,m.type_of_control
-			   ,decode(is_date(m.completion_date,'YYYYMMDD'),1,null,to_date(m.completion_date,'YYYYMMDD'))
-			   ,m.primary_end_points
-			   ,m.secondary_end_points
-			   ,m.inclusion_criteria
-			   ,m.exclusion_criteria
-			   ,m.subjects
-			   ,m.gender_restriction_mfb
-			   ,decode(is_number(m.min_age),1,null,to_number(m.min_age))
-			   ,decode(is_number(m.max_age),1,null,to_number(m.max_age))
-			   ,m.secondary_ids
-			   ,m.development_partner
-			   ,m.main_findings
-			   ,m.geo_platform
-			   --,m.platform_name
-			   ,m.search_area
-		 from lt_src_study_metadata m
-		 where m.study_id is not null
-		   and b.trial_number = m.study_id
-		)
-	where exists
-	     (select 1 from lt_src_study_metadata x
-		  where b.trial_number = x.study_id
-		    and x.study_id is not null
-		 )
-	;
-	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Updated trial data in BIOMART bio_clinical_trial',SQL%ROWCOUNT,stepCt,'Done');
-	commit;*/
 	
 	--	Add new trial data to bio_experiment
 	
@@ -206,13 +164,14 @@ order by c_fullname
 	select 'Experiment'
 	      ,m.title
 		  ,m.description
-		  ,m.design
+		  ,case when m.design is null then null
+		   else 'STUDY_DESIGN:' || upper(m.design) end as design
 		  ,decode(is_date(m.start_date,'YYYYMMDD'),1,null,to_date(m.start_date,'YYYYMMDD'))
 		  ,decode(is_date(m.completion_date,'YYYYMMDD'),1,null,to_date(m.completion_date,'YYYYMMDD'))
 		  ,m.primary_investigator
 		  ,m.contact_field
-		  ,M.STUDY_ID
 		  ,'METADATA:' || M.STUDY_ID -- commented by Eugr below
+			,m.status
 		  ,NULL/*decode(m.primary_end_points,null,null,'N/A',null,replace(m.primary_end_points,'"',null)) ||
 					    decode(m.inclusion_criteria,null,null,'N/A',null,' Inclusion Criteria: ' || replace(m.inclusion_criteria,'"',null)) ||
 						decode(m.exclusion_criteria,null,null,'N/A',null,' Exclusion Criteria: ' || replace(m.exclusion_criteria,'"',null))*/
@@ -227,77 +186,6 @@ order by c_fullname
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Inserted trial data in BIOMART bio_experiment',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
-		
-	--	Add new trial data to bio_clinical_trial
-	
-	/*insert into biomart.bio_clinical_trial
-	(trial_number
-	,study_owner
-	,study_phase
-	,blinding_procedure
-	,studytype
-	,duration_of_study_weeks
-	,number_of_patients
-	,number_of_sites
-	,route_of_administration
-	,dosing_regimen
-	,group_assignment
-	,type_of_control
-	,completion_date
-	,primary_end_points
-	,secondary_end_points
-	,inclusion_criteria
-	,exclusion_criteria
-	,subjects
-	,gender_restriction_mfb
-	,min_age
-	,max_age
-	,secondary_ids
-	,bio_experiment_id
-	,development_partner
-	,main_findings
-	,geo_platform
-	--,platform_name
-	,search_area
-	)
-	select m.study_id
-          ,m.study_owner
-          ,m.study_phase
-          ,m.blinding_procedure
-          ,m.studytype
-		  ,decode(is_number(m.duration_of_study_weeks),1,null,to_number(m.duration_of_study_weeks))
-		  ,decode(is_number(m.number_of_patients),1,null,to_number(m.number_of_patients))
-		  ,decode(is_number(m.number_of_sites),1,null,to_number(m.number_of_sites))
-          ,m.route_of_administration
-          ,m.dosing_regimen
-          ,m.group_assignment
-          ,m.type_of_control
-          ,decode(is_date(m.completion_date,'YYYYMMDD'),1,null,to_date(m.completion_date,'YYYYMMDD'))
-          ,m.primary_end_points
-          ,m.secondary_end_points
-          ,m.inclusion_criteria
-          ,m.exclusion_criteria
-          ,m.subjects
-          ,m.gender_restriction_mfb
-		  ,decode(is_number(m.min_age),1,null,to_number(m.min_age))
-		  ,decode(is_number(m.max_age),1,null,to_number(m.max_age))
-          ,m.secondary_ids
-          ,b.bio_experiment_id
-		  ,m.development_partner
-		  ,m.main_findings
-		  ,m.geo_platform
-		  --,m.platform_name
-		  ,m.search_area
-	from lt_src_study_metadata m
-	    ,biomart.bio_experiment b
-	where m.study_id is not null
-	  and m.study_id = b.accession
-	  and not exists
-	      (select 1 from biomart.bio_clinical_trial x
-		   where m.study_id = x.trial_number);
-	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Inserted trial data in BIOMART bio_clinical_trial',SQL%ROWCOUNT,stepCt,'Done');
-	commit;*/
 	
 	--	Insert new trial into bio_data_uid
 	
@@ -320,6 +208,28 @@ order by c_fullname
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Inserted trial data into BIOMART bio_data_uid',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
+	
+	-- Create study folder
+	for bio_experiment_rec in (select dat.unique_id, exp.title, exp.description
+								 from biomart.bio_experiment exp, lt_src_study_metadata met, biomart.bio_data_uid dat
+								where exp.accession = met.study_id
+								  and exp.bio_experiment_id = dat.bio_data_id
+								  and not exists (select 1
+													from fmapp.fm_folder_association
+												   where object_uid = dat.unique_id)) loop
+
+		insert into fmapp.fm_folder (folder_id, folder_name, folder_level, folder_type, active_ind, parent_id, description)
+			 values (fmapp.seq_fm_id.nextval, bio_experiment_rec.title, 1, 'STUDY', 1, etl_program_id, bio_experiment_rec.description)
+		  returning folder_id
+			   into study_folder_id;
+
+		insert into fmapp.fm_folder_association (folder_id, object_uid, object_type)
+			 values (study_folder_id, bio_experiment_rec.unique_id, 'org.transmart.biomart.Experiment');
+
+		stepCt := stepCt + 1;
+		cz_write_audit(jobId,databaseName,procedureName,'Add study folder:' || bio_experiment_rec.title,SQL%ROWCOUNT,stepCt,'Done');
+		commit;
+	end loop;
 
 	--	delete existing compound data for study, compound list may change
 	
