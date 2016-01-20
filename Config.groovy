@@ -9,7 +9,7 @@ db.password = 'tm_cz'
 
 // Comment or delete the following two lines for PostgreSQL:
 
-db.jdbcConnectionString = "jdbc:oracle:thin:@${db.hostname}:${db.port}:${db.sid}"
+db.jdbcConnectionString = "jdbc:oracle:thin:@//${db.hostname}:${db.port}/${db.sid}"
 db.jdbcDriver = 'oracle.jdbc.driver.OracleDriver'
 
 // Uncomment the following 3 lines for PostgreSQL:
