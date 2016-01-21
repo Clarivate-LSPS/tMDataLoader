@@ -1,7 +1,7 @@
 DO $$
 begin
 if current_schema() = 'public' then
-  set SEARCH_PATH = tm_dataloader, tm_cz, tm_lz, tm_wz, i2b2demodata, i2b2metadata, deapp, pg_temp, fmapp;
+  set SEARCH_PATH = tm_dataloader, tm_cz, tm_lz, tm_wz, i2b2demodata, i2b2metadata, deapp, fmapp, amapp, pg_temp;
 end if;
 end;
 $$;

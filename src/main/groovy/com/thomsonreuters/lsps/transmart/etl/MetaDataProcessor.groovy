@@ -101,11 +101,11 @@ class MetaDataProcessor extends DataProcessor {
 							NULL,
 							NULL,
 							NULL,
+							?,
 							NULL,
+							?,
 							NULL,
-							NULL,
-							NULL,
-							NULL,
+							?,
 							?,
 							?,
 							?,
@@ -158,6 +158,9 @@ class MetaDataProcessor extends DataProcessor {
 											else if (val ==~ /(?i)Study design/) header_mappings['study_design'] = i
 											else if (val ==~ /(?i)Completion date/) header_mappings['completion_date'] = i
 											else if (val ==~ /(?i)PI/) header_mappings['pi'] = i
+											else if (val ==~ /(?i)Institution/) header_mappings['institution'] = i
+											else if (val ==~ /(?i)Biomarker Type/) header_mappings['biomarker_type'] = i
+											else if (val ==~ /(?i)Access Type/) header_mappings['access_type'] = i
 											else if (val ==~ /(?i)Study Owner/) header_mappings['study_owner'] = i
 											else if (val ==~ /(?i)Study Phase/) header_mappings['study_phase'] = i
 											else if (val ==~ /(?i)Blinding Procedure/) header_mappings['blinding_procedure'] = i
@@ -230,6 +233,9 @@ class MetaDataProcessor extends DataProcessor {
 									getColumnValue(cols, header_mappings, 'study_design'),
 									getColumnValue(cols, header_mappings, 'completion_date'),
 									getColumnValue(cols, header_mappings, 'pi'),
+									getColumnValue(cols, header_mappings, 'institution'),
+									getColumnValue(cols, header_mappings, 'biomarker_type'),
+									getColumnValue(cols, header_mappings, 'access_type'),
 									getColumnValue(cols, header_mappings, 'study_owner'),
 									getColumnValue(cols, header_mappings, 'study_phase'),
 									getColumnValue(cols, header_mappings, 'blinding_procedure'),

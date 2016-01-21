@@ -54,7 +54,7 @@ class Database {
     }
 
     private String getSearchPath() {
-        def schemas = 'tm_cz, tm_lz, tm_wz, i2b2demodata, i2b2metadata, deapp, pg_temp, fmapp'
+        def schemas = 'tm_cz, tm_lz, tm_wz, i2b2demodata, i2b2metadata, deapp,fmapp, amapp, pg_temp'
         if (controlSchema.toLowerCase() != 'tm_cz') {
             schemas = "${controlSchema}, ${schemas}"
         }
