@@ -1,0 +1,4 @@
+filename	category_cd	col_nbr	data_label
+custom_test.txt		1	STUDY_ID
+custom_test.txt		2	SUBJ_ID
+custom_test.txt	Subjects	4	Node

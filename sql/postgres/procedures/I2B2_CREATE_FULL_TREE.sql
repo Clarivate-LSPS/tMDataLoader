@@ -21,7 +21,7 @@ BEGIN
 	INSERT INTO I2B2_LOAD_PATH(PATH, RECORD_ID, PATH_LEN)
 	SELECT P, MIN(RECORD_ID), LENGTH(P) FROM
 	(
-		SELECT  LOWER(SUBSTR(p.c_fullname, LENGTH(path), LENGTH(p.c_fullname) - LENGTH(path) + 1)) as P, p.RECORD_ID, 0 as PATH_LEN
+		SELECT  SUBSTR(p.c_fullname, LENGTH(path), LENGTH(p.c_fullname) - LENGTH(path) + 1) as P, p.RECORD_ID, 0 as PATH_LEN
 		from i2b2metadata.i2b2 p
 		where p.c_fullname like path || '%' escape '`'
 	) t
