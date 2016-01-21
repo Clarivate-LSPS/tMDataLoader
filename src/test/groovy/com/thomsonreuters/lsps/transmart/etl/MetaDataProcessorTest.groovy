@@ -19,6 +19,7 @@ class MetaDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCas
     @Override
     void setUp() {
         ConfigAwareTestCase.super.setUp()
+        Study.deleteStudyMetaDataById(studyId, sql)
         Study.deleteById(config, studyId)
         Fixtures.clinicalData.load(config)
         runScript('i2b2_load_study_metadata.sql')
@@ -54,9 +55,12 @@ class MetaDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCas
                     location: 'http://www.ncbi.nlm.nih.gov/', active_y_n: 'Y',
                     repository_type: 'NCBI', location_type: 'URL')?.bio_content_repo_id
 
-
             assertNotNull('Experiment not exist' ,experimentId)
-            assertThat(db, hasRecord('biomart.bio_experiment', [bio_experiment_id : experimentId], [design : 'STUDY_DESIGN:INTERVENTIONAL']))
+            assertThat(db, hasRecord('biomart.bio_experiment', [bio_experiment_id : experimentId],
+                    [design : 'STUDY_DESIGN:INTERVENTIONAL',
+                     biomarker_type: 'STUDY_BIOMARKER_TYPE:EFFICACY_BIOMARKER',
+                     access_type : 'STUDY_ACCESS_TYPE:COMMERCIAL',
+                     institution : 'STUDY_INSTITUTION:TEST_INSTITUTION']))
             assertThat(db, hasRecord('biomart.bio_data_uid', [bio_data_id: experimentId], [:]))
 
             assertNotNull('Compound load fail', bioCompoundId)
@@ -107,6 +111,9 @@ class MetaDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCas
             def studyFolderId = db.findRecord('fmapp.fm_folder', folder_name: 'GSE0',
                     folder_type: 'STUDY',  folder_level: 1, parent_id: etlProgramId)?.'folder_id';
             assertNotNull('Study folder not exist', studyFolderId)
+
+            assertThat(db, hasRecord('amapp.am_tag_association', [subject_uid : "FOL:${studyFolderId}"],
+                    [object_uid: 'STUDY_PHASE:DEVELOPMENT_CANDIDATE']))
 
             assertThat(db, hasRecord('fmapp.fm_folder_association', [folder_id: studyFolderId, object_uid : bioDataUniqueId], [:]))
         }
