@@ -28,6 +28,7 @@ AS
 	tag_path				varchar(400);
 	etl_program_id 	int;
 	study_folder_id int;
+	study_phase_tag_item_id int;
 	
 	Type study_compound_rec is record
 	(study_id	varchar2(200)
@@ -123,7 +124,10 @@ order by c_fullname
 		,design
 		,completion_date
 		,primary_investigator
-		,overall_design) =
+		,overall_design
+		,institution
+		,biomarker_type
+		,access_type) =
 	    (select m.title
 		       ,m.description
 			   ,case when m.design is null then null
@@ -133,6 +137,15 @@ order by c_fullname
 			   ,substr(decode(m.primary_end_points,null,null,'N/A',null,m.primary_end_points) ||
 					    decode(m.inclusion_criteria,null,null,'N/A',null,' Inclusion Criteria: ' || m.inclusion_criteria) ||
 						decode(m.exclusion_criteria,null,null,'N/A',null,' Exclusion Criteria: ' || m.exclusion_criteria),1,2000)
+				,case when m.institution is null then null
+				 else 'STUDY_INSTITUTION:' ||
+							upper(replace(m.institution, ' ', '_')) end as institution
+				,case when m.biomarker_type is null then null
+				 else 'STUDY_BIOMARKER_TYPE:' ||
+							upper(replace(m.biomarker_type, ' ', '_')) end as biomarker_type
+				,case when m.access_type is null then null
+				 else 'STUDY_ACCESS_TYPE:' ||
+							upper(replace(m.access_type, ' ', '_')) end as access_type
 		 from lt_src_study_metadata m
 		 where m.study_id is not null
 		   and b.accession = m.study_id)
@@ -160,7 +173,10 @@ order by c_fullname
 	,etl_id
 	,status
 	,overall_design
-	,accession)
+	,accession
+	,institution
+	,biomarker_type
+	,access_type)
 	select 'Experiment'
 	      ,m.title
 		  ,m.description
@@ -171,11 +187,20 @@ order by c_fullname
 		  ,m.primary_investigator
 		  ,m.contact_field
 		  ,'METADATA:' || M.STUDY_ID -- commented by Eugr below
-			,m.status
+		  ,m.status
 		  ,NULL/*decode(m.primary_end_points,null,null,'N/A',null,replace(m.primary_end_points,'"',null)) ||
 					    decode(m.inclusion_criteria,null,null,'N/A',null,' Inclusion Criteria: ' || replace(m.inclusion_criteria,'"',null)) ||
 						decode(m.exclusion_criteria,null,null,'N/A',null,' Exclusion Criteria: ' || replace(m.exclusion_criteria,'"',null))*/
 		  ,m.study_id
+		  ,case when m.institution is null then null
+		   else 'STUDY_INSTITUTION:' || 
+					upper(replace(m.institution, ' ', '_')) end as institution
+		  ,case when m.biomarker_type is null then null
+		   else 'STUDY_BIOMARKER_TYPE:' ||
+					upper(replace(m.biomarker_type, ' ', '_')) end as biomarker_type
+		  ,case when m.access_type is null then null
+		   else 'STUDY_ACCESS_TYPE:' ||
+					upper(replace(m.access_type, ' ', '_')) end as access_type
 	from lt_src_study_metadata m
 	where m.study_id is not null
 	  and not exists
@@ -210,7 +235,7 @@ order by c_fullname
 	commit;
 	
 	-- Create study folder
-	for bio_experiment_rec in (select dat.unique_id, exp.title, exp.description
+	for bio_experiment_rec in (select dat.unique_id, exp.title, exp.description, met.study_phase
 								 from biomart.bio_experiment exp, lt_src_study_metadata met, biomart.bio_data_uid dat
 								where exp.accession = met.study_id
 								  and exp.bio_experiment_id = dat.bio_data_id
@@ -225,6 +250,36 @@ order by c_fullname
 
 		insert into fmapp.fm_folder_association (folder_id, object_uid, object_type)
 			 values (study_folder_id, bio_experiment_rec.unique_id, 'org.transmart.biomart.Experiment');
+
+		begin
+			select tag_item_id
+			  into study_phase_tag_item_id
+			  from amapp.am_tag_item
+			 where code_type_name = 'STUDY_PHASE';
+			exception
+			when no_data_found then
+			study_phase_tag_item_id := null;
+		end;
+
+		if (bio_experiment_rec.study_phase is not null and study_phase_tag_item_id is not null) then
+			select count(object_uid)
+			  into lcount
+			  from amapp.am_tag_association
+			 where subject_uid = 'FOL:' || study_folder_id
+			   and tag_item_id = study_phase_tag_item_id;
+
+			if (lcount = 0) then
+				insert into amapp.am_tag_association (subject_uid, object_uid, object_type, tag_item_id)
+					 values ('FOL:' || study_folder_id, 
+							'STUDY_PHASE:' || upper(replace(bio_experiment_rec.study_phase, ' ', '_')), 
+							'BIO_CONCEPT_CODE', study_phase_tag_item_id);
+			else
+				update amapp.am_tag_association
+				   set object_uid =  'STUDY_PHASE:' || upper(replace(bio_experiment_rec.study_phase, ' ', '_'))
+				 where subject_uid = 'FOL:' || study_folder_id
+				   and tag_item_id = study_phase_tag_item_id;
+			end if;
+		end if;
 
 		stepCt := stepCt + 1;
 		cz_write_audit(jobId,databaseName,procedureName,'Add study folder:' || bio_experiment_rec.title,SQL%ROWCOUNT,stepCt,'Done');

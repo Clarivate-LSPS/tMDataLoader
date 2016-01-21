@@ -44,6 +44,7 @@ declare
 	tag_path				varchar(400);
 	etl_program_id 	int;
 	study_folder_id int;
+	study_phase_tag_item_id int;
 
 	study_compound_rec	record;
 	study_disease_rec	record;
@@ -81,8 +82,7 @@ BEGIN
 		begin
 			insert into fmapp.fm_folder (folder_id, folder_name, folder_level, folder_type, active_ind, description)
 				 values (nextval('FMAPP.SEQ_FM_ID'),'etl-program', 0, 'PROGRAM', true,
-									 'Special program. Create automatically when tmDataloader load metadata for study. ' ||
-									 'Necessary for support study filters')
+				'Special program. Create automatically when tmDataloader load metadata for study. Necessary for support study filters')
 			  returning folder_id
 				   into etl_program_id ;
 			exception
@@ -106,17 +106,26 @@ BEGIN
 									 ,m.title
 									 ,m.description
 									 ,case when m.design is null then null
-										else 'STUDY_DESIGN:' || upper(m.design) end as design
+									  else 'STUDY_DESIGN:' ||
+										upper(regexp_replace(m.design, ' ', '_', 'g')) end as design
 									 ,case when is_date(m.start_date,'YYYYMMDD') = 1 then null
 										else to_date(m.start_date,'YYYYMMDD') end as start_date
 									 ,case when is_date(m.completion_date,'YYYYMMDD') = 1 then null
 										else to_date(m.completion_date,'YYYYMMDD') end as completion_date
 									 ,coalesce(m.primary_investigator,m.study_owner) as primary_investigator
 									 ,m.overall_design
-									 ,m.institution
+									 ,case when m.institution is null then null
+									  else 'STUDY_INSTITUTION:' ||
+										upper(regexp_replace(m.institution, ' ', '_', 'g')) end as institution
 									 ,case when m.country is null then null
-								 		else 'COUNTRY:' || upper(m.country) end as country
-								 from lt_src_study_metadata m
+								 	  else 'COUNTRY:' || upper(m.country) end as country
+									 ,case when m.biomarker_type is null then null
+									  else 'STUDY_BIOMARKER_TYPE:' ||
+										upper(regexp_replace(m.biomarker_type, ' ', '_', 'g')) end as biomarker_type
+									 ,case when m.access_type is null then null
+									  else 'STUDY_ACCESS_TYPE:' ||
+								 		upper(regexp_replace(m.access_type, ' ', '_', 'g')) end as access_type
+    from lt_src_study_metadata m
 								 where m.study_id is not null)
 		update biomart.bio_experiment b
 		set title=upd.title
@@ -128,6 +137,8 @@ BEGIN
 			,overall_design=upd.overall_design
 			,institution=upd.institution
 			,country=upd.country
+			,biomarker_type = upd.biomarker_type
+			,access_type = upd.access_type
 		from upd
 		where b.accession = upd.study_id
 					and b.etl_id = 'METADATA:' || upd.study_id;
@@ -162,12 +173,15 @@ BEGIN
 			,overall_design
 			,accession
 			,country
-			,institution)
+			,institution
+			,access_type
+			,biomarker_type)
 			select 'Experiment'
 				,m.title
 				,m.description
 				,case when m.design is null then null
-         else 'STUDY_DESIGN:' || upper(m.design) end as design
+				 else 'STUDY_DESIGN:' ||
+					upper(regexp_replace(m.design, ' ', '_', 'g')) end as design
 				,case when is_date(m.start_date,'YYYYMMDD') = 1 then null
 				 else to_date(m.start_date,'YYYYMMDD') end as start_date
 				,case when is_date(m.completion_date,'YYYYMMDD') = 1 then null
@@ -179,8 +193,16 @@ BEGIN
 				,m.overall_design
 				,m.study_id
 				,case when m.country is null then null
-         else 'COUNTRY:' || upper(m.country) end as country
-				,m.institution
+				 else 'COUNTRY:' || upper(m.country) end as country
+				,case when m.institution is null then null
+				 else 'STUDY_INSTITUTION:' ||
+					upper(regexp_replace(m.institution, ' ', '_', 'g')) end as institution
+				,case when m.access_type is null then null
+				 else 'STUDY_ACCESS_TYPE:' ||
+					upper(regexp_replace(m.access_type, ' ', '_', 'g')) end as access_type
+				,case when m.biomarker_type is null then null
+				 else 'STUDY_BIOMARKER_TYPE:' ||
+					upper(regexp_replace(m.biomarker_type, ' ', '_', 'g')) end as biomarker_type
 			from lt_src_study_metadata m
 			where m.study_id is not null
 						and not exists
@@ -235,7 +257,7 @@ BEGIN
 
 	-- Create study folder
 	begin
-		for bio_experiment_rec in (select dat.unique_id, exp.title, exp.description
+		for bio_experiment_rec in (select dat.unique_id, exp.title, exp.description, met.study_phase
 									 from biomart.bio_experiment exp, lt_src_study_metadata met, biomart.bio_data_uid dat
 									where exp.accession = met.study_id
 									  and exp.bio_experiment_id = dat.bio_data_id
@@ -250,6 +272,31 @@ BEGIN
 
 			insert into fmapp.fm_folder_association (folder_id, object_uid, object_type)
 				 values (study_folder_id, bio_experiment_rec.unique_id, 'org.transmart.biomart.Experiment');
+
+			select tag_item_id
+			  into study_phase_tag_item_id
+			  from amapp.am_tag_item
+			 where code_type_name = 'STUDY_PHASE';
+
+			if (bio_experiment_rec.study_phase is not null and study_phase_tag_item_id is not null) then
+				select count(object_uid)
+				  into lcount
+				  from amapp.am_tag_association
+				 where subject_uid = 'FOL:' || study_folder_id
+				   and tag_item_id = study_phase_tag_item_id;
+
+				if (lcount = 0) then
+					insert into amapp.am_tag_association (subject_uid, object_uid, object_type, tag_item_id)
+					   	 values ('FOL:' || study_folder_id, 
+								'STUDY_PHASE:' || upper(regexp_replace(bio_experiment_rec.study_phase, ' ', '_', 'g')),
+								'BIO_CONCEPT_CODE', study_phase_tag_item_id);
+				else
+					update amapp.am_tag_association
+					   set object_uid =  'STUDY_PHASE:' || upper(regexp_replace(bio_experiment_rec.study_phase, ' ', '_', 'g'))
+					 where subject_uid = 'FOL:' || study_folder_id
+					   and tag_item_id = study_phase_tag_item_id;
+				end if;
+			end if;
 
 			stepCt := stepCt + 1;
 			select cz_write_audit(jobId,databaseName,procedureName,'Add study folder:' || bio_experiment_rec.title,rowCt,stepCt,'Done') into rtnCd;
