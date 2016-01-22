@@ -594,4 +594,19 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         then:
         thrown(DataProcessingException)
     }
+
+    def 'it should load values with upper and lower case'(){
+        setup:
+        Study.deleteById(config, studyId)
+        def customClinicalData = Fixtures.getClinicalData('Test Study With Upper and Lower Case', studyId)
+
+        def result = customClinicalData.load(config)
+
+        expect:
+        String conceptPath = '\\Test Studies\\Test Study With Upper and Lower Case\\Subjects\\Node\\'
+        assertThat("Clinical data loading shouldn't fail", result, equalTo(true))
+        assertThat(db, hasNode("${conceptPath}abilify\\"))
+        assertThat(db, hasNode("${conceptPath}Abilify\\"))
+        assertThat(db, hasNode("${conceptPath}ABILIFY\\"))
+    }
 }
