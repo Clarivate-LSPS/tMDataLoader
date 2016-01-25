@@ -97,6 +97,7 @@ Basically, the first level of the directory defines the top category in the Data
 The last level (before Clinical/Expression folders) defines the study name that will be used in the tree. All folders in between define intermediate folders in the Dataset Explorer tree.
 
 Please, refer to the data format description for further information.
+Please, don't use Non UTF-8 characters in the headers of file or data values
 
 USING TOOL
 ==========
