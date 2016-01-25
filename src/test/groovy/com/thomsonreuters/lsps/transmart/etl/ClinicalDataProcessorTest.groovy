@@ -609,4 +609,13 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat(db, hasNode("${conceptPath}Abilify\\"))
         assertThat(db, hasNode("${conceptPath}ABILIFY\\"))
     }
+
+    def 'it should validate load values with non-utf8 symbols'(){
+        when:
+        def nonUTF8ClinicalData = Fixtures.getClinicalData('Test Study With Non-UTF8 symbols', studyId)
+        nonUTF8ClinicalData.load(config)
+
+        then:
+        thrown(DataProcessingException)
+    }
 }
