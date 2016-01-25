@@ -146,8 +146,8 @@ class CsvLikeFile implements PrepareIfRequired {
                     _processEntry(makeEntry(values))
                 }
             }
-            catch (Exception e){
-                throw new DataProcessingException("Line [${lineNumberProducer()}] contains Non UTF-8 symbols")
+            catch (IOException e){
+                throw new DataProcessingException("Error while processing line [${lineNumberProducer()}].").initCause(e)
             }
         }
     }
