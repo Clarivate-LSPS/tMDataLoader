@@ -1,0 +1,22 @@
+filename	category_cd	col_nbr	data_label
+ERROR-ExtRow.txt		1	STUDY_ID
+ERROR-ExtRow.txt		2	SUBJ_ID
+ERROR-ExtRow.txt		3	VISIT_NAME
+ERROR-ExtRow.txt	Biomarkers+Protein_Assay	4	Cytokine 1 [pg/mL]
+ERROR-ExtRow.txt	Biomarkers+Protein_Assay	5	Cytokine 2 [pg/mL]
+ERROR-ExtRow.txt	Biomarkers+Protein_Assay	6	Cytokine 3 [ng/mL]
+ERROR-ExtRow.txt	Clinical_Data+Questionnaire+Rating_Scale	7	Sleeping
+ERROR-ExtRow.txt	Clinical_Data+Questionnaire+Score_Sleep	8	Sleep During the Night
+ERROR-ExtRow.txt	Clinical_Data+Questionnaire+Score_Sleep	9	Waking Up Too Early
+ERROR-ExtRow.txt	Clinical_Data+Questionnaire+Score_Sleep	10	Sleeping Too Much
+ERROR-ExtRow.txt	Clinical_Data+Questionnaire+Score_Mood	11	Sad
+ERROR-ExtRow.txt	Clinical_Data+Questionnaire+Score_Mood	12	Mad
+ERROR-ExtRow.txt	Clinical_Data+Questionnaire+Score_Mood	13	Glad
+ERROR-ExtRow.txt	Clinical_Data+Questionnaire+Score_Mood	14	Neither
+ERROR-ExtRow.txt	Clinical_Data+Traumatic_Events	15	Learned about it
+ERROR-ExtRow.txt	Clinical_Data+Traumatic_Events	16	Witnessed it
+ERROR-ExtRow.txt	Clinical_Data+Traumatic_Events	17	Age
+ERROR-ExtRow.txt	Clinical_Data+Questionnaire+IQ	18	Notes
+ERROR-ExtRow.txt	Clinical_Data+Questionnaire+IQ	19	IQ Score
+ERROR-ExtRow.txt	Clinical_Data+Questionnaire+IQ	20	T-Score
+ERROR-ExtRow.txt	Clinical_Data+Questionnaire+IQ	21	Date

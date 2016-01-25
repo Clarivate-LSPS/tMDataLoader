@@ -1,5 +1,6 @@
 package com.thomsonreuters.lsps.transmart.files
 
+import com.thomsonreuters.lsps.transmart.etl.DataProcessingException
 import com.thomsonreuters.lsps.transmart.etl.LogType
 import com.thomsonreuters.lsps.transmart.etl.Logger
 import com.thomsonreuters.lsps.transmart.util.PrepareIfRequired
@@ -46,7 +47,13 @@ class CsvLikeFile implements PrepareIfRequired {
         this.file = file
         this.lineComment = lineComment
         this.allowNonUniqueColumnNames = allowNonUniqueColumnNames
-        this.header = getHeader()
+        try {
+            this.header = getHeader()
+        }
+        catch (IOException e) {
+            logger.log(LogType.ERROR, "Error parsing header of ${file} file.")
+            throw new DataProcessingException("Error parsing header of ${file} file.")
+        }
     }
 
     CSVFormat getFormat() {
@@ -110,32 +117,37 @@ class CsvLikeFile implements PrepareIfRequired {
             def _processEntry = processEntry.maximumNumberOfParameters == 2 ?
                     { processEntry(it, lineNumberProducer()) } :
                     { processEntry(it) }
-            for (CSVRecord record : parser) {
-                String[] values = getRecordValues(record)
-                if (!record.consistent) {
-                    String prefix = "Line [${lineNumberProducer()}] is inconsistent - "
-                    if (values.every { it.isEmpty() }) {
-                        logger.log(LogType.WARNING, prefix + "ignored (all values is empty).")
-                        continue
-                    } else if (values.length > parser.headerMap.size()) {
-                        String[] extraValues = Arrays.copyOfRange(values, parser.headerMap.size(), record.size())
-                        if (extraValues.every { it.isEmpty() }) {
-                            logger.log(LogType.WARNING, prefix + "it has extra empty values.")
+            try {
+                for (CSVRecord record : parser) {
+                    String[] values = getRecordValues(record)
+                    if (!record.consistent) {
+                        String prefix = "Line [${lineNumberProducer()}] is inconsistent - "
+                        if (values.every { it.isEmpty() }) {
+                            logger.log(LogType.WARNING, prefix + "ignored (all values is empty).")
+                            continue
+                        } else if (values.length > parser.headerMap.size()) {
+                            String[] extraValues = Arrays.copyOfRange(values, parser.headerMap.size(), record.size())
+                            if (extraValues.every { it.isEmpty() }) {
+                                logger.log(LogType.WARNING, prefix + "it has extra empty values.")
+                            } else {
+                                throw new RuntimeException(prefix + "it has extra values: ${extraValues} (values: ${record.toMap()})" as String)
+                            }
                         } else {
-                            throw new RuntimeException(prefix + "it has extra values: ${extraValues} (values: ${record.toMap()})" as String)
-                        }
-                    } else {
-                        def missingColumns = parser.headerMap.keySet() - record.toMap().keySet()
-                        if (missingColumns.every { it.isEmpty() }) {
-                            logger.log(LogType.WARNING, prefix + "it has missing values for untitled columns")
-                        } else {
-                            logger.log(LogType.WARNING, prefix + "it has missing values for columns ${missingColumns}, assume they are empty")
-                            values = Arrays.copyOf(values, parser.headerMap.size())
-                            Arrays.fill(values, record.size(), values.length, '')
+                            def missingColumns = parser.headerMap.keySet() - record.toMap().keySet()
+                            if (missingColumns.every { it.isEmpty() }) {
+                                logger.log(LogType.WARNING, prefix + "it has missing values for untitled columns")
+                            } else {
+                                logger.log(LogType.WARNING, prefix + "it has missing values for columns ${missingColumns}, assume they are empty")
+                                values = Arrays.copyOf(values, parser.headerMap.size())
+                                Arrays.fill(values, record.size(), values.length, '')
+                            }
                         }
                     }
+                    _processEntry(makeEntry(values))
                 }
-                _processEntry(makeEntry(values))
+            }
+            catch (Exception e){
+                throw new DataProcessingException("Line [${lineNumberProducer()}] contains Non UTF-8 symbols")
             }
         }
     }
