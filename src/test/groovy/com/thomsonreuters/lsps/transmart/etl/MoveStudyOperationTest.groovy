@@ -5,6 +5,8 @@ import com.thomsonreuters.lsps.transmart.fixtures.Study
 import com.thomsonreuters.lsps.transmart.sql.DatabaseType
 
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasNode
+import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasRecord
+import static org.hamcrest.CoreMatchers.not
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertThat
 
@@ -290,5 +292,15 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
         def newPath = "\\$rootName\\Other Study\\Subjects\\Demographics\\Language\\"
 
         assertFalse("Shouldn't move subfolder outside of study", moveStudy(oldPath, newPath, false))
+    }
+
+    void testItCheckUpdateConceptCounts(){
+        def newPath = "\\$rootName\\Test Study Update\\"
+
+        moveStudy(originalPath, newPath)
+
+        assertNewLevelWasDeleted(originalPath)
+        assertThat(db, not(hasRecord('i2b2demodata.concept_counts',[parent_concept_path:"${originalPath}Subjects\\"], [concept_path: "${originalPath}Subjects\\Demographics\\"])))
+        assertThat(db, hasRecord('i2b2demodata.concept_counts',[parent_concept_path:"${newPath}Subjects\\"], [concept_path: "${newPath}Subjects\\Demographics\\"]))
     }
 }
