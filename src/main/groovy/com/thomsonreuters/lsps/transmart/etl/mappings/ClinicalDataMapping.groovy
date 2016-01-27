@@ -68,6 +68,7 @@ class ClinicalDataMapping {
         logger.log("Mapping file: ${mappingFile.file.fileName}")
 
         List<String> mappingErrors = []
+        List<String> mappingWarnings = []
         Map<String, Integer> columnMapping = (1..<mappingFile.header.length).collectEntries { [mappingFile.header[it], it] }
         int variableTypeIdx = columnMapping.variable_type ?: -1
         int validationRulesIdx = columnMapping.validation_rules ?: -1
@@ -99,7 +100,7 @@ class ClinicalDataMapping {
                     return
                 }
                 if (!parsingInfo.mappedColumns.add(columnIndex)) {
-                    mappingErrors.add("Column index '${columnIndex}' is already mapped in other row for row: ${cols}")
+                    mappingWarnings.add("Column index '${columnIndex}' is already mapped in other row for row: ${cols}")
                     return
                 }
                 if (columnIndex < 0 || (parsingInfo.actualColumnsCount >= 0 && columnIndex > parsingInfo.actualColumnsCount)) {
@@ -152,6 +153,10 @@ class ClinicalDataMapping {
 
         if (mappingErrors.size() > 0) {
             logger.logAndThrow(new DataProcessingException("Mapping file has errors:\n${mappingErrors.join('\n')}"))
+        }
+
+        for (def warning : mappingWarnings) {
+            logger.log(LogType.WARNING, warning)
         }
 
         if (mappings.size() <= 0) {
