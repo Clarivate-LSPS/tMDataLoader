@@ -512,7 +512,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         clinicalData.load(config)
 
         then:
-        thrown(DataProcessingException)
+        noExceptionThrown()
     }
 
     def 'it should validate mapping file with missing column index'() {
