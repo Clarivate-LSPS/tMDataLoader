@@ -251,11 +251,21 @@ AS
     UPDATE i2b2demodata.concept_counts
     SET
     	concept_path=replace(concept_path, old_path, new_path),
-      parent_concept_path=replace(parent_concept_path, old_parent_path, new_parent_path)
+      parent_concept_path=replace(parent_concept_path, old_path, new_path)
     WHERE concept_path LIKE old_path || '%';
     stepCt := stepCt + 1;
     cz_write_audit(jobId, databaseName, procedureName, 'Rename paths in concept_counts', SQL%ROWCOUNT, stepCt, 'Done');
     COMMIT;
+
+    if (old_parent_path <> new_parent_path) then
+      UPDATE i2b2demodata.concept_counts
+      SET
+        parent_concept_path=replace(parent_concept_path, old_parent_path, new_parent_path)
+      WHERE parent_concept_path = old_parent_path || '\';
+      stepCt := stepCt + 1;
+      cz_write_audit(jobId, databaseName, procedureName, 'Update top parent path in concept_counts ', SQL%ROWCOUNT, stepCt, 'Done');
+      COMMIT;
+    end if;
 
     genPath := '';
   FOR x IN r1(new_path)
