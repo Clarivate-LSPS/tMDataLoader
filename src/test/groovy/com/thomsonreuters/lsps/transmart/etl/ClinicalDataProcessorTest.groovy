@@ -512,7 +512,8 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         clinicalData.load(config)
 
         then:
-        noExceptionThrown()
+        assertThat(sql, hasNode("\\Test Studies\\Test Study Summary Statistic\\Vars\\v1\\"))
+        assertThat(sql, hasNode("\\Test Studies\\Test Study Summary Statistic\\Vars\\v2\\"))
     }
 
     def 'it should validate mapping file with missing column index'() {
