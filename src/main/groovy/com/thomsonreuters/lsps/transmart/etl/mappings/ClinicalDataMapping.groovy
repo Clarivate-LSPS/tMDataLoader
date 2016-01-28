@@ -101,7 +101,6 @@ class ClinicalDataMapping {
                 }
                 if (!parsingInfo.mappedColumns.add(columnIndex)) {
                     mappingWarnings.add("Column index '${columnIndex}' is already mapped in other row for row: ${cols}")
-                    return
                 }
                 if (columnIndex < 0 || (parsingInfo.actualColumnsCount >= 0 && columnIndex > parsingInfo.actualColumnsCount)) {
                     mappingErrors.add("Column index '${columnIndex}' is out of bounds of data file columns (1-$parsingInfo.actualColumnsCount) for row: ${cols}")
