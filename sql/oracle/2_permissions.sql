@@ -67,6 +67,10 @@ grant select, insert, update, delete on "&TM_WZ_SCHEMA".wt_subject_microarray_ca
 grant select, insert, update, delete on "&TM_WZ_SCHEMA".wt_subject_microarray_med to "&TM_CZ_SCHEMA";
 grant select, insert, update, delete on "&TM_WZ_SCHEMA".i2b2_load_path_with_count to "&TM_CZ_SCHEMA";
 
+grant select, insert, update, delete on fmapp.fm_folder to "&TM_CZ_SCHEMA";
+grant select, insert, update, delete on fmapp.fm_folder_association to "&TM_CZ_SCHEMA";
+grant select on fmapp.seq_fm_id to "&TM_CZ_SCHEMA";
+
 grant select on sys.all_tables to "&TM_CZ_SCHEMA";
 -- the following 2 grants are done for ETL performance improvements, tm_cz_schema user needs
 -- to truncate tables and alter indexes in another users schema (DEAPP, I2B2DEMODATA)
