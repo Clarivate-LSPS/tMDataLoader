@@ -257,7 +257,9 @@ AS
     cz_write_audit(jobId, databaseName, procedureName, 'Rename paths in concept_counts', SQL%ROWCOUNT, stepCt, 'Done');
     COMMIT;
 
-    if (old_parent_path <> new_parent_path) then
+    select count(*) into rCount from i2b2metadata.i2b2 where c_fullname like old_parent_path || '%' and c_visualattributes = 'FAS';
+
+    if (old_parent_path <> new_parent_path) and (rCount = 1) then
       UPDATE i2b2demodata.concept_counts
       SET
         parent_concept_path=replace(parent_concept_path, old_parent_path, new_parent_path)
@@ -278,9 +280,16 @@ AS
           SELECT count(*) into rCount from i2b2metadata.i2b2_secure where c_fullname = (genPath || '\');
           if rCount = 0 then
             i2b2_add_node(trialId , genPath|| '\', x.res, jobId);
-            I2B2_CREATE_CONCEPT_COUNTS(genPath || '\', jobId, 'Y');
+
+            select count(*) into rCount from i2b2metadata.i2b2
+            where c_fullname like (genPath || '\_%')
+                  and C_VISUALATTRIBUTES = 'FAS';
+
+            if rCount = 0 then
+              I2B2_CREATE_CONCEPT_COUNTS(genPath || '\', jobId, 'Y');
+            end if;
             stepCt := stepCt + 1;
-            cz_write_audit(jobId, databaseName, procedureName, 'i2b2_add_node genPath ' || genPath, 0, stepCt, 'Done');
+            cz_write_audit(jobId, databaseName, procedureName, 'i2b2_add_node genPath ' || genPath || ' new_path ' || new_path || ' rCount ' || rCount, 0, stepCt, 'Done');
           end if;
         end if;
   	END LOOP;

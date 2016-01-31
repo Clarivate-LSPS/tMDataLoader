@@ -17,6 +17,8 @@ AS
     procedure_name VARCHAR2(32);
     l_job_id INTEGER;
     step INTEGER;
+    headNode VARCHAR2(4000);
+    hNode int;
 BEGIN
     IF New_paths.COUNT = 0 THEN
         RETURN;
@@ -62,12 +64,18 @@ BEGIN
     cz_write_audit(l_job_id, current_schema_name, procedure_name, 'Deleted any concepts for path from I2B2DEMODATA concept_dimension', SQL%ROWCOUNT, step, 'Done');
     COMMIT;
     
-    FORALL i IN New_paths.FIRST .. New_paths.LAST
+    FOR i IN New_paths.FIRST .. New_paths.LAST loop
+        select count(c_fullname) into hNode FROM i2b2 WHERE c_fullname = New_paths(i) and c_visualattributes = 'FAS';
+
+        if hNode <> 0 then
+          select c_fullname into headNode FROM i2b2 WHERE c_fullname = New_paths(i) and c_visualattributes = 'FAS';
+        end if;
         DELETE FROM i2b2 WHERE c_fullname = New_paths(i);
+    end loop;
     step := step + 1;
     cz_write_audit(l_job_id, current_schema_name, procedure_name, 'Deleted path from I2B2METADATA i2b2', SQL%ROWCOUNT, step, 'Done');
     COMMIT;
-    
+
     -- Populate node names table
     new_nodes := string_table_t();
     new_nodes.EXTEND(New_paths.LAST);
@@ -92,7 +100,7 @@ BEGIN
         SELECT (LENGTH(concept_path) - NVL(LENGTH(REPLACE(concept_path, '\')), 0)) / LENGTH('\') - 2 + root_level,
                concept_path,
                name_char,
-               'FA',
+               case New_paths(i) when headNode then 'FAS' else 'FA' END,
                'N',
                'CONCEPT_CD',
                'CONCEPT_DIMENSION',

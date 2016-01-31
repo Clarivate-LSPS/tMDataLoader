@@ -13,6 +13,7 @@ AS $BODY$
     errorMessage	CHARACTER VARYING;
     stepCt 			  NUMERIC(18,0);
     rowCt			    NUMERIC(18,0);
+    headNode VARCHAR(4000);
   BEGIN
 
     -- audit init
@@ -46,6 +47,11 @@ AS $BODY$
     DELETE FROM i2b2demodata.CONCEPT_DIMENSION
       WHERE concept_path = ANY(new_paths);
 
+    SELECT c_fullname INTO headNode FROM i2b2metadata.i2b2
+    WHERE c_fullname = ANY(new_paths)
+        AND c_visualattributes = 'FAS';
+
+    select cz_write_audit(jobId, databaseName, procedureName, 'headNode ' || headNode, 0,stepCt, 'Done') into rtnCd;
     DELETE FROM i2b2metadata.I2B2
       WHERE c_fullname = ANY(new_paths);
 
@@ -75,7 +81,7 @@ AS $BODY$
       i2b2_get_hlevel(concept_path),
       CONCEPT_PATH,
       NAME_CHAR,
-      'FA',
+      case CONCEPT_PATH when headNode then 'FAS' else 'FA' END,
       'N',
       'CONCEPT_CD',
       'CONCEPT_DIMENSION',

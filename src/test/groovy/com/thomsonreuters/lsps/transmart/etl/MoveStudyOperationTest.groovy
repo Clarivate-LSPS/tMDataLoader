@@ -29,6 +29,7 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
     public void setUp() {
         ConfigAwareTestCase.super.setUp()
         runScript('I2B2_MOVE_STUDY_BY_PATH.sql')
+        runScript('I2B2_ADD_NODES.sql')
         Study.deleteById(config, clinicalData.studyId)
         Study.deleteById(config, otherClinicalData.studyId)
         clinicalData.load(config, rootName)
@@ -79,13 +80,13 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
         def newPathWoSlash = "\\$rootName\\Test Study Wo Slash"
         def newPath = "\\$rootName\\Test Study With Slash\\"
 
-        moveStudy(oldPathWoSlash, newPathWoSlash)
+        moveStudy(oldPathWoSlash, newPathWoSlash, "$newPathWoSlash\\")
         assertMovement(oldPathWoSlash, newPathWoSlash)
 
         moveStudy(newPathWoSlash, newPath)
         assertMovement(newPathWoSlash, newPath)
 
-        moveStudy(newPath, newPathWoSlash)
+        moveStudy(newPath, newPathWoSlash, "$newPathWoSlash\\")
         assertMovement(newPath, newPathWoSlash)
     }
 
@@ -113,20 +114,20 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
 
     void testMoveStudyWithFewLevels() {
         def path1 = "\\$rootName\\A\\B\\Test Study"
-        moveStudy(originalPath, path1)
+        moveStudy(originalPath, path1, "$path1\\")
         assertMovement(originalPath, path1)
 
         def path2 = "\\$rootName\\A\\B\\${otherClinicalData.studyName}"
         otherClinicalData.load(config, "$rootName\\A\\B\\")
 
         def path3 = "\\$rootName\\A\\C\\Another Test Study"
-        moveStudy(path2, path3)
+        moveStudy(path2, path3, "$path3\\")
 
         assertMovement(path2, path3, "\\$rootName\\A\\B\\")
         assertMovement(path2, path1)
 
         def path4 = "\\$rootName\\A\\C\\Test Study"
-        moveStudy(path1, path4)
+        moveStudy(path1, path4, "$path4\\")
 
         assertMovement(path1, path3)
         assertMovement(path1, path4)
@@ -230,10 +231,22 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
         }
     }
 
-    private boolean moveStudy(oldPath, newPath, boolean checkResult = true) {
+    private boolean moveStudy(oldPath, newPath) {
+        moveStudy(oldPath, newPath, true, newPath)
+    }
+
+    private boolean moveStudy(oldPath, newPath, String headNode) {
+        moveStudy(oldPath, newPath, true, headNode)
+    }
+
+    private boolean moveStudy(oldPath, newPath, boolean checkResult = true, headNode) {
         def result = moveStudyProcessor.process(old_path: oldPath, new_path: newPath)
         if (checkResult) {
             assert result, "Moving study from '${oldPath}' to '$newPath' failed"
+            if (headNode){
+                def c = sql.firstRow('select count(*) from i2b2metadata.i2b2 where c_fullname = ? and c_visualattributes = \'FAS\'', headNode as String)
+                assertEquals("Head node is wrong ($headNode)", 1, c[0] as Integer)
+            }
         }
         result
     }
@@ -242,13 +255,16 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
         def oldPath = "\\$rootName\\$studyName\\Subjects\\Demographics\\Language\\"
         def newPath = "\\$rootName\\$studyName\\Subjects\\Demographics new\\Language\\"
 
-        moveStudy(oldPath, newPath)
+        moveStudy(oldPath, newPath, "\\$rootName\\$studyName\\")
 
         assertMovement(oldPath, newPath, "\\$rootName\\$studyName\\Subjects\\Demographics\\")
         def m = ['Demographics new\\':3,
                  'Demographics new\\Language\\':3,
                  'Demographics new\\Language\\English\\':2,
                  'Demographics new\\Language\\Spain\\':1,
+                 'Demographics\\Sex (SEX)\\Female\\':5,
+                 'Demographics\\Sex (SEX)\\':7,
+                 'Demographics\\Assessment Date\\':9
                 ]
         assertConceptcounts("\\$rootName\\$studyName\\Subjects\\", m)
     }
@@ -257,7 +273,7 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
         def oldPath = "\\$rootName\\$studyName\\Subjects\\Demographics\\Language\\"
         def newPath = "\\$rootName\\$studyName\\Subjects new\\Demographics\\Language\\"
 
-        moveStudy(oldPath, newPath)
+        moveStudy(oldPath, newPath, "\\$rootName\\$studyName\\")
 
         assertMovement(oldPath, newPath, "\\$rootName\\$studyName\\Subjects\\Demographics\\")
         def m = ['Subjects new\\Demographics\\':3,
@@ -274,7 +290,7 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
         def oldPath = "\\$rootName\\$studyName\\Subjects\\Demographics\\Language\\"
         def newPath = "\\$rootName\\$studyName\\Subjects new\\Demographics new\\Language\\"
 
-        moveStudy(oldPath, newPath)
+        moveStudy(oldPath, newPath,"\\$rootName\\$studyName\\")
 
         assertMovement(oldPath, newPath, "\\$rootName\\$studyName\\Subjects\\Demographics\\")
         def m = ['Subjects new\\Demographics new\\':3,
@@ -291,7 +307,7 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
         def oldPath = "\\$rootName\\$studyName\\Subjects\\Demographics\\Language\\"
         def newPath = "\\$rootName\\Other Study\\Subjects\\Demographics\\Language\\"
 
-        assertFalse("Shouldn't move subfolder outside of study", moveStudy(oldPath, newPath, false))
+        assertFalse("Shouldn't move subfolder outside of study", moveStudy(oldPath, newPath, false, ''))
     }
 
     void testItCheckUpdateConceptCounts(){
@@ -302,5 +318,58 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
         assertNewLevelWasDeleted(originalPath)
         assertThat(db, not(hasRecord('i2b2demodata.concept_counts',[parent_concept_path:"${originalPath}Subjects\\"], [concept_path: "${originalPath}Subjects\\Demographics\\"])))
         assertThat(db, hasRecord('i2b2demodata.concept_counts',[parent_concept_path:"${newPath}Subjects\\"], [concept_path: "${newPath}Subjects\\Demographics\\"]))
+    }
+
+    void testItCheckUpdateConceptCountsWIthDoubleChangeTop(){
+        Study.deleteById(config, clinicalData.studyId)
+        def oldPath = "\\${rootName}\\A\\"
+        def newPath = "\\${rootName} Update\\C\\D\\"
+
+        clinicalData.load(config, oldPath)
+
+        moveStudy("${oldPath}Test Study MV\\", newPath)
+
+        assertNewLevelWasDeleted(originalPath)
+        assertThat(db, not(hasRecord('i2b2demodata.concept_counts',[parent_concept_path:"${oldPath}Subjects\\"], [concept_path: "${oldPath}Subjects\\Demographics\\"])))
+        assertThat(db, hasRecord('i2b2demodata.concept_counts',[parent_concept_path:"${newPath}Subjects\\"], [concept_path: "${newPath}Subjects\\Demographics\\"]))
+
+        def checkPath = "\\${rootName} Update\\C\\"
+        assertThat(db, not(hasRecord('i2b2demodata.concept_counts',[concept_path:"${checkPath}"], [:])))
+    }
+
+    void testItCheckUpdateConceptCountsWithAddHierarchyLevel(){
+        Study.deleteById(config, clinicalData.studyId)
+        def oldPath = "\\${rootName}\\A\\"
+        def newPath = "\\${rootName} Update\\C\\D\\E\\"
+
+        clinicalData.load(config, oldPath)
+
+        moveStudy("${oldPath}Test Study MV\\", newPath)
+
+        assertNewLevelWasDeleted(originalPath)
+        assertThat(db, not(hasRecord('i2b2demodata.concept_counts',[parent_concept_path:"${oldPath}Subjects\\"], [concept_path: "${oldPath}Subjects\\Demographics\\"])))
+        assertThat(db, hasRecord('i2b2demodata.concept_counts',[parent_concept_path:"${newPath}Subjects\\"], [concept_path: "${newPath}Subjects\\Demographics\\"]))
+        assertThat(db, hasRecord('i2b2demodata.concept_counts',[parent_concept_path:"${newPath}Subjects\\"], [concept_path: "${newPath}Subjects\\Demographics\\"]))
+
+        def checkPath = "\\${rootName} Update\\C\\D\\"
+        assertThat(db, not(hasRecord('i2b2demodata.concept_counts',[concept_path:"${checkPath}"], [:])))
+    }
+
+    void testItCheckUpdateConceptCountsWithRemoveHierarchyLevel(){
+        Study.deleteById(config, clinicalData.studyId)
+        def oldPath = "\\${rootName}\\A\\B\\C\\"
+        def newPath = "\\${rootName}\\A\\B\\Test Study MV\\"
+
+        clinicalData.load(config, oldPath)
+
+        moveStudy("${oldPath}Test Study MV\\", newPath)
+
+        assertNewLevelWasDeleted(originalPath)
+        assertThat(db, not(hasRecord('i2b2demodata.concept_counts',[parent_concept_path:"${oldPath}Subjects\\"], [concept_path: "${oldPath}Subjects\\Demographics\\"])))
+        assertThat(db, hasRecord('i2b2demodata.concept_counts',[parent_concept_path:"${newPath}Subjects\\"], [concept_path: "${newPath}Subjects\\Demographics\\"]))
+        assertThat(db, hasRecord('i2b2demodata.concept_counts',[parent_concept_path:"${newPath}Subjects\\"], [concept_path: "${newPath}Subjects\\Demographics\\"]))
+
+        def checkPath = "\\${rootName} Update\\C\\D\\"
+        assertThat(db, not(hasRecord('i2b2demodata.concept_counts',[concept_path:"${checkPath}"], [:])))
     }
 }
