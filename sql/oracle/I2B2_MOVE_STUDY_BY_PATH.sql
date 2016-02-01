@@ -294,6 +294,26 @@ AS
         end if;
   	END LOOP;
 
+    /*Checked old path if path isn't head node*/
+    select count(*) into rCount from i2b2metadata.i2b2 where c_fullname = old_path and c_visualattributes = 'FAS';
+    if (rCount = 0) then
+      genPath := '';
+      FOR x IN r1(old_path) LOOP
+        genPath := concat(concat(genPath, '\'), x.res);
+
+        select count(*) into rCount from i2b2metadata.i2b2
+          where c_fullname like (genPath || '\_%')
+                and C_VISUALATTRIBUTES = 'FAS';
+
+        if (rCount = 0) then
+          I2B2_CREATE_CONCEPT_COUNTS(genPath || '\', jobId, 'Y');
+        end if;
+        stepCt := stepCt + 1;
+        cz_write_audit(jobId, databaseName, procedureName, 'Old path rebuild with' || genPath, 0, stepCt, 'Done');
+        exit when rCount = 0;
+      END LOOP;
+    end if;
+
     UPDATE i2b2metadata.i2b2
     SET C_HLEVEL = (length(C_FULLNAME) - nvl(length(replace(C_FULLNAME, '\')), 0)) / length('\') - 2
     WHERE c_fullname LIKE new_path || '%';
