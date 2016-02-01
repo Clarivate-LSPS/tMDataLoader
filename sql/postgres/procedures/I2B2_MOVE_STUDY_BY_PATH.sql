@@ -48,6 +48,7 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
     new_paths               TEXT[];
     old_paths               TEXT[];
     is_sub_node							BOOLEAN;
+    headNode VARCHAR(4000);
 
   BEGIN
 
@@ -148,6 +149,28 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
       select cz_error_handler (jobID, procedureName, '-1', 'Application raised error') into rtnCd;
       select cz_end_audit (jobID, 'FAIL') into rtnCd;
       return -16;
+    END IF;
+
+    IF is_sub_node THEN
+      genPath := '';
+      FOR x IN select unnest(string_to_array(old_path,'\',''))
+      LOOP
+        if x is not null then
+          genPath := concat(genPath, '\', x);
+          select count(*) into rCount from i2b2metadata.i2b2
+          where c_fullname = genPath || '\'
+                and C_VISUALATTRIBUTES = 'FAS';
+
+          if (rCount = 1) then
+            select c_fullname into headNode from i2b2metadata.i2b2
+            where c_fullname = genPath || '\'
+                  and C_VISUALATTRIBUTES = 'FAS';
+            stepCt := stepCt + 1;
+            select cz_write_audit(jobId,databaseName,procedureName,'Head Node is ' || headNode,0,stepCt,'Done') into rtnCd;
+          end if;
+          exit when rCount = 1;
+        end if;
+      end loop;
     END IF;
 
 -- check new path exists
@@ -453,6 +476,16 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
                                  'Done') into rtnCd;
 
     perform i2b2_load_security_data(trialId, jobID);
+
+    if (is_sub_node) THEN
+      UPDATE i2b2metadata.i2b2
+      SET c_visualattributes = 'FAS'
+      WHERE c_fullname = headNode;
+      PERFORM I2B2_CREATE_CONCEPT_COUNTS(headNode, jobId, 'Y');
+      stepCt := stepCt + 1;
+      select cz_write_audit(jobId,databaseName,procedureName,'Update visual attributes and concept_count',0,stepCt,'Done') into rtnCd;
+    end if;
+
     if not is_sub_node then
       with paths_a as (
           select string_to_array(substring(new_path from 2 for char_length(new_path) - 2), '\', '') as path
