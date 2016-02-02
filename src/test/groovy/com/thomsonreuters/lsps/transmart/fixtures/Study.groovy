@@ -28,16 +28,19 @@ class Study {
             throw new IllegalArgumentException();
         }
 
-        def experemetId =
+        def experimentId =
                 sql.firstRow("select bio_experiment_id from biomart.bio_experiment where accession= ?", studyId)?.bio_experiment_id
 
-        if (!experemetId)
+        if (!experimentId)
             return
 
-        sql.execute("delete from biomart.bio_data_uid where bio_data_id = ?", experemetId)
-        sql.execute("delete from biomart.bio_experiment where bio_experiment_id = ?", experemetId)
+        sql.execute("delete from biomart.bio_clinical_trial where trial_number = $studyId")
+        sql.execute("delete from biomart.bio_data_uid where bio_data_id = ?", experimentId)
+        sql.execute("delete from biomart.bio_experiment where bio_experiment_id = ?", experimentId)
 
         def folderId = sql.firstRow("select folder_id from fmapp.fm_folder_association where object_uid=?", "EXP:$studyId".toString())?.folder_id
+        if (!folderId)
+            return
 
         sql.execute("delete from fmapp.fm_folder_association where folder_id = ?", folderId)
         sql.execute("delete from fmapp.fm_data_uid where fm_data_id = ?", folderId)

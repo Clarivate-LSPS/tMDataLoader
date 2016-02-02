@@ -19,8 +19,8 @@ class MetaDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCas
     @Override
     void setUp() {
         ConfigAwareTestCase.super.setUp()
-        Study.deleteStudyMetaDataById(studyId, sql)
         Study.deleteById(config, studyId)
+        Study.deleteStudyMetaDataById(studyId, sql)
         Fixtures.clinicalData.load(config)
         runScript('i2b2_load_study_metadata.sql')
     }
