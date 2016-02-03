@@ -278,7 +278,14 @@ AS
           SELECT count(*) into rCount from i2b2metadata.i2b2_secure where c_fullname = (genPath || '\');
           if rCount = 0 then
             i2b2_add_node(trialId , genPath|| '\', x.res, jobId);
-            I2B2_CREATE_CONCEPT_COUNTS(genPath || '\', jobId, 'Y');
+
+            select count(*) into rCount from i2b2metadata.i2b2
+            where c_fullname like (genPath || '\_%')
+                  and C_VISUALATTRIBUTES = 'FAS';
+
+            if (not is_sub_node) and (rCount = 0) then
+              I2B2_CREATE_CONCEPT_COUNTS(genPath || '\', jobId, 'Y');
+            end if;
             stepCt := stepCt + 1;
             cz_write_audit(jobId, databaseName, procedureName, 'i2b2_add_node genPath ' || genPath, 0, stepCt, 'Done');
           end if;
@@ -305,6 +312,15 @@ AS
 
     -- Update security data
     i2b2_load_security_data(jobID);
+
+    --Update head node visual attributes
+
+    if (is_sub_node) THEN
+      UPDATE i2b2metadata.i2b2
+      SET c_visualattributes = 'FAS'
+      WHERE c_fullname = old_study_path;
+      I2B2_CREATE_CONCEPT_COUNTS(old_study_path, jobId, 'Y');
+    end if;
 
     EXCEPTION
     WHEN old_study_missed THEN

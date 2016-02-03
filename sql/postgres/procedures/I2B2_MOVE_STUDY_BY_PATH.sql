@@ -453,6 +453,16 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
                                  'Done') into rtnCd;
 
     perform i2b2_load_security_data(trialId, jobID);
+
+    if (is_sub_node) THEN
+      UPDATE i2b2metadata.i2b2
+      SET c_visualattributes = 'FAS'
+      WHERE c_fullname = old_study_path;
+      PERFORM I2B2_CREATE_CONCEPT_COUNTS(old_study_path, jobId, 'Y');
+      stepCt := stepCt + 1;
+      select cz_write_audit(jobId,databaseName,procedureName,'Update visual attributes and concept_count',0,stepCt,'Done') into rtnCd;
+    end if;
+
     if not is_sub_node then
       with paths_a as (
           select string_to_array(substring(new_path from 2 for char_length(new_path) - 2), '\', '') as path
