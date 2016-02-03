@@ -1355,8 +1355,8 @@ BEGIN
 	set c_visualattributes=case when u.nbr_children = 1
 								then 'L' || substr(b.c_visualattributes,2,2)
 								else 'F' || substr(b.c_visualattributes,2,1) ||
-									case when u.c_fullname = topNode and highlight_study = 'Y'
-										 then 'J' else substr(b.c_visualattributes,3,1) end
+                     case when u.c_fullname = topNode then case when highlight_study = 'Y' then 'J' else
+                       'S' end else substr(b.c_visualattributes,3,1) end
 								end
 		,c_columndatatype=case when u.nbr_children > 1 then 'T' else b.c_columndatatype end
 	from i2b2_load_path_with_count u
