@@ -278,19 +278,12 @@ AS
           SELECT count(*) into rCount from i2b2metadata.i2b2_secure where c_fullname = (genPath || '\');
           if rCount = 0 then
             i2b2_add_node(trialId , genPath|| '\', x.res, jobId);
-
-            select count(*) into rCount from i2b2metadata.i2b2
-            where c_fullname like (genPath || '\_%')
-                  and C_VISUALATTRIBUTES = 'FAS';
-
-            if (not is_sub_node) and (rCount = 0) then
-              I2B2_CREATE_CONCEPT_COUNTS(genPath || '\', jobId, 'Y');
-            end if;
-            stepCt := stepCt + 1;
-            cz_write_audit(jobId, databaseName, procedureName, 'i2b2_add_node genPath ' || genPath, 0, stepCt, 'Done');
           end if;
         end if;
   	END LOOP;
+    if (not is_sub_node) THEN
+      I2B2_CREATE_CONCEPT_COUNTS(new_path||'\', jobId, 'Y');
+    END IF ;
 
     UPDATE i2b2metadata.i2b2
     SET C_HLEVEL = (length(C_FULLNAME) - nvl(length(replace(C_FULLNAME, '\')), 0)) / length('\') - 2
