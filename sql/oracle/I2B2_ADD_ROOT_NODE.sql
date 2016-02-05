@@ -125,11 +125,11 @@ Begin
 	from dual
 	where not exists
 		 (select 1 from i2b2 x
-		  where x.c_name = rootNode);
-		  
+		   where x.c_fullname = rootPath);
+
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Insert root_node ' || rootNode || ' to i2b2',SQL%ROWCOUNT,stepCt,'Done');
-    COMMIT;	
+    COMMIT;
 
   --	insert root_node into i2b2
 
@@ -182,7 +182,7 @@ Begin
 	from dual
 	where not exists
 		 (select 1 from i2b2_secure x
-		  where x.c_name = rootNode);
+		  where x.c_fullname = rootPath);
 
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Insert root_node ' || rootNode || ' to i2b2_secure',SQL%ROWCOUNT,stepCt,'Done');
