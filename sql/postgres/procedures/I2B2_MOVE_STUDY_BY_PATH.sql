@@ -389,13 +389,11 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
         PERFORM cz_write_audit(jobId, databaseName, procedureName,
                                'i2b2_add_nodes  ' || array_to_string(new_paths, ',') , 0, stepCt, 'Done');
         PERFORM i2b2_add_nodes(trialId , new_paths, jobId);
-
-        FOR i IN array_lower(new_paths, 1) .. array_upper(new_paths, 1)
-        LOOP
-          PERFORM I2B2_CREATE_CONCEPT_COUNTS(new_paths[i], jobId, 'Y');
-        END LOOP;
       END IF;
     end if; -- sub node
+    if (not is_sub_node) then
+      PERFORM I2B2_CREATE_CONCEPT_COUNTS(new_path, jobId, 'Y');
+    end if;
 
     -- Fill in levels if levels are added
     select i2b2_fill_in_tree(case when is_sub_node then trialId else null end, new_path, jobID) into rtnCd;
@@ -453,6 +451,16 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
                                  'Done') into rtnCd;
 
     perform i2b2_load_security_data(trialId, jobID);
+
+    if (is_sub_node) THEN
+      UPDATE i2b2metadata.i2b2
+      SET c_visualattributes = 'FAS'
+      WHERE c_fullname = old_study_path;
+      PERFORM I2B2_CREATE_CONCEPT_COUNTS(old_study_path, jobId, 'Y');
+      stepCt := stepCt + 1;
+      select cz_write_audit(jobId,databaseName,procedureName,'Update visual attributes and concept_count',0,stepCt,'Done') into rtnCd;
+    end if;
+
     if not is_sub_node then
       with paths_a as (
           select string_to_array(substring(new_path from 2 for char_length(new_path) - 2), '\', '') as path
