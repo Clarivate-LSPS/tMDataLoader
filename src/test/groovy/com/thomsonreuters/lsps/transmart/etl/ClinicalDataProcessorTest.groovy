@@ -619,4 +619,13 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         then:
         thrown(DataProcessingException)
     }
+
+    def 'it should validate top node was created '(){
+        setup:
+        Study.deleteByPath(config, '\\Demographics\\')
+        clinicalData.load(config)
+        clinicalData.copyWithSuffix('SECOND').load(config, '\\Demographics\\Test Study SECOND\\')
+        expect:
+        assertThat(db, hasRecord('i2b2metadata.i2b2', [c_fullname:'\\Demographics\\'], [:]))
+    }
 }
