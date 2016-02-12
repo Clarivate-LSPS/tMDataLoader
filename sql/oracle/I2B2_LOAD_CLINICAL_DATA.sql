@@ -1055,7 +1055,31 @@ BEGIN
 		 where f.modifier_cd = TrialId
 		   and f.patient_num in (select pat.patient_num
 								   from tmp_subject_info si, patient_dimension pat
-								  where si.usubjid = pat.sourcesystem_cd);
+								  where si.usubjid = pat.sourcesystem_cd)
+			 and f.CONCEPT_CD not in
+					 (select /*+ parallel(de_subject_sample_mapping, 4) */ distinct concept_code as concept_cd from de_subject_sample_mapping
+					 where trial_name = TrialId
+								 and concept_code is not null
+						union
+						select /*+ parallel(de_subject_sample_mapping, 4) */ distinct platform_cd as concept_cd from de_subject_sample_mapping
+						where trial_name = TrialId
+									and platform_cd is not null
+						union
+						select /*+ parallel(de_subject_sample_mapping, 4) */ distinct sample_type_cd as concept_cd from de_subject_sample_mapping
+						where trial_name = TrialId
+									and sample_type_cd is not null
+						union
+						select /*+ parallel(de_subject_sample_mapping, 4) */ distinct tissue_type_cd as concept_cd from de_subject_sample_mapping
+						where trial_name = TrialId
+									and tissue_type_cd is not null
+						union
+						select /*+ parallel(de_subject_sample_mapping, 4) */ distinct timepoint_cd as concept_cd from de_subject_sample_mapping
+						where trial_name = TrialId
+									and timepoint_cd is not null
+						union
+						select /*+ parallel(de_subject_sample_mapping, 4) */ distinct concept_cd as concept_cd from de_subject_snp_dataset
+						where trial_name = TrialId
+									and concept_cd is not null);
 
 		stepCt := stepCt + 1;
 		cz_write_audit(jobId,databaseName,procedureName,'Delete old fact records for updated data',SQL%ROWCOUNT,stepCt,'Done');

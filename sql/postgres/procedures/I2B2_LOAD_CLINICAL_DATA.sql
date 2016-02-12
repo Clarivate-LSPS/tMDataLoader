@@ -1164,7 +1164,31 @@ BEGIN
     begin
     delete from observation_fact f
 		  where f.modifier_cd = TrialId
-            and f.patient_num = any(updated_patient_nums);
+            and f.patient_num = any(updated_patient_nums)
+						and f.concept_cd not in
+								(select distinct concept_code as concept_cd from deapp.de_subject_sample_mapping
+								where trial_name = TrialId
+											and concept_code is not null
+								 union
+								 select distinct platform_cd as concept_cd from deapp.de_subject_sample_mapping
+								 where trial_name = TrialId
+											 and platform_cd is not null
+								 union
+								 select distinct sample_type_cd as concept_cd from deapp.de_subject_sample_mapping
+								 where trial_name = TrialId
+											 and sample_type_cd is not null
+								 union
+								 select distinct tissue_type_cd as concept_cd from deapp.de_subject_sample_mapping
+								 where trial_name = TrialId
+											 and tissue_type_cd is not null
+								 union
+								 select distinct timepoint_cd as concept_cd from deapp.de_subject_sample_mapping
+								 where trial_name = TrialId
+											 and timepoint_cd is not null
+								 union
+								 select distinct concept_cd as concept_cd from deapp.de_subject_snp_dataset
+								 where trial_name = TrialId
+											 and concept_cd is not null);
     exception
     when others then
     	errorNumber := SQLSTATE;
