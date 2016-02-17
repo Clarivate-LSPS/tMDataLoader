@@ -8,7 +8,7 @@ src folder contains all sources
 sample_data folder contains sample public datasets from GEO
 
 WARNING: Since version 1.0.0 tMDataLoader working with own schema tm_dataloader for PostgreSQL version (it also uses
-own user tm_dataloader and you should update you connection string). It still shares
+its own user tm_dataloader and you should update you connection string). It still shares
 tm_cz schema for Oracle version thought. If you are switching from earlier version be sure you run scripts
 from sql/postgresql folder and remove controlSchema option from Config file and --alt-control-schema from command line
 arguments if any. The option still takes effect, but it was intended as hack to avoid tm_cz schema conflicts and you
@@ -45,6 +45,8 @@ From `sql/postgres` directory run following commands (you may need to add creden
 	psql -d transmart -f migrations.sql
 	psql -d transmart -f permissions.sql
 	psql -d transmart -f procedures.sql
+	
+You should connect to database with user `tm_dataloader` (default password is `tm_dataloader` as well, but it is highly recommended to change the default password). You can use any other user as well, but you should care about permissions.
 
 PREPARING DATA FOR UPLOAD
 =========================
