@@ -1141,7 +1141,31 @@ BEGIN
     begin
     delete from observation_fact f
 		  where f.modifier_cd = TrialId
-            and f.patient_num = any(updated_patient_nums);
+            and f.patient_num = any(updated_patient_nums)
+						and f.concept_cd not in
+								(select distinct concept_code as concept_cd from deapp.de_subject_sample_mapping
+								where trial_name = TrialId
+											and concept_code is not null
+								 union
+								 select distinct platform_cd as concept_cd from deapp.de_subject_sample_mapping
+								 where trial_name = TrialId
+											 and platform_cd is not null
+								 union
+								 select distinct sample_type_cd as concept_cd from deapp.de_subject_sample_mapping
+								 where trial_name = TrialId
+											 and sample_type_cd is not null
+								 union
+								 select distinct tissue_type_cd as concept_cd from deapp.de_subject_sample_mapping
+								 where trial_name = TrialId
+											 and tissue_type_cd is not null
+								 union
+								 select distinct timepoint_cd as concept_cd from deapp.de_subject_sample_mapping
+								 where trial_name = TrialId
+											 and timepoint_cd is not null
+								 union
+								 select distinct concept_cd as concept_cd from deapp.de_subject_snp_dataset
+								 where trial_name = TrialId
+											 and concept_cd is not null);
     exception
     when others then
     	errorNumber := SQLSTATE;
@@ -1332,8 +1356,8 @@ BEGIN
 	set c_visualattributes=case when u.nbr_children = 1
 								then 'L' || substr(b.c_visualattributes,2,2)
 								else 'F' || substr(b.c_visualattributes,2,1) ||
-									case when u.c_fullname = topNode and highlight_study = 'Y'
-										 then 'J' else substr(b.c_visualattributes,3,1) end
+                     case when u.c_fullname = topNode then case when highlight_study = 'Y' then 'J' else
+                       'S' end else substr(b.c_visualattributes,3,1) end
 								end
 		,c_columndatatype=case when u.nbr_children > 1 then 'T' else b.c_columndatatype end
 	from i2b2_load_path_with_count u

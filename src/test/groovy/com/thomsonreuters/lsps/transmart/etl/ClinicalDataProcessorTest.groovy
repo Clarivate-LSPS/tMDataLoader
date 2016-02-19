@@ -15,6 +15,7 @@ import static com.thomsonreuters.lsps.transmart.Fixtures.studyDir
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.*
 import static org.hamcrest.CoreMatchers.equalTo
 import static org.hamcrest.core.IsNot.not
+import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertThat
 
 class ClinicalDataProcessorTest extends Specification implements ConfigAwareTestCase {
@@ -135,6 +136,8 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat(sql, hasPatient('HCC2935').inTrial(studyId))
         assertThat(sql, hasNode(conceptPathForPatient).withPatientCount(9))
         assertThat(sql, hasNode(conceptPathForPatient + 'T790M\\'))
+        def c = sql.firstRow('select count(*) from i2b2metadata.i2b2 where c_fullname like ? || \'%\' ESCAPE \'`\' and c_visualattributes=\'FAS\'', '\\Test Studies\\Test Study\\' as String)
+        assertEquals('Count study nodes wrong', 1, c[0] as Integer )
     }
 
     void testItLoadsDataWithTags() {
