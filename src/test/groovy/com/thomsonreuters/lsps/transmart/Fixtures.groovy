@@ -92,6 +92,10 @@ class Fixtures {
         return studiesDir.studyDir('Test Study With Terminator', 'GSE0TERMINATOR').clinicalData
     }
 
+    static ClinicalData getClinicalDataWithTerminatorAndSamePath() {
+        return studiesDir.studyDir('Test Study With Repeating Labels In Path', 'GSE0REPEATLABPATH').clinicalData
+    }
+
     static ClinicalData getClinicalDataWithDataValueInPath() {
         return studiesDir.studyDir('Test Study With Data Value In Path', 'GSE0DVINPATH').clinicalData
     }
