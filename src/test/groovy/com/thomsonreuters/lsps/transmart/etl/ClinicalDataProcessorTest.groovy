@@ -634,7 +634,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
 
     def 'it should check path then visin_name equal data_label and data_label is not specificated with terminator'(){
         when:
-        Study.deleteById(config, 'GSE0TERMINATOR2')
+        Study.deleteById(config, 'GSE0REPEATLABPATH')
         def clinicalData = Fixtures.clinicalDataWithTerminatorAndSamePath
 
         def result = clinicalData.load(config)
