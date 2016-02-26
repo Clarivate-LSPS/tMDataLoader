@@ -22,7 +22,7 @@ public trait ConfigAwareTestCase {
         Logger.setInteractiveMode(true)
         config = new ConfigSlurper().parse(testConfigUrl)
         config.logger = config.logger ?: logger
-        _database = new Database(config)
+        _database = TransmartDatabaseFactory.newDatabase(config)
         config.controlSchema = config.controlSchema ?: (_database.databaseType == DatabaseType.Postgres ? 'tm_dataloader' : 'tm_cz')
         config.securitySymbol = config.securitySymbol ?: 'N'
     }

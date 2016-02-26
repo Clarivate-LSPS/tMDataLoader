@@ -1,6 +1,5 @@
 package com.thomsonreuters.lsps.transmart.etl
 
-import com.thomsonreuters.lsps.db.core.Database
 import groovy.sql.Sql
 
 abstract class DataOperationProcessor {
@@ -20,7 +19,7 @@ abstract class DataOperationProcessor {
         def res = false
 
         config.logger.log("Connecting to database server")
-        new Database(config).withSql { sql ->
+        TransmartDatabaseFactory.newDatabase(config).withSql { sql ->
             sql.connection.autoCommit = false
 
             if (processData()) {
