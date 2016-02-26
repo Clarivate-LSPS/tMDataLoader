@@ -1,9 +1,10 @@
 package com.thomsonreuters.lsps.transmart.etl
 
+import com.thomsonreuters.lsps.db.loader.DataLoader
 import com.thomsonreuters.lsps.transmart.files.CsvLikeFile
 import com.thomsonreuters.lsps.transmart.files.MetaInfoHeader
 import com.thomsonreuters.lsps.transmart.files.VcfFile
-import com.thomsonreuters.lsps.transmart.sql.SqlMethods
+import com.thomsonreuters.lsps.db.sql.SqlMethods
 import groovy.io.FileType
 import groovy.sql.Sql
 

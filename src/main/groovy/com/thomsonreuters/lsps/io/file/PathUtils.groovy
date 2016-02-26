@@ -1,4 +1,4 @@
-package com.thomsonreuters.lsps.transmart.util
+package com.thomsonreuters.lsps.io.file
 
 import java.nio.file.Files
 import java.nio.file.Path

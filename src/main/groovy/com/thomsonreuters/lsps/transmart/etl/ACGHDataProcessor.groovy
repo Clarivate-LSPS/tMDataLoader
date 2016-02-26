@@ -1,5 +1,6 @@
 package com.thomsonreuters.lsps.transmart.etl
 
+import com.thomsonreuters.lsps.db.loader.DataLoader
 import com.thomsonreuters.lsps.transmart.etl.platforms.aCGHPlatform
 import com.thomsonreuters.lsps.transmart.files.CsvLikeFile
 import groovy.sql.Sql

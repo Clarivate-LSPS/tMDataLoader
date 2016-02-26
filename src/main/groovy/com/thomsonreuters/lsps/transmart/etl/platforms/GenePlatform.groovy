@@ -3,7 +3,7 @@ import com.thomsonreuters.lsps.transmart.etl.LogType
 import com.thomsonreuters.lsps.transmart.etl.PlatformLoader
 import com.thomsonreuters.lsps.transmart.files.CsvLikeFile
 import com.thomsonreuters.lsps.transmart.files.MetaInfoHeader
-import com.thomsonreuters.lsps.transmart.sql.Database
+import com.thomsonreuters.lsps.db.core.Database
 import com.thomsonreuters.lsps.transmart.util.PrepareIfRequired
 import groovy.sql.BatchingPreparedStatementWrapper
 import groovy.sql.Sql

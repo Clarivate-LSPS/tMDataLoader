@@ -1,7 +1,7 @@
 package com.thomsonreuters.lsps.transmart.etl
 import com.thomsonreuters.lsps.transmart.Fixtures
 import com.thomsonreuters.lsps.transmart.fixtures.StudyInfo
-import com.thomsonreuters.lsps.transmart.sql.DatabaseType
+import com.thomsonreuters.lsps.db.core.DatabaseType
 import org.hamcrest.core.IsNull
 
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasNode

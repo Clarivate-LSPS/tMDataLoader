@@ -1,4 +1,4 @@
-package com.thomsonreuters.lsps.transmart.util
+package com.thomsonreuters.lsps.io.file
 
 import groovy.transform.stc.ClosureParams
 import groovy.transform.stc.SimpleType

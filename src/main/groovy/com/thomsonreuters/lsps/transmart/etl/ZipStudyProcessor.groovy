@@ -1,6 +1,6 @@
 package com.thomsonreuters.lsps.transmart.etl
 
-import com.thomsonreuters.lsps.transmart.util.PathUtils
+import com.thomsonreuters.lsps.io.file.PathUtils
 
 import java.nio.file.FileSystem
 import java.nio.file.FileSystems

@@ -1,6 +1,5 @@
 package com.thomsonreuters.lsps.transmart.etl
 import com.thomsonreuters.lsps.transmart.etl.platforms.GenePlatform
-import com.thomsonreuters.lsps.transmart.sql.Database
 import groovy.sql.Sql
 
 import java.nio.file.Files
