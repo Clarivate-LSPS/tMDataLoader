@@ -36,7 +36,7 @@ abstract class DataProcessor {
 
     DataProcessor(conf) {
         config = conf
-        database = new Database(config)
+        database = TransmartDatabaseFactory.newDatabase(config)
     }
 
     abstract boolean processFiles(Path dir, Sql sql, studyInfo)

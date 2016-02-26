@@ -26,7 +26,7 @@ class AuditableJobRunner {
     AuditableJobRunner(Sql sql, config) {
         this.sql = sql
         this.config = config
-        this.database = new Database(config)
+        this.database = TransmartDatabaseFactory.newDatabase(config)
     }
 
     boolean runJob(String jobName, Closure block) {

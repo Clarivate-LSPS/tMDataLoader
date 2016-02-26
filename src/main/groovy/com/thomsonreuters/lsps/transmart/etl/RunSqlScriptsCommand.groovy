@@ -101,7 +101,7 @@ class RunSqlScriptsCommand {
         }
 
         def proceduresOnly = opts?.'procedures-only' as boolean
-        def database = new Database(config)
+        def database = TransmartDatabaseFactory.newDatabase(config)
         new RunSqlScriptsCommand().run(database, opts.'dba-user' ?: null, opts.'dba-password' ?: null, proceduresOnly)
     }
 }
