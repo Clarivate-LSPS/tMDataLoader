@@ -1,6 +1,7 @@
 package com.thomsonreuters.lsps.transmart.etl.platforms
 import com.thomsonreuters.lsps.transmart.etl.LogType
 import com.thomsonreuters.lsps.transmart.etl.PlatformLoader
+import com.thomsonreuters.lsps.transmart.etl.TransmartDatabaseFactory
 import com.thomsonreuters.lsps.transmart.files.CsvLikeFile
 import com.thomsonreuters.lsps.transmart.files.MetaInfoHeader
 import com.thomsonreuters.lsps.db.core.Database
@@ -28,7 +29,7 @@ abstract class GenePlatform implements PrepareIfRequired {
         this.platformType = platformType
         this.id = id
         this.config = config
-        this.database = new Database(config)
+        this.database = TransmartDatabaseFactory.newDatabase(config)
     }
 
     String getTitle() {

@@ -20,7 +20,6 @@
 
 package com.thomsonreuters.lsps.transmart.etl
 
-import com.thomsonreuters.lsps.db.core.Database
 import com.thomsonreuters.lsps.db.core.DatabaseType
 import com.thomsonreuters.lsps.transmart.tools.ProcessLocker
 
@@ -100,7 +99,7 @@ class CommandLineTool {
             return
         }
 
-        def database = new Database(config)
+        def database = TransmartDatabaseFactory.newDatabase(config)
         if (opts?.i) {
             config.isInteractiveMode = true
             println ">>> USING INTERACTIVE MODE"
