@@ -20,9 +20,10 @@
 
 package com.thomsonreuters.lsps.transmart.etl
 
+import com.thomsonreuters.lsps.db.loader.DataLoader
 import com.thomsonreuters.lsps.transmart.etl.platforms.GexPlatform
 import com.thomsonreuters.lsps.transmart.files.CsvLikeFile
-import com.thomsonreuters.lsps.transmart.sql.DatabaseType
+import com.thomsonreuters.lsps.db.core.DatabaseType
 import groovy.sql.Sql
 
 import java.nio.file.Path

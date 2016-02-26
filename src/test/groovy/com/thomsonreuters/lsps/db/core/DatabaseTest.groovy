@@ -1,7 +1,9 @@
-package com.thomsonreuters.lsps.transmart.sql
+package com.thomsonreuters.lsps.db.core
 
+import com.thomsonreuters.lsps.db.core.Database
+import com.thomsonreuters.lsps.db.core.DatabaseType
 import com.thomsonreuters.lsps.transmart.etl.ConfigAwareTestCase
-import com.thomsonreuters.lsps.transmart.util.TempStorage
+import com.thomsonreuters.lsps.io.file.TempStorage
 import groovy.sql.Sql
 
 import static org.hamcrest.CoreMatchers.equalTo

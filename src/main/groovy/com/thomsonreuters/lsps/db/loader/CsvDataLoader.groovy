@@ -1,10 +1,7 @@
-package com.thomsonreuters.lsps.transmart.etl
+package com.thomsonreuters.lsps.db.loader
 
 import org.apache.commons.csv.CSVFormat
 import org.apache.commons.csv.CSVPrinter
-
-import java.nio.charset.Charset
-
 /**
  * Created by bondarev on 4/21/14.
  */

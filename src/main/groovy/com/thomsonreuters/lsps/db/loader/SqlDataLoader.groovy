@@ -1,8 +1,7 @@
-package com.thomsonreuters.lsps.transmart.etl
+package com.thomsonreuters.lsps.db.loader
 
-import com.thomsonreuters.lsps.transmart.sql.SqlMethods
+import com.thomsonreuters.lsps.db.sql.SqlMethods
 import groovy.sql.Sql
-
 /**
  * Created by bondarev on 4/21/14.
  */

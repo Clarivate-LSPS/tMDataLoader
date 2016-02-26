@@ -1,7 +1,7 @@
 package com.thomsonreuters.lsps.transmart.etl
 
 import com.thomsonreuters.lsps.transmart.fixtures.Study
-import com.thomsonreuters.lsps.transmart.sql.DatabaseType
+import com.thomsonreuters.lsps.db.core.DatabaseType
 
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasNode
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasPatient

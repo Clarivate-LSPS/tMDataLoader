@@ -20,13 +20,14 @@
 
 package com.thomsonreuters.lsps.transmart.etl
 
+import com.thomsonreuters.lsps.db.loader.DataLoader
 import com.thomsonreuters.lsps.transmart.etl.mappings.ClinicalDataMapping
 import com.thomsonreuters.lsps.transmart.etl.statistic.StatisticCollector
 import com.thomsonreuters.lsps.transmart.etl.statistic.TableStatistic
 import com.thomsonreuters.lsps.transmart.etl.statistic.VariableType
 import com.thomsonreuters.lsps.transmart.files.CsvLikeFile
 import com.thomsonreuters.lsps.transmart.files.MetaInfoHeader
-import com.thomsonreuters.lsps.transmart.sql.DatabaseType
+import com.thomsonreuters.lsps.db.core.DatabaseType
 import groovy.sql.Sql
 
 import java.nio.file.Files

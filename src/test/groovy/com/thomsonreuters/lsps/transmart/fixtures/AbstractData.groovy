@@ -1,7 +1,7 @@
 package com.thomsonreuters.lsps.transmart.fixtures
 
 import com.thomsonreuters.lsps.transmart.etl.DataProcessor
-import com.thomsonreuters.lsps.transmart.util.TempStorage
+import com.thomsonreuters.lsps.io.file.TempStorage
 
 /**
  * Date: 27.04.2015

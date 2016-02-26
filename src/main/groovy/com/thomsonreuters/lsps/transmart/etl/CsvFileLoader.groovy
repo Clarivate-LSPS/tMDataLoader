@@ -4,7 +4,6 @@ import com.thomsonreuters.lsps.transmart.files.CsvLikeFile
 import groovy.sql.Sql
 
 import java.nio.file.Path
-
 /**
  * Created by bondarev on 4/8/14.
  */

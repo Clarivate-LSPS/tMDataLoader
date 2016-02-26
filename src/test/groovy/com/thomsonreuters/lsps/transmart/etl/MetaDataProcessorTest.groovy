@@ -2,7 +2,7 @@ package com.thomsonreuters.lsps.transmart.etl
 
 import com.thomsonreuters.lsps.transmart.Fixtures
 import com.thomsonreuters.lsps.transmart.fixtures.Study
-import com.thomsonreuters.lsps.transmart.sql.SqlMethods
+import com.thomsonreuters.lsps.db.sql.SqlMethods
 
 import static com.thomsonreuters.lsps.transmart.Fixtures.studyDir
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasRecord

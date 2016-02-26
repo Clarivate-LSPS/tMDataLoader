@@ -1,7 +1,7 @@
-package com.thomsonreuters.lsps.transmart.etl
+package com.thomsonreuters.lsps.db.loader
 
-import com.thomsonreuters.lsps.transmart.sql.Database
-import com.thomsonreuters.lsps.transmart.sql.DatabaseType
+import com.thomsonreuters.lsps.db.core.Database
+import com.thomsonreuters.lsps.db.core.DatabaseType
 
 /**
  * Created by bondarev on 4/8/14.

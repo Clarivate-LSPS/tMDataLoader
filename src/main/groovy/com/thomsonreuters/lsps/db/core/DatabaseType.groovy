@@ -1,4 +1,4 @@
-package com.thomsonreuters.lsps.transmart.sql
+package com.thomsonreuters.lsps.db.core
 
 /**
  * Created by bondarev on 4/4/14.

@@ -1,7 +1,7 @@
 package com.thomsonreuters.lsps.transmart.etl
 
-import com.thomsonreuters.lsps.transmart.sql.Database
-import com.thomsonreuters.lsps.transmart.sql.DatabaseType
+import com.thomsonreuters.lsps.db.core.Database
+import com.thomsonreuters.lsps.db.core.DatabaseType
 import groovy.sql.Sql
 
 import java.sql.SQLException

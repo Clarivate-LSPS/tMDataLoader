@@ -1,9 +1,7 @@
-package com.thomsonreuters.lsps.transmart.sql
+package com.thomsonreuters.lsps.db.sql
 
 import groovy.sql.GroovyRowResult
 import groovy.sql.Sql
-
-import java.sql.Types
 
 /**
  * Created by bondarev on 4/7/14.

@@ -4,7 +4,7 @@ import com.thomsonreuters.lsps.transmart.TdfUtils
 import com.thomsonreuters.lsps.transmart.etl.ClinicalDataProcessor
 import com.thomsonreuters.lsps.transmart.etl.DataProcessor
 import com.thomsonreuters.lsps.transmart.etl.mappings.ClinicalDataMapping
-import com.thomsonreuters.lsps.transmart.util.TempStorage
+import com.thomsonreuters.lsps.io.file.TempStorage
 
 /**
  * Date: 27.04.2015

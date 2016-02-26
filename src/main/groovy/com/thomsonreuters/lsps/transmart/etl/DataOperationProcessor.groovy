@@ -1,6 +1,6 @@
 package com.thomsonreuters.lsps.transmart.etl
 
-import com.thomsonreuters.lsps.transmart.sql.Database
+import com.thomsonreuters.lsps.db.core.Database
 import groovy.sql.Sql
 
 abstract class DataOperationProcessor {

@@ -1,5 +1,5 @@
 package com.thomsonreuters.lsps.transmart.etl.matchers
-import com.thomsonreuters.lsps.transmart.sql.SqlMethods
+import com.thomsonreuters.lsps.db.sql.SqlMethods
 import groovy.sql.GroovyRowResult
 import groovy.sql.Sql
 import org.hamcrest.BaseMatcher
