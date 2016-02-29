@@ -1,0 +1,4 @@
+STUDY_ID	SUBJ_ID	VISIT_NAME	p1
+GSE0ULC	s1	Screening 1	abilify
+GSE0ULC	s2	Screening 1	Abilify
+GSE0ULC	s3	Screening 1	ABILIFY

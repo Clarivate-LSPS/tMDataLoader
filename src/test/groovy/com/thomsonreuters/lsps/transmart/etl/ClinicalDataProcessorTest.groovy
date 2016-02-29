@@ -393,7 +393,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
     def 'it does not produces list of duplicates if no duplicates exists'() {
         when:
         def clinicalData = Fixtures.clinicalData
-        Study.deleteByPath(config, "\\Test Studies\\${studyName}")
+        Study.deleteById(config, clinicalData.studyId)
         def expectedFile = new File(clinicalData.dir, 'ExpectedDuplicates.csv')
         def actualFile = new File(clinicalData.dir, 'duplicates.csv')
         actualFile.delete()
@@ -601,8 +601,8 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
 
     def 'it should load values with upper and lower case'(){
         setup:
-        Study.deleteById(config, studyId)
-        def customClinicalData = Fixtures.getClinicalData('Test Study With Upper and Lower Case', studyId)
+        def customClinicalData = Fixtures.getClinicalData('Test Study With Upper and Lower Case', 'GSE0ULC')
+        Study.deleteById(config, customClinicalData.studyId)
 
         def result = customClinicalData.load(config)
 
