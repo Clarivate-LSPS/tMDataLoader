@@ -122,7 +122,7 @@ class VariableStatistic {
     }
 
     List<String> getMissingValueIds() {
-        if (required) violatedRules[requiredRule] ?: []
+        if (required) violatedRules[requiredRule] ?: Collections.<String>emptyList()
     }
 
     Map<String, List<String>> getViolatedRangeChecks() {
