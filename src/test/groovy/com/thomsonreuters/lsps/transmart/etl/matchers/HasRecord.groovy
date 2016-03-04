@@ -4,17 +4,22 @@ import groovy.sql.GroovyRowResult
 import groovy.sql.Sql
 import org.hamcrest.BaseMatcher
 import org.hamcrest.Description
+import org.hamcrest.Matcher
 
 class HasRecord extends BaseMatcher<Sql> {
     private Map<CharSequence, Object> keyAttrs
-    private CharSequence tableName
+    private String tableName
     private GroovyRowResult record
-    private RowMatcher rowMatcher
+    private Matcher<? super GroovyRowResult> rowMatcher
 
-    def HasRecord(CharSequence tableName, Map<CharSequence, Object> keyAttrs, Map<CharSequence, Object> valueAttrs) {
+    HasRecord(String tableName, Map<CharSequence, Object> keyAttrs, Map<CharSequence, Object> valueAttrs) {
+        this(tableName, keyAttrs, new RowMatcher(valueAttrs))
+    }
+
+    HasRecord(String tableName, Map<CharSequence, Object> keyAttrs, Matcher<? super GroovyRowResult> rowMatcher) {
         this.tableName = tableName
         this.keyAttrs = keyAttrs
-        this.rowMatcher = new RowMatcher(valueAttrs)
+        this.rowMatcher = rowMatcher
     }
 
     @Override
@@ -26,10 +31,8 @@ class HasRecord extends BaseMatcher<Sql> {
     @Override
     void describeTo(Description description) {
         description.appendText("record ").appendValue(keyAttrs).
-                appendText(" in table ").appendValue(tableName)
-        if (rowMatcher.valueAttrs) {
-            description.appendText(" with values ").appendValue(rowMatcher.valueAttrs)
-        }
+                appendText(" in table ").appendValue(tableName).
+                appendText(" where: ").appendDescriptionOf(rowMatcher)
     }
 
     @Override

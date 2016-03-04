@@ -14,6 +14,7 @@ import static com.thomsonreuters.lsps.transmart.Fixtures.getStudiesForMerge
 import static com.thomsonreuters.lsps.transmart.Fixtures.studyDir
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.*
 import static org.hamcrest.CoreMatchers.equalTo
+import static org.hamcrest.CoreMatchers.notNullValue
 import static org.hamcrest.core.IsNot.not
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertThat
@@ -597,6 +598,65 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
 
         then:
         thrown(DataProcessingException)
+    }
+
+    def 'it should load Serial LDD data'() {
+        given:
+        def clinicalData = ClinicalData.build('GSE0SLDD', 'Test Study With Serial LDD') {
+            mappingFile {
+                forDataFile('TEST.txt') {
+                    map('Vars+DATALABEL+$$Timepoint', 3, 'Timepoints', VariableType.Timepoint)
+                    map('', 4, 'Timepoint', VariableType.Timepoint)
+                    map('Vars', 5, 'Sex')
+                }
+            }
+            dataFile('TEST.txt', ['Days', 'Time point', 'Sex']) {
+                forSubject('SUBJ1') {
+                    row '0', 'Baseline', 'Female'
+                    row '1', 'Day 1', 'Female'
+                    row '7', 'Week 1', 'Female'
+                    row '60', 'Month 2', 'Female'
+                    row '30', 'months 1', 'Female'
+                    row '3', 'days 3', 'Female'
+                    row '2', 'day 2', 'Female'
+                }
+                forSubject('SUBJ2') {
+                    row '0', 'Baseline', 'Male'
+                    row '30', 'days 3', 'Female'
+                    row '20', '2 days', 'Female'
+                    row '90', 'Month 3', 'Male'
+                }
+            }
+        }
+        String timepointsPath = "\\Test Studies\\Test Study With Serial LDD\\Vars\\Timepoints"
+
+        when:
+        clinicalData.load(config)
+
+        then:
+        assertThat db, hasNode("$timepointsPath\\Baseline\\").withPatientCount(2)
+        assertThat db, hasNode("$timepointsPath\\Day 1\\").withPatientCount(1)
+        assertThat db, hasNode("$timepointsPath\\Month 3\\").withPatientCount(1)
+
+        assertThat db, hasRecord("i2b2", [c_fullname: "$timepointsPath\\Baseline\\"], 'valid metadata present') {
+            assertThat(it.c_metadataxml, notNullValue())
+            def metadata = new XmlParser().parse(it.c_metadataxml.characterStream)
+            assertThat(metadata.Oktousevalues.text(), equalTo('Y'))
+            assertThat(metadata.SeriesMeta.Value.text(), equalTo('0'))
+            assertThat(metadata.SeriesMeta.Unit.text(), equalTo('minutes'))
+            assertThat(metadata.SeriesMeta.DisplayName.text(), equalTo('Baseline'))
+            true
+        }
+
+        assertThat db, hasRecord("i2b2", [c_fullname: "$timepointsPath\\Month 2\\"], 'valid metadata present') {
+            assertThat(it.c_metadataxml, notNullValue())
+            def metadata = new XmlParser().parse(it.c_metadataxml.characterStream)
+            assertThat(metadata.Oktousevalues.text(), equalTo('Y'))
+            assertThat(metadata.SeriesMeta.Value.text(), equalTo((60 * 24 * 30 * 2).toString()))
+            assertThat(metadata.SeriesMeta.Unit.text(), equalTo('minutes'))
+            assertThat(metadata.SeriesMeta.DisplayName.text(), equalTo('Month 2'))
+            true
+        }
     }
 
     def 'it should load values with upper and lower case'(){

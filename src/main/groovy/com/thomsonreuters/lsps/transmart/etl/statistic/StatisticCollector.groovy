@@ -13,7 +13,7 @@ class StatisticCollector {
     Map<String, TableStatistic> tables = [:]
     TableStatistic currentTable
 
-    def collectForTable(String tableName,
+    TableStatistic collectForTable(String tableName,
                         @ClosureParams(value = SimpleType.class, options = 'com.thomsonreuters.lsps.transmart.etl.statistic.TableStatistic') Closure closure) {
         TableStatistic savedTable = currentTable
         try {
