@@ -225,6 +225,7 @@ BEGIN
   ,category_path
   ,usubjid
   ,data_type
+	,valuetype_cd
 	)
 	select study_id
 		  ,site_id
@@ -238,6 +239,7 @@ BEGIN
       ,replace(replace(replace(category_cd,'_',' '),'+','\'),'\$$','\')
       ,(CASE WHEN site_id IS NOT NULL THEN TrialID || ':' || site_id || ':' || subject_id ELSE TrialID || ':' || subject_id END)
       ,'T'
+			,valuetype_cd
 	from lt_src_clinical_data
 	WHERE data_value is not null;
 	
@@ -689,6 +691,7 @@ BEGIN
 	--,node_name
 	,data_value
 	,data_type
+	,valuetype_cd
 	)
   select /*+ parallel(a, 4) */  DISTINCT
 		Case
@@ -703,6 +706,7 @@ BEGIN
 		a.data_label,
 		decode(a.data_type,'T',a.data_value,null) as data_value
     ,a.data_type
+		,a.valuetype_cd
 	from  wrk_clinical_data a;
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Create leaf nodes for trial',SQL%ROWCOUNT,stepCt,'Done');
@@ -909,84 +913,71 @@ BEGIN
     commit;
 	
 	--	update i2b2 to pick up change in name, data_type for leaf nodes
-	
-	update /*+ parallel(i2b2, 8) */ i2b2 b
-	set (c_name, c_columndatatype, c_metadataxml)=
-		(select t.node_name, 'T'
-		 ,case when t.data_type = 'T'
-		       then null
-			   else '<?xml version="1.0"?><ValueMetadata><Version>3.02</Version><CreationDateTime>08/14/2008 01:22:59</CreationDateTime><TestID></TestID><TestName></TestName><DataType>PosFloat</DataType><CodeType></CodeType><Loinc></Loinc><Flagstouse></Flagstouse><Oktousevalues>Y</Oktousevalues><MaxStringLength></MaxStringLength><LowofLowValue>0</LowofLowValue><HighofLowValue>0</HighofLowValue><LowofHighValue>100</LowofHighValue>100<HighofHighValue>100</HighofHighValue><LowofToxicValue></LowofToxicValue><HighofToxicValue></HighofToxicValue><EnumValues></EnumValues><CommentsDeterminingExclusion><Com></Com></CommentsDeterminingExclusion><UnitValues><NormalUnits>ratio</NormalUnits><EqualUnits></EqualUnits><ExcludingUnits></ExcludingUnits><ConvertingUnits><Units></Units><MultiplyingFactor></MultiplyingFactor></ConvertingUnits></UnitValues><Analysis><Enums /><Counts /><New /></Analysis></ValueMetadata>'
-		  end
-		 from wt_trial_nodes t
-		 where b.c_fullname = t.leaf_node
-		   and (b.c_name != t.node_name or b.c_columndatatype != 'T'))
-	where exists
-		(select 1 from wt_trial_nodes x
-		 where b.c_fullname = x.leaf_node
-		   and (b.c_name != x.node_name or b.c_columndatatype != 'T'));
-	
-	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Updated name and data type in i2b2 if changed',SQL%ROWCOUNT,stepCt,'Done');
-    commit;
-			   
-	insert /*+ parallel(i2b2, 8) */ into I2B2
-    (c_hlevel
-	,c_fullname
-	,c_name
-	,c_visualattributes
-	,c_synonym_cd
-	,c_facttablecolumn
-	,c_tablename
-	,c_columnname
-	,c_dimcode
-	,c_tooltip
-	,update_date
-	,download_date
-	,import_date
-	,sourcesystem_cd
-	,c_basecode
-	,c_operator
-	,c_columndatatype
-	,c_comment
-	,i2b2_id
-	,c_metadataxml
-	)
-    select /*+ parallel(concept_dimension, 8) */ (length(c.concept_path) - nvl(length(replace(c.concept_path, '\')),0)) / length('\') - 2 + root_level
-		  ,c.concept_path
-		  ,c.name_char
-		  ,'LA'
-		  ,'N'
-		  ,'CONCEPT_CD'
-		  ,'CONCEPT_DIMENSION'
-		  ,'CONCEPT_PATH'
-		  ,c.concept_path
-		  ,c.concept_path
-		  ,sysdate
-		  ,sysdate
-		  ,sysdate
-		  ,c.sourcesystem_cd
-		  ,c.concept_cd
-		  ,'LIKE'
-		  ,'T'		-- if i2b2 gets fixed to respect c_columndatatype then change to t.data_type
-		  ,'trial:' || TrialID 
-		  ,i2b2_id_seq.nextval
-		  ,case when t.data_type = 'T' then null
-		   else '<?xml version="1.0"?><ValueMetadata><Version>3.02</Version><CreationDateTime>08/14/2008 01:22:59</CreationDateTime><TestID></TestID><TestName></TestName><DataType>PosFloat</DataType><CodeType></CodeType><Loinc></Loinc><Flagstouse></Flagstouse><Oktousevalues>Y</Oktousevalues><MaxStringLength></MaxStringLength><LowofLowValue>0</LowofLowValue><HighofLowValue>0</HighofLowValue><LowofHighValue>100</LowofHighValue>100<HighofHighValue>100</HighofHighValue><LowofToxicValue></LowofToxicValue><HighofToxicValue></HighofToxicValue><EnumValues></EnumValues><CommentsDeterminingExclusion><Com></Com></CommentsDeterminingExclusion><UnitValues><NormalUnits>ratio</NormalUnits><EqualUnits></EqualUnits><ExcludingUnits></ExcludingUnits><ConvertingUnits><Units></Units><MultiplyingFactor></MultiplyingFactor></ConvertingUnits></UnitValues><Analysis><Enums /><Counts /><New /></Analysis></ValueMetadata>'
-		   end
-    from concept_dimension c
-		,(select distinct leaf_node, data_type from wt_trial_nodes) t
-    where c.concept_path = t.leaf_node
-	  and not exists
-		 (select 1 from i2b2 x
-		  where c.concept_path = x.c_fullname);
-		  
+	merge /*+ parallel(i2b2, 8) */ into i2b2 b
+	using (
+		select c.*, t.data_type, t.valuetype_cd
+		from concept_dimension c
+			,(select distinct leaf_node, data_type, valuetype_cd from wt_trial_nodes) t
+		where c.concept_path = t.leaf_node
+	) c on (b.c_fullname = c.concept_path)
+	when matched then
+		update set
+			c_name = c.name_char,
+			c_columndatatype = 'T',
+			c_metadataxml = I2B2_BUILD_METADATA_XML(c.name_char, c.data_type, c.valuetype_cd)
+	when not matched then
+		insert (
+			c_hlevel
+			,c_fullname
+			,c_name
+			,c_visualattributes
+			,c_synonym_cd
+			,c_facttablecolumn
+			,c_tablename
+			,c_columnname
+			,c_dimcode
+			,c_tooltip
+			,update_date
+			,download_date
+			,import_date
+			,sourcesystem_cd
+			,c_basecode
+			,c_operator
+			,c_columndatatype
+			,c_comment
+			,i2b2_id
+			,c_metadataxml
+		)
+		values (
+			(length(c.concept_path) - nvl(length(replace(c.concept_path, '\')),0)) / length('\') - 2 + root_level
+			,c.concept_path
+			,c.name_char
+			,'LA'
+			,'N'
+			,'CONCEPT_CD'
+			,'CONCEPT_DIMENSION'
+			,'CONCEPT_PATH'
+			,c.concept_path
+			,c.concept_path
+			,sysdate
+			,sysdate
+			,sysdate
+			,c.sourcesystem_cd
+			,c.concept_cd
+			,'LIKE'
+			,'T'		-- if i2b2 gets fixed to respect c_columndatatype then change to t.data_type
+			,'trial:' || TrialID
+			,i2b2_id_seq.nextval
+			,I2B2_BUILD_METADATA_XML(c.name_char, c.data_type, c.valuetype_cd)
+		);
+
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Inserted leaf nodes into I2B2METADATA i2b2',SQL%ROWCOUNT,stepCt,'Done');
-    COMMIT;	
-	
-  	i2b2_fill_in_tree(TrialId, topNode, jobID);
-    
-    commit;
+	COMMIT;
+
+	i2b2_fill_in_tree(TrialId, topNode, jobID);
+
+	commit;
   
   
 	--21 July 2013. Performace fix by TR. Drop complicated index before data manipulation

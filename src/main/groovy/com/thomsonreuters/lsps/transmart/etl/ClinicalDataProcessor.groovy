@@ -71,7 +71,7 @@ class ClinicalDataProcessor extends DataProcessor {
                         throw new Exception("SUBJ_ID are not defined at line ${lineNum}")
                     }
 
-                    def output = [
+                    Map<String, String> output = [
                             study_id       : cols[fMappings.STUDY_ID],
                             site_id        : cols[fMappings.SITE_ID],
                             subj_id        : cols[fMappings.SUBJ_ID],
@@ -80,7 +80,8 @@ class ClinicalDataProcessor extends DataProcessor {
                             data_label     : '', // DATA_LABEL
                             data_value     : '', // DATA_VALUE
                             category_cd    : '', // CATEGORY_CD
-                            ctrl_vocab_code: ''  // CTRL_VOCAB_CODE - unused
+                            ctrl_vocab_code: '', // CTRL_VOCAB_CODE - unused
+                            valuetype_cd   : (String) null,
                     ]
 
                     if (_DATA) {
@@ -95,6 +96,9 @@ class ClinicalDataProcessor extends DataProcessor {
                             if (v['CATEGORY_CD'] != '') {
                                 def out = output.clone()
                                 out['data_value'] = fixColumn(value)
+                                if (v.variableType != VariableType.Text) {
+                                    out['valuetype_cd'] = v.variableType.name().toUpperCase()
+                                }
                                 def cat_cd = v.CATEGORY_CD
                                 //Support tag start
                                 if (cat_cd.contains('$$')) {
@@ -160,8 +164,8 @@ class ClinicalDataProcessor extends DataProcessor {
                         processRow(output)
                         table.collectForRecord(SUBJ_ID: output.subj_id)
                     }
-
                 }
+                it
             }
         }
         return lineNum
@@ -208,7 +212,7 @@ class ClinicalDataProcessor extends DataProcessor {
         return MergeMode.valueOf(modeName)
     }
 
-    private void addStatisticVariables(TableStatistic table, CsvLikeFile csvFile, fMappings) {
+    private void addStatisticVariables(TableStatistic table, CsvLikeFile csvFile, ClinicalDataMapping.FileMapping fMappings) {
         table.withRecordStatisticForVariable('SUBJ_ID', VariableType.ID)
         fMappings._DATA?.each { ClinicalDataMapping.Entry entry ->
             table.withRecordStatisticForVariable(csvFile.header[(entry.COLUMN as int) - 1], entry.variableType, entry.validationRules)
@@ -231,11 +235,12 @@ class ClinicalDataProcessor extends DataProcessor {
 
     private void processFileForPostgres(Path f, ClinicalDataMapping.FileMapping fileMapping) {
         DataLoader.start(database, "lt_src_clinical_data", ['STUDY_ID', 'SITE_ID', 'SUBJECT_ID', 'VISIT_NAME',
-                                                            'DATA_LABEL', 'DATA_VALUE', 'CATEGORY_CD', 'SAMPLE_CD']) {
+                                                            'DATA_LABEL', 'DATA_VALUE', 'CATEGORY_CD', 'SAMPLE_CD',
+                                                            'VALUETYPE_CD']) {
             st ->
                 def lineNum = processEachRow(f, fileMapping) { row ->
                     st.addBatch([row.study_id, row.site_id, row.subj_id, row.visit_name, row.data_label,
-                                 row.data_value, row.category_cd, row.sample_cd])
+                                 row.data_value, row.category_cd, row.sample_cd, row.valuetype_cd])
                 }
                 config.logger.log("Processed ${lineNum} rows")
         }
@@ -246,18 +251,20 @@ class ClinicalDataProcessor extends DataProcessor {
 
         sql.withTransaction {
             sql.withBatch(100, """\
-					INSERT into lt_src_clinical_data
-										(STUDY_ID, SITE_ID, SUBJECT_ID, VISIT_NAME, DATA_LABEL, DATA_VALUE, CATEGORY_CD, SAMPLE_CD)
-									VALUES (:study_id, :site_id, :subj_id, :visit_name,
-										:data_label, :data_value, :category_cd, :sample_cd)
-					""") {
+                INSERT into lt_src_clinical_data(
+                    STUDY_ID, SITE_ID, SUBJECT_ID, VISIT_NAME, DATA_LABEL, DATA_VALUE,
+                    CATEGORY_CD, SAMPLE_CD, VALUETYPE_CD
+                ) VALUES (
+                    :study_id, :site_id, :subj_id, :visit_name, :data_label, :data_value,
+                    :category_cd, :sample_cd, :valuetype_cd
+                )
+			""") {
                 stmt ->
                     lineNum = processEachRow f, fMappings, {
                         stmt.addBatch(it)
                     }
             }
         }
-        sql.commit() // TODO: do we need it here?
         config.logger.log("Processed ${lineNum} rows")
     }
 
