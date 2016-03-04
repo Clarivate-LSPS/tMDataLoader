@@ -96,7 +96,7 @@ class ClinicalDataProcessor extends DataProcessor {
                             if (v['CATEGORY_CD'] != '') {
                                 def out = output.clone()
                                 out['data_value'] = fixColumn(value)
-                                if (v.variableType != VariableType.Text) {
+                                if (v.variableType == VariableType.Timepoint) {
                                     out['valuetype_cd'] = v.variableType.name().toUpperCase()
                                 }
                                 def cat_cd = v.CATEGORY_CD
