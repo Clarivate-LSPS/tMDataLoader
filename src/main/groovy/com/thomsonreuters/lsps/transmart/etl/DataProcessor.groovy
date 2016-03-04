@@ -29,7 +29,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 
 abstract class DataProcessor {
-    def config
+    Map config
     Database database
 
     MergeMode mergeMode = MergeMode.REPLACE
