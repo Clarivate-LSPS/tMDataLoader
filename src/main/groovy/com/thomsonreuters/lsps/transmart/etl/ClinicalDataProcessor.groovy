@@ -29,6 +29,7 @@ import com.thomsonreuters.lsps.transmart.files.CsvLikeFile
 import com.thomsonreuters.lsps.transmart.files.MetaInfoHeader
 import com.thomsonreuters.lsps.db.core.DatabaseType
 import groovy.sql.Sql
+import groovy.transform.CompileStatic
 
 import java.nio.file.Files
 import java.nio.file.Path
@@ -37,42 +38,45 @@ import java.util.regex.Pattern
 class ClinicalDataProcessor extends DataProcessor {
     StatisticCollector statistic = new StatisticCollector()
 
-    private static final RE_PLUS = Pattern.compile(/\+/)
+    protected static final Pattern RE_PLUS = Pattern.compile(/\+/)
 
     public ClinicalDataProcessor(Object conf) {
         super(conf);
     }
 
-    private long processEachRow(Path f, fMappings, Closure<List> processRow) {
+    @CompileStatic
+    private long processEachRow(Path f, ClinicalDataMapping.FileMapping fMappings, Closure<List> processRow) {
         def lineNum = 1L
-        def _DATA = fMappings['_DATA']
+        def _DATA = fMappings._DATA
         //Custom tags
-        Map tagToColumn = fMappings._DATA.collectEntries {
+        Map tagToColumn = _DATA.collectEntries {
             [(it.DATA_LABEL): it.COLUMN]
         }
 
         CsvLikeFile csvFile = new CsvLikeFile(f, '# ', config.allowNonUniqueColumnNames.asBoolean())
         statistic.collectForTable(f.fileName.toString()) { table ->
             addStatisticVariables(table, csvFile, fMappings)
-            csvFile.eachEntry { String[] data ->
-                def cols = [''] // to support 0-index properly (we use it for empty data values)
-                cols.addAll(Arrays.asList(data))
+            csvFile.eachEntry {
+                String[] data = (String[]) it
+                String[] cols = new String[data.length + 1]
+                cols[0] = '' // to support 0-index properly (we use it for empty data values)
+                System.arraycopy(data, 0, cols, 1, data.length)
 
                 lineNum++
 
-                if (cols[fMappings['STUDY_ID']]) {
+                if (cols[fMappings.STUDY_ID]) {
                     // the line shouldn't be empty
 
-                    if (!cols[fMappings['SUBJ_ID']]) {
+                    if (!cols[fMappings.SUBJ_ID]) {
                         throw new Exception("SUBJ_ID are not defined at line ${lineNum}")
                     }
 
                     def output = [
-                            study_id       : cols[fMappings['STUDY_ID']],
-                            site_id        : cols[fMappings['SITE_ID']],
-                            subj_id        : cols[fMappings['SUBJ_ID']],
-                            visit_name     : cols[fMappings['VISIT_NAME']],
-                            sample_cd      : cols[fMappings['SAMPLE_ID']],
+                            study_id       : cols[fMappings.STUDY_ID],
+                            site_id        : cols[fMappings.SITE_ID],
+                            subj_id        : cols[fMappings.SUBJ_ID],
+                            visit_name     : cols[fMappings.VISIT_NAME],
+                            sample_cd      : cols[fMappings.SAMPLE_ID],
                             data_label     : '', // DATA_LABEL
                             data_value     : '', // DATA_VALUE
                             category_cd    : '', // CATEGORY_CD
@@ -82,8 +86,8 @@ class ClinicalDataProcessor extends DataProcessor {
                     if (_DATA) {
                         table.startCollectForRecord()
                         table.collectVariableValue('SUBJ_ID', output.subj_id)
-                        _DATA.each { v ->
-                            int valueColumn = v['COLUMN']
+                        for (def v : _DATA) {
+                            int valueColumn = v.COLUMN
                             String value = cols[valueColumn]
                             if (valueColumn > 0) {
                                 table.collectVariableValue(csvFile.header[valueColumn - 1], value)
@@ -91,14 +95,14 @@ class ClinicalDataProcessor extends DataProcessor {
                             if (v['CATEGORY_CD'] != '') {
                                 def out = output.clone()
                                 out['data_value'] = fixColumn(value)
-                                def cat_cd = v['CATEGORY_CD']
+                                def cat_cd = v.CATEGORY_CD
                                 //Support tag start
                                 if (cat_cd.contains('$$')) {
                                     //Default tags
-                                    cat_cd = cat_cd.replace('$$STUDY_ID', cols[fMappings['STUDY_ID']])
-                                    cat_cd = cat_cd.replace('$$SITE_ID', cols[fMappings['SITE_ID']])
-                                    cat_cd = cat_cd.replace('$$SUBJ_ID', cols[fMappings['SUBJ_ID']])
-                                    cat_cd = cat_cd.replace('$$SAMPLE_ID', cols[fMappings['SAMPLE_ID']])
+                                    cat_cd = cat_cd.replace('$$STUDY_ID', cols[fMappings.STUDY_ID])
+                                    cat_cd = cat_cd.replace('$$SITE_ID', cols[fMappings.SITE_ID])
+                                    cat_cd = cat_cd.replace('$$SUBJ_ID', cols[fMappings.SUBJ_ID])
+                                    cat_cd = cat_cd.replace('$$SAMPLE_ID', cols[fMappings.SAMPLE_ID])
 
                                     boolean hasEmptyTags = false
                                     cat_cd = cat_cd.replaceAll(/\$\$([A-z0-9_\"\s\(\)]+)/) { match, name ->
@@ -108,20 +112,20 @@ class ClinicalDataProcessor extends DataProcessor {
                                         def tagValue = cols[tagToColumn[name] as Integer] as String
                                         if (!tagValue) {
                                             hasEmptyTags = true
-                                            return
+                                            return match
                                         }
                                         '$$' + tagValue.replaceAll(RE_PLUS, '(plus)')
                                     }
 
                                     //ignore record without tags value
                                     if (hasEmptyTags)
-                                        return
+                                        continue
                                 }
                                 //Support tag stop
 
-                                if (v['DATA_LABEL_SOURCE'] > 0) {
+                                if (v.DATA_LABEL_SOURCE > 0) {
                                     // ok, the actual data label is in the referenced column
-                                    out['data_label'] = fixColumn(cols[v['DATA_LABEL_SOURCE']])
+                                    out['data_label'] = fixColumn(cols[v.DATA_LABEL_SOURCE])
                                     // now need to modify CATEGORY_CD before proceeding
 
                                     // handling DATALABEL in category_cd
@@ -134,7 +138,7 @@ class ClinicalDataProcessor extends DataProcessor {
                                     }
 
                                 } else {
-                                    out['data_label'] = fixColumn(v['DATA_LABEL'])
+                                    out['data_label'] = fixColumn(v.DATA_LABEL)
                                 }
 
                                 cat_cd = fixColumn(cat_cd)
@@ -211,7 +215,7 @@ class ClinicalDataProcessor extends DataProcessor {
         }
     }
 
-    private void processFile(sql,Path f, fMappings) {
+    private void processFile(sql, Path f, ClinicalDataMapping.FileMapping fileMapping) {
         config.logger.log("Processing ${f.fileName}")
         if (Files.notExists(f)) {
             config.logger.log("File ${f.fileName} doesn't exist!")
@@ -219,17 +223,17 @@ class ClinicalDataProcessor extends DataProcessor {
         }
 
         if (database?.databaseType == DatabaseType.Postgres) {
-            processFileForPostgres(f, fMappings)
+            processFileForPostgres(f, fileMapping)
         } else {
-            processFileForGenericDatabase(sql, f, fMappings)
+            processFileForGenericDatabase(sql, f, fileMapping)
         }
     }
 
-    private void processFileForPostgres(Path f, fMappings) {
+    private void processFileForPostgres(Path f, ClinicalDataMapping.FileMapping fileMapping) {
         DataLoader.start(database, "lt_src_clinical_data", ['STUDY_ID', 'SITE_ID', 'SUBJECT_ID', 'VISIT_NAME',
                                                             'DATA_LABEL', 'DATA_VALUE', 'CATEGORY_CD', 'SAMPLE_CD']) {
             st ->
-                def lineNum = processEachRow(f, fMappings) { row ->
+                def lineNum = processEachRow(f, fileMapping) { row ->
                     st.addBatch([row.study_id, row.site_id, row.subj_id, row.visit_name, row.data_label,
                                  row.data_value, row.category_cd, row.sample_cd])
                 }
