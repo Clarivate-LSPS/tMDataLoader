@@ -539,4 +539,8 @@ update amapp.am_tag_item set ACTIVE_IND= '1' where ACTIVE_IND= 't';
 update amapp.am_tag_item set ACTIVE_IND= '0' where ACTIVE_IND= 'f';
 	
 	@@issue_87.sql
-	
+
+alter table i2b2metadata.i2b2_SECURE add constraint i2b2_SECURE_uk unique (c_fullname);
+
+create index I2B2DEMODATA.CONCEPT_COUNTS_I_PCP on I2B2DEMODATA.CONCEPT_COUNTS(parent_concept_path);
+
