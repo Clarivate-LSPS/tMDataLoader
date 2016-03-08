@@ -537,4 +537,6 @@ update amapp.am_tag_template set ACTIVE_IND= '0' where ACTIVE_IND= 'f';
 update amapp.am_tag_item set ACTIVE_IND= '1' where ACTIVE_IND= 't';
 
 update amapp.am_tag_item set ACTIVE_IND= '0' where ACTIVE_IND= 'f';
-
+	
+	@@issue_87.sql
+	
