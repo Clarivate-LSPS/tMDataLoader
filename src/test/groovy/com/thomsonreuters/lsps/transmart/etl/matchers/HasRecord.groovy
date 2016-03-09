@@ -7,16 +7,16 @@ import org.hamcrest.Description
 import org.hamcrest.Matcher
 
 class HasRecord extends BaseMatcher<Sql> {
-    private Map<CharSequence, Object> keyAttrs
+    private Map<String, Object> keyAttrs
     private String tableName
     private GroovyRowResult record
     private Matcher<? super GroovyRowResult> rowMatcher
 
-    HasRecord(String tableName, Map<CharSequence, Object> keyAttrs, Map<CharSequence, Object> valueAttrs) {
+    HasRecord(String tableName, Map<String, Object> keyAttrs, Map<String, Object> valueAttrs) {
         this(tableName, keyAttrs, new RowMatcher(valueAttrs))
     }
 
-    HasRecord(String tableName, Map<CharSequence, Object> keyAttrs, Matcher<? super GroovyRowResult> rowMatcher) {
+    HasRecord(String tableName, Map<String, Object> keyAttrs, Matcher<? super GroovyRowResult> rowMatcher) {
         this.tableName = tableName
         this.keyAttrs = keyAttrs
         this.rowMatcher = rowMatcher

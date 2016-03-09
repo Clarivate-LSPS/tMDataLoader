@@ -1,6 +1,7 @@
 package com.thomsonreuters.lsps.transmart.etl.matchers
 
 import groovy.sql.GroovyRowResult
+import groovy.transform.CompileStatic
 import groovy.transform.stc.ClosureParams
 import groovy.transform.stc.SimpleType
 import org.hamcrest.BaseMatcher
@@ -31,8 +32,9 @@ class SqlMatchers {
         return new HasRecord(tableName, keyAttrs, [:])
     }
 
+    @CompileStatic
     public static HasRecord hasRecord(String tableName, Map<String, Object> keyAttrs, Map<String, Object> valueAttrs) {
-        return new HasRecord(tableName, keyAttrs, valueAttrs)
+        return new HasRecord(tableName, keyAttrs, (Map) valueAttrs)
     }
 
     public static HasRecord hasRecord(String tableName, Map<String, Object> keyAttrs,
