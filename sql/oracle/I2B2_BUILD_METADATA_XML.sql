@@ -2,9 +2,9 @@ CREATE OR REPLACE FUNCTION "I2B2_BUILD_METADATA_XML"(
 	display_name      		VARCHAR2,
 	data_type				VARCHAR2,
 	valuetype_cd		VARCHAR2)
-RETURN CLOB DETERMINISTIC IS
-		series_value VARCHAR2(200);
-		series_unit_name VARCHAR2(200);
+RETURN CLOB IS
+		series_value VARCHAR2(200) := NULL;
+		series_unit_name VARCHAR2(200) := NULL;
 	BEGIN
 		IF valuetype_cd = 'TIMEPOINT' THEN
 			IF display_name = 'Baseline' THEN

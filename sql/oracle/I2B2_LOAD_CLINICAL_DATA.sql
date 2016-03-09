@@ -915,9 +915,9 @@ BEGIN
 	--	update i2b2 to pick up change in name, data_type for leaf nodes
 	merge /*+ parallel(i2b2, 8) */ into i2b2 b
 	using (
-		select c.*, t.data_type, t.valuetype_cd
+		select distinct c.concept_path, c.name_char, c.sourcesystem_cd, c.concept_cd, t.data_type, t.valuetype_cd
 		from concept_dimension c
-			,(select distinct leaf_node, data_type, valuetype_cd from wt_trial_nodes) t
+			,wt_trial_nodes t
 		where c.concept_path = t.leaf_node
 	) c on (b.c_fullname = c.concept_path)
 	when matched then
