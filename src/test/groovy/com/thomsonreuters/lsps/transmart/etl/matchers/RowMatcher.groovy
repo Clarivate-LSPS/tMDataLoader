@@ -11,7 +11,7 @@ import java.sql.Clob
  * Time: 15:19
  */
 class RowMatcher extends BaseMatcher<GroovyRowResult> {
-    protected final Map<CharSequence, Object> valueAttrs
+    protected final Map<String, Object> valueAttrs
 
     RowMatcher(Map valueAttrs) {
         this.valueAttrs = valueAttrs
@@ -19,7 +19,7 @@ class RowMatcher extends BaseMatcher<GroovyRowResult> {
 
     protected static Object normalizeValue(Object value, Class targetClass) {
         if (value instanceof Clob) {
-            value = ((Clob)value).getCharacterStream().text
+            value = ((Clob) value).getCharacterStream().text
         }
         switch (targetClass) {
             case Boolean:
@@ -34,18 +34,23 @@ class RowMatcher extends BaseMatcher<GroovyRowResult> {
         return value
     }
 
+    private static boolean matchValue(actualValue, expectedValue) {
+        def targetClass = expectedValue?.class
+        if (Closure.isAssignableFrom(targetClass)) {
+            return ((Closure) expectedValue).call(normalizeValue(actualValue, String))
+        }
+        actualValue = normalizeValue(actualValue, targetClass)
+        if ((targetClass == Double || targetClass == Float || targetClass == BigDecimal) && actualValue != null) {
+            Math.abs((Double) expectedValue - actualValue) < 0.001
+        } else {
+            expectedValue == actualValue
+        }
+    }
+
     @Override
     boolean matches(Object item) {
         GroovyRowResult record = item as GroovyRowResult
-        return valueAttrs.every {
-            def targetClass = it.value?.class
-            def value = normalizeValue(record[it.key], targetClass)
-            if ((targetClass == Double || targetClass == Float || targetClass == BigDecimal) && value != null) {
-                Math.abs((Double) it.value - value) < 0.001
-            } else {
-                it.value == value
-            }
-        }
+        return valueAttrs.every { matchValue(record[it.key], it.value) }
     }
 
     @Override
@@ -59,18 +64,25 @@ class RowMatcher extends BaseMatcher<GroovyRowResult> {
         description.appendText("differs by: ")
         boolean first = true
         valueAttrs.each {
-            def actualValue = normalizeValue(record[it.key], it.value?.class)
-            if (it.value == actualValue) {
-                return;
+            if (matchValue(record[it.key], it.value)) {
+                return
             }
             if (!first) {
                 description.appendText(', ')
             } else {
                 first = false
             }
-            description.appendText("${it.key} (").
-                    appendValue(it.value).appendText('!=').appendValue(actualValue).
-                    appendText(")")
+            description.appendText("${it.key} (")
+            if (it.value instanceof Closure) {
+                def mismatchDescription = 'not matches validation block'
+                description.appendValue(normalizeValue(record[it.key], String)).appendText(': ').
+                        appendText(mismatchDescription)
+            } else {
+                description.appendValue(it.value).
+                        appendText('!=').appendValue(normalizeValue(record[it.key], it.value?.class)).
+                        appendText(")")
+            }
+
         }
     }
 }
