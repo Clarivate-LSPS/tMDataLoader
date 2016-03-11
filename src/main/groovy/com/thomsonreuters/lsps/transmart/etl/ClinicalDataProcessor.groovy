@@ -148,7 +148,7 @@ class ClinicalDataProcessor extends DataProcessor {
                                 cat_cd = fixColumn(cat_cd)
 
                                 // VISIT_NAME special handling; do it only when VISITNAME is not in category_cd already
-                                if (!cat_cd.endsWith('+$') && !(cat_cd.contains('VISITNAME') || cat_cd.contains('+VISITNFST'))) {
+                                if (fMappings.VISIT_NAME > 0 && !cat_cd.endsWith('+$') && !(cat_cd.contains('VISITNAME') || cat_cd.contains('+VISITNFST'))) {
                                     if (config.visitNameFirst) {
                                         cat_cd = cat_cd + '+VISITNFST'
                                     }

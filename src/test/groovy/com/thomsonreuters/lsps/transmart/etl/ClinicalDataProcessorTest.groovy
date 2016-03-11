@@ -1,6 +1,5 @@
 package com.thomsonreuters.lsps.transmart.etl
 
-import com.thomsonreuters.lsps.db.sql.SqlMethods
 import com.thomsonreuters.lsps.transmart.Fixtures
 import com.thomsonreuters.lsps.transmart.etl.statistic.VariableType
 import com.thomsonreuters.lsps.transmart.fixtures.ClinicalData
@@ -10,9 +9,7 @@ import com.thomsonreuters.lsps.transmart.fixtures.StudyInfo
 import groovy.sql.Sql
 import spock.lang.Specification
 
-import static com.thomsonreuters.lsps.transmart.Fixtures.getAdditionalStudiesDir
-import static com.thomsonreuters.lsps.transmart.Fixtures.getStudiesForMerge
-import static com.thomsonreuters.lsps.transmart.Fixtures.studyDir
+import static com.thomsonreuters.lsps.transmart.Fixtures.*
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.*
 import static org.hamcrest.CoreMatchers.equalTo
 import static org.hamcrest.CoreMatchers.notNullValue
