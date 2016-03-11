@@ -16,6 +16,7 @@ $$;
 \i procedures/I2B2_GET_HLEVEL.sql
 \i procedures/I2B2_GET_NODE_NAME.sql
 \i procedures/I2B2_ADD_NODES.sql
+\i procedures/I2B2_BUILD_METADATA_XML.sql
 \i procedures/I2B2_FILL_IN_TREE.sql
 \i procedures/I2B2_ADD_TRIAL_NODES.sql
 \i procedures/I2B2_LOAD_SECURITY_DATA.sql

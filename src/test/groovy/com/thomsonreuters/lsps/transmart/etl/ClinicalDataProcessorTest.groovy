@@ -1,5 +1,6 @@
 package com.thomsonreuters.lsps.transmart.etl
 
+import com.thomsonreuters.lsps.db.sql.SqlMethods
 import com.thomsonreuters.lsps.transmart.Fixtures
 import com.thomsonreuters.lsps.transmart.etl.statistic.VariableType
 import com.thomsonreuters.lsps.transmart.fixtures.ClinicalData
@@ -638,25 +639,29 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat db, hasNode("$timepointsPath\\Day 1\\").withPatientCount(1)
         assertThat db, hasNode("$timepointsPath\\Month 3\\").withPatientCount(1)
 
-        assertThat db, hasRecord("i2b2", [c_fullname: "$timepointsPath\\Baseline\\"], 'valid metadata present') {
-            assertThat(it.c_metadataxml, notNullValue())
-            def metadata = new XmlParser().parse(it.c_metadataxml.characterStream)
-            assertThat(metadata.Oktousevalues.text(), equalTo('Y'))
-            assertThat(metadata.SeriesMeta.Value.text(), equalTo('0'))
-            assertThat(metadata.SeriesMeta.Unit.text(), equalTo('minutes'))
-            assertThat(metadata.SeriesMeta.DisplayName.text(), equalTo('Baseline'))
-            true
-        }
+        assertThat db, hasRecord("i2b2", [c_fullname: "$timepointsPath\\Baseline\\"], [
+                c_metadataxml: {
+                    assertThat(it, notNullValue())
 
-        assertThat db, hasRecord("i2b2", [c_fullname: "$timepointsPath\\Month 2\\"], 'valid metadata present') {
-            assertThat(it.c_metadataxml, notNullValue())
-            def metadata = new XmlParser().parse(it.c_metadataxml.characterStream)
-            assertThat(metadata.Oktousevalues.text(), equalTo('Y'))
-            assertThat(metadata.SeriesMeta.Value.text(), equalTo((60 * 24 * 30 * 2).toString()))
-            assertThat(metadata.SeriesMeta.Unit.text(), equalTo('minutes'))
-            assertThat(metadata.SeriesMeta.DisplayName.text(), equalTo('Month 2'))
-            true
-        }
+                    def metadata = new XmlParser().parseText(it as String)
+                    assertThat(metadata.Oktousevalues.text(), equalTo('Y'))
+                    assertThat(metadata.SeriesMeta.Value.text(), equalTo('0'))
+                    assertThat(metadata.SeriesMeta.Unit.text(), equalTo('minutes'))
+                    assertThat(metadata.SeriesMeta.DisplayName.text(), equalTo('Baseline'))
+                    true
+                }
+        ])
+
+        assertThat db, hasRecord("i2b2", [c_fullname: "$timepointsPath\\Month 2\\"], [
+                c_metadataxml: {
+                    def metadata = new XmlParser().parseText(it as String)
+                    assertThat(metadata.Oktousevalues.text(), equalTo('Y'))
+                    assertThat(metadata.SeriesMeta.Value.text(), equalTo((60 * 24 * 30 * 2).toString()))
+                    assertThat(metadata.SeriesMeta.Unit.text(), equalTo('minutes'))
+                    assertThat(metadata.SeriesMeta.DisplayName.text(), equalTo('Month 2'))
+                    true
+                }
+        ])
     }
 
     def 'it should load values with upper and lower case'(){

@@ -196,6 +196,7 @@ BEGIN
 	,category_cd
 	,ctrl_vocab_code
 	,sample_cd
+	,valuetype_cd
 	)
 	select study_id
 		  ,site_id
@@ -206,6 +207,7 @@ BEGIN
 		  ,category_cd
 		  ,ctrl_vocab_code
 		  ,sample_cd
+			,valuetype_cd
 	from lt_src_clinical_data;
 	exception
 	when others then
@@ -767,6 +769,7 @@ BEGIN
 	,data_label
 	,data_value
 	,data_type
+	,valuetype_cd
 	)
   select DISTINCT
     Case
@@ -781,6 +784,7 @@ BEGIN
     ,a.data_label
     ,case when a.data_type = 'T' then a.data_value else null end as data_value
     ,a.data_type
+		,a.valuetype_cd
 	from  wrk_clinical_data a;
 	get diagnostics rowCt := ROW_COUNT;
 	exception
@@ -1022,15 +1026,11 @@ BEGIN
 
 	--	update i2b2 with name, data_type and xml for leaf nodes
 	begin
-	with ncd as (select t.leaf_node, t.node_name, t.data_type from wt_trial_nodes t)
 	update i2b2metadata.i2b2
 	set c_name=ncd.node_name
 	   ,c_columndatatype='T'
-	   ,c_metadataxml=case when ncd.data_type = 'T'
-					  then null
-					  else '<?xml version="1.0"?><ValueMetadata><Version>3.02</Version><CreationDateTime>08/14/2008 01:22:59</CreationDateTime><TestID></TestID><TestName></TestName><DataType>PosFloat</DataType><CodeType></CodeType><Loinc></Loinc><Flagstouse></Flagstouse><Oktousevalues>Y</Oktousevalues><MaxStringLength></MaxStringLength><LowofLowValue>0</LowofLowValue><HighofLowValue>0</HighofLowValue><LowofHighValue>100</LowofHighValue>100<HighofHighValue>100</HighofHighValue><LowofToxicValue></LowofToxicValue><HighofToxicValue></HighofToxicValue><EnumValues></EnumValues><CommentsDeterminingExclusion><Com></Com></CommentsDeterminingExclusion><UnitValues><NormalUnits>ratio</NormalUnits><EqualUnits></EqualUnits><ExcludingUnits></ExcludingUnits><ConvertingUnits><Units></Units><MultiplyingFactor></MultiplyingFactor></ConvertingUnits></UnitValues><Analysis><Enums /><Counts /><New /></Analysis></ValueMetadata>'
-					  end
-	from ncd
+	   ,c_metadataxml=i2b2_build_metadata_xml(ncd.node_name, ncd.data_type, ncd.valuetype_cd)
+	from wt_trial_nodes ncd
 	where c_fullname = ncd.leaf_node;
 	get diagnostics rowCt := ROW_COUNT;
 	exception
@@ -1088,9 +1088,7 @@ BEGIN
 		  , 'T' --t.data_type
 		  ,'trial:' || TrialID
 		  ,'@'
-		  ,case when t.data_type = 'T' then null
-		   else '<?xml version="1.0"?><ValueMetadata><Version>3.02</Version><CreationDateTime>08/14/2008 01:22:59</CreationDateTime><TestID></TestID><TestName></TestName><DataType>PosFloat</DataType><CodeType></CodeType><Loinc></Loinc><Flagstouse></Flagstouse><Oktousevalues>Y</Oktousevalues><MaxStringLength></MaxStringLength><LowofLowValue>0</LowofLowValue><HighofLowValue>0</HighofLowValue><LowofHighValue>100</LowofHighValue>100<HighofHighValue>100</HighofHighValue><LowofToxicValue></LowofToxicValue><HighofToxicValue></HighofToxicValue><EnumValues></EnumValues><CommentsDeterminingExclusion><Com></Com></CommentsDeterminingExclusion><UnitValues><NormalUnits>ratio</NormalUnits><EqualUnits></EqualUnits><ExcludingUnits></ExcludingUnits><ConvertingUnits><Units></Units><MultiplyingFactor></MultiplyingFactor></ConvertingUnits></UnitValues><Analysis><Enums /><Counts /><New /></Analysis></ValueMetadata>'
-		   end
+		  ,i2b2_build_metadata_xml(c.name_char, t.data_type, t.valuetype_cd)
     from i2b2demodata.concept_dimension c
 		,wt_trial_nodes t
     where c.concept_path = t.leaf_node
