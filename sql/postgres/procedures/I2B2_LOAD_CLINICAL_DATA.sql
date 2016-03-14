@@ -558,6 +558,32 @@ BEGIN
 	end;
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Set visit_name to null when found in data_label',rowCt,stepCt,'Done') into rtnCd;
+
+  --	set visit_name to null if same as data_value
+
+	begin
+  	update wrk_clinical_data t
+		set visit_name=null
+		where (t.category_cd, t.visit_name, t.data_value) in
+					(select distinct tpm.category_cd
+					 ,tpm.visit_name
+					 ,tpm.data_value
+				from wrk_clinical_data tpm
+				where tpm.visit_name = tpm.data_value);
+	get diagnostics rowCt := ROW_COUNT;
+	exception
+	when others then
+		errorNumber := SQLSTATE;
+		errorMessage := SQLERRM;
+		--Handle errors.
+		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+		--End Proc
+		select cz_end_audit (jobID, 'FAIL') into rtnCd;
+		return -16;
+	end;
+	stepCt := stepCt + 1;
+	select cz_write_audit(jobId,databaseName,procedureName,'Set visit_name to null when found in data_value',rowCt,stepCt,'Done') into rtnCd;
+
 	--1. DETERMINE THE DATA_TYPES OF THE FIELDS
 	--	replaced cursor with update, used temp table to store category_cd/data_label because correlated subquery ran too long
 
