@@ -3,7 +3,7 @@ CREATE OR REPLACE FUNCTION i2b2_build_metadata_xml(
 	data_type    CHARACTER VARYING,
 	valuetype_cd CHARACTER VARYING
 )
-	RETURNS TEXT STABLE AS
+	RETURNS TEXT AS
 $BODY$
 DECLARE
 	series_value     VARCHAR(200) := NULL;
@@ -16,7 +16,7 @@ BEGIN
 			series_value := '0';
 			series_unit_name := 'minutes';
 		ELSE
-			series_value := substring(display_name from '[0-9]+');
+			series_value := substring(display_name from '-?[0-9]+');
 			series_unit_name := lower(substring(display_name from '[a-zA-Z]+'));
 			IF series_unit_name = 'minute'
 			THEN

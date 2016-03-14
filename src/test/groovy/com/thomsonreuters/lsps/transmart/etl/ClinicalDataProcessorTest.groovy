@@ -610,6 +610,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
             }
             dataFile('TEST.txt', ['Days', 'Time point', 'Sex']) {
                 forSubject('SUBJ1') {
+                    row '20', 'Week -1', 'Female'
                     row '0', 'Baseline', 'Female'
                     row '1', 'Day 1', 'Female'
                     row '7', 'Week 1', 'Female'

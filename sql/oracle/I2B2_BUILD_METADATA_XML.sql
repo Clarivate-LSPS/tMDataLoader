@@ -11,7 +11,7 @@ RETURN CLOB IS
 				series_value := '0';
 				series_unit_name := 'minutes';
 			ELSE
-				series_value := REGEXP_SUBSTR(display_name,'[0-9]+');
+				series_value := REGEXP_SUBSTR(display_name,'-?[0-9]+');
 				series_unit_name := LOWER(REGEXP_SUBSTR(display_name,'[a-zA-Z]+'));
 				IF series_unit_name = 'minute' THEN
 					series_unit_name := 'minutes';
