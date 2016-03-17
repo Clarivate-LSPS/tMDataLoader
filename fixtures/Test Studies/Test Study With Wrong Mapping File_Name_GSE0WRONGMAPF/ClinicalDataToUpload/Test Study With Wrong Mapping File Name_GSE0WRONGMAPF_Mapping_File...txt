@@ -1,0 +1,7 @@
+filename	category_cd	col_nbr	data_label	data_label_source	variable_type	validation_rules
+TST_DEMO.txt		1	STUDY_ID
+TST_DEMO.txt		2	SUBJ_ID
+TST_DEMO.txt	Subjects+Demographics	3	"Age (AGE)"		Numerical	"Required; Greater than 30, when ""Sex"" is equal to ""Male""; Lesser than 50; Greater than or equal to 20; Lesser than or equal to 20; >30; <50; >=20; <=20; 30-50; Between 30 to 50"
+TST_DEMO.txt	Subjects+Demographics+Long_Path_1+Long_Path_2+Long_Path_3+Long_Path_4+Long_Path_5+Long_Path_6+Long_Path_7+Long_Path_8+Long_Path_9+Long_Path_10+Long_Path_11+Long_Path_12+Long_Path_13+Long_Path_14+Long_Path_15+Long_Path_16+Long_Path_17+Long_Path_18+Long_Path_19+Long_Path_20+Long_Path_21+Long_Path_22+Long_Path_23	4	"Sex (SEX)"		Categorical	Required
+TST_DEMO.txt	Subjects+Demographics	5	Assessment Date		Date
+TST_DEMO.txt	Subjects+Demographics	6	Language		Text

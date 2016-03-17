@@ -694,4 +694,45 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         expect:
         assertThat(db, hasRecord('i2b2metadata.i2b2', [c_fullname:'\\Demographics\\'], [:]))
     }
+
+
+    def 'it should check error then wrong mapping file name'(){
+        when:
+        def clinicalData = Fixtures.clinicalDataWithWrongMappingFileName
+        Study.deleteById(config, clinicalData.studyId)
+        clinicalData.load(config)
+
+        then:
+        thrown(DataProcessingException)
+    }
+
+    def 'it should check error with long path'(){
+        when:
+        def clinicalData = Fixtures.clinicalDataWithLongCategoryCD
+        Study.deleteById(config, clinicalData.studyId)
+        clinicalData.load(config)
+
+        then:
+        thrown(DataProcessingException)
+    }
+
+    def 'it should validate header for non visual symbols'() {
+        when:
+        def clinicalData = Fixtures.clinicalDataWithNonVisialSymbols
+        Study.deleteById(config, clinicalData.studyId)
+        clinicalData.load(config)
+
+        then:
+        thrown(DataProcessingException)
+    }
+
+    def 'it should check on different study id'() {
+        when:
+        def clinicalData = Fixtures.clinicalDataWithDifferentStudyID
+        Study.deleteById(config, clinicalData.studyId)
+        clinicalData.load(config)
+
+        then:
+        thrown(DataProcessingException)
+    }
 }
