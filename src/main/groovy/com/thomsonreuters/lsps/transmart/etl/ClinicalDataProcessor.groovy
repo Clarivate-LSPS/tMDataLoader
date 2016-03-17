@@ -20,7 +20,6 @@
 
 package com.thomsonreuters.lsps.transmart.etl
 
-import com.thomsonreuters.lsps.db.core.DatabaseType
 import com.thomsonreuters.lsps.db.loader.DataLoader
 import com.thomsonreuters.lsps.transmart.etl.mappings.ClinicalDataMapping
 import com.thomsonreuters.lsps.transmart.etl.mappings.TagReplacer
@@ -34,6 +33,7 @@ import groovy.transform.CompileStatic
 
 import java.nio.file.Files
 import java.nio.file.Path
+import java.sql.SQLException
 
 class ClinicalDataProcessor extends DataProcessor {
     StatisticCollector statistic = new StatisticCollector()
@@ -46,6 +46,7 @@ class ClinicalDataProcessor extends DataProcessor {
     private long processEachRow(Path f, ClinicalDataMapping.FileMapping fMappings, Closure<List> processRow) {
         def lineNum = 1L
         def _DATA = fMappings._DATA
+        def usedStudyId = ''
         //Custom tags
         def tagReplacer = TagReplacer.fromFileMapping(fMappings)
         CsvLikeFile csvFile = new CsvLikeFile(f, '# ', config.allowNonUniqueColumnNames.asBoolean())
@@ -64,6 +65,12 @@ class ClinicalDataProcessor extends DataProcessor {
 
                     if (!cols[fMappings.SUBJ_ID]) {
                         throw new Exception("SUBJ_ID are not defined at line ${lineNum}")
+                    }
+
+                    usedStudyId = usedStudyId?:cols[fMappings.STUDY_ID]
+
+                    if (usedStudyId != cols[fMappings.STUDY_ID]){
+                        throw new DataProcessingException("SUBJ_ID differs from previous in ${lineNum} line")
                     }
 
                     Map<String, String> output = [
@@ -148,6 +155,7 @@ class ClinicalDataProcessor extends DataProcessor {
     public boolean processFiles(Path dir, Sql sql, studyInfo) {
         // read mapping file first
         // then parse files that are specified there (to allow multiple files per study)
+        def isNotReadMapping = true
 
         database.truncateTable(sql, 'lt_src_clinical_data')
         if (!sql.connection.autoCommit) {
@@ -163,6 +171,10 @@ class ClinicalDataProcessor extends DataProcessor {
             mapping.eachFileMapping { fileMapping ->
                 this.processFile(sql, dir.resolve(fileMapping.fileName), fileMapping)
             }
+            isNotReadMapping = false
+        }
+        if (isNotReadMapping){
+            throw new DataProcessingException("Mapping file wasn\'t found. Please, check file name.")
         }
         dir.resolve("SummaryStatistic.txt").withWriter { writer ->
             statistic.printReport(writer)
@@ -199,46 +211,25 @@ class ClinicalDataProcessor extends DataProcessor {
             throw new DataProcessingException("File ${f.fileName} doesn't exist")
         }
 
-        if (database?.databaseType == DatabaseType.Postgres) {
-            processFileForPostgres(f, fileMapping)
-        } else {
-            processFileForGenericDatabase(sql, f, fileMapping)
-        }
+        processFile(f, fileMapping)
     }
 
-    private void processFileForPostgres(Path f, ClinicalDataMapping.FileMapping fileMapping) {
-        DataLoader.start(database, "lt_src_clinical_data", ['STUDY_ID', 'SITE_ID', 'SUBJECT_ID', 'VISIT_NAME',
-                                                            'DATA_LABEL', 'DATA_VALUE', 'CATEGORY_CD', 'SAMPLE_CD',
-                                                            'VALUETYPE_CD']) {
-            st ->
-                def lineNum = processEachRow(f, fileMapping) { row ->
-                    st.addBatch([row.study_id, row.site_id, row.subj_id, row.visit_name, row.data_label,
-                                 row.data_value, row.category_cd, row.sample_cd, row.valuetype_cd])
-                }
-                config.logger.log("Processed ${lineNum} rows")
-        }
-    }
-
-    private void processFileForGenericDatabase(sql, f, fMappings) {
-        def lineNum = 0
-
-        sql.withTransaction {
-            sql.withBatch(100, """\
-                INSERT into lt_src_clinical_data(
-                    STUDY_ID, SITE_ID, SUBJECT_ID, VISIT_NAME, DATA_LABEL, DATA_VALUE,
-                    CATEGORY_CD, SAMPLE_CD, VALUETYPE_CD
-                ) VALUES (
-                    :study_id, :site_id, :subj_id, :visit_name, :data_label, :data_value,
-                    :category_cd, :sample_cd, :valuetype_cd
-                )
-			""") {
-                stmt ->
-                    lineNum = processEachRow f, fMappings, {
-                        stmt.addBatch(it)
+    private void processFile(Path f, ClinicalDataMapping.FileMapping fileMapping) {
+        def lineNum
+        try {
+            DataLoader.start(database, "lt_src_clinical_data", ['STUDY_ID', 'SITE_ID', 'SUBJECT_ID', 'VISIT_NAME',
+                                                                'DATA_LABEL', 'DATA_VALUE', 'CATEGORY_CD', 'SAMPLE_CD',
+                                                                'VALUETYPE_CD']) {
+                st ->
+                    lineNum = processEachRow(f, fileMapping) { row ->
+                        st.addBatch([row.study_id, row.site_id, row.subj_id, row.visit_name, row.data_label,
+                                     row.data_value, row.category_cd, row.sample_cd, row.valuetype_cd])
                     }
+                    config.logger.log("Processed ${lineNum} rows")
             }
+        } catch (SQLException e) {
+            throw new DataProcessingException("Wrong data in ${lineNum} line.\n ${e.getLocalizedMessage()}")
         }
-        config.logger.log("Processed ${lineNum} rows")
     }
 
     private boolean trySetStudyId(Sql sql, studyInfo) {

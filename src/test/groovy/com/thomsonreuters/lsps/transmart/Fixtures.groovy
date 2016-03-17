@@ -88,6 +88,22 @@ class Fixtures {
         return studiesDir.studyDir('Test Study With Plus Sign', 'GSE0PLS').clinicalData
     }
 
+    static ClinicalData getClinicalDataWithLongCategoryCD() {
+        return studiesDir.studyDir('Test Study With Long CategoryCD', 'GSE0LONGCCD').clinicalData
+    }
+
+    static ClinicalData getClinicalDataWithWrongMappingFileName() {
+        return studiesDir.studyDir('Test Study With Wrong Mapping File_Name', 'GSE0WRONGMAPF').clinicalData
+    }
+
+    static ClinicalData getClinicalDataWithNonVisialSymbols() {
+        return studiesDir.studyDir('Test Study With Non Visial Symbols In Header', 'GSE0NOVIS').clinicalData
+    }
+
+    static ClinicalData getClinicalDataWithDifferentStudyID() {
+        return studiesDir.studyDir('Test Study With Different StudyID', 'GSE0DIFFSID').clinicalData
+    }
+
     static ClinicalData getClinicalDataWithTerminator() {
         return studiesDir.studyDir('Test Study With Terminator', 'GSE0TERMINATOR').clinicalData
     }

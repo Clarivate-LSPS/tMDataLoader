@@ -712,6 +712,45 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat(sql, hasNode("\\Test Studies\\$clinicalData.studyName\\Subjects\\Demographics\\v1\\Male\\").withPatientCount(2))
         assertThat(sql, hasNode("\\Test Studies\\$clinicalData.studyName\\Subjects\\Demographics\\v1\\Female\\").withPatientCount(5))
         assertThat(sql, hasNode("\\Test Studies\\$clinicalData.studyName\\Subjects\\Demographics\\v2\\").withPatientCount(1))
+    }
 
+    def 'it should check error then wrong mapping file name'(){
+        when:
+        def clinicalData = Fixtures.clinicalDataWithWrongMappingFileName
+        Study.deleteById(config, clinicalData.studyId)
+        clinicalData.load(config)
+
+        then:
+        thrown(DataProcessingException)
+    }
+
+    def 'it should check error with long path'(){
+        when:
+        def clinicalData = Fixtures.clinicalDataWithLongCategoryCD
+        Study.deleteById(config, clinicalData.studyId)
+        clinicalData.load(config)
+
+        then:
+        thrown(DataProcessingException)
+    }
+
+    def 'it should validate header for non visual symbols'() {
+        when:
+        def clinicalData = Fixtures.clinicalDataWithNonVisialSymbols
+        Study.deleteById(config, clinicalData.studyId)
+        clinicalData.load(config)
+
+        then:
+        thrown(DataProcessingException)
+    }
+
+    def 'it should check on different study id'() {
+        when:
+        def clinicalData = Fixtures.clinicalDataWithDifferentStudyID
+        Study.deleteById(config, clinicalData.studyId)
+        clinicalData.load(config)
+
+        then:
+        thrown(DataProcessingException)
     }
 }
