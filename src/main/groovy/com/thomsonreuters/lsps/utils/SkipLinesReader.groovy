@@ -1,5 +1,6 @@
 package com.thomsonreuters.lsps.utils
 
+import com.thomsonreuters.lsps.transmart.etl.DataProcessingException
 import groovy.transform.CompileStatic
 
 /**
@@ -104,6 +105,14 @@ public class SkipLinesReader extends Reader {
         if (count < 0) {
             return count;
         }
+        char errorCh = "\uFFFD"
+        Character character = new Character(errorCh)
+        def indexOfErrorSymbol = cbuf.findIndexOf { it == character }
+        if (indexOfErrorSymbol != -1) {
+            def errorString = cbuf[(indexOfErrorSymbol - 100 >= 0 ? indexOfErrorSymbol - 100 : 0)..(indexOfErrorSymbol + 100 < cbuf.length ? indexOfErrorSymbol + 100 : cbuf.length)].join('')
+            throw new DataProcessingException("In this:\n ${errorString} \nfound non visual symbol.")
+        }
+
         int start = off
         int end = off + count;
         while (off < end) {

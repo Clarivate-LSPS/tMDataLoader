@@ -35,6 +35,8 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
 
     void testItLoadsAge() {
         setup:
+        Study.deleteById(config, clinicalData.studyId)
+
         def result = clinicalData.load(config)
 
         expect:
@@ -45,6 +47,8 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
 
     def 'it should produce SummaryStatistic.txt'() {
         when:
+        Study.deleteById(config, clinicalData.studyId)
+
         def expectedFile = new File(clinicalData.dir, 'ExpectedSummaryStatistic.txt')
         def actualFile = new File(clinicalData.dir, 'SummaryStatistic.txt')
         actualFile.delete()
@@ -58,6 +62,8 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
 
     def "it should collect statistic"() {
         setup:
+        Study.deleteById(config, clinicalData.studyId)
+
         def processor = new ClinicalDataProcessor(config)
         database.withSql { sql ->
             processor.processFiles(clinicalData.dir.toPath(), sql as Sql,
@@ -126,6 +132,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
     void testItLoadsData() {
         expect:
         String conceptPath = "\\Test Studies\\${studyName}\\"
+        Study.deleteById(config, conceptPath)
         String conceptPathForPatient = conceptPath + "Biomarker Data\\Mutations\\TST001 (Entrez ID: 1956)\\AA mutation\\"
 
         processor.process(
