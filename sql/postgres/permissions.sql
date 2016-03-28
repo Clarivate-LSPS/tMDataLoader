@@ -59,4 +59,5 @@ grant select on deapp.de_variant_subject_idx to biomart_user;
 grant select on deapp.de_variant_subject_summary to biomart_user;
 
 grant usage on schema tm_dataloader to tm_cz;
+grant usage on schema tm_cz to biomart_user;
 grant SELECT, INSERT, UPDATE, DELETE on all tables in SCHEMA tm_dataloader to tm_cz;
