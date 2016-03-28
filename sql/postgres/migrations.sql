@@ -10,3 +10,4 @@
 \i migrations/20150220000000_UPDATED_LENGTH_VARIABLE_CHAR.sql
 \i migrations/20150324000002500_CREATE_INDEXES_FOR_ACGH_DATA.sql
 \i migrations/20150827000000000_CHANGES.sql
+\i migrations/1_2_4/20160328180000000_add_cz_form_layout_synonym.sql

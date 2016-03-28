@@ -9,3 +9,4 @@
 @2_permissions.sql
 @3_synonyms.sql
 @4_refresh_views.sql
+@"migrations/1_2_4/20160328180000000_add_cz_form_layout_synonym.sql"
