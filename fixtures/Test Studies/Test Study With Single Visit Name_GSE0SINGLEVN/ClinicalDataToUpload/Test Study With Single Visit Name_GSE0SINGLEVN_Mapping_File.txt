@@ -1,7 +1,7 @@
 filename	category_cd	col_nbr	data_label	data_label_source
 TST_DEMO.txt		1	STUDY_ID
 TST_DEMO.txt		2	SUBJ_ID
-TST_DEMO.txt	Subjects+Demographics	3	"Age (AGE)"
+TST_DEMO.txt	Subjects+Demographics+$${Language}_language	3	"Age (AGE)"
 TST_DEMO.txt	Subjects+Demographics+DATAVALUE+VISITNAME+$$Language+DATALABEL	4	"Sex (SEX)"
 TST_DEMO.txt	Subjects+Demographics	5	Language
 TST_DEMO.txt		6	VISIT_NAME

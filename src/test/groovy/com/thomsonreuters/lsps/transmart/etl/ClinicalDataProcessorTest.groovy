@@ -154,6 +154,8 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat(sql, hasPatient('2SKMEL28').inTrial(studyInfo.id))
         assertThat(sql, hasNode(conceptPathForPatient + 'tag1\\').withPatientCount(8))
         assertThat(sql, hasNode(conceptPathForPatient + 'tag2\\').withPatientCount(4))
+        assertThat(sql, hasNode(conceptPathForPatient + 'tag1 tag and Spain language\\').withPatientCount(1))
+        assertThat(sql, hasNode(conceptPathForPatient + 'tag2 tag and English language\\').withPatientCount(2))
     }
 
     void testItMergesData() {
@@ -351,8 +353,8 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat(sql, hasNode("$demoPath\\Female\\French\\Sex (SEX)\\").withPatientCount(2))
         assertThat(sql, hasNode("$demoPath\\Female\\English\\Sex (SEX)\\").withPatientCount(1))
 
-        assertThat(sql, hasNode("$demoPath\\Age (AGE)\\").withPatientCount(9))
-        assertThat(sql, not(hasNode("$demoPath\\Age (AGE)\\Baseline\\")))
+        assertThat(sql, hasNode("$demoPath\\Russian language\\Age (AGE)\\").withPatientCount(1))
+        assertThat(sql, not(hasNode("$demoPath\\Russian language\\Age (AGE)\\Baseline\\")))
 
         assertThat(sql, hasNode("$demoPath\\Language\\French\\").withPatientCount(2))
         assertThat(sql, not(hasNode("$demoPath\\Language\\French\\Baseline\\")))
@@ -370,7 +372,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat(sql, hasNode("$demoPath\\Female\\Baseline\\French\\Sex (SEX)\\").withPatientCount(2))
         assertThat(sql, hasNode("$demoPath\\Female\\Baseline\\English\\Sex (SEX)\\").withPatientCount(1))
 
-        assertThat(sql, hasNode("$demoPath\\Age (AGE)\\Baseline\\").withPatientCount(9))
+        assertThat(sql, hasNode("$demoPath\\Russian language\\Age (AGE)\\Baseline\\").withPatientCount(1))
 
         assertThat(sql, hasNode("$demoPath\\Language\\French\\Baseline\\").withPatientCount(2))
     }

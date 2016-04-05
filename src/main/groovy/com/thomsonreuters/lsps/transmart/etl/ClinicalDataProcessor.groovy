@@ -109,7 +109,7 @@ class ClinicalDataProcessor extends DataProcessor {
                                     cat_cd = cat_cd.replace('$$SAMPLE_ID', cols[fMappings.SAMPLE_ID])
 
                                     boolean hasEmptyTags = false
-                                    cat_cd = cat_cd.replaceAll(/\$\$([A-z0-9_\"\s\(\)]+)/) { match, name ->
+                                    cat_cd = cat_cd.replaceAll(/\$\$[{]?([A-z0-9_\"\s\(\)]+)[}]?/) { String match, name ->
                                         if (!tagToColumn.containsKey(name)) {
                                             throw new DataProcessingException("$f.fileName: cat_cd '$cat_cd' contains not-existing tag: '$name'")
                                         }
@@ -118,6 +118,10 @@ class ClinicalDataProcessor extends DataProcessor {
                                             hasEmptyTags = true
                                             return match
                                         }
+
+                                        if (match.contains('$${'))
+                                            return '$${' + tagValue.replaceAll(RE_PLUS, '(plus)') + '}'
+
                                         '$$' + tagValue.replaceAll(RE_PLUS, '(plus)')
                                     }
 

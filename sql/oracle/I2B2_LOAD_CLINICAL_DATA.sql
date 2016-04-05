@@ -236,7 +236,7 @@ BEGIN
 		  ,category_cd
 		  ,ctrl_vocab_code
 		  -- All tag values prefixed with $$, so we should remove prefixes in category_path
-      ,replace(replace(replace(category_cd,'_',' '),'+','\'),'\$$','\')
+      ,regexp_replace(replace(replace(replace(category_cd,'_',' '),'+','\'),'$$',''),'({|})','')
       ,(CASE WHEN site_id IS NOT NULL THEN TrialID || ':' || site_id || ':' || subject_id ELSE TrialID || ':' || subject_id END)
       ,'T'
 			,valuetype_cd
@@ -389,12 +389,12 @@ BEGIN
 	if alwaysSetVisitName = 'N' then
 		update wrk_clinical_data tpm
 		set visit_name=null
-		where (regexp_replace(tpm.category_cd,'\$\$[^+]+','\$\$')) in
-				(select regexp_replace(x.category_cd,'\$\$[^+]+','\$\$')
+		where (regexp_replace(tpm.category_cd,'\$\$[^+}]+','\$\$')) in
+				(select regexp_replace(x.category_cd,'\$\$[^+}]+','\$\$')
 				 from wrk_clinical_data x
 				 -- all tag values started with $$ ($$ will be removed from concept_path),
 				 -- concept_cd with different tags should be in same group, so we just replace tag with $$ for grouping
-				 group by regexp_replace(x.category_cd,'\$\$[^+]+','\$\$')
+				 group by regexp_replace(x.category_cd,'\$\$[^+}]+','\$\$')
 				 having count(distinct upper(x.visit_name)) = 1);
 
 		stepCt := stepCt + 1;

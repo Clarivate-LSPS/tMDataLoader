@@ -273,7 +273,7 @@ BEGIN
 	update wrk_clinical_data
 	set data_type = 'T'
 		-- All tag values prefixed with $$, so we should remove prefixes in category_path
-		,category_path = replace(replace(replace(category_cd,'_',' '),'+','\'),'\$$','\')
+		,category_path = regexp_replace(replace(replace(replace(category_cd,'_',' '),'+','\'),'$$',''), '({|})','', 'g')
 	  ,usubjid = REGEXP_REPLACE(TrialID || ':' || coalesce(site_id,'') || ':' || subject_id,
                    '(::){1,}', ':', 'g');
 	 get diagnostics rowCt := ROW_COUNT;
@@ -390,10 +390,10 @@ BEGIN
     begin
     update wrk_clinical_data tpm
     set visit_name=null
-    where (regexp_replace(tpm.category_cd,'\$\$[^+]+','\$\$')) in
-        (select regexp_replace(x.category_cd,'\$\$[^+]+','\$\$')
+    where (regexp_replace(tpm.category_cd,'\$\$[^+}]+','\$\$','g')) in
+        (select regexp_replace(x.category_cd,'\$\$[^+}]+','\$\$','g')
          from wrk_clinical_data x
-         group by regexp_replace(x.category_cd,'\$\$[^+]+','\$\$')
+         group by regexp_replace(x.category_cd,'\$\$[^+}]+','\$\$','g')
          having count(distinct upper(x.visit_name)) = 1);
     get diagnostics rowCt := ROW_COUNT;
     exception
