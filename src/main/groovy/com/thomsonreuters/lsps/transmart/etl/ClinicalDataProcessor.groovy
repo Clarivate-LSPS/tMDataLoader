@@ -37,6 +37,7 @@ import java.sql.SQLException
 
 class ClinicalDataProcessor extends DataProcessor {
     StatisticCollector statistic = new StatisticCollector()
+    def usedStudyId = ''
 
     public ClinicalDataProcessor(Object conf) {
         super(conf);
@@ -46,7 +47,6 @@ class ClinicalDataProcessor extends DataProcessor {
     private long processEachRow(Path f, ClinicalDataMapping.FileMapping fMappings, Closure<List> processRow) {
         def lineNum = 1L
         def _DATA = fMappings._DATA
-        def usedStudyId = ''
         //Custom tags
         def tagReplacer = TagReplacer.fromFileMapping(fMappings)
         CsvLikeFile csvFile = new CsvLikeFile(f, '# ', config.allowNonUniqueColumnNames.asBoolean())
@@ -70,7 +70,7 @@ class ClinicalDataProcessor extends DataProcessor {
                     usedStudyId = usedStudyId?:cols[fMappings.STUDY_ID]
 
                     if (usedStudyId != cols[fMappings.STUDY_ID]){
-                        throw new DataProcessingException("SUBJ_ID differs from previous in ${lineNum} line")
+                        throw new DataProcessingException("SUBJ_ID differs from previous in ${lineNum} line in ${csvFile.file.fileName} file.")
                     }
 
                     Map<String, String> output = [
@@ -161,10 +161,15 @@ class ClinicalDataProcessor extends DataProcessor {
         if (!sql.connection.autoCommit) {
             sql.commit()
         }
+        def tableName = database.databaseType.equals(com.thomsonreuters.lsps.db.core.DatabaseType.Postgres)?'lt_src_clinical_data':'LT_SRC_CLINICAL_DATA'
+        def meta = sql.connection.metaData, cols = meta.getColumns(null, null, tableName, null)
+        def colsMetaSize = [:]
+        while (cols.next())
+            colsMetaSize.put(cols.getString('column_name').toUpperCase(),Integer.parseInt(cols.getString('column_size')))
 
         dir.eachFileMatch(~/(?i).+_Mapping_File\.txt/) {
             CsvLikeFile mappingFile = new CsvLikeFile(it, '#')
-            ClinicalDataMapping mapping = ClinicalDataMapping.loadFromCsvLikeFile(mappingFile)
+            ClinicalDataMapping mapping = ClinicalDataMapping.loadFromCsvLikeFile(mappingFile, colsMetaSize)
 
             mergeMode = getMergeMode(mappingFile)
 
