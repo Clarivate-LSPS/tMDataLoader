@@ -710,7 +710,8 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         clinicalData.load(config)
 
         then:
-        thrown(DataProcessingException)
+        def ex = thrown(DataProcessingException)
+        ex.message == 'Mapping file wasn\'t found. Please, check file name.'
     }
 
     def 'it should check error with long path'(){
@@ -720,7 +721,8 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         clinicalData.load(config)
 
         then:
-        thrown(DataProcessingException)
+        def ex = thrown(DataProcessingException)
+        ex.message == "Wrong data in 5 line in Test Study With Long CategoryCD_GSE0LONGCCD_Mapping_File.txt file."
     }
 
     def 'it should validate header for non visual symbols'() {
@@ -733,13 +735,25 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         thrown(DataProcessingException)
     }
 
-    def 'it should check on different study id'() {
+    def 'it should check on different study id (Var.1 Diff in fill)'() {
         when:
         def clinicalData = Fixtures.clinicalDataWithDifferentStudyID
         Study.deleteById(config, clinicalData.studyId)
         clinicalData.load(config)
 
         then:
-        thrown(DataProcessingException)
+        def ex = thrown(DataProcessingException)
+        ex.message == "SUBJ_ID differs from previous in 13 line in TST001.txt file."
+    }
+
+    def 'it should check on different study id (Var.2 Different in two files)'() {
+        when:
+        def clinicalData = Fixtures.clinicalDataWithDifferentStudyIDVar2
+        Study.deleteById(config, clinicalData.studyId)
+        clinicalData.load(config)
+
+        then:
+        def ex = thrown(DataProcessingException)
+        ex.message == "SUBJ_ID differs from previous in 2 line in TST_DEMO.txt file."
     }
 }

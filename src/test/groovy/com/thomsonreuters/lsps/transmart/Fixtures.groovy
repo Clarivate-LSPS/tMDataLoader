@@ -104,6 +104,10 @@ class Fixtures {
         return studiesDir.studyDir('Test Study With Different StudyID', 'GSE0DIFFSID').clinicalData
     }
 
+    static ClinicalData getClinicalDataWithDifferentStudyIDVar2() {
+        return studiesDir.studyDir('Test Study With Different StudyID In Two Files', 'GSE0DIFFSIDVAR2').clinicalData
+    }
+
     static ClinicalData getClinicalDataWithTerminator() {
         return studiesDir.studyDir('Test Study With Terminator', 'GSE0TERMINATOR').clinicalData
     }

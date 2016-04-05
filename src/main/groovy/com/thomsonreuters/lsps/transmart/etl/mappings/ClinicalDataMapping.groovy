@@ -49,11 +49,11 @@ class ClinicalDataMapping {
 
     public static ClinicalDataMapping loadFromFile(Path f) {
         CsvLikeFile mappingFile = new CsvLikeFile(f, "#")
-        return new ClinicalDataMapping(processMappingFile(mappingFile))
+        return new ClinicalDataMapping(processMappingFile(mappingFile,['CATEGORY_CD':250]))
     }
 
-    public static ClinicalDataMapping loadFromCsvLikeFile(CsvLikeFile mappingFile) {
-        return new ClinicalDataMapping(processMappingFile(mappingFile))
+    public static ClinicalDataMapping loadFromCsvLikeFile(CsvLikeFile mappingFile, Map colsMetaSize) {
+        return new ClinicalDataMapping(processMappingFile(mappingFile, colsMetaSize))
     }
 
     private static class FileParsingInfo {
@@ -62,7 +62,7 @@ class ClinicalDataMapping {
         int actualColumnsCount = -1
     }
 
-    private static Map<String, FileMapping> processMappingFile(CsvLikeFile mappingFile) {
+    private static Map<String, FileMapping> processMappingFile(CsvLikeFile mappingFile, Map colsMetaSize) {
         Map<String, FileParsingInfo> mappings = [:]
 
         logger.log("Mapping file: ${mappingFile.file.fileName}")
@@ -120,27 +120,35 @@ class ClinicalDataMapping {
                     dataLabelSourceType = (m[0][2] in ['A', 'B']) ? m[0][2] : 'A'
 
                     if (cols[1] && columnIndex > 0 && dataLabelSource > 0) {
-                        curMapping._DATA.add(new Entry(
-                                CATEGORY_CD           : cols[1],
-                                COLUMN                : columnIndex,
-                                DATA_LABEL_SOURCE     : dataLabelSource,
-                                DATA_LABEL_SOURCE_TYPE: dataLabelSourceType,
-                                variableType: variableType,
-                                validationRules: validationRules
-                        ))
+                        if (colsMetaSize['CATEGORY_CD'] >= cols[1].size()) {
+                            curMapping._DATA.add(new Entry(
+                                    CATEGORY_CD: cols[1],
+                                    COLUMN: columnIndex,
+                                    DATA_LABEL_SOURCE: dataLabelSource,
+                                    DATA_LABEL_SOURCE_TYPE: dataLabelSourceType,
+                                    variableType: variableType,
+                                    validationRules: validationRules
+                            ))
+                        } else {
+                            throw new DataProcessingException("Wrong data in ${lineNum} line in ${mappingFile.file.fileName} file.")
+                        }
                     }
                 } else {
                     if (curMapping.hasProperty(dataLabel)) {
                         curMapping[dataLabel] = cols[2].toInteger()
                     } else {
                         if (columnIndex > 0) {
-                            curMapping._DATA.add(new Entry(
-                                    DATA_LABEL: dataLabel,
-                                    CATEGORY_CD: cols[1],
-                                    COLUMN: columnIndex,
-                                    variableType: variableType,
-                                    validationRules: validationRules
-                            ))
+                            if (colsMetaSize['CATEGORY_CD'] >= cols[1].size()) {
+                                curMapping._DATA.add(new Entry(
+                                        DATA_LABEL: dataLabel,
+                                        CATEGORY_CD: cols[1],
+                                        COLUMN: columnIndex,
+                                        variableType: variableType,
+                                        validationRules: validationRules
+                                ))
+                            } else {
+                                throw new DataProcessingException("Wrong data in ${lineNum} line in ${mappingFile.file.fileName} file.")
+                            }
                         } else {
                             logger.log(LogType.ERROR, "Category or column number is missing for line ${lineNum}")
                             throw new Exception("Error parsing mapping file")
