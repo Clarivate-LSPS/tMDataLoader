@@ -35,6 +35,8 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
 
     void testItLoadsAge() {
         setup:
+        Study.deleteById(config, clinicalData.studyId)
+
         def result = clinicalData.load(config)
 
         expect:
@@ -45,6 +47,8 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
 
     def 'it should produce SummaryStatistic.txt'() {
         when:
+        Study.deleteById(config, clinicalData.studyId)
+
         def expectedFile = new File(clinicalData.dir, 'ExpectedSummaryStatistic.txt')
         def actualFile = new File(clinicalData.dir, 'SummaryStatistic.txt')
         actualFile.delete()
@@ -58,6 +62,8 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
 
     def "it should collect statistic"() {
         setup:
+        Study.deleteById(config, clinicalData.studyId)
+
         def processor = new ClinicalDataProcessor(config)
         database.withSql { sql ->
             processor.processFiles(clinicalData.dir.toPath(), sql as Sql,
@@ -126,6 +132,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
     void testItLoadsData() {
         expect:
         String conceptPath = "\\Test Studies\\${studyName}\\"
+        Study.deleteById(config, conceptPath)
         String conceptPathForPatient = conceptPath + "Biomarker Data\\Mutations\\TST001 (Entrez ID: 1956)\\AA mutation\\"
 
         processor.process(
@@ -693,6 +700,61 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         clinicalData.copyWithSuffix('SECOND').load(config, '\\Demographics\\Test Study SECOND\\')
         expect:
         assertThat(db, hasRecord('i2b2metadata.i2b2', [c_fullname:'\\Demographics\\'], [:]))
+    }
+
+
+    def 'it should check error then wrong mapping file name'(){
+        when:
+        def clinicalData = Fixtures.clinicalDataWithWrongMappingFileName
+        Study.deleteById(config, clinicalData.studyId)
+        clinicalData.load(config)
+
+        then:
+        def ex = thrown(DataProcessingException)
+        ex.message == 'Mapping file wasn\'t found. Please, check file name.'
+    }
+
+    def 'it should check error with long path'(){
+        when:
+        def clinicalData = Fixtures.clinicalDataWithLongCategoryCD
+        Study.deleteById(config, clinicalData.studyId)
+        clinicalData.load(config)
+
+        then:
+        def ex = thrown(DataProcessingException)
+        ex.message == "Wrong data in 5 line in Test Study With Long CategoryCD_GSE0LONGCCD_Mapping_File.txt file."
+    }
+
+    def 'it should validate header for non visual symbols'() {
+        when:
+        def clinicalData = Fixtures.clinicalDataWithNonVisialSymbols
+        Study.deleteById(config, clinicalData.studyId)
+        clinicalData.load(config)
+
+        then:
+        thrown(DataProcessingException)
+    }
+
+    def 'it should check on different study id (Var.1 Diff in fill)'() {
+        when:
+        def clinicalData = Fixtures.clinicalDataWithDifferentStudyID
+        Study.deleteById(config, clinicalData.studyId)
+        clinicalData.load(config)
+
+        then:
+        def ex = thrown(DataProcessingException)
+        ex.message == "SUBJ_ID differs from previous in 13 line in TST001.txt file."
+    }
+
+    def 'it should check on different study id (Var.2 Different in two files)'() {
+        when:
+        def clinicalData = Fixtures.clinicalDataWithDifferentStudyIDVar2
+        Study.deleteById(config, clinicalData.studyId)
+        clinicalData.load(config)
+
+        then:
+        def ex = thrown(DataProcessingException)
+        ex.message == "SUBJ_ID differs from previous in 2 line in TST_DEMO.txt file."
     }
 
     def 'it should check path then visit_name equal to data_label and data_label is not specified before terminator'(){
