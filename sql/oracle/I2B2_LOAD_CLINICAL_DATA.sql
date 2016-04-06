@@ -432,37 +432,6 @@ BEGIN
 	cz_write_audit(jobId,databaseName,procedureName,'Set data_label to null when found in category_path',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
 
-	--	set visit_name to null if same as data_label
-	
-	update wrk_clinical_data t
-	set visit_name=null
-	where (t.category_cd, t.visit_name, t.data_label) in
-	      (select distinct tpm.category_cd
-				 ,tpm.visit_name
-				 ,tpm.data_label
-		  from wrk_clinical_data tpm
-		  where tpm.visit_name = tpm.data_label);
-
-	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Set visit_name to null when found in data_label',SQL%ROWCOUNT,stepCt,'Done');
-		
-	commit;
-	
-	--	set visit_name to null if same as data_value
-	
-	update wrk_clinical_data t
-	set visit_name=null
-	where (t.category_cd, t.visit_name, t.data_value) in
-	      (select distinct tpm.category_cd
-				 ,tpm.visit_name
-				 ,tpm.data_value
-		  from wrk_clinical_data tpm
-		  where tpm.visit_name = tpm.data_value);
-
-	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Set visit_name to null when found in data_value',SQL%ROWCOUNT,stepCt,'Done');
-		
-	commit;
 
 	--	set visit_name to null if only DATALABEL in category_cd
   -- EUGR: disabled!!!!!
@@ -539,6 +508,36 @@ BEGIN
 
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Set data_label to null if DATALABEL not in category_path',SQL%ROWCOUNT,stepCt,'Done');
+	commit;
+
+	--	set visit_name to null if same as data_label
+
+	update wrk_clinical_data t
+	set visit_name=null
+	where (t.category_cd, t.visit_name, t.data_label) in
+	      (select distinct tpm.category_cd
+				 ,tpm.visit_name
+				 ,tpm.data_label
+		  from wrk_clinical_data tpm
+		  where tpm.visit_name = tpm.data_label);
+
+	stepCt := stepCt + 1;
+	cz_write_audit(jobId,databaseName,procedureName,'Set visit_name to null when found in data_label',SQL%ROWCOUNT,stepCt,'Done');
+
+	commit;
+
+	update wrk_clinical_data t
+	set visit_name=null
+	where (t.category_cd, t.visit_name, t.data_value) in
+				(select distinct tpm.category_cd
+				 ,tpm.visit_name
+				 ,tpm.data_value
+			from wrk_clinical_data tpm
+			where tpm.visit_name = tpm.data_value);
+
+	stepCt := stepCt + 1;
+	cz_write_audit(jobId,databaseName,procedureName,'Set visit_name to null when found in data_value',SQL%ROWCOUNT,stepCt,'Done');
+
 	commit;
 
 -- determine numeric data types

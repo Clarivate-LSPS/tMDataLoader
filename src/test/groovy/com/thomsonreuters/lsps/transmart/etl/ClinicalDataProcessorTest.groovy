@@ -756,4 +756,22 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         def ex = thrown(DataProcessingException)
         ex.message == "SUBJ_ID differs from previous in 2 line in TST_DEMO.txt file."
     }
+
+    def 'it should check path then visit_name equal to data_label and data_label is not specified before terminator'(){
+        when:
+        Study.deleteById(config, 'GSE0REPEATLABPATH')
+        def clinicalData = Fixtures.clinicalDataWithTerminatorAndSamePath
+
+        def result = clinicalData.load(config)
+
+        then:
+        assertThat("Clinical data loading shouldn't fail", result, equalTo(true))
+        assertThat(sql, hasNode("\\Test Studies\\$clinicalData.studyName\\Subjects\\Demographics\\").withPatientCount(9))
+
+        assertThat(sql, hasNode("\\Test Studies\\$clinicalData.studyName\\Subjects\\Demographics\\v1\\").withPatientCount(7))
+        assertThat(sql, hasNode("\\Test Studies\\$clinicalData.studyName\\Subjects\\Demographics\\v1\\Male\\").withPatientCount(2))
+        assertThat(sql, hasNode("\\Test Studies\\$clinicalData.studyName\\Subjects\\Demographics\\v1\\Female\\").withPatientCount(5))
+        assertThat(sql, hasNode("\\Test Studies\\$clinicalData.studyName\\Subjects\\Demographics\\v2\\").withPatientCount(1))
+
+    }
 }
