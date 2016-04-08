@@ -599,3 +599,5 @@ exception
 end;
 /
 
+grant select on SEARCHAPP.SEARCH_BIO_MKR_CORREL_VIEW to biomart_user;
+
