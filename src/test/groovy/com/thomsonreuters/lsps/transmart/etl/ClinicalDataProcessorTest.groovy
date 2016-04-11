@@ -704,7 +704,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat(db, hasRecord('i2b2metadata.i2b2', [c_fullname:'\\Demographics\\'], [:]))
     }
 
-    def 'it should check path then visit_name equal to data_label and data_label is not specified before terminator'(){
+    def 'it should check path when visit_name equal to data_label and data_label is not specified before terminator'(){
         when:
         Study.deleteById(config, 'GSE0REPEATLABPATH')
         def clinicalData = Fixtures.clinicalDataWithTerminatorAndSamePath
@@ -721,7 +721,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat(sql, hasNode("\\Test Studies\\$clinicalData.studyName\\Subjects\\Demographics\\v2\\").withPatientCount(1))
     }
 
-    def 'it should check error then wrong mapping file name'(){
+    def 'it should check error when used wrong mapping file name'(){
         when:
         def clinicalData = Fixtures.clinicalDataWithWrongMappingFileName
         Study.deleteById(config, clinicalData.studyId)
@@ -740,7 +740,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
 
         then:
         def ex = thrown(DataProcessingException)
-        ex.message == "Wrong data in 5 line in Test Study With Long CategoryCD_GSE0LONGCCD_Mapping_File.txt file."
+        ex.message.contains('CATEGORY_CD is too long (311 > 250) for row [5]')
     }
 
     def 'it should validate header for non visual symbols'() {
@@ -761,7 +761,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
 
         then:
         def ex = thrown(DataProcessingException)
-        ex.message == "SUBJ_ID differs from previous in 13 line in TST001.txt file."
+        ex.message == "STUDY_ID differs from previous in 13 line in TST001.txt file."
     }
 
     def 'it should check on different study id (Var.2 Different in two files)'() {
@@ -772,6 +772,6 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
 
         then:
         def ex = thrown(DataProcessingException)
-        ex.message == "SUBJ_ID differs from previous in 2 line in TST_DEMO.txt file."
+        ex.message == "STUDY_ID differs from previous in 2 line in TST_DEMO.txt file."
     }
 }

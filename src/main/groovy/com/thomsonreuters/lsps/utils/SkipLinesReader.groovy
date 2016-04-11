@@ -105,6 +105,7 @@ public class SkipLinesReader extends Reader {
         if (count < 0) {
             return count;
         }
+        //TODO: Find better place
         char errorCh = "\uFFFD"
         Character character = new Character(errorCh)
         def indexOfErrorSymbol = cbuf.findIndexOf { it == character }
