@@ -273,7 +273,7 @@ BEGIN
 	update wrk_clinical_data
 	set data_type = 'T'
 		-- All tag values prefixed with $$, so we should remove prefixes in category_path
-		,category_path = regexp_replace(replace(replace(replace(category_cd,'_',' '),'+','\'),'$$',''), '({|})','', 'g')
+		,category_path = regexp_replace(regexp_replace(replace(replace(category_cd,'_',' '),'+','\'), '\$\$\d*[A-Z]\{([^}]+)\}', '\1', 'g'), '\$\$\d*[A-Z]', '', 'g')
 	  ,usubjid = REGEXP_REPLACE(TrialID || ':' || coalesce(site_id,'') || ':' || subject_id,
                    '(::){1,}', ':', 'g');
 	 get diagnostics rowCt := ROW_COUNT;
@@ -390,10 +390,10 @@ BEGIN
     begin
     update wrk_clinical_data tpm
     set visit_name=null
-    where (regexp_replace(tpm.category_cd,'\$\$[^+}]+','\$\$','g')) in
-        (select regexp_replace(x.category_cd,'\$\$[^+}]+','\$\$','g')
+    where (regexp_replace(tpm.category_cd,'\$\$(\d*[A-Z])(\{[^}]+\}|[^+]+)','\$\$\1','g')) in
+        (select regexp_replace(x.category_cd,'\$\$(\d*[A-Z])(\{[^}]+\}|[^+]+)','\$\$\1','g')
          from wrk_clinical_data x
-         group by regexp_replace(x.category_cd,'\$\$[^+}]+','\$\$','g')
+         group by regexp_replace(x.category_cd,'\$\$(\d*[A-Z])(\{[^}]+\}|[^+]+)','\$\$\1','g')
          having count(distinct upper(x.visit_name)) = 1);
     get diagnostics rowCt := ROW_COUNT;
     exception
@@ -417,7 +417,7 @@ BEGIN
 	--	Remove data_label from last part of category_path when they are the same
 
 	UPDATE wrk_clinical_data tmp
-	SET category_cd = replace(tmp.category_cd, '$$', '')
+	SET category_cd = regexp_replace(regexp_replace(tmp.category_cd, '\$\$\d*[A-Z]\{([^}]+)\}', '\1', 'g'), '\$\$\d*[A-Z]', '', 'g')
 	WHERE tmp.category_cd LIKE '%$$%';
 
 	stepCt := stepCt + 1;

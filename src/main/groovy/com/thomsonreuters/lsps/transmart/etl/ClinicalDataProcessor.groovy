@@ -20,25 +20,23 @@
 
 package com.thomsonreuters.lsps.transmart.etl
 
+import com.thomsonreuters.lsps.db.core.DatabaseType
 import com.thomsonreuters.lsps.db.loader.DataLoader
 import com.thomsonreuters.lsps.transmart.etl.mappings.ClinicalDataMapping
+import com.thomsonreuters.lsps.transmart.etl.mappings.TagReplacer
 import com.thomsonreuters.lsps.transmart.etl.statistic.StatisticCollector
 import com.thomsonreuters.lsps.transmart.etl.statistic.TableStatistic
 import com.thomsonreuters.lsps.transmart.etl.statistic.VariableType
 import com.thomsonreuters.lsps.transmart.files.CsvLikeFile
 import com.thomsonreuters.lsps.transmart.files.MetaInfoHeader
-import com.thomsonreuters.lsps.db.core.DatabaseType
 import groovy.sql.Sql
 import groovy.transform.CompileStatic
 
 import java.nio.file.Files
 import java.nio.file.Path
-import java.util.regex.Pattern
 
 class ClinicalDataProcessor extends DataProcessor {
     StatisticCollector statistic = new StatisticCollector()
-
-    protected static final Pattern RE_PLUS = Pattern.compile(/\+/)
 
     public ClinicalDataProcessor(Object conf) {
         super(conf);
@@ -49,10 +47,7 @@ class ClinicalDataProcessor extends DataProcessor {
         def lineNum = 1L
         def _DATA = fMappings._DATA
         //Custom tags
-        Map tagToColumn = _DATA.collectEntries {
-            [(it.DATA_LABEL): it.COLUMN]
-        }
-
+        def tagReplacer = TagReplacer.fromFileMapping(fMappings)
         CsvLikeFile csvFile = new CsvLikeFile(f, '# ', config.allowNonUniqueColumnNames.asBoolean())
         statistic.collectForTable(f.fileName.toString()) { table ->
             addStatisticVariables(table, csvFile, fMappings)
@@ -100,36 +95,10 @@ class ClinicalDataProcessor extends DataProcessor {
                                     out['valuetype_cd'] = v.variableType.name().toUpperCase()
                                 }
                                 def cat_cd = v.CATEGORY_CD
-                                //Support tag start
-                                if (cat_cd.contains('$$')) {
-                                    //Default tags
-                                    cat_cd = cat_cd.replace('$$STUDY_ID', cols[fMappings.STUDY_ID])
-                                    cat_cd = cat_cd.replace('$$SITE_ID', cols[fMappings.SITE_ID])
-                                    cat_cd = cat_cd.replace('$$SUBJ_ID', cols[fMappings.SUBJ_ID])
-                                    cat_cd = cat_cd.replace('$$SAMPLE_ID', cols[fMappings.SAMPLE_ID])
-
-                                    boolean hasEmptyTags = false
-                                    cat_cd = cat_cd.replaceAll(/\$\$[{]?([A-z0-9_\"\s\(\)]+)[}]?/) { String match, name ->
-                                        if (!tagToColumn.containsKey(name)) {
-                                            throw new DataProcessingException("$f.fileName: cat_cd '$cat_cd' contains not-existing tag: '$name'")
-                                        }
-                                        def tagValue = cols[tagToColumn[name] as Integer] as String
-                                        if (!tagValue) {
-                                            hasEmptyTags = true
-                                            return match
-                                        }
-
-                                        if (match.contains('$${'))
-                                            return '$${' + tagValue.replaceAll(RE_PLUS, '(plus)') + '}'
-
-                                        '$$' + tagValue.replaceAll(RE_PLUS, '(plus)')
-                                    }
-
-                                    //ignore record without tags value
-                                    if (hasEmptyTags)
-                                        continue
+                                cat_cd = tagReplacer.replaceTags(cat_cd, cols)
+                                if (!cat_cd) {
+                                    continue
                                 }
-                                //Support tag stop
 
                                 if (v.DATA_LABEL_SOURCE > 0) {
                                     // ok, the actual data label is in the referenced column
