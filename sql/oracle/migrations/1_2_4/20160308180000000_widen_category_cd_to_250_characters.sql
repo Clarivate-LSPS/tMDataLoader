@@ -7,7 +7,7 @@ SET SERVEROUTPUT ON SIZE 1000000
 set linesize 180
 set pagesize 0
 
-DECLARE 
+DECLARE
 	sqltxt VARCHAR2(1000);
 BEGIN
 	FOR cur_rec IN (SELECT  OWNER,

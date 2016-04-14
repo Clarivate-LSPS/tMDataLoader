@@ -538,66 +538,9 @@ update amapp.am_tag_item set ACTIVE_IND= '1' where ACTIVE_IND= 't';
 
 update amapp.am_tag_item set ACTIVE_IND= '0' where ACTIVE_IND= 'f';
 	
-	@@issue_87.sql
-
 alter table i2b2metadata.i2b2_SECURE add constraint i2b2_SECURE_uk unique (c_fullname);
 
 create index I2B2DEMODATA.CONCEPT_COUNTS_I_PCP on I2B2DEMODATA.CONCEPT_COUNTS(parent_concept_path);
-
-declare
-  l_cons varchar2(4000);
-  l_col varchar2(4000);
-  l_owner varchar2(4000);
-  l_sql varchar2(4000);
-  l_table varchar2(4000);
-begin
-  for i in (
-    select owner, constraint_name, table_name
-      from dba_constraints
-     where     r_owner= 'SEARCHAPP'
-           and constraint_type= 'R'
-           and delete_rule= 'NO ACTION'
-           and r_constraint_name in (
-                   select constraint_name
-                     from dba_constraints
-                    where     constraint_type= 'P'
-                          and owner= 'SEARCHAPP'
-                          and table_name= 'SEARCH_SECURE_OBJECT'
-               )
-  ) loop
-    l_cons := i.constraint_name;
-    l_col := null;
-    l_owner := i.owner;
-    l_table := i.table_name;
-    for j in (
-      select column_name
-        from dba_cons_columns
-       where     owner= l_owner
-             and constraint_name= l_cons
-             and table_name= l_table
-    )
-    loop
-      if l_col is not null then
-        raise TOO_MANY_ROWS;
-      end if;
-      l_col := j.column_name;
-    end loop;
-    if l_col is null then
-      raise NO_DATA_FOUND;
-    end if;
-    l_sql := 'alter table '||l_owner||'.'||l_table||' drop constraint '||l_cons;
-    dbms_output.put_line(l_sql);
-    execute immediate l_sql;
-    l_sql := 'alter table '||l_owner||'.'||l_table||' add constraint '||l_cons||' foreign key('||l_col||') references SEARCHAPP.SEARCH_SECURE_OBJECT on delete cascade';
-    dbms_output.put_line(l_sql);
-    execute immediate l_sql;
-  end loop;
-exception
-  when others then
-    dbms_output.put_line('Can''t update constraint: '||l_sql);
-    raise;
-end;
-/
 
 grant select on SEARCHAPP.SEARCH_BIO_MKR_CORREL_VIEW to biomart_user;
 

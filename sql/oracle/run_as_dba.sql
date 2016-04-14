@@ -9,4 +9,6 @@
 @2_permissions.sql
 @3_synonyms.sql
 @4_refresh_views.sql
+@"migrations/1_2_4/20160308180000000_widen_category_cd_to_250_characters.sql"
+@"migrations/1_2_4/20160313180000000_delete_cascade_from_search_secure_object.sql"
 @"migrations/1_2_4/20160328180000000_add_cz_form_layout_synonym.sql"
