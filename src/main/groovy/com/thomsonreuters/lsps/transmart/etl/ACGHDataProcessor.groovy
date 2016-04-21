@@ -11,7 +11,7 @@ import java.nio.file.Path
 /**
  * Created by transmart on 3/6/15.
  */
-class ACGHDataProcessor extends DataProcessor {
+class ACGHDataProcessor extends AbstractDataProcessor {
     ACGHDataProcessor(Object conf) {
         super(conf)
     }

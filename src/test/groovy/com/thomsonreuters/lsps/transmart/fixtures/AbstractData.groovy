@@ -1,6 +1,6 @@
 package com.thomsonreuters.lsps.transmart.fixtures
 
-import com.thomsonreuters.lsps.transmart.etl.DataProcessor
+import com.thomsonreuters.lsps.transmart.etl.AbstractDataProcessor
 import com.thomsonreuters.lsps.io.file.TempStorage
 
 /**
@@ -20,7 +20,7 @@ abstract class AbstractData<T extends AbstractData> {
     }
 
     abstract String getDataType()
-    protected abstract DataProcessor newDataProcessor(config)
+    protected abstract AbstractDataProcessor newDataProcessor(config)
     protected abstract void adaptFiles(StudyInfo oldStudyInfo)
 
     boolean reload(config, String parentNode = "Test Studies\\") {

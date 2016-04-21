@@ -8,7 +8,7 @@ import groovy.sql.Sql
 
 import java.nio.file.Path
 
-public class RNASeqDataProcessor extends DataProcessor {
+public class RNASeqDataProcessor extends AbstractDataProcessor {
     public RNASeqDataProcessor(Object conf) {
         super(conf);
     }

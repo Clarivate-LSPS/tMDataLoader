@@ -8,7 +8,7 @@ import groovy.sql.Sql
 
 import java.nio.file.Path
 
-public class RBMDataProcessor extends DataProcessor {
+public class RBMDataProcessor extends AbstractDataProcessor {
     public RBMDataProcessor(Object conf) {
         super(conf);
     }

@@ -36,7 +36,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.sql.SQLException
 
-class ClinicalDataProcessor extends DataProcessor {
+class ClinicalDataProcessor extends AbstractDataProcessor {
     StatisticCollector statistic = new StatisticCollector()
     def usedStudyId = ''
 

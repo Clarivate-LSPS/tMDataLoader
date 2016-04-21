@@ -8,7 +8,7 @@ import groovy.sql.Sql
 
 import java.nio.file.Path
 
-public class ProteinDataProcessor extends DataProcessor {
+public class ProteinDataProcessor extends AbstractDataProcessor {
     private int havePeptide = 1 // 1 - if peptide is defined, 0 - else
 
     public ProteinDataProcessor(Object conf) {

@@ -48,7 +48,7 @@ class StudyProcessor {
         }).withCloseable { dataDirs ->
             for (Path dataDir : dataDirs) {
                 config.logger.log "Processing ${dataType} data"
-                def dataProcessor = DataProcessorFactory.newDataProcessor(dataType, config)
+                DataProcessor dataProcessor = DataProcessorFactory.newDataProcessor(dataType, config)
                 try {
                     studyInfo['base_datatype'] = dataType
                     res = res && dataProcessor.process(dataDir, studyInfo)

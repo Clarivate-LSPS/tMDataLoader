@@ -2,7 +2,7 @@ package com.thomsonreuters.lsps.transmart.fixtures
 
 import com.thomsonreuters.lsps.transmart.TdfUtils
 import com.thomsonreuters.lsps.transmart.etl.ClinicalDataProcessor
-import com.thomsonreuters.lsps.transmart.etl.DataProcessor
+import com.thomsonreuters.lsps.transmart.etl.AbstractDataProcessor
 import com.thomsonreuters.lsps.transmart.etl.mappings.ClinicalDataMapping
 import com.thomsonreuters.lsps.io.file.TempStorage
 
@@ -14,7 +14,7 @@ class ClinicalData extends AbstractData<ClinicalData> {
     final String dataType = 'ClinicalData'
 
     @Override
-    protected DataProcessor newDataProcessor(config) {
+    protected AbstractDataProcessor newDataProcessor(config) {
         return new ClinicalDataProcessor(config)
     }
 

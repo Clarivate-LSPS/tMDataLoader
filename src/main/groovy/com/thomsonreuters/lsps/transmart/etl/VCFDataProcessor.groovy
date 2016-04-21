@@ -14,7 +14,7 @@ import java.nio.file.Path
 /**
  * Created by bondarev on 4/3/14.
  */
-class VCFDataProcessor extends DataProcessor {
+class VCFDataProcessor extends AbstractDataProcessor {
     VCFDataProcessor(Object conf) {
         super(conf)
     }

@@ -26,7 +26,7 @@ import groovy.sql.Sql
 
 import java.nio.file.Path
 
-class SNPDataProcessor extends DataProcessor {
+class SNPDataProcessor extends AbstractDataProcessor {
 
     public SNPDataProcessor(Object conf) {
         super(conf);

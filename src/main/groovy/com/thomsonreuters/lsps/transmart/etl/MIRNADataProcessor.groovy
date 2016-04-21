@@ -8,7 +8,7 @@ import groovy.sql.Sql
 
 import java.nio.file.Path
 
-public class MIRNADataProcessor extends DataProcessor {
+public class MIRNADataProcessor extends AbstractDataProcessor {
     public MIRNADataProcessor(Object conf) {
         super(conf);
     }
