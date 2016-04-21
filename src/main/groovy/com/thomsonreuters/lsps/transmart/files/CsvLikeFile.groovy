@@ -76,14 +76,7 @@ class CsvLikeFile implements PrepareIfRequired {
 
     String[] getHeadComments() {
         headComments ?: (headComments = file.withReader { reader ->
-            List<String> headComments = []
-            if (lineComment != null) {
-                String line
-                while ((line = reader.readLine()).startsWith(lineComment)) {
-                    headComments << line.substring(lineComment.length()).trim()
-                }
-            }
-            headComments
+            HeadCommentsReader.readHeadComments(reader, lineComment)
         })
     }
 

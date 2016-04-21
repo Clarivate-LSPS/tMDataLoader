@@ -199,7 +199,7 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
     }
 
     private MergeMode getMergeMode(CsvLikeFile mappingFile) {
-        def metaInfo = (mappingFile as MetaInfoHeader).metaInfo
+        def metaInfo = MetaInfoHeader.getMetaInfo(mappingFile)
         String modeName = metaInfo.MERGE_MODE
 
         if (!modeName)
