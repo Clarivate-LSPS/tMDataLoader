@@ -12,3 +12,4 @@
 @"migrations/1_2_4/20160308180000000_widen_category_cd_to_250_characters.sql"
 @"migrations/1_2_4/20160313180000000_delete_cascade_from_search_secure_object.sql"
 @"migrations/1_2_4/20160328180000000_add_cz_form_layout_synonym.sql"
+@"migrations/gwas_plink/20160421174200000_add_gwas_plink_schema.sql"

@@ -15,7 +15,8 @@ class DataProcessorFactory {
             Metabolomics: MetabolomicsDataProcessor,
             RNASeq      : RNASeqDataProcessor,
             SerialHDD   : SerialHDDDataProcessor,
-            ACGH        : ACGHDataProcessor
+            ACGH        : ACGHDataProcessor,
+            GWASPlink   : GWASPlinkDataProcessor
     ]
 
     static Set<String> getProcessorTypes() {

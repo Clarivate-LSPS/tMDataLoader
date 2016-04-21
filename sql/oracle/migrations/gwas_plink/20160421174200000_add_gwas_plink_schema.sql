@@ -1,0 +1,42 @@
+SET DEFINE ON;
+
+DEFINE TM_CZ_SCHEMA='TM_CZ';
+
+DECLARE
+	flag NUMBER(1, 0);
+BEGIN
+	SELECT COUNT(*)
+	INTO flag
+	FROM dba_users
+	WHERE username = 'GWAS_PLINK';
+
+	IF flag <> 0
+	THEN
+		RETURN;
+	END IF;
+
+	EXECUTE IMMEDIATE 'CREATE USER GWAS_PLINK IDENTIFIED BY GWAS_PLINK DEFAULT TABLESPACE "TRANSMART" TEMPORARY TABLESPACE "TEMP" QUOTA UNLIMITED ON "TRANSMART"';
+
+	EXECUTE IMMEDIATE 'CREATE TABLE gwas_plink.plink_data (
+    PLINK_DATA_ID NUMBER(10, 0) PRIMARY KEY,
+    STUDY_ID      VARCHAR2(50) NOT NULL,
+    BED           BLOB,
+    BIM           BLOB,
+    FAM           BLOB
+  )';
+
+	EXECUTE IMMEDIATE 'GRANT INSERT ON gwas_plink.plink_data TO "&TM_CZ_SCHEMA"';
+	EXECUTE IMMEDIATE 'GRANT SELECT ON gwas_plink.plink_data TO biomart_user';
+
+	EXECUTE IMMEDIATE 'CREATE SEQUENCE gwas_plink."SEQ_PLINK_DATA"  MINVALUE 1 MAXVALUE 999999999999999999999999 INCREMENT BY 1 START WITH 1 CACHE 2 NOORDER NOCYCLE';
+	EXECUTE IMMEDIATE 'CREATE TRIGGER gwas_plink."TRG_PLINK_DATA_ID"
+  before insert on gwas_plink.plink_data for each row
+  begin
+    if inserting then
+      if :NEW.PLINK_DATA_ID is null then
+        select SEQ_PLINK_DATA.nextval into :NEW.PLINK_DATA_ID from dual;
+      end if;
+    end if;
+  end;';
+END;
+/
