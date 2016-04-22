@@ -1,15 +1,11 @@
 package com.thomsonreuters.lsps.transmart.etl
 
 import com.thomsonreuters.lsps.db.core.Database
-import com.thomsonreuters.lsps.io.file.PathUtils
-import com.thomsonreuters.lsps.transmart.files.CsvLikeFile
 import com.thomsonreuters.lsps.transmart.files.MetaInfoHeader
 import groovy.io.FileType
 
 import java.nio.file.Files
 import java.nio.file.Path
-import java.sql.Blob
-
 /**
  * Date: 21-Apr-16
  * Time: 15:52
