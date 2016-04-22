@@ -11,13 +11,13 @@ BEGIN
 
 	CREATE TABLE gwas_plink.plink_data (
 		PLINK_DATA_ID SERIAL,
-		STUDY_ID      VARCHAR(50) NOT NULL,
+		STUDY_ID      VARCHAR(50) NOT NULL UNIQUE,
 		BED           BYTEA,
 		BIM           BYTEA,
 		FAM           BYTEA
 	);
 
-	GRANT INSERT ON gwas_plink.plink_data TO tm_dataloader;
+	GRANT INSERT, DELETE, SELECT ON gwas_plink.plink_data TO tm_dataloader;
 	GRANT SELECT ON gwas_plink.plink_data TO biomart_user;
 END
 $$;

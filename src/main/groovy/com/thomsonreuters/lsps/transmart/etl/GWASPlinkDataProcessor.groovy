@@ -57,6 +57,7 @@ class GWASPlinkDataProcessor implements DataProcessor {
         }
 
         database.withSql { sql ->
+            sql.execute('delete from gwas_plink.plink_data where study_id = ?', studyId)
             sql.execute("insert into gwas_plink.plink_data (study_id, bed, bim, fam) values (?, ?, ?, ?)",
                     studyId, bem.bytes, bim.bytes, fam.bytes)
         }
