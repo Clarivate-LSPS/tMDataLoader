@@ -17,6 +17,8 @@ BEGIN
 		FAM           BYTEA
 	);
 
+	GRANT USAGE ON SCHEMA gwas_plink TO tm_dataloader, biomart_user;
+	GRANT USAGE ON SEQUENCE gwas_plink.plink_data_plink_data_id_seq TO tm_dataloader;
 	GRANT INSERT, DELETE, SELECT ON gwas_plink.plink_data TO tm_dataloader;
 	GRANT SELECT ON gwas_plink.plink_data TO biomart_user;
 END
