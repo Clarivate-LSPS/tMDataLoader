@@ -18,7 +18,6 @@ class GWASPlinkDataProcessorTest extends Specification implements ConfigAwareTes
         def dataDir = Fixtures.studiesDir.studyDir('Test Study With GWAS Plink', 'GSE0GWASPLINK').toPath().
                 resolve('GWASPlinkDataToUpload')
 
-
         when:
         def successfullyUploaded = processor.process(dataDir, [:])
 

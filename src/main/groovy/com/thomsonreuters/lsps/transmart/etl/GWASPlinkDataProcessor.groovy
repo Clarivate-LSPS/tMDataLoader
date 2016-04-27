@@ -19,14 +19,41 @@ class GWASPlinkDataProcessor implements DataProcessor {
         database = TransmartDatabaseFactory.newDatabase(config)
     }
 
-    private String detectBfile(Path dir) {
-        def bedPaths = dir.findAll { p -> p.fileName.toString().endsWith('.bed') }
-        if (bedPaths.size() > 1) {
-            throw new DataProcessingException("Can't detect BFILE: too many candidates (${bedPaths*.fileName.join(', ')})")
-        } else if (!bedPaths) {
-            throw new DataProcessingException("Can't detect BFILE: no candidates")
+    private static void validateFam(Path fam) {
+        fam.eachLine { String line, Integer lineNum ->
+            def prefix = "${fam.fileName.toString()}:$lineNum"
+            line = line.trim()
+            if (line.isEmpty()) return
+
+            def tokens = line.split("\\s+")
+            if (tokens.length != 6)
+                throw new DataProcessingException("$prefix: Invalid columns count: expected 6, but was $tokens.length")
+
+            if (!tokens.drop(1).every { it.isNumber() }) {
+                throw new DataProcessingException("$prefix: Non-numeric values detected in non-first column")
+            }
+
+            def sex = tokens[4]
+            if (!(sex in ['0', '1', '2'])) {
+                throw new DataProcessingException("$prefix: Invalid sex value. Expected '1' = male, '2' = female, '0' = unknown, but was '${sex}'")
+            }
+
+            def phenotype = tokens[5]
+            if (!(phenotype in ['0', '1', '2'])) {
+                throw new DataProcessingException("$prefix: Invalid phenotype value. Expected '1' = control, '2' = case, '-9'/'0' = missing data, but was '${phenotype}'")
+            }
         }
-        bedPaths[0].fileName.toString().replaceFirst(/\.bed$/, '')
+    }
+
+    private static Path detectFile(Path dir, String ext) {
+        List<Path> paths = []
+        dir.eachFileMatch(FileType.FILES, { String it -> it.endsWith(ext) }, paths.&add)
+        if (paths.size() > 1) {
+            throw new DataProcessingException("Can't detect $ext: too many candidates (${paths*.fileName.join(', ')})")
+        } else if (!paths) {
+            throw new DataProcessingException("Can't detect $ext: no candidates")
+        }
+        paths[0]
     }
 
     @Override
@@ -43,19 +70,29 @@ class GWASPlinkDataProcessor implements DataProcessor {
         if (!studyId) {
             throw new DataProcessingException("No STUDY_ID specified in mapping file (ex: # STUDY_ID: MYSTUDY)")
         }
-        String bfile = metaInfo.BFILE ?: detectBfile(dir)
-        Path bem = dir.resolve("${bfile}.bed")
-        Path bim = dir.resolve("${bfile}.bim")
-        Path fam = dir.resolve("${bfile}.fam")
-        def missingFiles = [bem, bim, fam].findAll { Files.notExists(it) }
+        Path bed, bim, fam
+        if (metaInfo.BFILE) {
+            String bfile = metaInfo.BFILE
+            bed = dir.resolve("${bfile}.bed")
+            bim = dir.resolve("${bfile}.bim")
+            fam = dir.resolve("${bfile}.fam")
+        } else {
+            bed = detectFile(dir, '.bed')
+            bim = detectFile(dir, '.bim')
+            fam = detectFile(dir, '.fam')
+        }
+
+        def missingFiles = [bed, bim, fam].findAll { Files.notExists(it) }
         if (missingFiles) {
             throw new DataProcessingException("One or more required files are missing: ${missingFiles*.fileName.join(', ')}")
         }
 
+        validateFam(fam)
+
         database.withSql { sql ->
             sql.execute('delete from gwas_plink.plink_data where study_id = ?', studyId)
             sql.execute("insert into gwas_plink.plink_data (study_id, bed, bim, fam) values (?, ?, ?, ?)",
-                    studyId, bem.bytes, bim.bytes, fam.bytes)
+                    studyId, bed.bytes, bim.bytes, fam.bytes)
         }
         return true
     }
