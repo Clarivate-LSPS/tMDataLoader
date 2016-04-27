@@ -145,6 +145,11 @@ BEGIN
 	--	delete clinical data
 	if (trialId is not NUll)
 	then
+		delete from gwas_plink.plink_data where study_id = trialId;
+		stepCt := stepCt + 1;
+		cz_write_audit(jobId,databaseName,procedureName,'Delete gwas_plink.plink_data for trial',SQL%ROWCOUNT,stepCt,'Done');
+		commit;
+
 		delete from lz_src_clinical_data
 		where study_id = trialId;
 		stepCt := stepCt + 1;
