@@ -29,8 +29,9 @@ class GWASPlinkDataProcessor implements DataProcessor {
             if (tokens.length != 6)
                 throw new DataProcessingException("$prefix: Invalid columns count: expected 6, but was $tokens.length")
 
-            if (!tokens.drop(1).every { it.isNumber() }) {
-                throw new DataProcessingException("$prefix: Non-numeric values detected in non-first column")
+            def withinFamilyId = tokens[1]
+            if (withinFamilyId == '0') {
+                throw new DataProcessingException("$prefix: Invalid IID, cannot be '0'")
             }
 
             def sex = tokens[4]
