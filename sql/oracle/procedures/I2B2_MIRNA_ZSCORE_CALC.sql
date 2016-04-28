@@ -1,7 +1,7 @@
 --
 -- Type: PROCEDURE; Owner: TM_CZ; Name: I2B2_MIRNA_ZSCORE_CALC
 --
-CREATE OR REPLACE PROCEDURE "I2B2_MIRNA_ZSCORE_CALC"
+  CREATE OR REPLACE PROCEDURE "I2B2_MIRNA_ZSCORE_CALC" 
 (
   trial_id VARCHAR2
  ,run_type varchar2 := 'L'
@@ -138,10 +138,10 @@ BEGIN
 	cz_write_audit(jobId,databaseName,procedureName,'Truncate work tables in TM_WZ',0,stepCt,'Done');
 	
 	--	if dataType = L, use intensity_value as log_intensity
-	--	if dataType = R, calculate log_intensity
+	--	if dataType = R, always use intensity_value
 
 
-	if dataType = 'R' then
+	if dataType = 'L' then
         
         ---for MIRNA_SEQ 
 		insert into wt_subject_mirna_logs 
@@ -157,18 +157,19 @@ BEGIN
 				  ,intensity_value
 				  ,assay_id 
 				  ,round((case when intensity_value<=0 then 0
-                                  when intensity_value>0 then log(logBase,intensity_value)
+                                  when intensity_value>0 then log(2,intensity_value)
                                   else 0 end),5)
                                   ,patient_id
 			--	  ,sample_cd
 			--	  ,subject_id
 			from wt_subject_mirna_probeset
-			where trial_name = TrialId;
+			where trial_name = TrialId
+                        ;
            
 		--end if;
-  elsif dataType = 'L' then
+                	else
                          --for MIRNA_QPCR
-      insert into wt_subject_mirna_logs
+                	insert into wt_subject_mirna_logs 
 			(probeset_id
 			,intensity_value
 			,assay_id
@@ -178,34 +179,16 @@ BEGIN
 		--	,subject_id
 			)
 			select probeset_id
-				  ,power(logBase, intensity_value)
-				  ,assay_id 
 				  ,intensity_value
+				  ,assay_id 
+				  ,-(intensity_value)
 				  ,patient_id
 		--		  ,sample_cd
 		--		  ,subject_id
 			from wt_subject_mirna_probeset
 			where trial_name = TrialId;
 --		end if;
-	else
-		insert into wt_subject_mirna_logs
-		(
-			probeset_id
-			,intensity_value
-			,assay_id
-			,patient_id
-		 --	,sample_cd
-		 --	,subject_id
-		)
-			select probeset_id
-				,intensity_value
-				,assay_id
-				,patient_id
-			--		  ,sample_cd
-			--		  ,subject_id
-			from wt_subject_mirna_probeset
-			where trial_name = TrialId;
-	--		end if;
+
 	end if;
 
 	stepCt := stepCt + 1;
@@ -290,7 +273,8 @@ BEGIN
 		stepCt := stepCt + 1;
 		cz_write_audit(jobId,databaseName,procedureName,'Less than 10M records, index drop bypassed',0,stepCt,'Done');
 	end if;
-*/
+*/	
+
 
 	insert into de_subject_mirna_data
 	(trial_source
@@ -306,11 +290,20 @@ BEGIN
 	)
 	select (TrialId || ':' || sourceCD)
 		  ,TrialId
-	    ,m.assay_id
-	    ,m.probeset_id
-		  ,m.intensity_value as raw_intensity
-		  ,m.log_intensity
-	    ,(CASE WHEN m.zscore < -2.5 THEN -2.5 WHEN m.zscore >  2.5 THEN 2.5 ELSE round(m.zscore,5) END)
+	      ,m.assay_id
+	      ,m.probeset_id 
+		  ,case when dataType = 'R' then m.intensity_value
+				when dataType = 'L' 
+				then m.intensity_value
+				else null
+				end as raw_intensity
+	    --  ,decode(dataType,'R',m.intensity_value,'L',power(logBase, m.log_intensity),null)
+		  ,case when dataType = 'R' then (-m.intensity_value)   --UAT 154 changes done on 19/03/2014
+				when dataType = 'L' 
+				then m.log_intensity
+				else null
+				end
+	      ,(CASE WHEN m.zscore < -2.5 THEN -2.5 WHEN m.zscore >  2.5 THEN  2.5 ELSE round(m.zscore,5) END)
               --,m.zscore
 		  ,m.patient_id
 	--	  ,m.sample_id
@@ -360,3 +353,4 @@ BEGIN
 	
 END;
 /
+ 

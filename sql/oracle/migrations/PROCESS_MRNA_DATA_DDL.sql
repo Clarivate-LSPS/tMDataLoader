@@ -10,7 +10,7 @@ DECLARE
 	rows int;
 	drop_sql VARCHAR2(500);
 	create_sql VARCHAR2(500);
-	source VARCHAR2(100) := 'PROCESS_MRNA_DATA.sql';
+	source VARCHAR2(100) := 'PROCESS_MRNA_DATA_DDL.sql';
 BEGIN
 	dbms_output.put_line(source);
 	dbms_output.put_line('Copying tables from tm_wz to tm_dataloader schema');

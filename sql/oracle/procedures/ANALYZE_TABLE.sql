@@ -23,7 +23,7 @@ BEGIN
     -- If Job ID does not exist, then this is a single procedure run and we need to create it
     IF l_job_id IS NULL OR l_job_id < 1 THEN
         job_was_created := true;
-        cz_start_audit(procedure_name, current_schema_name, l_job_id);
+        CZ_START_AUDIT(procedure_name, current_schema_name, l_job_id);
     END IF;
 
     BEGIN

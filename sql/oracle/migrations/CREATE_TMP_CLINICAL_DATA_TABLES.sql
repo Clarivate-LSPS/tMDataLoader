@@ -36,7 +36,7 @@ CREATE TABLE TM_DATALOADER.I2B2_LOAD_PATH
   PATH150 VARCHAR2(150),
   PATH200 VARCHAR2(200),
   PATH_LEN integer,
-  RECORD_ID integer
+  RECORD_ID rowid
 ) NOLOGGING;
 
 CREATE INDEX tm_dataloader.TM_WZ_IDX_PATH_LEN ON TM_DATALOADER.I2B2_LOAD_PATH (PATH_LEN, PATH, RECORD_ID);
@@ -74,8 +74,8 @@ SELECT 'Creating TM_DATALOADER.I2B2_LOAD_TREE_FULL' from dual;
 
 CREATE TABLE TM_DATALOADER.I2B2_LOAD_TREE_FULL
 (
-  IDROOT          integer,
-  IDCHILD         integer
+  IDROOT          rowid,
+  IDCHILD         rowid
 ) NOLOGGING;
 
 CREATE INDEX tm_dataloader.TM_WZ_IDX_ROOT ON TM_DATALOADER.I2B2_LOAD_TREE_FULL (IDROOT, IDCHILD);
@@ -275,3 +275,7 @@ BEGIN
 SELECT 'Creating TM_DATALOADER.lt_src_deapp_annot' FROM DUAL;
 
 CREATE TABLE TM_DATALOADER.lt_src_deapp_annot AS SELECT * FROM tm_lz.lt_src_deapp_annot NOLOGGING;
+
+ALTER TABLE tm_lz.lt_src_deapp_annot
+   modify gene_symbol character varying(400 byte);
+

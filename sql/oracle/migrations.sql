@@ -1,4 +1,7 @@
 @@migrations/CREATE_TM_DATALOADER_SCHEMA.sql
+@@migrations/1_run_first.sql
+@@migrations/SERIAL_HDD_Create_Tables.sql
+@@migrations/RBM_Create_Tables.sql
 @@migrations/GRANT_ACCESS_TO_SCHEMA_TABLES.sql
 @@migrations/FOREIGN_KEYS_DELETE_CASCADE.sql
 @@migrations/PROCESS_MRNA_DATA_DDL.sql
@@ -7,9 +10,9 @@
 @@migrations/SNP_CREATE_TMP_TABLES.sql
 @@migrations/SNP_CREATE_INDEXES.sql
 @@migrations/VCF_CREATE_TABLES.sql
-@@migrations/SERIAL_HDD_DATA_CREATE_TABLES.sql
 @@migrations/UPDATED_LENGTH_VARIABLE_CHAR.sql
 @@migrations/CREATE_INDEXES_FOR_ACGH_DATA.sql
 @@migrations/CREATE_SYNONYMS.sql
 @@migrations/CHANGES.sql
 @@migrations/1_2_4/20160328180000000_add_cz_form_layout_synonym.sql
+@@migrations/issue_87.sql
