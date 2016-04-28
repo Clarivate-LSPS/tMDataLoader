@@ -4,20 +4,20 @@
 select 'UPDATED_LENGTH_VARIABLE_CHAR.sql' FROM DUAL;
 
 ALTER TABLE tm_dataloader.lt_src_deapp_annot
-   modify gene_symbol VARCHAR2(400);
+   modify gene_symbol VARCHAR2(400 BYTE);
 
 ALTER TABLE tm_cz.annotation_deapp
-   MODIFY gene_symbol VARCHAR2(400);
+   MODIFY gene_symbol VARCHAR2(400 BYTE);
 
 ALTER TABLE deapp.de_mrna_annotation
-   MODIFY gene_symbol VARCHAR2(400);
+   MODIFY gene_symbol VARCHAR2(400 BYTE);
 
 ALTER TABLE tm_dataloader.lt_src_deapp_annot
-   MODIFY probe_id VARCHAR2(200);
+   MODIFY probe_id VARCHAR2(200 BYTE);
 
 ALTER TABLE deapp.de_mrna_annotation
-   MODIFY probe_id VARCHAR2(200);
+   MODIFY probe_id VARCHAR2(200 BYTE);
 
 ALTER TABLE tm_cz.annotation_deapp
-   MODIFY probe_id VARCHAR2(200);
+   MODIFY probe_id VARCHAR2(200 BYTE);
 

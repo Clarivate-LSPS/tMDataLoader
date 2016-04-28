@@ -1,11 +1,139 @@
 set define on;
+SET SERVEROUTPUT ON SIZE UNLIMITED
+SET LINESIZE 180
 
 DEFINE TM_WZ_SCHEMA='TM_WZ';
 DEFINE TM_LZ_SCHEMA='TM_LZ';
-DEFINE TM_CZ_SCHEMA='TM_CZ';
+DEFINE TM_CZ_SCHEMA='TM_DATALOADER';
 
-drop table "&TM_CZ_SCHEMA".STG_SUBJECT_RBM_DATA;
-drop table "&TM_CZ_SCHEMA".STG_SUBJECT_RBM_DATA_RAW;
+DECLARE
+	rows INT;
+	drop_sql VARCHAR2(100);
+	source VARCHAR2(100);
+BEGIN
+	SELECT COUNT(*)
+	INTO rows
+	FROM dba_tables
+	WHERE owner = '&TM_CZ_SCHEMA'
+	  AND table_name = 'STG_SUBJECT_RBM_DATA';
+
+	if rows > 0
+	THEN
+		drop_sql := 'drop table "&TM_CZ_SCHEMA".STG_SUBJECT_RBM_DATA';
+		dbms_output.put_line(drop_sql);
+		EXECUTE IMMEDIATE drop_sql;
+	END IF;
+
+	SELECT COUNT(*)
+	INTO rows
+	FROM dba_tables
+	WHERE owner = '&TM_CZ_SCHEMA'
+	  AND table_name = 'STG_SUBJECT_RBM_DATA_RAW';
+	  
+  	if rows > 0
+  	THEN
+  		drop_sql := 'drop table "&TM_CZ_SCHEMA".STG_SUBJECT_RBM_DATA_RAW';
+  		dbms_output.put_line(drop_sql);
+  		EXECUTE IMMEDIATE drop_sql;
+  	END IF;
+
+	SELECT COUNT(*)
+	INTO rows
+	FROM dba_tables
+	WHERE owner = '"&TM_CZ_SCHEMA'
+	  AND table_name = 'PATIENT_INFO';
+	  
+  	if rows > 0
+  	THEN
+  		drop_sql := 'DROP TABLE &TM_CZ_SCHEMA.PATIENT_INFO';
+  		dbms_output.put_line(drop_sql);
+  		EXECUTE IMMEDIATE drop_sql;
+  	END IF;
+	
+	SELECT COUNT(*)
+	INTO rows
+	FROM dba_tables
+	WHERE owner = '&TM_CZ_SCHEMA'
+	  AND table_name = 'STG_RBM_ANTIGEN_GENE';
+	  
+  	if rows > 0
+  	THEN
+  		drop_sql := 'DROP TABLE "&TM_CZ_SCHEMA".STG_RBM_ANTIGEN_GENE';
+  		dbms_output.put_line(drop_sql);
+  		EXECUTE IMMEDIATE drop_sql;
+  	END IF;
+	
+	SELECT COUNT(*)
+	INTO rows
+	FROM dba_tables
+	WHERE owner = '&TM_CZ_SCHEMA'
+	  AND table_name = UPPER('tmp_subject_rbm_log');
+	  
+  	if rows > 0
+  	THEN
+  		drop_sql := 'DROP TABLE "&TM_CZ_SCHEMA".tmp_subject_rbm_log';
+  		dbms_output.put_line(drop_sql);
+  		EXECUTE IMMEDIATE drop_sql;
+  	END IF;
+	
+	SELECT COUNT(*)
+	INTO rows
+	FROM dba_tables
+	WHERE owner = '&TM_WZ_SCHEMA'
+	  AND table_name = UPPER('tmp_subject_rbm_logs');
+	  
+  	if rows > 0
+  	THEN
+  		drop_sql := 'DROP TABLE "&TM_WZ_SCHEMA".tmp_subject_rbm_logs';
+  		dbms_output.put_line(drop_sql);
+  		EXECUTE IMMEDIATE drop_sql;
+  	END IF;
+	
+	SELECT COUNT(*)
+	INTO rows
+	FROM dba_tables
+	WHERE owner = '&TM_WZ_SCHEMA'
+	  AND table_name = UPPER('tmp_subject_rbm_calcs');
+	  
+  	if rows > 0
+  	THEN
+  		drop_sql := 'DROP TABLE "&TM_WZ_SCHEMA".tmp_subject_rbm_calcs';
+  		dbms_output.put_line(drop_sql);
+  		EXECUTE IMMEDIATE drop_sql;
+  	END IF;
+	
+	SELECT COUNT(*)
+	INTO rows
+	FROM dba_tables
+	WHERE owner = '&TM_WZ_SCHEMA'
+	  AND table_name = UPPER('tmp_subject_rbm_med');
+	  
+  	if rows > 0
+  	THEN
+  		drop_sql := 'DROP TABLE "&TM_WZ_SCHEMA".tmp_subject_rbm_med';
+  		dbms_output.put_line(drop_sql);
+  		EXECUTE IMMEDIATE drop_sql;
+  	END IF;
+	
+	SELECT COUNT(*)
+	INTO rows
+	FROM dba_tables
+	WHERE owner = '&TM_WZ_SCHEMA'
+	  AND table_name = 'DE_SUBJECT_RBM_DATA';
+	  
+  	if rows > 0
+  	THEN
+  		drop_sql := 'DROP TABLE "&TM_WZ_SCHEMA".DE_SUBJECT_RBM_DATA';
+  		dbms_output.put_line(drop_sql);
+  		EXECUTE IMMEDIATE drop_sql;
+  	END IF;
+
+	  
+	EXCEPTION
+		WHEN OTHERS THEN
+		dbms_output.put_line(source || ':' || SQLERRM);
+END;
+/
 
 create table "&TM_CZ_SCHEMA".STG_SUBJECT_RBM_DATA
 (
@@ -33,7 +161,7 @@ create table "&TM_CZ_SCHEMA".STG_SUBJECT_RBM_DATA_RAW
   SITE_ID varchar(100)
 );
 
-create view "&TM_CZ_SCHEMA".PATIENT_INFO
+create or replace view "&TM_CZ_SCHEMA".PATIENT_INFO
 as select TRIAL_NAME as STUDY_ID, SUBJECT_ID, SITE_ID, REGEXP_REPLACE(TRIAL_NAME || ':' || SITE_ID || ':' || SUBJECT_ID,
                    '(::){1,}', ':') as usubjid from "&TM_CZ_SCHEMA".stg_subject_rbm_data;
 
