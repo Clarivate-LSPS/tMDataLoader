@@ -32,10 +32,11 @@ Please make sure you edit the configuration file before using the tool.
 For Oracle
 ==========
 
-From `sql/oracle/` run following scripts using SQLDeveloper or sqlplus with DB user as specified:
-  
-    run_as_dba.sql
-    run_as_tm_cz.sql
+From `sql/oracle/` run following scripts using SQLDeveloper or sqlplus: 
+  As dba:
+    migrations.sql
+  As tm_dataloader:
+    @run_as_tm_dataloader.sql
 
 For PostgreSQL
 ==============
