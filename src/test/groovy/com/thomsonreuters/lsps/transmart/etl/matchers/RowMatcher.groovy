@@ -36,7 +36,7 @@ class RowMatcher extends BaseMatcher<GroovyRowResult> {
 
     private static boolean matchValue(actualValue, expectedValue) {
         def targetClass = expectedValue?.class
-        if (Closure.isAssignableFrom(targetClass)) {
+        if (targetClass && Closure.isAssignableFrom(targetClass)) {
             return ((Closure) expectedValue).call(normalizeValue(actualValue, String))
         }
         actualValue = normalizeValue(actualValue, targetClass)
