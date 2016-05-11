@@ -2,6 +2,7 @@ package com.thomsonreuters.lsps.transmart.etl
 
 import com.thomsonreuters.lsps.db.core.Database
 import com.thomsonreuters.lsps.transmart.files.MetaInfoHeader
+import com.thomsonreuters.lsps.utils.DbUtils
 import groovy.io.FileType
 
 import java.nio.file.Files
@@ -92,8 +93,7 @@ class GWASPlinkDataProcessor implements DataProcessor {
 
         database.withSql { sql ->
             sql.execute('delete from gwas_plink.plink_data where study_id = ?', studyId)
-            sql.execute("insert into gwas_plink.plink_data (study_id, bed, bim, fam) values (?, ?, ?, ?)",
-                    studyId, bed.bytes, bim.bytes, fam.bytes)
+            DbUtils.smartInsert(database.databaseType, sql, 'gwas_plink.plink_data', [study_id: studyId], [bed: bed, bim: bim, fam: fam])
         }
         return true
     }

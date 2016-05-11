@@ -26,9 +26,6 @@ BEGIN
     CONSTRAINT UK_STUDY_ID UNIQUE (STUDY_ID)
   )';
 
-	EXECUTE IMMEDIATE 'GRANT INSERT, DELETE, SELECT ON gwas_plink.plink_data TO "&TM_CZ_SCHEMA"';
-	EXECUTE IMMEDIATE 'GRANT SELECT ON gwas_plink.plink_data TO biomart_user';
-
 	EXECUTE IMMEDIATE 'CREATE SEQUENCE gwas_plink."SEQ_PLINK_DATA"  MINVALUE 1 MAXVALUE 999999999999999999999999 INCREMENT BY 1 START WITH 1 CACHE 2 NOORDER NOCYCLE';
 	EXECUTE IMMEDIATE 'CREATE TRIGGER gwas_plink."TRG_PLINK_DATA_ID"
   before insert on gwas_plink.plink_data for each row
@@ -40,4 +37,8 @@ BEGIN
     end if;
   end;';
 END;
+/
+
+GRANT INSERT, UPDATE, DELETE, SELECT ON gwas_plink.plink_data TO "&TM_CZ_SCHEMA";
+GRANT SELECT ON gwas_plink.plink_data TO biomart_user;
 /

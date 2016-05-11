@@ -43,7 +43,7 @@ dependencies {
     compile group: 'org.codehaus.groovy', name: 'groovy-all', version: '2.4.6'
     compile 'com.oracle:ojdbc5:11.2.0.2.0'
     compile files('lib/xdb6.jar')
-    compile 'org.postgresql:postgresql:9.3-1102-jdbc4'
+    compile 'org.postgresql:postgresql:9.4.1208.jre7'
     compile 'commons-io:commons-io:2.4'
     compile 'org.apache.commons:commons-csv:1.1'
     compile 'com.thomsonreuters:tr-lsps-io:1.0-SNAPSHOT'
