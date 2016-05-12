@@ -4,6 +4,10 @@ import com.thomsonreuters.lsps.db.core.Database
 import com.thomsonreuters.lsps.transmart.files.MetaInfoHeader
 import com.thomsonreuters.lsps.utils.DbUtils
 import groovy.io.FileType
+import org.anarres.lzo.LzoAlgorithm
+import org.anarres.lzo.LzoCompressor
+import org.anarres.lzo.LzoLibrary
+import org.anarres.lzo.LzoOutputStream
 
 import java.nio.file.Files
 import java.nio.file.Path
@@ -93,8 +97,34 @@ class GWASPlinkDataProcessor implements DataProcessor {
 
         database.withSql { sql ->
             sql.execute('delete from gwas_plink.plink_data where study_id = ?', studyId)
-            DbUtils.smartInsert(database.databaseType, sql, 'gwas_plink.plink_data', [study_id: studyId], [bed: bed, bim: bim, fam: fam])
+            DbUtils.smartInsert(database.databaseType, sql, 'gwas_plink.plink_data', [study_id: studyId],
+                    [
+                            bed: compress(bed),
+                            bim: compress(bim),
+                            fam: compress(fam)
+                    ])
         }
         return true
+    }
+
+    public static byte[] compress(input) throws IOException {
+        OutputStream baos = new ByteArrayOutputStream();
+        LzoAlgorithm algorithm = LzoAlgorithm.LZO1X;
+        LzoCompressor compressor = LzoLibrary.getInstance().newCompressor(algorithm, null);
+        LzoOutputStream stream = new LzoOutputStream(baos, compressor, 256);
+
+        input.withInputStream { inputStream ->
+            InputStream is = new BufferedInputStream(inputStream);
+            int val;
+            byte[] bytes = new byte[1024];
+            while ((val = is.read(bytes)) != -1) {
+                stream.write(bytes, 0, val)
+            }
+        }
+
+        stream.flush()
+        stream.close()
+
+        return baos.toByteArray();
     }
 }
