@@ -11,6 +11,7 @@ import org.anarres.lzo.LzoOutputStream
 
 import java.nio.file.Files
 import java.nio.file.Path
+
 /**
  * Date: 21-Apr-16
  * Time: 15:52
@@ -97,34 +98,27 @@ class GWASPlinkDataProcessor implements DataProcessor {
 
         database.withSql { sql ->
             sql.execute('delete from gwas_plink.plink_data where study_id = ?', studyId)
-            DbUtils.smartInsert(database.databaseType, sql, 'gwas_plink.plink_data', [study_id: studyId],
+            DbUtils.insertRecord(database, sql, 'gwas_plink.plink_data', [study_id: studyId],
                     [
-                            bed: compress(bed),
-                            bim: compress(bim),
-                            fam: compress(fam)
+                            bed: compressedStream(bed),
+                            bim: compressedStream(bim),
+                            fam: compressedStream(fam)
                     ])
         }
         return true
     }
 
-    public static byte[] compress(input) throws IOException {
-        OutputStream baos = new ByteArrayOutputStream();
-        LzoAlgorithm algorithm = LzoAlgorithm.LZO1X;
-        LzoCompressor compressor = LzoLibrary.getInstance().newCompressor(algorithm, null);
-        LzoOutputStream stream = new LzoOutputStream(baos, compressor, 256);
-
-        input.withInputStream { inputStream ->
-            InputStream is = new BufferedInputStream(inputStream);
-            int val;
-            byte[] bytes = new byte[1024];
-            while ((val = is.read(bytes)) != -1) {
-                stream.write(bytes, 0, val)
+    public static InputStream compressedStream(final Path input) throws IOException {
+        final LzoAlgorithm algorithm = LzoAlgorithm.LZO1X;
+        final LzoCompressor compressor = LzoLibrary.getInstance().newCompressor(algorithm, null);
+        final PipedInputStream inputStream = new PipedInputStream()
+        final PipedOutputStream outputStream = new PipedOutputStream(inputStream)
+        new Thread({
+            def stream = new LzoOutputStream(outputStream, compressor)
+            stream.withCloseable {
+                input.withInputStream { stream << it }
             }
-        }
-
-        stream.flush()
-        stream.close()
-
-        return baos.toByteArray();
+        }).run()
+        return inputStream
     }
 }
