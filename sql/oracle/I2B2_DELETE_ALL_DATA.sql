@@ -62,24 +62,17 @@ BEGIN
   end if;
 
   if (trial_id is null) then
-		SELECT count(DISTINCT trial_name)
+		SELECT count(DISTINCT sourcesystem_cd)
 		INTO trialCount
-		FROM DEAPP.de_subject_sample_mapping
-		WHERE concept_code IN (
-			SELECT concept_cd
-			FROM I2B2DEMODATA.concept_dimension
-			WHERE concept_path LIKE pathString || '%'
-		);
+		FROM i2b2metadata.i2b2
+		WHERE c_fullname LIKE pathString || '%' ESCAPE '`';
+
 		IF (trialCount = 1)
 		THEN
-			SELECT DISTINCT trial_name
+			SELECT DISTINCT sourcesystem_cd
 			INTO TrialId
-			FROM DEAPP.de_subject_sample_mapping
-			WHERE concept_code IN (
-				SELECT concept_cd
-				FROM I2B2DEMODATA.concept_dimension
-				WHERE concept_path LIKE pathString || '%'
-			);
+			FROM i2b2metadata.i2b2
+			WHERE c_fullname LIKE pathString || '%' ESCAPE '`';
 		ELSIF (trialCount = 0)
 			THEN
 				TrialId := NULL;
