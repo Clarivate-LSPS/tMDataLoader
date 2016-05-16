@@ -108,12 +108,12 @@ class GWASPlinkDataProcessor implements DataProcessor {
         final LzoCompressor compressor = LzoLibrary.getInstance().newCompressor(algorithm, null);
         final PipedInputStream inputStream = new PipedInputStream()
         final PipedOutputStream outputStream = new PipedOutputStream(inputStream)
-        new Thread({
+        Thread.start {
             def stream = new LzoOutputStream(outputStream, compressor)
             stream.withCloseable {
                 input.withInputStream { stream << it }
             }
-        }).run()
+        }
         return inputStream
     }
 }
