@@ -44,11 +44,6 @@ class GWASPlinkDataProcessor implements DataProcessor {
             if (!(sex in ['0', '1', '2'])) {
                 throw new DataProcessingException("$prefix: Invalid sex value. Expected '1' = male, '2' = female, '0' = unknown, but was '${sex}'")
             }
-
-            def phenotype = tokens[5]
-            if (!(phenotype in ['0', '1', '2'])) {
-                throw new DataProcessingException("$prefix: Invalid phenotype value. Expected '1' = control, '2' = case, '-9'/'0' = missing data, but was '${phenotype}'")
-            }
         }
     }
 
