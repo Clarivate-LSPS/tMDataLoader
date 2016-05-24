@@ -1089,7 +1089,7 @@ BEGIN
 															   from tmp_subject_info si, patient_dimension pat
 															  where si.usubjid = pat.sourcesystem_cd)
 									and fact.concept_cd = cd.concept_cd
-									and cd.name_char = node.node_name
+									and cd.concept_path = node.leaf_node
 									and node.data_type = 'N');
 
 		stepCt := stepCt + 1;

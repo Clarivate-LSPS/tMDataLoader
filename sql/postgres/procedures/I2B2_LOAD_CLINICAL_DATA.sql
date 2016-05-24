@@ -1215,7 +1215,7 @@ BEGIN
 								  from observation_fact fact, concept_dimension cd, wt_trial_nodes node
 								 where fact.patient_num = any(updated_patient_nums)
 								   and fact.concept_cd = cd.concept_cd
-								   and cd.name_char = node.node_name
+								   and cd.concept_path = node.leaf_node
 								   and node.data_type = 'N');
     exception
     when others then
