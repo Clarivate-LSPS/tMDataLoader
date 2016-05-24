@@ -253,6 +253,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         String femaleConcept = rootConcept + "Subjects\\Demographics\\Sex (SEX)\\Female\\"
         String languageConcept = rootConcept + "Subjects\\Demographics\\Language\\"
         String ageConcept = rootConcept + "Subjects\\Demographics\\Age (AGE)\\"
+        String anotherAgeConcept = rootConcept + "Ages\\Demographics\\Age (AGE)\\"
         String assessmentDateConcept = rootConcept + "Subjects\\Demographics\\Assessment Date\\"
 
         processor.process(new File(studyDir(studyName, studyId), "ClinicalDataToUpload").toPath(),
@@ -264,6 +265,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat(sql, hasNode(languageConcept).withPatientCount(3))
         assertThat(sql, hasNode(assessmentDateConcept + "09/15/2014\\"))
         assertThat(sql, hasFact(ageConcept, subjId, 20))
+        assertThat(sql, hasFact(anotherAgeConcept, subjId, 20))
 
         processor.process(
                 new File(studyDir(studyName, studyId, studiesForMerge.append), "ClinicalDataToUpload").toPath(),
@@ -276,6 +278,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat(sql, hasNode(assessmentDateConcept + "09/15/2014\\"))
         assertThat(sql, hasNode(assessmentDateConcept + "09/15/2015\\"))
         assertThat(sql, hasFact(ageConcept, subjId, 21))
+        assertThat(sql, hasFact(anotherAgeConcept, subjId, 20))
     }
 
     def 'it should load study with non-unique column names'() {
