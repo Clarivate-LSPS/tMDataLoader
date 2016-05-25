@@ -56,6 +56,9 @@ Declare
 	recreateIndexesSql text;
 	leaf_fullname varchar(700);
 	updated_patient_nums integer[];
+	pathRegexp varchar(2000);
+	updatedPath varchar(2000);
+  cur_row RECORD;
 
 	addNodes CURSOR is
 	select DISTINCT leaf_node, node_name
@@ -971,24 +974,6 @@ BEGIN
 		end loop;
 	end if;
 
-  -- delete old leaf nodes for updated subjects
-	if (merge_mode = 'UPDATE') then
-    for leaf_fullname in ( select cd.concept_path
-                             from concept_dimension cd, observation_fact fact
-                            where fact.patient_num = any(updated_patient_nums)
-                              and cd.concept_cd = fact.concept_cd
-							  and not exists ( select 1
-												 from observation_fact f
-												where f.concept_cd = cd.concept_cd
-												  and f.patient_num <> any(updated_patient_nums) ) ) loop
-
-      select i2b2_delete_1_node(leaf_fullname) into rtnCd;
-      stepCt := stepCt + 1;
-      select cz_write_audit(jobId,databaseName,procedureName,'Deleted old version updated node: ' || leaf_fullname,1,stepCt,'Done') into rtnCd;
-
-    end loop;
-	end if;
-
 	begin
 	insert into i2b2demodata.concept_dimension
     (concept_cd
@@ -1204,6 +1189,76 @@ BEGIN
     select cz_write_audit(jobId,databaseName,procedureName,'Delete old fact records for updated data',rowCt,stepCt,'Done') into rtnCd;
 
 	end if;
+
+  if (merge_mode = 'UPDATE_VARIABLES') then
+    begin
+    for cur_row in (select node.leaf_node, node.data_value, pat.patient_num
+              from wt_trial_nodes node, wrk_clinical_data wcd, patient_dimension pat
+              where wcd.category_cd = node.category_cd
+                    and wcd.data_label = node.data_label
+                    and wcd.data_value = node.data_value
+                    and ((wcd.visit_name = node.visit_name) or (wcd.visit_name is null and node.visit_name is null))
+                    and pat.sourcesystem_cd = wcd.usubjid) loop
+      select cz_write_audit(jobId,databaseName,procedureName,'Update var from : ' || cur_row.leaf_node,rowCt,stepCt,'Done') into rtnCd;
+			if (cur_row.data_value is not null) then
+          pathRegexp := REGEXP_REPLACE(cur_row.leaf_node, '([\[\]\(\)\\])', '\\\1', 'g');
+          pathRegexp := '^' || REPLACE(pathRegexp, cur_row.data_value, '[^\\]+') || '$';
+        select cz_write_audit(jobId,databaseName,procedureName,'RegExp for search : ' || pathRegexp,rowCt,stepCt,'Done') into rtnCd;
+          select cd.concept_path
+          into updatedPath
+          from concept_dimension cd, observation_fact fact
+          where cd.concept_path ~ pathRegexp
+                and fact.concept_cd = cd.concept_cd
+                and fact.patient_num = cur_row.patient_num;
+
+        if (updatedPath is not null) then
+          delete from observation_fact f
+          where f.modifier_cd = TrialId
+                and f.patient_num = cur_row.patient_num
+                and f.concept_cd in (select cd.concept_cd
+                                     from concept_dimension cd
+                                     where cd.concept_path like updatedPath || '%' escape '`')
+                and f.concept_cd not in
+                    (select distinct concept_code as concept_cd from deapp.de_subject_sample_mapping
+                    where trial_name = TrialId
+                          and concept_code is not null
+                     union
+                     select distinct platform_cd as concept_cd from deapp.de_subject_sample_mapping
+                     where trial_name = TrialId
+                           and platform_cd is not null
+                     union
+                     select distinct sample_type_cd as concept_cd from deapp.de_subject_sample_mapping
+                     where trial_name = TrialId
+                           and sample_type_cd is not null
+                     union
+                     select distinct tissue_type_cd as concept_cd from deapp.de_subject_sample_mapping
+                     where trial_name = TrialId
+                           and tissue_type_cd is not null
+                     union
+                     select distinct timepoint_cd as concept_cd from deapp.de_subject_sample_mapping
+                     where trial_name = TrialId
+                           and timepoint_cd is not null
+                     union
+                     select distinct concept_cd as concept_cd from deapp.de_subject_snp_dataset
+                     where trial_name = TrialId
+                           and concept_cd is not null);
+
+          stepCt := stepCt + 1;
+          select cz_write_audit(jobId,databaseName,procedureName,'Delete old fact records for updated data. Path: ' || updatedPath || '. Patient:' || cur_row.patient_num,rowCt,stepCt,'Done') into rtnCd;
+        end if;
+      end if;
+    end loop;
+    exception
+    when others then
+        errorNumber := SQLSTATE;
+        errorMessage := SQLERRM;
+        --Handle errors.
+        select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+        --End Proc
+        select cz_end_audit (jobID, 'FAIL') into rtnCd;
+        return -16;
+    end;
+  end if;
 
 	if (merge_mode = 'APPEND') then
     begin

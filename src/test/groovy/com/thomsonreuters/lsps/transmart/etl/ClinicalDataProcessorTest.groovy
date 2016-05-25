@@ -244,6 +244,39 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat(sql, hasFact(ageConcept, subjId, 21))
     }
 
+    def 'it should load study with UPDATE VARIABLES merge mode'(){
+        expect:
+        String subjId = 'HCC2935'
+        String rootConcept = "\\Test Studies\\${studyName}\\"
+
+        String maleConcept = rootConcept + "Subjects\\Demographics\\Sex (SEX)\\Male\\"
+        String femaleConcept = rootConcept + "Subjects\\Demographics\\Sex (SEX)\\Female\\"
+        String languageConcept = rootConcept + "Subjects\\Demographics\\Language\\"
+        String ageConcept = rootConcept + "Subjects\\Demographics\\Age (AGE)\\"
+        String assessmentDateConcept = rootConcept + "Subjects\\Demographics\\Assessment Date\\"
+
+        processor.process(new File(studyDir(studyName, studyId), "ClinicalDataToUpload").toPath(),
+                [name: studyName, node: "Test Studies\\${studyName}".toString()])
+
+        assertThat(sql, hasPatient(subjId).inTrial(studyId))
+        assertThat(sql, hasNode(maleConcept).withPatientCount(2))
+        assertThat(sql, hasNode(femaleConcept).withPatientCount(5))
+        assertThat(sql, hasNode(languageConcept).withPatientCount(3))
+        assertThat(sql, hasNode(assessmentDateConcept + "09/15/2014\\"))
+        assertThat(sql, hasFact(ageConcept, subjId, 20))
+
+        processor.process(
+                new File(studyDir(studyName, studyId, studiesForMerge.update_var), "ClinicalDataToUpload").toPath(),
+                [name: studyName, node: "Test Studies\\${studyName}".toString()])
+
+        assertThat(sql, hasPatient(subjId).inTrial(studyId))
+        assertThat(sql, hasNode(maleConcept).withPatientCount(3))
+        assertThat(sql, hasNode(femaleConcept).withPatientCount(4))
+        assertThat(sql, hasNode(languageConcept).withPatientCount(3))
+        assertThat(sql, hasNode(assessmentDateConcept + "09/15/2015\\"))
+        assertThat(sql, hasFact(ageConcept, subjId, 20))
+    }
+
     def 'it should load study with APPEND merge mode'() {
         expect:
         String subjId = 'HCC2935'
