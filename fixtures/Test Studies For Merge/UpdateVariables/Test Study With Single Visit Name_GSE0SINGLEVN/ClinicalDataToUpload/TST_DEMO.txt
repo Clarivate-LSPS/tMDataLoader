@@ -1,0 +1,3 @@
+STUDY_ID	SUBJ_ID	Age In Years	Sex	Language	Visit Name	Time Point
+GSE0SINGLEVN	HCC2935	20	Male	French	Baseline
+

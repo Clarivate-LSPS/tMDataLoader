@@ -281,7 +281,21 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat(sql, hasNode(assessmentDateConcept + "09/15/2014\\"))
         assertThat(sql, hasFact(ageConcept, subjId, 21))
         assertThat(sql, hasNode(biomarkerConcept).withPatientCount(3))
+
+        String femaleFrenchConcept = '\\Test Studies\\Test Study With Single Visit Name\\Subjects\\Demographics\\Female\\French\\Sex (SEX)\\'
+        String maleFrenchConcept = '\\Test Studies\\Test Study With Single Visit Name\\Subjects\\Demographics\\Male\\French\\Sex (SEX)\\'
+        def clinicalData = Fixtures.clinicalDataWithSingleVisitName
+        clinicalData.load(config)
+        assertThat(sql, hasNode(femaleFrenchConcept).withPatientCount(2))
+
+        def studyWithVisitName = 'Test Study With Single Visit Name'
+        def newProcessor = new ClinicalDataProcessor(config)
+        newProcessor.process(new File(studyDir(studyWithVisitName, 'GSE0SINGLEVN', studiesForMerge.update_var), "ClinicalDataToUpload").toPath(),
+                [name: studyWithVisitName, node: "Test Studies\\${studyWithVisitName}".toString()])
+        assertThat(sql, hasNode(femaleFrenchConcept).withPatientCount(1))
+        assertThat(sql, hasNode(maleFrenchConcept).withPatientCount(1))
     }
+
 
     def 'it should load study with APPEND merge mode'() {
         expect:
