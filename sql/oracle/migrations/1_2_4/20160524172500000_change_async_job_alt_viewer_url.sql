@@ -1,0 +1,12 @@
+DECLARE
+  len INTEGER;
+BEGIN
+  select data_length into len FROM ALL_TAB_COLUMNS where
+    owner = 'I2B2DEMODATA'
+    and table_name = 'ASYNC_JOB' and column_name = 'ALT_VIEWER_URL';
+
+  IF len != 4000 THEN
+    EXECUTE IMMEDIATE 'ALTER TABLE I2B2DEMODATA.ASYNC_JOB MODIFY (ALT_VIEWER_URL VARCHAR2(4000 BYTE) )';
+  END IF;
+END;
+/
