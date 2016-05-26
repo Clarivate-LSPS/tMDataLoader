@@ -1193,19 +1193,14 @@ BEGIN
 
   if (merge_mode = 'UPDATE_VARIABLES') then
     begin
-    for cur_row in (select node.leaf_node, node.data_value, pat.patient_num
-              from wt_trial_nodes node, wrk_clinical_data wcd, patient_dimension pat
-              where wcd.category_cd = node.category_cd
-                    and ((wcd.data_label = node.data_label) or (wcd.data_label is null and node.data_label is null))
-                    and ((wcd.data_value = node.data_value) or (wcd.data_type = 'N' and node.data_type = 'N'))
-                    and ((wcd.visit_name = node.visit_name) or (wcd.visit_name is null and node.visit_name is null))
-                    and pat.sourcesystem_cd = wcd.usubjid) loop
-      select cz_write_audit(jobId,databaseName,procedureName,'Update var from : ' || cur_row.leaf_node,rowCt,stepCt,'Done') into rtnCd;
-			if (cur_row.data_value is not null) then
-        pathRegexp := REGEXP_REPLACE(cur_row.leaf_node, '([\[\]\(\)\\])', '\\\1', 'g');
-        pathRegexp := '^' || REPLACE(pathRegexp, cur_row.data_value, '[^\\]+') || '$';
+    for cur_row in (select wcd.category_path, wcd.data_value, wcd.data_label, wcd.visit_name,pat.patient_num, wcd.data_type
+                      from wrk_clinical_data wcd, patient_dimension pat
+                     where pat.sourcesystem_cd = wcd.usubjid) loop
+			if (cur_row.data_type = 'T') then
+      	pathRegexp := regexp_replace(topNode || replace(replace(coalesce(cur_row.category_path, ''), 'DATALABEL',coalesce(cur_row.data_label, '')), 'VISITNAME',coalesce(cur_row.visit_name, ''))  || '\','(\\){2,}', '\', 'g');
+				pathRegexp := regexp_replace(pathRegexp, '([\[\]\(\)\\])', '\\\1', 'g');
+				pathRegexp :=  '^' || replace(pathRegexp,'DATAVALUE','[^\\]+') || '$';
         select cz_write_audit(jobId,databaseName,procedureName,'RegExp for search : ' || pathRegexp,rowCt,stepCt,'Done') into rtnCd;
-
         select count(cd.concept_path)
         into pathCount
         from concept_dimension cd, observation_fact fact
@@ -1255,19 +1250,22 @@ BEGIN
           stepCt := stepCt + 1;
           select cz_write_audit(jobId,databaseName,procedureName,'Delete old fact records for updated data. Path: ' || updatedPath || '. Patient:' || cur_row.patient_num,rowCt,stepCt,'Done') into rtnCd;
         else
-          stepCt := stepCt + 1;
-          select cz_write_audit(jobId,databaseName,procedureName,'Find several categorical value on the same path ' || cur_row.leaf_node,0,stepCt,'Done') into rtnCd;
-          select cz_error_handler (jobID, procedureName, '-1', 'Application raised error') into rtnCd;
-          select cz_end_audit (jobID, 'FAIL') into rtnCd;
-          return -16;
+					if (pathCount > 1) then
+						stepCt := stepCt + 1;
+						select cz_write_audit(jobId,databaseName,procedureName,'Find several categorical value on the same path',0,stepCt,'Done') into rtnCd;
+						select cz_error_handler (jobID, procedureName, '-1', 'Application raised error') into rtnCd;
+						select cz_end_audit (jobID, 'FAIL') into rtnCd;
+						return -16;
+					end if;
 				end if;
       else
+				updatedPath := regexp_replace(topNode || replace(replace(coalesce(cur_row.category_path, ''),'DATALABEL',coalesce(cur_row.data_label, '')),'VISITNAME',coalesce(cur_row.visit_name, '')) || '\','(\\){2,}', '\', 'g');
         delete from observation_fact f
         where f.modifier_cd = TrialId
               and f.patient_num = cur_row.patient_num
               and f.concept_cd in (select cd.concept_cd
                                    from concept_dimension cd
-                                   where cd.concept_path = cur_row.leaf_node)
+                                   where cd.concept_path = updatedPath)
               and f.concept_cd not in
                   (select distinct concept_code as concept_cd from de_subject_sample_mapping
                   where trial_name = TrialId
@@ -1294,7 +1292,7 @@ BEGIN
                          and concept_cd is not null);
 
         stepCt := stepCt + 1;
-        select cz_write_audit(jobId,databaseName,procedureName,'Delete old fact records for updated data. Path: ' || cur_row.leaf_node || '. Patient: ' || cur_row.patient_num,rowCt,stepCt,'Done') into rtnCd;
+        select cz_write_audit(jobId,databaseName,procedureName,'Delete old fact records for updated data. Path: ' || updatedPath || '. Patient: ' || cur_row.patient_num,rowCt,stepCt,'Done') into rtnCd;
       end if;
     end loop;
     exception
