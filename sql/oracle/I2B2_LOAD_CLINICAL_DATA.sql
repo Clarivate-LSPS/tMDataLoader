@@ -1062,7 +1062,7 @@ BEGIN
 							  from wt_trial_nodes node, wrk_clinical_data wcd, patient_dimension pat
 							 where wcd.category_cd = node.category_cd
 								 and wcd.data_label = node.data_label
-								 and wcd.data_value = node.data_value
+								 and ((wcd.data_value = node.data_value) or (wcd.data_type = 'N' and node.data_type = 'N'))
 								 and ((wcd.visit_name = node.visit_name) or (wcd.visit_name is null and node.visit_name is null))
 								 and pat.sourcesystem_cd = wcd.usubjid) loop
 			cz_write_audit(jobId,databaseName,procedureName,'Update var from : ' || x.leaf_node,SQL%ROWCOUNT,stepCt,'Done');
@@ -1118,6 +1118,41 @@ BEGIN
 					cz_write_audit(jobId,databaseName,procedureName,'Delete old fact records for updated data. Path: ' || updatedPath || '. Patient:' || x.patient_num,SQL%ROWCOUNT,stepCt,'Done');
 					commit;
 				end if;
+			else
+				delete from observation_fact f
+				where f.modifier_cd = TrialId
+							and f.patient_num = x.patient_num
+							and f.CONCEPT_CD in (select cd.concept_cd
+																	 from concept_dimension cd
+																	 where cd.concept_path = x.leaf_node)
+							and f.CONCEPT_CD not in
+									(select distinct concept_code as concept_cd from de_subject_sample_mapping
+									where trial_name = TrialId
+												and concept_code is not null
+									 union
+									 select distinct platform_cd as concept_cd from de_subject_sample_mapping
+									 where trial_name = TrialId
+												 and platform_cd is not null
+									 union
+									 select distinct sample_type_cd as concept_cd from de_subject_sample_mapping
+									 where trial_name = TrialId
+												 and sample_type_cd is not null
+									 union
+									 select distinct tissue_type_cd as concept_cd from de_subject_sample_mapping
+									 where trial_name = TrialId
+												 and tissue_type_cd is not null
+									 union
+									 select distinct timepoint_cd as concept_cd from de_subject_sample_mapping
+									 where trial_name = TrialId
+												 and timepoint_cd is not null
+									 union
+									 select distinct concept_cd as concept_cd from de_subject_snp_dataset
+									 where trial_name = TrialId
+												 and concept_cd is not null);
+
+				stepCt := stepCt + 1;
+				cz_write_audit(jobId,databaseName,procedureName,'Delete old fact records for updated data. Path: ' || x.leaf_node || '. Patient:' || x.patient_num,SQL%ROWCOUNT,stepCt,'Done');
+				commit;
 			end if;
 		end loop;
 	end if;
