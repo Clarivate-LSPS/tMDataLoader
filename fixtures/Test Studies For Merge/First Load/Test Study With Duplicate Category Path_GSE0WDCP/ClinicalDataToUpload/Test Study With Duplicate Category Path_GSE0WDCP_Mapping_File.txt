@@ -1,0 +1,11 @@
+filename	category_cd	col_nbr	data_label	data_label_source	variable_type	validation_rules
+TST_DEMO.txt		1	STUDY_ID
+TST_DEMO.txt		2	SUBJ_ID
+TST_DEMO.txt	Subjects+Demographics	3	"Age (AGE)"		Numerical	"Required; Greater than 30, when ""Sex"" is equal to ""Male""; Lesser than 50; Greater than or equal to 20; Lesser than or equal to 20; >30; <50; >=20; <=20; 30-50; Between 30 to 50"
+TST_DEMO.txt	Subjects+Demographics	4	"Sex (SEX)"		Categorical	Required
+TST_DEMO.txt	Subjects+Demographics	5	Assessment Date		Date
+TST_DEMO.txt	Subjects+Demographics	6	Language		Text
+TST_DEMO.txt	DupclicateCD+DATAVALUE+$	4	"Sex (SEX)"		Categorical	Required
+TST_DEMO.txt	DupclicateCD+DATAVALUE+$	6	Language		Text
+
+

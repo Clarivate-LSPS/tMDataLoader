@@ -1061,7 +1061,7 @@ BEGIN
 		for x in (select node.leaf_node, node.data_value, pat.patient_num
 							  from wt_trial_nodes node, wrk_clinical_data wcd, patient_dimension pat
 							 where wcd.category_cd = node.category_cd
-								 and wcd.data_label = node.data_label
+								 and ((wcd.data_label = node.data_label) or (wcd.data_label is null and node.data_label is null))
 								 and ((wcd.data_value = node.data_value) or (wcd.data_type = 'N' and node.data_type = 'N'))
 								 and ((wcd.visit_name = node.visit_name) or (wcd.visit_name is null and node.visit_name is null))
 								 and pat.sourcesystem_cd = wcd.usubjid) loop

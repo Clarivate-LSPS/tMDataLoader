@@ -296,6 +296,19 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat(sql, hasNode(maleFrenchConcept).withPatientCount(1))
     }
 
+    def 'Updates_Variable loading should throw error if find several categorical value on the same'() {
+        when:
+            String studyName = 'Test Study With Duplicate Category Path'
+            String studyId = 'GSE0WDCP'
+            String femaleConcept = '\\Test Studies\\Test Study With Duplicate Category Path\\DupclicateCD\\Female\\'
+            def newProcessor = new ClinicalDataProcessor(config)
+            newProcessor.process(new File(studyDir(studyName, studyId, studiesForMerge.first_load), "ClinicalDataToUpload").toPath(),
+                [name: studyName, node: "Test Studies\\${studyName}".toString()])
+            newProcessor.process(new File(studyDir(studyName, studyId, studiesForMerge.update_var), "ClinicalDataToUpload").toPath(),
+                [name: studyName, node: "Test Studies\\${studyName}".toString()])
+        then:
+            assertThat(sql, hasNode(femaleConcept).withPatientCount(5))
+    }
 
     def 'it should load study with APPEND merge mode'() {
         expect:

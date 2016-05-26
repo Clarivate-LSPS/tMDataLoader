@@ -58,7 +58,8 @@ class Fixtures {
         return [update : new StudiesDirFile(['fixtures', 'Test Studies For Merge', 'Update'].join(File.separator)),
                 append : new StudiesDirFile(['fixtures', 'Test Studies For Merge', 'Append'].join(File.separator)),
                 replace : new StudiesDirFile(['fixtures', 'Test Studies For Merge', 'Replace'].join(File.separator)),
-                update_var: new StudiesDirFile(['fixtures', 'Test Studies For Merge', 'UpdateVariables'].join(File.separator))]
+                update_var: new StudiesDirFile(['fixtures', 'Test Studies For Merge', 'UpdateVariables'].join(File.separator)),
+                first_load:  new StudiesDirFile(['fixtures', 'Test Studies For Merge', 'First Load'].join(File.separator))]
     }
 
     static StudyDirFile studyDir(String studyName, String studyId, File studiesDir = Fixtures.studiesDir) {
