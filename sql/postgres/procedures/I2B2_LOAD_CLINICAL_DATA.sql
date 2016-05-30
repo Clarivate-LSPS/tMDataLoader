@@ -56,6 +56,7 @@ Declare
 	recreateIndexesSql text;
 	leaf_fullname varchar(700);
 	updated_patient_nums integer[];
+	minTime TIMESTAMP;
 
 	addNodes CURSOR is
 	select DISTINCT leaf_node, node_name
@@ -1027,12 +1028,14 @@ BEGIN
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Inserted new leaf nodes into I2B2DEMODATA concept_dimension',rowCt,stepCt,'Done') into rtnCd;
 
+	select min(to_timestamp(node_name, 'YYYY-MM-DD HH24:MI')) into minTime
+	from tm_dataloader.wt_trial_nodes where valuetype_cd = 'TIMESTAMP';
 	--	update i2b2 with name, data_type and xml for leaf nodes
 	begin
 	update i2b2metadata.i2b2
 	set c_name=ncd.node_name
 	   ,c_columndatatype='T'
-	   ,c_metadataxml=i2b2_build_metadata_xml(ncd.node_name, ncd.data_type, ncd.valuetype_cd)
+	   ,c_metadataxml=i2b2_build_metadata_xml(ncd.node_name, ncd.data_type, ncd.valuetype_cd, minTime)
 	from wt_trial_nodes ncd
 	where c_fullname = ncd.leaf_node;
 	get diagnostics rowCt := ROW_COUNT;
@@ -1091,7 +1094,7 @@ BEGIN
 		  , 'T' --t.data_type
 		  ,'trial:' || TrialID
 		  ,'@'
-		  ,i2b2_build_metadata_xml(c.name_char, t.data_type, t.valuetype_cd)
+		  ,i2b2_build_metadata_xml(c.name_char, t.data_type, t.valuetype_cd, minTime)
     from i2b2demodata.concept_dimension c
 		,wt_trial_nodes t
     where c.concept_path = t.leaf_node

@@ -9,6 +9,7 @@ enum VariableType {
     Categorical,
     Numerical,
     Timepoint,
+    Timestamp,
     Date,
     Tag;
 

@@ -777,4 +777,63 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         def ex = thrown(DataProcessingException)
         ex.message == "STUDY_ID differs from previous in 2 line in TST_DEMO.txt file."
     }
+
+    def 'it should load Serial LDD data with timestamp'() {
+        given:
+        def clinicalData = ClinicalData.build('GSE0SLDDWTS', 'Test Study With Serial LDD with timestamp') {
+            mappingFile {
+                forDataFile('TEST.txt') {
+                    map('Vars+DATALABEL+$$Timestamp', 3, 'Timestamp', VariableType.Timestamp)
+                    map('', 4, 'Timestamp', VariableType.Timestamp)
+                    map('Vars', 5, 'Sex')
+                }
+            }
+            dataFile('TEST.txt', ['Days', 'Timestamp', 'Sex']) {
+                forSubject('SUBJ1') {
+                    row '0', '2000-12-31 12:00', 'Female'
+                    row '10', '2000-12-31 12:01', 'Female'
+                    row '12', '2000-12-31 12:02', 'Female'
+                    row '10', '2000-12-31 12:05', 'Female'
+                }
+                forSubject('SUBJ2') {
+                    row '5', '2000-12-31 12:00', 'Male'
+                    row '13', '2000-12-31 12:02', 'Male'
+                    row '15', '2000-12-31 12:05', 'Male'
+                }
+            }
+        }
+        String timepointsPath = "\\Test Studies\\Test Study With Serial LDD with timestamp\\Vars\\Timestamp"
+
+        when:
+        clinicalData.load(config)
+
+        then:
+        assertThat db, hasNode("$timepointsPath\\2000-12-31 12:00\\").withPatientCount(2)
+        assertThat db, hasNode("$timepointsPath\\2000-12-31 12:00\\").withPatientCount(2)
+        assertThat db, hasNode("$timepointsPath\\2000-12-31 12:01\\").withPatientCount(1)
+
+        assertThat db, hasRecord("i2b2", [c_fullname: "$timepointsPath\\2000-12-31 12:00\\"], [
+                c_metadataxml: {
+                    assertThat(it, notNullValue())
+
+                    def metadata = new XmlParser().parseText(it as String)
+                    assertThat(metadata.Oktousevalues.text(), equalTo('Y'))
+                    assertThat(metadata.SeriesMeta.Value.text(), equalTo('0'))
+                    assertThat(metadata.SeriesMeta.Unit.text(), equalTo('minutes'))
+                    assertThat(metadata.SeriesMeta.DisplayName.text(), equalTo('2000-12-31 12:00'))
+                    true
+                }
+        ])
+
+        assertThat db, hasRecord("i2b2", [c_fullname: "$timepointsPath\\2000-12-31 12:05\\"], [
+                c_metadataxml: {
+                    def metadata = new XmlParser().parseText(it as String)
+                    assertThat(metadata.Oktousevalues.text(), equalTo('Y'))
+                    assertThat(metadata.SeriesMeta.Value.text(), equalTo('5'))
+                    assertThat(metadata.SeriesMeta.Unit.text(), equalTo('minutes'))
+                    assertThat(metadata.SeriesMeta.DisplayName.text(), equalTo('2000-12-31 12:05'))
+                    true
+                }
+        ])
+    }
 }

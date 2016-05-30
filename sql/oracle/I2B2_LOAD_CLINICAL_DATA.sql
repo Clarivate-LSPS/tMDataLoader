@@ -66,6 +66,7 @@ AS
   pExists		int;
   rtnCode		int;
   tText			varchar2(2000);
+	minTime   DATE;
   
     --Audit variables
   newJobFlag INTEGER(1);
@@ -910,7 +911,10 @@ BEGIN
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Inserted new leaf nodes into I2B2DEMODATA concept_dimension',SQL%ROWCOUNT,stepCt,'Done');
     commit;
-	
+
+	select min(to_date(node_name, 'YYYY-MM-DD HH24:MI')) into minTime
+	from wt_trial_nodes where valuetype_cd = 'TIMESTAMP';
+
 	--	update i2b2 to pick up change in name, data_type for leaf nodes
 	merge /*+ parallel(i2b2, 8) */ into i2b2 b
 	using (
@@ -923,7 +927,7 @@ BEGIN
 		update set
 			c_name = c.name_char,
 			c_columndatatype = 'T',
-			c_metadataxml = I2B2_BUILD_METADATA_XML(c.name_char, c.data_type, c.valuetype_cd)
+			c_metadataxml = I2B2_BUILD_METADATA_XML(c.name_char, c.data_type, c.valuetype_cd, minTime)
 	when not matched then
 		insert (
 			c_hlevel
@@ -967,7 +971,7 @@ BEGIN
 			,'T'		-- if i2b2 gets fixed to respect c_columndatatype then change to t.data_type
 			,'trial:' || TrialID
 			,i2b2_id_seq.nextval
-			,I2B2_BUILD_METADATA_XML(c.name_char, c.data_type, c.valuetype_cd)
+			,I2B2_BUILD_METADATA_XML(c.name_char, c.data_type, c.valuetype_cd, minTime)
 		);
 
 	stepCt := stepCt + 1;
