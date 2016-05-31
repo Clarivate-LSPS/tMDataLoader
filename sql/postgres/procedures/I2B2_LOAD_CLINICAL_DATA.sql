@@ -56,7 +56,7 @@ Declare
 	recreateIndexesSql text;
 	leaf_fullname varchar(700);
 	updated_patient_nums integer[];
-	minTime TIMESTAMP;
+	baselineDate TIMESTAMP;
 
 	addNodes CURSOR is
 	select DISTINCT leaf_node, node_name
@@ -1028,14 +1028,26 @@ BEGIN
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Inserted new leaf nodes into I2B2DEMODATA concept_dimension',rowCt,stepCt,'Done') into rtnCd;
 
-	select min(to_timestamp(node_name, 'YYYY-MM-DD HH24:MI')) into minTime
-	from tm_dataloader.wt_trial_nodes where valuetype_cd = 'TIMESTAMP';
+	if (merge_mode = 'APPEND') then begin
+			select min(to_timestamp(value, 'YYYY-MM-DD HH24:MI')) into baselineDate from (
+						select leaf_node as node, node_name as value from wt_trial_nodes where valuetype_cd = 'TIMESTAMP'
+						union all
+						select c_fullname as node, c_name as value from i2b2metadata.i2b2 where c_fullname like topNode||'%' escape '~' and valuetype_cd = 'TIMESTAMP'
+					) p;
+			update i2b2 c set
+				c_metadataxml = I2B2_BUILD_METADATA_XML(c.c_name, c.c_columndatatype, c.valuetype_cd, baselineDate)
+			where c.c_fullname like topNode||'%' escape '~' and c.valuetype_cd = 'TIMESTAMP';
+		end;
+	ELSE
+		select min(to_timestamp(node_name, 'YYYY-MM-DD HH24:MI')) into baselineDate
+		from tm_dataloader.wt_trial_nodes where valuetype_cd = 'TIMESTAMP';
+	END IF;
 	--	update i2b2 with name, data_type and xml for leaf nodes
 	begin
 	update i2b2metadata.i2b2
 	set c_name=ncd.node_name
 	   ,c_columndatatype='T'
-	   ,c_metadataxml=i2b2_build_metadata_xml(ncd.node_name, ncd.data_type, ncd.valuetype_cd, minTime)
+	   ,c_metadataxml=i2b2_build_metadata_xml(ncd.node_name, ncd.data_type, ncd.valuetype_cd, baselineDate)
 	from wt_trial_nodes ncd
 	where c_fullname = ncd.leaf_node;
 	get diagnostics rowCt := ROW_COUNT;
@@ -1074,6 +1086,7 @@ BEGIN
 	,c_comment
 	,m_applied_path
 	,c_metadataxml
+	,valuetype_cd
 	)
     select distinct (length(c.concept_path) - coalesce(length(replace(c.concept_path, '\','')),0)) / length('\') - 2 + root_level
 		  ,c.concept_path
@@ -1094,7 +1107,8 @@ BEGIN
 		  , 'T' --t.data_type
 		  ,'trial:' || TrialID
 		  ,'@'
-		  ,i2b2_build_metadata_xml(c.name_char, t.data_type, t.valuetype_cd, minTime)
+		  ,i2b2_build_metadata_xml(c.name_char, t.data_type, t.valuetype_cd, baselineDate)
+			,t.valuetype_cd
     from i2b2demodata.concept_dimension c
 		,wt_trial_nodes t
     where c.concept_path = t.leaf_node

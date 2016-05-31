@@ -836,4 +836,186 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
                 }
         ])
     }
+
+    def 'it should load Serial LDD data With Timestamp When All New Timestamps Greater Than Old Min Value'() {
+        given:
+        def clinicalDataFirst = ClinicalData.build('GSE0SLDDWTS', 'Test Study With Serial LDD with timestamp') {
+            mappingFile {
+                forDataFile('TEST.txt') {
+                    map('Vars+DATALABEL+$$Timestamp', 3, 'Timestamp', VariableType.Timestamp)
+                    map('', 4, 'Timestamp', VariableType.Timestamp)
+                    map('Vars', 5, 'Sex')
+                }
+            }
+            dataFile('TEST.txt', ['Days', 'Timestamp', 'Sex']) {
+                forSubject('SUBJ1') {
+                    row '0', '2000-12-31 12:00', 'Female'
+                    row '10', '2000-12-31 12:01', 'Female'
+                    row '12', '2000-12-31 12:02', 'Female'
+                    row '10', '2000-12-31 12:05', 'Female'
+                }
+                forSubject('SUBJ2') {
+                    row '5', '2000-12-31 12:00', 'Male'
+                    row '13', '2000-12-31 12:02', 'Male'
+                    row '15', '2000-12-31 12:05', 'Male'
+                }
+            }
+        }
+        clinicalDataFirst.load(config)
+
+        def period1 = '2000-12-31 13:00'
+        def period2 = '2000-12-31 13:02'
+        def period3 = '2000-12-31 13:01'
+        def period4 = '2000-12-31 13:05'
+
+        def clinicalData = ClinicalData.build('GSE0SLDDWTS', 'Test Study With Serial LDD with timestamp') {
+            mappingFile {
+                addMetaInfo(['MERGE_MODE: APPEND'])
+                forDataFile('TEST.txt') {
+                    map('Vars+DATALABEL+$$Timestamp', 3, 'Timestamp', VariableType.Timestamp)
+                    map('', 4, 'Timestamp', VariableType.Timestamp)
+                    map('Vars', 5, 'Race')
+                }
+            }
+            dataFile('TEST.txt', ['Days', 'Timestamp St.1', 'Race']) {
+                forSubject('SUBJ1') {
+                    row '0', period1, 'One'
+                    row '10',period3, 'One'
+                    row '12', period2, 'One'
+                    row '10', period4, 'One'
+                }
+                forSubject('SUBJ2') {
+                    row '5', period1, 'Two'
+                    row '13', period2, 'Two'
+                    row '15', '2000-12-31 13:05', 'Two'
+                }
+            }
+        }
+        String timepointsPath = "\\Test Studies\\Test Study With Serial LDD with timestamp\\Vars\\Timestamp"
+
+        when:
+        clinicalData.load(config)
+
+        then:
+        assertThat db, hasRecord("i2b2", [c_fullname: "$timepointsPath\\$period1\\"], [
+                c_metadataxml: {
+                    assertThat(it, notNullValue())
+
+                    def metadata = new XmlParser().parseText(it as String)
+                    assertThat(metadata.Oktousevalues.text(), equalTo('Y'))
+                    assertThat(metadata.SeriesMeta.Value.text(), equalTo('60'))
+                    assertThat(metadata.SeriesMeta.Unit.text(), equalTo('minutes'))
+                    assertThat(metadata.SeriesMeta.DisplayName.text(), equalTo(period1))
+                    true
+                }
+        ])
+
+        assertThat db, hasRecord("i2b2", [c_fullname: "$timepointsPath\\$period4\\"], [
+                c_metadataxml: {
+                    def metadata = new XmlParser().parseText(it as String)
+                    assertThat(metadata.Oktousevalues.text(), equalTo('Y'))
+                    assertThat(metadata.SeriesMeta.Value.text(), equalTo('65'))
+                    assertThat(metadata.SeriesMeta.Unit.text(), equalTo('minutes'))
+                    assertThat(metadata.SeriesMeta.DisplayName.text(), equalTo(period4))
+                    true
+                }
+        ])
+    }
+
+    def 'it should load Serial LDD data With Timestamp When Some New Timestamp Lesser Than Old Min Value'() {
+        given:
+        def clinicalDataFirst = ClinicalData.build('GSE0SLDDWTS', 'Test Study With Serial LDD with timestamp') {
+            mappingFile {
+                forDataFile('TEST.txt') {
+                    map('Vars+DATALABEL+$$Timestamp', 3, 'Timestamp', VariableType.Timestamp)
+                    map('', 4, 'Timestamp', VariableType.Timestamp)
+                    map('Vars', 5, 'Sex')
+                }
+            }
+            dataFile('TEST.txt', ['Days', 'Timestamp', 'Sex']) {
+                forSubject('SUBJ1') {
+                    row '0', '2000-12-31 12:00', 'Female'
+                    row '10', '2000-12-31 12:01', 'Female'
+                    row '12', '2000-12-31 12:02', 'Female'
+                    row '10', '2000-12-31 12:05', 'Female'
+                }
+                forSubject('SUBJ2') {
+                    row '5', '2000-12-31 12:00', 'Male'
+                    row '13', '2000-12-31 12:02', 'Male'
+                    row '15', '2000-12-31 12:05', 'Male'
+                }
+            }
+        }
+        clinicalDataFirst.load(config)
+
+        def period1 = '2000-12-31 11:00'
+        def period2 = '2000-12-31 11:02'
+        def period3 = '2000-12-31 11:01'
+        def period4 = '2000-12-31 11:05'
+        def periodZero = '2000-12-31 12:00'
+
+        def clinicalData = ClinicalData.build('GSE0SLDDWTS', 'Test Study With Serial LDD with timestamp') {
+            mappingFile {
+                addMetaInfo(['MERGE_MODE: APPEND'])
+                forDataFile('TEST.txt') {
+                    map('Vars+DATALABEL+$$Timestamp', 3, 'Timestamp', VariableType.Timestamp)
+                    map('', 4, 'Timestamp', VariableType.Timestamp)
+                    map('Vars', 5, 'Race')
+                }
+            }
+            dataFile('TEST.txt', ['Days', 'Timestamp St.1', 'Race']) {
+                forSubject('SUBJ1') {
+                    row '5', period1, 'One'
+                    row '7',period3, 'One'
+                    row '2', period2, 'One'
+                    row '4', period4, 'One'
+                }
+                forSubject('SUBJ2') {
+                    row '10', period1, 'Two'
+                    row '9', period2, 'Two'
+                    row '11', '2000-12-31 11:05', 'Two'
+                }
+            }
+        }
+        String timepointsPath = "\\Test Studies\\Test Study With Serial LDD with timestamp\\Vars\\Timestamp"
+
+        when:
+        clinicalData.load(config)
+
+        then:
+        assertThat db, hasRecord("i2b2", [c_fullname: "$timepointsPath\\$period1\\"], [
+                c_metadataxml: {
+                    assertThat(it, notNullValue())
+
+                    def metadata = new XmlParser().parseText(it as String)
+                    assertThat(metadata.Oktousevalues.text(), equalTo('Y'))
+                    assertThat(metadata.SeriesMeta.Value.text(), equalTo('0'))
+                    assertThat(metadata.SeriesMeta.Unit.text(), equalTo('minutes'))
+                    assertThat(metadata.SeriesMeta.DisplayName.text(), equalTo(period1))
+                    true
+                }
+        ])
+
+        assertThat db, hasRecord("i2b2", [c_fullname: "$timepointsPath\\$period4\\"], [
+                c_metadataxml: {
+                    def metadata = new XmlParser().parseText(it as String)
+                    assertThat(metadata.Oktousevalues.text(), equalTo('Y'))
+                    assertThat(metadata.SeriesMeta.Value.text(), equalTo('5'))
+                    assertThat(metadata.SeriesMeta.Unit.text(), equalTo('minutes'))
+                    assertThat(metadata.SeriesMeta.DisplayName.text(), equalTo(period4))
+                    true
+                }
+        ])
+
+        assertThat db, hasRecord("i2b2", [c_fullname: "$timepointsPath\\$periodZero\\"], [
+                c_metadataxml: {
+                    def metadata = new XmlParser().parseText(it as String)
+                    assertThat(metadata.Oktousevalues.text(), equalTo('Y'))
+                    assertThat(metadata.SeriesMeta.Value.text(), equalTo('60'))
+                    assertThat(metadata.SeriesMeta.Unit.text(), equalTo('minutes'))
+                    assertThat(metadata.SeriesMeta.DisplayName.text(), equalTo(periodZero))
+                    true
+                }
+        ])
+    }
 }

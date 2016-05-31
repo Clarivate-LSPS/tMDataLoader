@@ -2,7 +2,7 @@ CREATE OR REPLACE FUNCTION i2b2_build_metadata_xml(
 	display_name CHARACTER VARYING,
 	data_type    CHARACTER VARYING,
 	valuetype_cd CHARACTER VARYING,
-		minTime TIMESTAMP
+	baselineDate TIMESTAMP
 )
 	RETURNS TEXT AS
 $BODY$
@@ -47,7 +47,7 @@ BEGIN
 	ELSEIF valuetype_cd = 'TIMESTAMP'
 		THEN
 			SELECT EXTRACT(epoch FROM
-				 (select to_timestamp(display_name, 'YYYY-MM-DD HH24:MI')::timestamp without time zone - minTime)
+				 (select to_timestamp(display_name, 'YYYY-MM-DD HH24:MI')::timestamp without time zone - baselineDate)
 				 ) / 60  into series_value;
 			series_unit_name := 'minutes';
 	END IF;

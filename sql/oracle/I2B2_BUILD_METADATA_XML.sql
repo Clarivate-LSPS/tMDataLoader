@@ -2,7 +2,7 @@ CREATE OR REPLACE FUNCTION "I2B2_BUILD_METADATA_XML"(
 	display_name      		VARCHAR2,
 	data_type				VARCHAR2,
 	valuetype_cd		VARCHAR2,
-	minTime 	DATE)
+	baselineDate 	DATE)
 RETURN CLOB IS
 		series_value VARCHAR2(200) := NULL;
 		series_unit_name VARCHAR2(200) := NULL;
@@ -35,7 +35,7 @@ RETURN CLOB IS
 			END IF;
 		ELSIF valuetype_cd = 'TIMESTAMP'
 			THEN BEGIN
-				series_value := (to_date(display_name,'YYYY-MM-DD HH24:MI')-minTime)*24*60;
+				series_value := ROUND((to_date(display_name,'YYYY-MM-DD HH24:MI')-baselineDate)*24*60);
 				series_unit_name := 'minutes';
 				end;
 		END IF;
