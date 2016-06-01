@@ -912,7 +912,7 @@ BEGIN
 	cz_write_audit(jobId,databaseName,procedureName,'Inserted new leaf nodes into I2B2DEMODATA concept_dimension',SQL%ROWCOUNT,stepCt,'Done');
     commit;
 
-	if (merge_mode = 'APPEND') then begin
+	if (merge_mode = 'APPEND') OR (merge_mode = 'UPDATE') then begin
 		select min(to_date(value, 'YYYY-MM-DD HH24:MI')) into baselineDate from (
 				 select leaf_node as node, node_name as value from wt_trial_nodes where valuetype_cd = 'TIMESTAMP'
 				 union all
