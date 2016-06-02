@@ -14,7 +14,7 @@ class TransmartDatabaseFactory {
         if (config.controlSchema) {
             controlSchema = config.controlSchema
         } else {
-            controlSchema = database.databaseType == DatabaseType.Postgres ? 'tm_dataloader' : 'TM_CZ'
+            controlSchema = database.databaseType == DatabaseType.Postgres ? 'tm_dataloader' : 'tm_dataloader'
         }
         database.schema = controlSchema
         if (database.databaseType == DatabaseType.Postgres) {

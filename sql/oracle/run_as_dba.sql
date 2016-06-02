@@ -1,7 +1,5 @@
 ------------------------------------------------------------------------------
--- Run this script as user with DBA role before running run_as_tm_cz.sql .
--- Make sure the correct schema is specified in definitions of TM_CZ_SCHEMA:
---   $ grep -i 'define.*TM_CZ_SCHEMA' *
+-- Run this script as user with DBA role before running run_as_tm_dataloader.sql .
 ------------------------------------------------------------------------------
 @1_run_first.sql
 @SERIAL_HDD_Create_Tables.sql

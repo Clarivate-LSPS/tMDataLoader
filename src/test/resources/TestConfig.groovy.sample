@@ -10,8 +10,8 @@ db {
 // Oracle config
 db {
     jdbcConnectionString = 'jdbc:oracle:thin:@localhost:1521:ORCL'
-    username = 'tm_cz'
-    password = 'tm_cz'
+    username = 'tm_dataloader'
+    password = 'tm_dataloader'
     jdbcDriver = 'oracle.jdbc.OracleDriver'
 }
 //*/
