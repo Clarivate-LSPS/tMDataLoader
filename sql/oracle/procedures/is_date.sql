@@ -1,5 +1,5 @@
 --
--- Type: FUNCTION; Owner: TM_CZ; Name: IS_DATE
+-- Type: FUNCTION; Owner: TM_DATALOADER; Name: IS_DATE
 --
   CREATE OR REPLACE FUNCTION "IS_DATE" 
  ( p_string in varchar2

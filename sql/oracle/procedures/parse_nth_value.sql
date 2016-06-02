@@ -1,5 +1,5 @@
 --
--- Type: FUNCTION; Owner: TM_CZ; Name: PARSE_NTH_VALUE
+-- Type: FUNCTION; Owner: TM_DATALOADER; Name: PARSE_NTH_VALUE
 --
   CREATE OR REPLACE FUNCTION "PARSE_NTH_VALUE" (pValue varchar2, location NUMBER, delimiter VARCHAR2)
    return varchar2
