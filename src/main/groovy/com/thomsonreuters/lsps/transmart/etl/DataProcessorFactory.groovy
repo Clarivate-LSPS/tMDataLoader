@@ -13,6 +13,7 @@ class DataProcessorFactory {
             MIRNA_QPCR  : MIRNADataProcessor,
             Protein     : ProteinDataProcessor,
             Metabolomics: MetabolomicsDataProcessor,
+            MetabolomicsSerialHDD : MetabolomicsSerialHDDDataProcessor,
             RNASeq      : RNASeqDataProcessor,
             ExpressionSerialHDD   : ExpressionSerialHDDDataProcessor,
             ACGH        : ACGHDataProcessor,
