@@ -1,0 +1,14 @@
+#PLATFORM_ID: RNASeq999
+#PLATFORM_TITLE: Test RNASeq Platform
+#SPECIES: Homo Sapiens
+Transcript ID	Gene Symbol	Organism
+NM_001011874	MEF2C	Bos taurus
+NM_001195662	ALDH8A1	"Xenopus laevis"
+NM_011283	MEF2A	"Gallus gallus"
+NM_011441	MEF2C	Rattus norvegicus
+NR_033530	MEF2C	Rattus norvegicus
+NM_001177658	GDA	"Equus caballus"
+NM_025300	ASCC1	"Sus scrofa"
+NM_008866	MEF2C	Homo sapiens
+NM_001159751	BTD	"Homo sapiens"
+NM_001159750	MEF2C	Ovis aries

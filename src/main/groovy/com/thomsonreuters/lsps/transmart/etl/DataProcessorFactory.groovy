@@ -15,7 +15,8 @@ class DataProcessorFactory {
             Metabolomics: MetabolomicsDataProcessor,
             MetabolomicsSerialHDD : MetabolomicsSerialHDDDataProcessor,
             RNASeq      : RNASeqDataProcessor,
-            ExpressionSerialHDD   : ExpressionSerialHDDDataProcessor,
+            RNASeqSerialHDD : RNASeqSerialHDDDataProcessor,
+            ExpressionSerialHDD : ExpressionSerialHDDDataProcessor,
             ACGH        : ACGHDataProcessor,
             GWASPlink   : GWASPlinkDataProcessor,
             ProteinSerialHDD : ProteinSerialHDDDataProcessor
