@@ -38,7 +38,7 @@ BEGIN
 	END IF;
 
 	stepCt := stepCt + 1;
-	select cz_write_audit(jobId,databaseName,procedureName,'Starting I2B2_PROCESS_SERIAL_HDD_DATA',0,stepCt,'Done') into rtnCd;
+	select cz_write_audit(jobId,databaseName,procedureName,'Starting i2b2_process_generic_hdddata. Type: ' || platform,0,stepCt,'Done') into rtnCd;
 
 	begin
 
@@ -132,7 +132,7 @@ BEGIN
 
 
 	stepCt := stepCt + 1;
-	perform cz_write_audit(jobId,databaseName,procedureName,'End i2b2_process_serial_hdd_data',0,stepCt,'Done');
+	perform cz_write_audit(jobId,databaseName,procedureName,'End i2b2_process_generic_hdddata',0,stepCt,'Done');
 
    ---Cleanup OVERALL JOB if this proc is being run standalone
   if newJobFlag = 1

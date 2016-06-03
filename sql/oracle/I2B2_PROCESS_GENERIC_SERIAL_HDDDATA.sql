@@ -37,7 +37,7 @@ BEGIN
 
 	stepCt := 0;
 	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Starting i2b2_process_serial_hdd_data',0,stepCt,'Done');
+	cz_write_audit(jobId,databaseName,procedureName,'Starting i2b2_process_generic_hdd_data. Type: ' || platform ,0,stepCt,'Done');
 
   update lt_src_mrna_xml_data
   set study_id=upper(study_id);
@@ -87,7 +87,7 @@ BEGIN
 
   ---Cleanup OVERALL JOB if this proc is being run standalone
 	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'End i2b2_process_serial_hdd_data',0,stepCt,'Done');
+	cz_write_audit(jobId,databaseName,procedureName,'End i2b2_process_generic_hdd_data',0,stepCt,'Done');
 
 	IF newJobFlag = 1
 	THEN
