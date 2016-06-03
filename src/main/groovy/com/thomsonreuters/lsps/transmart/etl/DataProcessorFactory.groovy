@@ -10,6 +10,7 @@ class DataProcessorFactory {
             Meta      : MetaDataProcessor,
             Clinical  : ClinicalDataProcessor,
             MIRNA_SEQ   : MIRNADataProcessor,
+            MIRNA_QPCRSerialHDD : MIRNASerialHDDDataProcessor,
             MIRNA_QPCR  : MIRNADataProcessor,
             Protein     : ProteinDataProcessor,
             Metabolomics: MetabolomicsDataProcessor,
