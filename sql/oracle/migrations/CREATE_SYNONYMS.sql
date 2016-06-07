@@ -14,7 +14,7 @@ DECLARE
 	CURSOR missing_synonym_cursor (schemaname IN dba_users.username%type) IS
 	SELECT table_name
 	FROM dba_tables target_schema
-	WHERE owner = schemaname
+	WHERE owner = upper(schemaname)
 	  and  NOT EXISTS 
 	  (SELECT 1
 	   FROM dba_tables tmd
@@ -25,12 +25,12 @@ DECLARE
 	  CURSOR missing_seq_synonym_cursor (schemaname IN dba_users.username%type) IS
 	  SELECT sequence_name
 	  FROM dba_sequences target_schema
-	  WHERE sequence_owner = schemaname
+	  WHERE sequence_owner = upper(schemaname)
 	  and not exists
 	  (SELECT 1
-		FROM dba_synonyms tmd
-		WHERE tmd.owner = 'TM_DATALOADER'
-		and tmd.synonym_name = target_schema.sequence_name
+		FROM dba_sequences tmd
+		WHERE tmd.sequence_owner = 'TM_DATALOADER'
+		and tmd.sequence_name = target_schema.sequence_name
 	  );
 	  
 	  
@@ -59,7 +59,13 @@ BEGIN
 			LOOP
 				priv_sql := 'GRANT ' || priv_rec.privilege || ' on ' || tm_schemas(i) || '.' || rec.table_name || ' to TM_DATALOADER';
 				dbms_output.put_line(priv_sql);
-				EXECUTE IMMEDIATE priv_sql; 
+				BEGIN
+					EXECUTE IMMEDIATE priv_sql; 
+				EXCEPTION
+				WHEN OTHERS
+				THEN
+					dbms_output.put_line(SQLERRM);
+				END;
 			END LOOP;
 		end loop;
 		
