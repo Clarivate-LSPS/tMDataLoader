@@ -6,10 +6,17 @@ SET SERVEROUTPUT ON SIZE UNLIMITED
 SET HEADING OFF
 SET LINESIZE 180
 
-DEFINE TM_WZ_SCHEMA='TM_WZ';
-DEFINE TM_LZ_SCHEMA='TM_LZ';
+DEFINE TM_WZ_SCHEMA='TM_DATALOADER';
+DEFINE TM_LZ_SCHEMA='TM_DATALOADER';
 DEFINE TM_CZ_SCHEMA='TM_DATALOADER';
 select '1_run_first.sql' FROM dual;
+
+select 'Creating job tables...' from DUAL;
+@@cz_job_audit.sql
+@@cz_job_error.sql
+@@cz_job_master.sql
+@@cz_job_message.sql
+
 
 DECLARE
 	rows INT;
