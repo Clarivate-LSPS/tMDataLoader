@@ -56,4 +56,9 @@
 @@procedures/I2B2_LOAD_CHROM_REGION.sql
 @@procedures/I2B2_PROCESS_QPCR_MIRNA_DATA.sql
 @@procedures/I2B2_MIRNA_ZSCORE_CALC.sql
+@@procedures/i2b2_rbm_inc_sub_zscore.sql
+@@procedures/i2b2_rbm_inc_zscore_calc.sql
+@@procedures/i2b2_load_rbm_data.sql
+@@procedures/i2b2_load_rbm_annotation.sql
+@@procedures/i2b2_load_rbm_inc_data.sql
 @@show_invalid.sql -- compiles invalids, resolving them or highlighting problems
