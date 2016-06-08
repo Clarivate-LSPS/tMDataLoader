@@ -4,8 +4,8 @@
 db.hostname = 'localhost'
 db.port = 1521 // change this to 5432 for PostgreSQL version
 db.sid = 'xe'
-db.username = 'tm_cz'
-db.password = 'tm_cz'
+db.username = 'tm_dataloader'
+db.password = 'tm_dataloader'
 
 // Comment or delete the following two lines for PostgreSQL:
 
