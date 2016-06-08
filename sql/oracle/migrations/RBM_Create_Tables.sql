@@ -173,7 +173,7 @@ create table "&TM_CZ_SCHEMA".STG_RBM_ANTIGEN_GENE
   gene_id varchar(100)
 );
 
-create table "&TM_WZ_SCHEMA".tmp_subject_rbm_logs as
+create table "&TM_CZ_SCHEMA".tmp_subject_rbm_logs as
 				  select trial_name
                   ,antigen_name
                   ,n_value
@@ -189,17 +189,17 @@ create table "&TM_WZ_SCHEMA".tmp_subject_rbm_logs as
                   from deapp.de_subject_rbm_data
                   where 1=2;
 
-create table "&TM_WZ_SCHEMA".tmp_subject_rbm_calcs as
+create table "&TM_CZ_SCHEMA".tmp_subject_rbm_calcs as
                select trial_name
 				,gene_symbol
 				,antigen_name
 				,log_intensity as mean_intensity
 				,log_intensity as median_intensity
 				,log_intensity as stddev_intensity
-				from "&TM_WZ_SCHEMA".tmp_subject_rbm_logs
+				from deapp.de_subject_rbm_data
 				where 1=2;
 
-create table "&TM_WZ_SCHEMA".tmp_subject_rbm_med as
+create table "&TM_CZ_SCHEMA".tmp_subject_rbm_med as
 				select trial_name
                     ,antigen_name
 	                ,n_value
@@ -216,18 +216,12 @@ create table "&TM_WZ_SCHEMA".tmp_subject_rbm_med as
 	                ,log_intensity as stddev_intensity
 	                ,log_intensity as median_intensity
                     ,LOG_INTENSITY as ZSCORE
-                   from "&TM_WZ_SCHEMA".TMP_SUBJECT_RBM_LOGS
-				   where 1=2;
+                   from deapp.de_subject_rbm_data
+		where 1=2;
 
-create or replace synonym "&TM_CZ_SCHEMA"."tmp_subject_rbm_logs" for "&TM_WZ_SCHEMA"."tmp_subject_rbm_logs";
-create or replace synonym "&TM_CZ_SCHEMA"."tmp_subject_rbm_calcs" for "&TM_WZ_SCHEMA"."tmp_subject_rbm_calcs";
-create or replace synonym "&TM_CZ_SCHEMA"."tmp_subject_rbm_med" for "&TM_WZ_SCHEMA"."tmp_subject_rbm_med";
            
-grant insert,update,delete,select on "&TM_WZ_SCHEMA".TMP_SUBJECT_RBM_CALCS to "&TM_CZ_SCHEMA";
-grant insert,update,delete,select on "&TM_WZ_SCHEMA".TMP_SUBJECT_RBM_LOGS to "&TM_CZ_SCHEMA";
-grant insert,update,delete,select on "&TM_WZ_SCHEMA".TMP_SUBJECT_RBM_MED to "&TM_CZ_SCHEMA";
 
-create table "&TM_WZ_SCHEMA".DE_SUBJECT_RBM_DATA
+create table "&TM_CZ_SCHEMA".DE_SUBJECT_RBM_DATA
 as select * from deapp.de_subject_rbm_data;
 
-grant insert,update,delete,select on "&TM_WZ_SCHEMA".DE_SUBJECT_RBM_DATA to "&TM_CZ_SCHEMA";
+@@wt_subject_rbm_probeset.sql
