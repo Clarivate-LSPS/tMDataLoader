@@ -362,12 +362,12 @@ BEGIN
 
 --	truncate tmp node table
 
-	execute immediate('truncate table tm_wz.WT_RBM_NODES');
+	execute immediate('truncate table tm_dataloader.WT_RBM_NODES');
 	
 --	load temp table with leaf node path, use temp table with distinct sample_type, ATTR2, platform, and title   this was faster than doing subselect
 --	from wt_subject_rbm_data
 
-	execute immediate('truncate table tm_wz.WT_RBM_NODE_VALUES');
+	execute immediate('truncate table tm_dataloader.WT_RBM_NODE_VALUES');
 
 	insert into WT_RBM_NODE_VALUES
 	(category_cd
@@ -919,7 +919,7 @@ BEGIN
 
 --	tag data with probeset_id from reference.probeset_deapp
   
-	execute immediate ('truncate table tm_wz.WT_SUBJECT_RBM_PROBESET');
+	execute immediate ('truncate table tm_dataloader.WT_SUBJECT_RBM_PROBESET');
 	
 	--	note: assay_id represents a unique subject/site/sample
 
