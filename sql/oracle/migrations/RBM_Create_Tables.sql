@@ -225,3 +225,12 @@ create table "&TM_CZ_SCHEMA".DE_SUBJECT_RBM_DATA
 as select * from deapp.de_subject_rbm_data;
 
 @@wt_subject_rbm_probeset.sql
+@@lt_src_rbm_subj_samp_map.sql
+@@lt_src_rbm_data.sql
+@@lt_src_rbm_annotation.sql
+@@lt_src_rbm_display_mapping.sql
+@@wt_rbm_nodes.sql
+@@wt_rbm_node_values.sql
+@@wt_subject_rbm_calcs.sql
+@@wt_subject_rbm_logs.sql
+@@wt_subject_rbm_med.sql

@@ -103,9 +103,9 @@ BEGIN
    
 --	truncate tmp tables
 
-	execute immediate('truncate table tm_wz.wt_subject_rbm_logs');
-	execute immediate('truncate table tm_wz.wt_subject_rbm_calcs');
-	execute immediate('truncate table tm_wz.wt_subject_rbm_med');
+	execute immediate('truncate table tm_dataloader.wt_subject_rbm_logs');
+	execute immediate('truncate table tm_dataloader.wt_subject_rbm_calcs');
+	execute immediate('truncate table tm_dataloader.wt_subject_rbm_med');
 
 	select count(*) 
 	into idxExists
@@ -115,7 +115,7 @@ BEGIN
 	  and owner = 'TM_WZ';
 		
 	if idxExists = 1 then
-		execute immediate('drop index tm_wz.wt_subject_rbm_logs_i1');		
+		execute immediate('drop index tm_dataloader.wt_subject_rbm_logs_i1');		
 	end if;
 	
 	select count(*) 
@@ -126,7 +126,7 @@ BEGIN
 	  and owner = 'TM_WZ';
 		
 	if idxExists = 1 then
-		execute immediate('drop index tm_wz.wt_subject_rbm_calcs_i1');
+		execute immediate('drop index tm_dataloader.wt_subject_rbm_calcs_i1');
 	end if;
 
 	stepCt := stepCt + 1;
@@ -185,7 +185,7 @@ BEGIN
 
 	commit;
     
-	execute immediate('create index tm_wz.wt_subject_rbm_logs_i1 on tm_wz.wt_subject_rbm_logs (trial_name, probeset_id) nologging  tablespace "INDX"');
+	execute immediate('create index tm_dataloader.wt_subject_rbm_logs_i1 on tm_dataloader.wt_subject_rbm_logs (trial_name, probeset_id) nologging  tablespace "INDX"');
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Create index on TM_WZ wt_subject_rbm_logs',0,stepCt,'Done');
 		
@@ -211,7 +211,7 @@ BEGIN
 
 	commit;
 
-	execute immediate('create index tm_wz.wt_subject_rbm_calcs_i1 on tm_wz.wt_subject_rbm_calcs (trial_name, probeset_id) nologging tablespace "INDX"');
+	execute immediate('create index tm_dataloader.wt_subject_rbm_calcs_i1 on tm_dataloader.wt_subject_rbm_calcs (trial_name, probeset_id) nologging tablespace "INDX"');
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Create index on TM_WZ wt_subject_rbm_calcs',0,stepCt,'Done');
 		
@@ -371,9 +371,9 @@ BEGIN
 	
 --	cleanup tmp_ files
 
-	--execute immediate('truncate table tm_wz.wt_subject_rbm_logs');
-	--execute immediate('truncate table tm_wz.wt_subject_rbm_calcs');
-	--execute immediate('truncate table tm_wz.wt_subject_rbm_med');
+	--execute immediate('truncate table tm_dataloader.wt_subject_rbm_logs');
+	--execute immediate('truncate table tm_dataloader.wt_subject_rbm_calcs');
+	--execute immediate('truncate table tm_dataloader.wt_subject_rbm_med');
 
    	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Truncate work tables in TM_WZ',0,stepCt,'Done');

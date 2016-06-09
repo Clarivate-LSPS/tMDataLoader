@@ -53,7 +53,7 @@ BEGIN
  
  -- The slow way of loading tree into I2B2_LOAD_TREE_FULL
  
-	execute immediate('truncate table TM_WZ.I2B2_LOAD_PATH');
+	execute immediate('truncate table TM_DATALOADER.I2B2_LOAD_PATH');
 	INSERT INTO "I2B2_LOAD_PATH"(PATH, RECORD_ID)
 	SELECT  SUBSTR(p.c_fullname, LENGTH(path), LENGTH(p.c_fullname) - LENGTH(path) + 1), p.rowid 
 	from i2b2 p 
@@ -61,8 +61,8 @@ BEGIN
 	
 	commit; 
 	
-	execute immediate('analyze table TM_WZ.I2B2_LOAD_PATH compute statistics');
-	execute immediate('truncate table TM_WZ.I2B2_LOAD_TREE_FULL');
+	execute immediate('analyze table TM_DATALOADER.I2B2_LOAD_PATH compute statistics');
+	execute immediate('truncate table TM_DATALOADER.I2B2_LOAD_TREE_FULL');
 
 	INSERT INTO "I2B2_LOAD_TREE_FULL"
 	SELECT /*+ parallel(8) */ p.RECORD_ID, c.RECORD_ID
@@ -71,7 +71,7 @@ BEGIN
 	  
 	commit; 
     
-	execute immediate('analyze table TM_WZ.I2B2_LOAD_TREE_FULL compute statistics');
+	execute immediate('analyze table TM_DATALOADER.I2B2_LOAD_TREE_FULL compute statistics');
 
  
 
