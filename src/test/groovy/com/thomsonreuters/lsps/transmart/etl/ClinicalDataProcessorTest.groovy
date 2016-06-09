@@ -221,6 +221,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         String languageConcept = rootConcept + "Subjects\\Demographics\\Language\\"
         String ageConcept = rootConcept + "Subjects\\Demographics\\Age (AGE)\\"
         String assessmentDateConcept = rootConcept + "Subjects\\Demographics\\Assessment Date\\"
+        String biomarkerConcept = rootConcept + "Biomarker Data\\Mutations\\TST001 (Entrez ID: 1956)\\AA mutation\\ELREA746del\\Variant Type\\DEL\\"
 
         processor.process(new File(studyDir(studyName, studyId), "ClinicalDataToUpload").toPath(),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
@@ -231,6 +232,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat(sql, hasNode(languageConcept).withPatientCount(3))
         assertThat(sql, hasNode(assessmentDateConcept + "09/15/2014\\"))
         assertThat(sql, hasFact(ageConcept, subjId, 20))
+        assertThat(sql, hasNode(biomarkerConcept).withPatientCount(3))
 
         processor.process(
                 new File(studyDir(studyName, studyId, studiesForMerge.update), "ClinicalDataToUpload").toPath(),
@@ -242,6 +244,70 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat(sql, hasNode(languageConcept).withPatientCount(4))
         assertThat(sql, hasNode(assessmentDateConcept + "09/15/2015\\"))
         assertThat(sql, hasFact(ageConcept, subjId, 21))
+        assertThat(sql, hasNode(biomarkerConcept).withPatientCount(2))
+    }
+
+    def 'it should load study with UPDATE VARIABLES merge mode'(){
+        expect:
+        String subjId = 'HCC2935'
+        String rootConcept = "\\Test Studies\\${studyName}\\"
+
+        String maleConcept = rootConcept + "Subjects\\Demographics\\Sex (SEX)\\Male\\"
+        String femaleConcept = rootConcept + "Subjects\\Demographics\\Sex (SEX)\\Female\\"
+        String languageConcept = rootConcept + "Subjects\\Demographics\\Language\\"
+        String ageConcept = rootConcept + "Subjects\\Demographics\\Age (AGE)\\"
+        String assessmentDateConcept = rootConcept + "Subjects\\Demographics\\Assessment Date\\"
+        String biomarkerConcept = rootConcept + "Biomarker Data\\Mutations\\TST001 (Entrez ID: 1956)\\AA mutation\\ELREA746del\\Variant Type\\DEL\\"
+
+        processor.process(new File(studyDir(studyName, studyId), "ClinicalDataToUpload").toPath(),
+                [name: studyName, node: "Test Studies\\${studyName}".toString()])
+
+        assertThat(sql, hasPatient(subjId).inTrial(studyId))
+        assertThat(sql, hasNode(maleConcept).withPatientCount(2))
+        assertThat(sql, hasNode(femaleConcept).withPatientCount(5))
+        assertThat(sql, hasNode(languageConcept).withPatientCount(3))
+        assertThat(sql, hasNode(assessmentDateConcept + "09/15/2014\\"))
+        assertThat(sql, hasFact(ageConcept, subjId, 20))
+        assertThat(sql, hasNode(biomarkerConcept).withPatientCount(3))
+
+        processor.process(
+                new File(studyDir(studyName, studyId, studiesForMerge.update_var), "ClinicalDataToUpload").toPath(),
+                [name: studyName, node: "Test Studies\\${studyName}".toString()])
+
+        assertThat(sql, hasPatient(subjId).inTrial(studyId))
+        assertThat(sql, hasNode(maleConcept).withPatientCount(3))
+        assertThat(sql, hasNode(femaleConcept).withPatientCount(4))
+        assertThat(sql, hasNode(languageConcept).withPatientCount(4))
+        assertThat(sql, hasNode(assessmentDateConcept + "09/15/2014\\"))
+        assertThat(sql, hasFact(ageConcept, subjId, 21))
+        assertThat(sql, hasNode(biomarkerConcept).withPatientCount(3))
+
+        String femaleFrenchConcept = '\\Test Studies\\Test Study With Single Visit Name\\Subjects\\Demographics\\Female\\French\\Sex (SEX)\\'
+        String maleFrenchConcept = '\\Test Studies\\Test Study With Single Visit Name\\Subjects\\Demographics\\Male\\French\\Sex (SEX)\\'
+        def clinicalData = Fixtures.clinicalDataWithSingleVisitName
+        clinicalData.load(config)
+        assertThat(sql, hasNode(femaleFrenchConcept).withPatientCount(2))
+
+        def studyWithVisitName = 'Test Study With Single Visit Name'
+        def newProcessor = new ClinicalDataProcessor(config)
+        newProcessor.process(new File(studyDir(studyWithVisitName, 'GSE0SINGLEVN', studiesForMerge.update_var), "ClinicalDataToUpload").toPath(),
+                [name: studyWithVisitName, node: "Test Studies\\${studyWithVisitName}".toString()])
+        assertThat(sql, hasNode(femaleFrenchConcept).withPatientCount(1))
+        assertThat(sql, hasNode(maleFrenchConcept).withPatientCount(1))
+    }
+
+    def 'Updates_Variable loading should throw error if find several categorical value on the same'() {
+        when:
+            String studyName = 'Test Study With Duplicate Category Path'
+            String studyId = 'GSE0WDCP'
+            String femaleConcept = '\\Test Studies\\Test Study With Duplicate Category Path\\DupclicateCD\\Female\\'
+            def newProcessor = new ClinicalDataProcessor(config)
+            newProcessor.process(new File(studyDir(studyName, studyId, studiesForMerge.first_load), "ClinicalDataToUpload").toPath(),
+                [name: studyName, node: "Test Studies\\${studyName}".toString()])
+            newProcessor.process(new File(studyDir(studyName, studyId, studiesForMerge.update_var), "ClinicalDataToUpload").toPath(),
+                [name: studyName, node: "Test Studies\\${studyName}".toString()])
+        then:
+            assertThat(sql, hasNode(femaleConcept).withPatientCount(5))
     }
 
     def 'it should load study with APPEND merge mode'() {
