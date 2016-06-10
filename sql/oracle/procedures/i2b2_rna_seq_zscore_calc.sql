@@ -1,7 +1,7 @@
 --
 -- Type: PROCEDURE; Owner: TM_DATALOADER; Name: I2B2_RNA_SEQ_ZSCORE_CALC
 --
-  CREATE OR REPLACE PROCEDURE "I2B2_RNA_SEQ_ZSCORE_CALC" 
+  CREATE OR REPLACE PROCEDURE "TM_DATALOADER"."I2B2_RNA_SEQ_ZSCORE_CALC" 
 (
   trial_id VARCHAR2
  ,run_type varchar2 := 'L'
@@ -106,9 +106,9 @@ BEGIN
    
 --	truncate tmp tables
 
-	execute immediate('truncate table tm_wz.wt_subject_rna_logs');
-	execute immediate('truncate table tm_wz.wt_subject_rna_calcs');
-	execute immediate('truncate table tm_wz.wt_subject_rna_med');
+	execute immediate('truncate table tm_dataloader.wt_subject_rna_logs');
+	execute immediate('truncate table tm_dataloader.wt_subject_rna_calcs');
+	execute immediate('truncate table tm_dataloader.wt_subject_rna_med');
 	
 	select count(*) 
 	into idxExists 
@@ -118,7 +118,7 @@ BEGIN
 	  and owner = 'TM_WZ';
 		
 	if idxExists = 1 then
-		execute immediate('drop index tm_wz.WT_SUBJECT_RNA_LOGS_I1');		
+		execute immediate('drop index tm_dataloader.WT_SUBJECT_RNA_LOGS_I1');		
 	end if;
 	
 	select count(*) 
@@ -129,7 +129,7 @@ BEGIN
 	  and owner = 'TM_WZ';
 		
 	if idxExists = 1 then
-		execute immediate('drop index tm_wz.WT_SUBJECT_RNA_CALCS_I1');
+		execute immediate('drop index tm_dataloader.WT_SUBJECT_RNA_CALCS_I1');
 	end if;
 
 
@@ -232,7 +232,7 @@ BEGIN
 
 	commit;
     
-	execute immediate('create index tm_wz.WT_SUBJECT_RNA_LOGS_I1 on tm_wz.wt_subject_rna_logs (trial_name, probeset_id) nologging  tablespace "INDX"');
+	execute immediate('create index tm_dataloader.WT_SUBJECT_RNA_LOGS_I1 on tm_dataloader.wt_subject_rna_logs (trial_name, probeset_id) nologging  tablespace "INDX"');
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Create index on TM_WZ WT_SUBJECT_RNA_LOGS_I1',0,stepCt,'Done');
 		
@@ -258,7 +258,7 @@ BEGIN
 
 	commit;
 
-	execute immediate('create index tm_wz.WT_SUBJECT_RNA_CALCS_I1 on tm_wz.wt_subject_rna_calcs (trial_name, probeset_id) nologging tablespace "INDX"');
+	execute immediate('create index tm_dataloader.WT_SUBJECT_RNA_CALCS_I1 on tm_dataloader.wt_subject_rna_calcs (trial_name, probeset_id) nologging tablespace "INDX"');
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Create index on TM_WZ WT_SUBJECT_RNA_CALCS_I1',0,stepCt,'Done');
 		
@@ -353,9 +353,9 @@ BEGIN
 	
 --	cleanup tmp_ files
 
-	execute immediate('truncate table tm_wz.wt_subject_rna_logs');
-	execute immediate('truncate table tm_wz.wt_subject_rna_calcs');
-	execute immediate('truncate table tm_wz.wt_subject_rna_med');
+	execute immediate('truncate table tm_dataloader.wt_subject_rna_logs');
+	execute immediate('truncate table tm_dataloader.wt_subject_rna_calcs');
+	execute immediate('truncate table tm_dataloader.wt_subject_rna_med');
 
    	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Truncate work tables in TM_WZ',0,stepCt,'Done');

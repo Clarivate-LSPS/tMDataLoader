@@ -290,10 +290,28 @@ BEGIN
  END;
 /
 
-SELECT 'Creating TM_DATALOADER.lt_src_deapp_annot' FROM DUAL;
+SELECT 'Creating TM_DATALOADER.lt_src_ tables...' FROM DUAL;
 
-CREATE TABLE TM_DATALOADER.lt_src_deapp_annot AS SELECT * FROM tm_lz.lt_src_deapp_annot NOLOGGING;
+@@lt_src_deapp_annot.sql
+@@lt_src_qpcr_mirna_data.sql
 
+SELECT 'Createing wt_subject_rna tables...' FROM DUAL;
+@@wt_subject_rna_logs
+@@wt_subject_rna_calcs
+@@wt_subject_rna_med
+SELECT 'Creating metabolomic tables...' FROM DUAL;
+@@wt_metabolomic_nodes.sql
+@@wt_metabolomic_node_values.sql
+@@wt_subject_mbolomics_probeset.sql
+
+SELECT 'Creating mirna tables...' FROM DUAL;
+@@wt_subject_mirna_probeset.sql
+@@lt_src_mirna_subj_samp_map.sql
+
+SELECT 'Creating proteomic tables...' FROM DUAL;
+@@wt_subject_proteomics_calcs.sql
+@@wt_subject_proteomics_logs.sql
+@@wt_subject_proteomics_med.sql
 ALTER TABLE tm_lz.lt_src_deapp_annot
    modify gene_symbol character varying(400 byte);
 
