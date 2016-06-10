@@ -17,7 +17,6 @@
 @@procedures/is_date.sql
 @@procedures/is_number.sql
 @@procedures/i2b2_proteomics_zscore_calc.sql
-@@procedures/i2b2_mirna_zscore_calc.sql
 @@procedures/i2b2_rna_seq_zscore_calc.sql
 @@procedures/i2b2_mrna_index_maint.sql
 @@procedures/i2b2_mrna_zscore_calc.sql
@@ -44,6 +43,8 @@
 @@procedures/I2B2_LOAD_SECURITY_DATA.sql
 @@procedures/I2B2_LOAD_STUDY_METADATA.sql
 @@procedures/I2B2_MOVE_STUDY_BY_PATH.sql
+@@procedures/i2b2_metabolomics_zscore_calc.sql
+@@procedures/i2b2_process_metabolomic_data.sql
 @@procedures/I2B2_PROCESS_MRNA_DATA.sql
 @@procedures/I2B2_PROCESS_SERIAL_HDD_DATA.sql
 @@procedures/I2B2_PROCESS_SNP_DATA.sql
@@ -61,4 +62,7 @@
 @@procedures/i2b2_load_rbm_data.sql
 @@procedures/i2b2_load_rbm_annotation.sql
 @@procedures/i2b2_load_rbm_inc_data.sql
+@@procedures/I2B2_PROCESS_ACGH_DATA.sql
+
 @@show_invalid.sql -- compiles invalids, resolving them or highlighting problems
+@@show_invalid.sql

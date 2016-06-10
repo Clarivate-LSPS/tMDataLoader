@@ -106,9 +106,9 @@ BEGIN
    
 --	truncate tmp tables
 
-	execute immediate('truncate table tm_wz.WT_SUBJECT_PROTEOMICS_LOGS');
-	execute immediate('truncate table tm_wz.WT_SUBJECT_PROTEOMICS_CALCS');
-	execute immediate('truncate table tm_wz.WT_SUBJECT_PROTEOMICS_MED');
+	execute immediate('truncate table tm_dataloader.WT_SUBJECT_PROTEOMICS_LOGS');
+	execute immediate('truncate table tm_dataloader.WT_SUBJECT_PROTEOMICS_CALCS');
+	execute immediate('truncate table tm_dataloader.WT_SUBJECT_PROTEOMICS_MED');
 
 	select count(*) 
 	into idxExists
@@ -118,7 +118,7 @@ BEGIN
 	  and owner = 'TM_WZ';
 		
 	if idxExists = 1 then
-		execute immediate('drop index tm_wz.WT_SUBJECT_PROTEOMICS_LOGS_I1');		
+		execute immediate('drop index tm_dataloader.WT_SUBJECT_PROTEOMICS_LOGS_I1');		
 	end if;
 	
 	select count(*) 
@@ -129,7 +129,7 @@ BEGIN
 	  and owner = 'TM_WZ';
 		
 	if idxExists = 1 then
-		execute immediate('drop index tm_wz.WT_SUBJECT_PROTEOMICS_CALCS_I1');
+		execute immediate('drop index tm_dataloader.WT_SUBJECT_PROTEOMICS_CALCS_I1');
 	end if;
 
 	stepCt := stepCt + 1;
@@ -188,7 +188,7 @@ BEGIN
 
 	commit;
     
-	execute immediate('create index tm_wz.WT_SUBJECT_PROTEOMICS_LOGS_I1 on tm_wz.WT_SUBJECT_PROTEOMICS_LOGS (trial_name, probeset_id) nologging  tablespace "INDX"');
+	execute immediate('create index tm_dataloader.WT_SUBJECT_PROTEOMICS_LOGS_I1 on tm_dataloader.WT_SUBJECT_PROTEOMICS_LOGS (trial_name, probeset_id) nologging  tablespace "INDX"');
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Create index on TM_WZ WT_SUBJECT_PROTEOMICS_LOGS_I1',0,stepCt,'Done');
 		
@@ -214,7 +214,7 @@ BEGIN
 
 	commit;
 
-	--execute immediate('create index tm_wz.wt_subject_proteomics_calcs_i1 on tm_wz.WT_SUBJECT_PROTEOMICS_CALCS (trial_name, probeset_id) nologging tablespace "INDX"');
+	--execute immediate('create index tm_dataloader.wt_subject_proteomics_calcs_i1 on tm_dataloader.WT_SUBJECT_PROTEOMICS_CALCS (trial_name, probeset_id) nologging tablespace "INDX"');
 	--stepCt := stepCt + 1;
 	--cz_write_audit(jobId,databaseName,procedureName,'Create index on TM_WZ WT_SUBJECT_PROTEOMICS_CALCS',0,stepCt,'Done');
 		
@@ -311,9 +311,9 @@ BEGIN
 	
 --	cleanup tmp_ files
 
-	---execute immediate('truncate table tm_wz.WT_SUBJECT_PROTEOMICS_LOGS');
-	--execute immediate('truncate table tm_wz.WT_SUBJECT_PROTEOMICS_CALCS');
-	--execute immediate('truncate table tm_wz.WT_SUBJECT_PROTEOMICS_MED');
+	---execute immediate('truncate table tm_dataloader.WT_SUBJECT_PROTEOMICS_LOGS');
+	--execute immediate('truncate table tm_dataloader.WT_SUBJECT_PROTEOMICS_CALCS');
+	--execute immediate('truncate table tm_dataloader.WT_SUBJECT_PROTEOMICS_MED');
 
    	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Truncate work tables in TM_WZ',0,stepCt,'Done');

@@ -27,10 +27,6 @@ BEGIN
 		dbms_output.put_line(drop_sql);
 		EXECUTE IMMEDIATE drop_sql;
 	END IF;
-	create_sql := 'create table tm_dataloader.wt_subject_mrna_probeset as '	||
-					'select * from tm_wz.wt_subject_mrna_probeset NOLOGGING';
-	dbms_output.put_line(create_sql);
-	EXECUTE IMMEDIATE create_sql;
 	
 	SELECT COUNT(*)
 	INTO rows
@@ -61,17 +57,29 @@ BEGIN
 		dbms_output.put_line(drop_sql);
 		EXECUTE IMMEDIATE drop_sql;
 	END IF;
-	create_sql := 'CREATE TABLE tm_dataloader.wt_subject_microarray_calcs as ' ||
-				'select * from tm_wz.wt_subject_microarray_calcs NOLOGGING';
-	dbms_output.put_line(create_sql);
-	EXECUTE IMMEDIATE create_sql;
+
+	SELECT COUNT(*)
+	INTO rows
+	FROM dba_tables
+	WHERE table_name = 'MIRNA_PROBESET_DEAPP'
+	  and owner = 'TM_DATALOADER';
 	
+	IF rows > 0
+	THEN
+		drop_sql := 'DROP TABLE tm_dataloader.mirna_probeset_deapp';
+                dbms_output.put_line(drop_sql);
+                EXECUTE IMMEDIATE drop_sql;
+	END IF;
+
 	EXCEPTION
 	WHEN OTHERS THEN
 		dbms_output.put_line(source || SQLERRM);
 END;
 /
 
+@@mirna_probeset_deapp.sql
+@@wt_subject_microarray_calcs.sql
+@@wt_subject_mrna_probeset.sql
 -- Alter types for working tables to increase calculations speed (float point arithmetic much faster than numeric)
 alter table tm_dataloader.wt_subject_microarray_logs modify log_intensity number;
 alter table tm_dataloader.wt_subject_microarray_logs modify raw_intensity number;
