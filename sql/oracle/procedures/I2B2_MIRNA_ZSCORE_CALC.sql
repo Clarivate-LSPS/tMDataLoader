@@ -108,19 +108,19 @@ BEGIN
    
 --	truncate tmp tables
 
-	execute immediate('truncate table tm_wz.wt_subject_mirna_logs');
-	execute immediate('truncate table tm_wz.wt_subject_mirna_calcs');
-	execute immediate('truncate table tm_wz.wt_subject_mirna_med');
+	execute immediate('truncate table tm_dataloader.wt_subject_mirna_logs');
+	execute immediate('truncate table tm_dataloader.wt_subject_mirna_calcs');
+	execute immediate('truncate table tm_dataloader.wt_subject_mirna_med');
 
 	select count(*) 
 	into idxExists
 	from all_indexes
 	where table_name = 'WT_SUBJECT_MIRNA_LOGS'
 	  and index_name = 'WT_SUBJECT_MRNA_LOGS_I1'
-	  and owner = 'TM_WZ';
+	  and owner = 'TM_DATALOADER';
 		
 	if idxExists = 1 then
-		execute immediate('drop index tm_wz.wt_subject_mrna_logs_i1');		
+		execute immediate('drop index tm_dataloader.wt_subject_mrna_logs_i1');		
 	end if;
 	
 	select count(*) 
@@ -131,11 +131,11 @@ BEGIN
 	  and owner = 'TM_WZ';
 		
 	if idxExists = 1 then
-		execute immediate('drop index tm_wz.wt_subject_mrna_calcs_i1');
+		execute immediate('drop index tm_dataloader.wt_subject_mrna_calcs_i1');
 	end if;
 
 	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Truncate work tables in TM_WZ',0,stepCt,'Done');
+	cz_write_audit(jobId,databaseName,procedureName,'Truncate work tables in TM_DATALOADER',0,stepCt,'Done');
 	
 	--	if dataType = L, use intensity_value as log_intensity
 	--	if dataType = R, always use intensity_value
@@ -192,11 +192,11 @@ BEGIN
 	end if;
 
 	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Loaded data for trial in TM_WZ wt_subject_mirna_logs',SQL%ROWCOUNT,stepCt,'Done');
+	cz_write_audit(jobId,databaseName,procedureName,'Loaded data for trial in TM_DATALOADER wt_subject_mirna_logs',SQL%ROWCOUNT,stepCt,'Done');
 
 	commit;
     
---	execute immediate('create index tm_wz.wt_subject_mrna_logs_i1 on tm_wz.wt_subject_mirna_logs (trial_name, probeset_id) nologging  tablespace "INDX"');
+--	execute immediate('create index tm_dataloader.wt_subject_mrna_logs_i1 on tm_dataloader.wt_subject_mirna_logs (trial_name, probeset_id) nologging  tablespace "INDX"');
 	--stepCt := stepCt + 1;
 	--cz_write_audit(jobId,databaseName,procedureName,'Create index on TM_WZ wt_subject_mirna_logs',0,stepCt,'Done');
 		
@@ -218,11 +218,11 @@ BEGIN
 	group by d.trial_name 
         ,d.probeset_id;
 	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Calculate intensities for trial in TM_WZ wt_subject_mirna_calcs',SQL%ROWCOUNT,stepCt,'Done');
+	cz_write_audit(jobId,databaseName,procedureName,'Calculate intensities for trial in TM_DATALOADER wt_subject_mirna_calcs',SQL%ROWCOUNT,stepCt,'Done');
 
 	commit;
 
-	--execute immediate('create index tm_wz.wt_subject_mrna_calcs_i1 on tm_wz.wt_subject_mirna_calcs (trial_name, probeset_id) nologging tablespace "INDX"');
+	--execute immediate('create index tm_dataloader.wt_subject_mrna_calcs_i1 on tm_dataloader.wt_subject_mirna_calcs (trial_name, probeset_id) nologging tablespace "INDX"');
 	--stepCt := stepCt + 1;
 	--cz_write_audit(jobId,databaseName,procedureName,'Create index on TM_WZ wt_subject_mirna_calcs',0,stepCt,'Done');
 		
@@ -256,7 +256,7 @@ BEGIN
 		,wt_subject_mirna_calcs c 
     where d.probeset_id = c.probeset_id;
 	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Calculate Z-Score for trial in TM_WZ wt_subject_mirna_med',SQL%ROWCOUNT,stepCt,'Done');
+	cz_write_audit(jobId,databaseName,procedureName,'Calculate Z-Score for trial in TM_DATALOADER wt_subject_mirna_med',SQL%ROWCOUNT,stepCt,'Done');
 
     commit;
 
@@ -323,12 +323,12 @@ BEGIN
 	
 --	cleanup tmp_ files
 
-	execute immediate('truncate table tm_wz.wt_subject_mirna_logs');
-        execute immediate('truncate table tm_wz.wt_subject_mirna_calcs');
-	execute immediate('truncate table tm_wz.wt_subject_mirna_med');
+	execute immediate('truncate table tm_dataloader.wt_subject_mirna_logs');
+        execute immediate('truncate table tm_dataloader.wt_subject_mirna_calcs');
+	execute immediate('truncate table tm_dataloader.wt_subject_mirna_med');
 
    	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Truncate work tables in TM_WZ',0,stepCt,'Done');
+	cz_write_audit(jobId,databaseName,procedureName,'Truncate work tables in TM_DATALOADER',0,stepCt,'Done');
     
     ---Cleanup OVERALL JOB if this proc is being run standalone
   IF newJobFlag = 1

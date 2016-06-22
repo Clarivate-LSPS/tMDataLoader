@@ -303,9 +303,15 @@ SELECT 'Creating metabolomic tables...' FROM DUAL;
 @@wt_metabolomic_nodes.sql
 @@wt_metabolomic_node_values.sql
 @@wt_subject_mbolomics_probeset.sql
+@@wt_subject_metabolomics_logs.sql
+@@wt_subject_metabolomics_calcs.sql
+@@wt_subject_metabolomics_med.sql
 
 SELECT 'Creating mirna tables...' FROM DUAL;
 @@wt_subject_mirna_probeset.sql
+@@wt_subject_mirna_calcs.sql
+@@wt_subject_mirna_med.sql
+@@wt_subject_mirna_logs.sql
 @@lt_src_mirna_subj_samp_map.sql
 
 SELECT 'Creating proteomic tables...' FROM DUAL;
