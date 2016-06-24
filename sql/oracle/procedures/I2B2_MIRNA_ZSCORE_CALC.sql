@@ -128,7 +128,7 @@ BEGIN
 	from all_indexes
 	where table_name = 'WT_SUBJECT_MIRNA_CALCS'
 	  and index_name = 'WT_SUBJECT_MRNA_CALCS_I1'
-	  and owner = 'TM_WZ';
+	  and owner = 'TM_DATALOADER';
 		
 	if idxExists = 1 then
 		execute immediate('drop index tm_dataloader.wt_subject_mrna_calcs_i1');

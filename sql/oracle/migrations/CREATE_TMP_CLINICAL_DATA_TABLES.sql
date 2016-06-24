@@ -312,10 +312,6 @@ SELECT 'Creating mirna tables...' FROM DUAL;
 @@wt_subject_mirna_calcs.sql
 @@wt_subject_mirna_med.sql
 @@wt_subject_mirna_logs.sql
-=======
-
-SELECT 'Creating mirna tables...' FROM DUAL;
-@@wt_subject_mirna_probeset.sql
 @@lt_src_mirna_subj_samp_map.sql
 
 SELECT 'Creating proteomic tables...' FROM DUAL;
