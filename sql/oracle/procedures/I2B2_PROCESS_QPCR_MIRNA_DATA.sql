@@ -357,12 +357,12 @@ BEGIN
 
 --	truncate tmp node table
 
-	execute immediate('truncate table tm_wz.WT_QPCR_MIRNA_NODES');
+	execute immediate('truncate table tm_dataloader.WT_QPCR_MIRNA_NODES');
 
 --	load temp table with leaf node path, use temp table with distinct sample_type, ATTR2, platform, and title   this was faster than doing subselect
 --	from wt_subject_mirna_data
 
-	execute immediate('truncate table tm_wz.WT_QPCR_MIRNA_NODE_VALUES');
+	execute immediate('truncate table tm_dataloader.WT_QPCR_MIRNA_NODE_VALUES');
 
 	insert into WT_QPCR_MIRNA_NODE_VALUES
 	(category_cd
