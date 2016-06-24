@@ -107,7 +107,6 @@ BEGIN
 */
    
 --	truncate tmp tables
-
 	execute immediate('truncate table tm_dataloader.wt_subject_mirna_logs');
 	execute immediate('truncate table tm_dataloader.wt_subject_mirna_calcs');
 	execute immediate('truncate table tm_dataloader.wt_subject_mirna_med');
@@ -121,6 +120,7 @@ BEGIN
 		
 	if idxExists = 1 then
 		execute immediate('drop index tm_dataloader.wt_subject_mrna_logs_i1');		
+		
 	end if;
 	
 	select count(*) 
@@ -223,6 +223,7 @@ BEGIN
 	commit;
 
 	--execute immediate('create index tm_dataloader.wt_subject_mrna_calcs_i1 on tm_dataloader.wt_subject_mirna_calcs (trial_name, probeset_id) nologging tablespace "INDX"');
+
 	--stepCt := stepCt + 1;
 	--cz_write_audit(jobId,databaseName,procedureName,'Create index on TM_WZ wt_subject_mirna_calcs',0,stepCt,'Done');
 		

@@ -93,7 +93,6 @@ AS
 
 
 
-
 BEGIN
   EXECUTE IMMEDIATE 'alter session set NLS_NUMERIC_CHARACTERS=".,"';
 	TrialID := upper(trial_id);
