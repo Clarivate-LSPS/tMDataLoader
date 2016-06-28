@@ -90,7 +90,7 @@ AS
 
     cursor uploadI2b2 is
     select category_cd,display_value,display_label,display_unit from
-    tm_lz.lt_src_protein_display_mapping;
+    tm_dataloader.lt_src_protein_display_mapping;
 BEGIN
   EXECUTE IMMEDIATE 'alter session set NLS_NUMERIC_CHARACTERS=".,"';
 	TrialID := upper(trial_id);
@@ -396,12 +396,12 @@ BEGIN
 
 --	truncate tmp node table
 
-	execute immediate('truncate table tm_wz.WT_PROTEOMICS_NODES');
+	execute immediate('truncate table tm_dataloader.WT_PROTEOMICS_NODES');
 
 --	load temp table with leaf node path, use temp table with distinct sample_type, ATTR2, platform, and title   this was faster than doing subselect
 --	from wt_subject_mirna_data
 
-	execute immediate('truncate table tm_wz.WT_PROTEOMICS_NODE_VALUES');
+	execute immediate('truncate table tm_dataloader.WT_PROTEOMICS_NODE_VALUES');
 
 	insert into WT_PROTEOMICS_NODE_VALUES
 	(category_cd
@@ -881,7 +881,7 @@ BEGIN
                 <ExcludingUnits></ExcludingUnits><ConvertingUnits><Units></Units><MultiplyingFactor></MultiplyingFactor>
                 </ConvertingUnits></UnitValues><Analysis><Enums /><Counts />
                 <New /></Analysis>'||(select xmlelement(name "SeriesMeta",xmlforest(m.display_value as "Value",m.display_unit as "Unit",m.display_label as "DisplayName")) as hi
-      from tm_lz.lt_src_protein_display_mapping m where m.category_cd=ul.category_cd)||
+      from tm_dataloader.lt_src_protein_display_mapping m where m.category_cd=ul.category_cd)||
                 '</ValueMetadata>') where n.c_fullname=(select leaf_node from WT_PROTEOMICS_NODES where category_cd=ul.category_cd and leaf_node=n.c_fullname);
 
                 end loop;
@@ -952,9 +952,9 @@ BEGIN
 
 --	tag data with probeset_id from reference.probeset_deapp
 
-	execute immediate ('truncate table tm_wz.WT_SUBJECT_PROTEOMICS_PROBESET');
-	analyze_table('TM_LZ', 'LT_SRC_PROTEOMICS_DATA', jobId);
-	analyze_table('TM_LZ', 'LT_SRC_PROTEOMICS_SUB_SAM_MAP', jobId);
+	execute immediate ('truncate table tm_dataloader.WT_SUBJECT_PROTEOMICS_PROBESET');
+	analyze_table('TM_DATALOADER', 'LT_SRC_PROTEOMICS_DATA', jobId);
+	analyze_table('TM_DATALOADER', 'LT_SRC_PROTEOMICS_SUB_SAM_MAP', jobId);
 
 	--	note: assay_id represents a unique subject/site/sample
 

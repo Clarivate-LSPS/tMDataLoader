@@ -92,7 +92,7 @@ AS
 
     cursor uploadI2b2 is
     select category_cd,display_value,display_label,display_unit from
-    tm_lz.lt_src_mirna_display_mapping;
+    tm_dataloader.lt_src_mirna_display_mapping;
 
 
 
@@ -841,7 +841,7 @@ BEGIN
                 <ExcludingUnits></ExcludingUnits><ConvertingUnits><Units></Units><MultiplyingFactor></MultiplyingFactor>
                 </ConvertingUnits></UnitValues><Analysis><Enums /><Counts />
                 <New /></Analysis>'||(select xmlelement(name "SeriesMeta",xmlforest(m.display_value as "Value",m.display_unit as "Unit",m.display_label as "DisplayName")) as hi
-      from tm_lz.lt_src_mirna_display_mapping m where m.category_cd=ul.category_cd)||
+      from tm_dataloader.lt_src_mirna_display_mapping m where m.category_cd=ul.category_cd)||
                 '</ValueMetadata>') where n.c_fullname=(select leaf_node from WT_QPCR_MIRNA_NODES where category_cd=ul.category_cd and leaf_node=n.c_fullname);
 
                 end loop;

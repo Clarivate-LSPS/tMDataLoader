@@ -89,7 +89,7 @@ AS
 
  cursor uploadI2b2 is 
     select category_cd,display_value,display_label,display_unit from
-    tm_lz.lt_src_rbm_display_mapping;
+    tm_dataloader.lt_src_rbm_display_mapping;
 
 
 
@@ -375,12 +375,12 @@ dbms_output.put_line('1');
 
 --	truncate tmp node table
 
-	execute immediate('truncate table tm_wz.WT_RBM_NODES');
+	execute immediate('truncate table tm_dataloader.WT_RBM_NODES');
 	
 --	load temp table with leaf node path, use temp table with distinct sample_type, ATTR2, platform, and title   this was faster than doing subselect
 --	from wt_subject_rbm_data
 
-	execute immediate('truncate table tm_wz.WT_RBM_NODE_VALUES');
+	execute immediate('truncate table tm_dataloader.WT_RBM_NODE_VALUES');
 
 	insert into WT_RBM_NODE_VALUES
 	(category_cd
@@ -863,7 +863,7 @@ dbms_output.put_line('1');
                 <ExcludingUnits></ExcludingUnits><ConvertingUnits><Units></Units><MultiplyingFactor></MultiplyingFactor>
                 </ConvertingUnits></UnitValues><Analysis><Enums /><Counts />
                 <New /></Analysis>'||(select xmlelement(name "SeriesMeta",xmlforest(m.display_value as "Value",m.display_unit as "Unit",m.display_label as "DisplayName")) as hi 
-      from tm_lz.lt_src_rbm_display_mapping m where m.category_cd=ul.category_cd)||
+      from tm_dataloader.lt_src_rbm_display_mapping m where m.category_cd=ul.category_cd)||
                 '</ValueMetadata>') where n.c_fullname=(select leaf_node from wt_rbm_nodes where category_cd=ul.category_cd and leaf_node=n.c_fullname);
                 
                 end loop;
@@ -936,7 +936,7 @@ dbms_output.put_line('1');
 
 --	tag data with probeset_id from reference.probeset_deapp
   
-	execute immediate ('truncate table tm_wz.WT_SUBJECT_RBM_PROBESET');
+	execute immediate ('truncate table tm_dataloader.WT_SUBJECT_RBM_PROBESET');
 	
 	--	note: assay_id represents a unique subject/site/sample
 

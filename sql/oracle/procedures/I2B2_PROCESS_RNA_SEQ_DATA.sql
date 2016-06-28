@@ -88,7 +88,7 @@ AS
 
         cursor uploadI2b2 is
     select category_cd,display_value,display_label,display_unit from
-    tm_lz.lt_src_rna_display_mapping;
+    tm_dataloader.lt_src_rna_display_mapping;
 
 
 BEGIN
@@ -337,12 +337,12 @@ EXECUTE IMMEDIATE 'alter session set NLS_NUMERIC_CHARACTERS=".,"';
 
 --	truncate tmp node table
 
-	execute immediate('truncate table tm_wz.wt_RNA_SEQ_nodes');
+	execute immediate('truncate table tm_dataloader.wt_RNA_SEQ_nodes');
 
 --	load temp table with leaf node path, use temp table with distinct sample_type, ATTR2, platform, and title   this was faster than doing subselect
 --	from wt_subject_RNA_sequencing_data
 
-	execute immediate('truncate table tm_wz.wt_RNA_SEQ_node_values');
+	execute immediate('truncate table tm_dataloader.wt_RNA_SEQ_node_values');
 
 	insert into wt_RNA_SEQ_node_values
 	(category_cd
@@ -819,7 +819,7 @@ EXECUTE IMMEDIATE 'alter session set NLS_NUMERIC_CHARACTERS=".,"';
                 <ExcludingUnits></ExcludingUnits><ConvertingUnits><Units></Units><MultiplyingFactor></MultiplyingFactor>
                 </ConvertingUnits></UnitValues><Analysis><Enums /><Counts />
                 <New /></Analysis>'||(select xmlelement(name "SeriesMeta",xmlforest(m.display_value as "Value",m.display_unit as "Unit",m.display_label as "DisplayName")) as hi
-      from tm_lz.lt_src_rna_display_mapping m where m.category_cd=ul.category_cd)||
+      from tm_dataloader.lt_src_rna_display_mapping m where m.category_cd=ul.category_cd)||
                 '</ValueMetadata>') where n.c_fullname=(select leaf_node from wt_RNA_SEQ_nodes where category_cd=ul.category_cd and leaf_node=n.c_fullname);
 
                 end loop;
@@ -932,7 +932,7 @@ EXECUTE IMMEDIATE 'alter session set NLS_NUMERIC_CHARACTERS=".,"';
 
 --	tag data with probeset_id from reference.probeset_deapp
 
-	execute immediate ('truncate table tm_wz.wt_subject_rna_probeset');
+	execute immediate ('truncate table tm_dataloader.wt_subject_rna_probeset');
 
 	--	note: assay_id represents a unique subject/site/sample
 

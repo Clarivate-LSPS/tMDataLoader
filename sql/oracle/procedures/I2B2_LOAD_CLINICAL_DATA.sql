@@ -204,9 +204,9 @@ BEGIN
 		
 	--	truncate wrk_clinical_data and load data from external file
 	
-	execute immediate('truncate table TM_WZ.wrk_clinical_data');
+	execute immediate('truncate table TM_DATALOADER.wrk_clinical_data');
 	begin
-    execute immediate('drop index TM_WZ.IDX_WRK_CD');
+    execute immediate('drop index TM_DATALOADER.IDX_WRK_CD');
   exception
     when index_not_exists then null;
   end;
@@ -243,7 +243,7 @@ BEGIN
 	from lt_src_clinical_data
 	WHERE data_value is not null;
 	
-	execute immediate('CREATE INDEX TM_WZ.IDX_WRK_CD ON TM_WZ.WRK_CLINICAL_DATA (DATA_TYPE ASC, DATA_VALUE ASC, VISIT_NAME ASC, DATA_LABEL ASC, CATEGORY_CD ASC, USUBJID ASC)');
+	execute immediate('CREATE INDEX TM_DATALOADER.IDX_WRK_CD ON TM_DATALOADER.WRK_CLINICAL_DATA (DATA_TYPE ASC, DATA_VALUE ASC, VISIT_NAME ASC, DATA_LABEL ASC, CATEGORY_CD ASC, USUBJID ASC)');
 	
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Load lt_src_clinical_data to work table',SQL%ROWCOUNT,stepCt,'Done');
@@ -542,7 +542,7 @@ BEGIN
 
 -- determine numeric data types
 
-	execute immediate('truncate table TM_WZ.wt_num_data_types');
+	execute immediate('truncate table TM_DATALOADER.wt_num_data_types');
   
 	insert into wt_num_data_types
 	(category_cd
@@ -631,7 +631,7 @@ BEGIN
 	--	Check if any duplicate records of key columns (site_id, subject_id, visit_name, data_label, category_cd) for numeric data
 	--	exist.  Raise error if yes
 	
-	execute immediate('truncate table TM_WZ.wt_clinical_data_dups');
+	execute immediate('truncate table TM_DATALOADER.wt_clinical_data_dups');
 	
 	insert into wt_clinical_data_dups
 	(site_id
@@ -680,7 +680,7 @@ BEGIN
 
 	-- Build all needed leaf nodes in one pass for both numeric and text nodes
  
-	execute immediate('truncate table TM_WZ.wt_trial_nodes');
+	execute immediate('truncate table TM_DATALOADER.wt_trial_nodes');
 	
 	insert /*+ APPEND parallel(wt_trial_nodes, 4) */ into wt_trial_nodes nologging
 	(leaf_node
@@ -1097,8 +1097,8 @@ BEGIN
 		commit;
 	end if;
 
-  	analyze_table('TM_WZ', 'WRK_CLINICAL_DATA', jobId);
-    analyze_table('TM_WZ', 'WT_TRIAL_NODES', jobId);
+  	analyze_table('TM_DATALOADER', 'WRK_CLINICAL_DATA', jobId);
+    analyze_table('TM_DATALOADER', 'WT_TRIAL_NODES', jobId);
     analyze_table('I2B2METADATA', 'I2B2', jobId);
     analyze_table('I2B2DEMODATA', 'PATIENT_DIMENSION', jobId);
 	
@@ -1178,7 +1178,7 @@ BEGIN
 	commit;
   
   	--July 2013. Performance fix by TR.
-   execute immediate('truncate table TM_WZ.I2B2_LOAD_PATH_WITH_COUNT');
+   execute immediate('truncate table TM_DATALOADER.I2B2_LOAD_PATH_WITH_COUNT');
    
    insert into i2b2_load_path_with_count
    select /*+ parallel(4) */ p.c_fullname, count(*) 
@@ -1193,7 +1193,7 @@ BEGIN
     
 	commit;
 
-        analyze_table('TM_WZ', 'I2B2_LOAD_PATH_WITH_COUNT', jobId);
+        analyze_table('TM_DATALOADER', 'I2B2_LOAD_PATH_WITH_COUNT', jobId);
   
   	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Create i2b2 load path with count',SQL%ROWCOUNT,stepCt,'Done');

@@ -107,7 +107,7 @@ BEGIN
 	(feature_group_name
 	,feature_group_type)
 	select distinct t.peptide, 'PEPTIDE' --ask
-	from tm_lz.lt_protein_annotation t
+	from tm_dataloader.lt_protein_annotation t
 	where not exists
 		 (select 1 from biomart.mirna_bio_assay_feature_group x
 		  where t.gpl_id = x.feature_group_name);

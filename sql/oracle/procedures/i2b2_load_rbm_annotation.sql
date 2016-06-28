@@ -214,7 +214,7 @@ BEGIN
 	(feature_group_name
 	,feature_group_type)
 	select distinct t.uniprotid, 'RBM'
-	from tm_lz.LT_SRC_RBM_ANNOTATION t
+	from tm_dataloader.LT_SRC_RBM_ANNOTATION t
 	where not exists
 		 (select 1 from biomart.bio_assay_feature_group x
 		  where t.uniprotid = x.feature_group_name)
