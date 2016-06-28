@@ -295,6 +295,10 @@ SELECT 'Creating TM_DATALOADER.lt_src_ tables...' FROM DUAL;
 @@lt_src_deapp_annot.sql
 @@lt_src_qpcr_mirna_data.sql
 
+SELECT 'Creating wt QPCR tables...' FROM DUAL;
+@@wt_qpcr_mirna_nodes.sql
+@@wt_qpcr_mirna_node_values.sql
+
 SELECT 'Createing wt_subject_rna tables...' FROM DUAL;
 @@wt_subject_rna_logs
 @@wt_subject_rna_calcs
