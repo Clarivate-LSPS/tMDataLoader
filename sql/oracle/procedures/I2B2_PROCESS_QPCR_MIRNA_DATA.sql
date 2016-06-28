@@ -391,7 +391,7 @@ BEGIN
 
 	--  and decode(dataType,'R',sign(a.intensity_value),1) = 1;	--	take all values when dataType T, only >0 for dataType R
 	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Insert node values into DEAPP wt_qpcr_mirna_node_values',SQL%ROWCOUNT,stepCt,'Done');
+	cz_write_audit(jobId,databaseName,procedureName,'Insert node values into TM_DATALOADER wt_qpcr_mirna_node_values',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
 
 	insert into WT_QPCR_MIRNA_NODES
