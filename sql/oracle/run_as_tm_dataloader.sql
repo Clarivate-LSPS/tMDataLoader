@@ -42,6 +42,7 @@
 @@procedures/I2B2_LOAD_PROTEOMICS_ANNOT.sql
 @@procedures/I2B2_LOAD_SECURITY_DATA.sql
 @@procedures/I2B2_LOAD_STUDY_METADATA.sql
+@@procedures/i2b2_load_mirna_annot_deapp.sql
 @@procedures/I2B2_MOVE_STUDY_BY_PATH.sql
 @@procedures/i2b2_metabolomics_zscore_calc.sql
 @@procedures/i2b2_process_metabolomic_data.sql

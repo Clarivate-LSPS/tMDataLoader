@@ -299,6 +299,9 @@ SELECT 'Creating wt QPCR tables...' FROM DUAL;
 @@wt_qpcr_mirna_nodes.sql
 @@wt_qpcr_mirna_node_values.sql
 
+SELECT 'Creating lt_qpcr_mirna_annotation table...' FROM DUAL;
+@@lt_qpcr_mirna_annotation.sql
+
 SELECT 'Createing wt_subject_rna tables...' FROM DUAL;
 @@wt_subject_rna_logs
 @@wt_subject_rna_calcs
