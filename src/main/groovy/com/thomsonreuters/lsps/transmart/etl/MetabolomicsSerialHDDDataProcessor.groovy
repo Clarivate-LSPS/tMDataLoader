@@ -22,8 +22,6 @@ class MetabolomicsSerialHDDDataProcessor extends MetabolomicsDataProcessor {
 
     @Override
     public boolean runStoredProcedures(Object jobId, Sql sql, Object studyInfo) {
-        super.runStoredProcedures(jobId, sql, studyInfo)
-
         def studyId = studyInfo['id']
 
         if (super.runStoredProcedures(jobId, sql, studyInfo)) {
