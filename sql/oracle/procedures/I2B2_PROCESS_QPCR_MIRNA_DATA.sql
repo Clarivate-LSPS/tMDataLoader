@@ -958,7 +958,7 @@ BEGIN
 	pExists := SQL%ROWCOUNT;
 
 	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Insert into DEAPP wt_subject_mirna_probeset',pExists,stepCt,'Done');
+	cz_write_audit(jobId,databaseName,procedureName,'Insert into wt_subject_mirna_probeset',pExists,stepCt,'Done');
 
 	if pExists = 0 then
 		raise no_probeset_recs;
