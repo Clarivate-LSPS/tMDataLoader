@@ -50,6 +50,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         Study.deleteById(config, clinicalData.studyId)
 
         def expectedFile = new File(clinicalData.dir, 'ExpectedSummaryStatistic.txt')
+        def expectedFileAnotherOrder = new File(clinicalData.dir, 'ExpectedSummaryStatisticAnotherOrder.txt')
         def actualFile = new File(clinicalData.dir, 'SummaryStatistic.txt')
         actualFile.delete()
         def result = clinicalData.load(config)
@@ -57,7 +58,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         then:
         assertThat("Clinical data loading shouldn't fail", result, equalTo(true))
         actualFile.exists()
-        actualFile.readLines() == expectedFile.readLines()
+        actualFile.readLines() == expectedFile.readLines() || actualFile.readLines() == expectedFileAnotherOrder.readLines()
     }
 
     def "it should collect statistic"() {
@@ -73,7 +74,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
 
         expect:
         statistic != null
-        statistic.tables.keySet() as List == ['TST001.txt', 'TST_DEMO.txt']
+        statistic.tables.keySet() as List == ['TST001.txt', 'TST_DEMO.txt'] || statistic.tables.keySet() as List == ['TST_DEMO.txt', 'TST001.txt']
         def demo = statistic.tables.'TST_DEMO.txt'
         demo != null
         demo.variables.keySet() as List == ['SUBJ_ID', 'Age In Years', 'Sex', 'Assessment Date', 'Language']
