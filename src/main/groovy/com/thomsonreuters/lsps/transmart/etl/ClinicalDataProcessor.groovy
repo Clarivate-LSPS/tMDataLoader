@@ -35,10 +35,12 @@ import groovy.transform.CompileStatic
 import java.nio.file.Files
 import java.nio.file.Path
 import java.sql.SQLException
+import java.util.concurrent.*
 
 class ClinicalDataProcessor extends AbstractDataProcessor {
     StatisticCollector statistic = new StatisticCollector()
     def usedStudyId = ''
+    int THREAD_COUNT = 4
 
     public ClinicalDataProcessor(Object conf) {
         super(conf);
@@ -179,9 +181,30 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
 
             mergeMode = getMergeMode(mappingFile)
 
+            final ExecutorService threadPool = Executors.newFixedThreadPool(THREAD_COUNT);
+            final ExecutorCompletionService<Object> completionService = new ExecutorCompletionService<>(threadPool);
+
             mapping.eachFileMapping { fileMapping ->
-                this.processFile(sql, dir.resolve(fileMapping.fileName), fileMapping)
+                completionService.submit(new Callable<Object>() {
+                    @Override
+                    Object call() throws Exception {
+                        sql.connection.autoCommit = false
+                        processFile(sql, dir.resolve(fileMapping.fileName), fileMapping)
+                    }
+                })
             }
+
+            for (int i = 0; i< mapping.mappings.size(); i++){
+                final Future<Object> f = completionService.take()
+                try {
+                    Object result = f.get()
+                } catch (ExecutionException e){
+                    throw new DataProcessingException(e.getCause().message)
+                }
+            }
+
+            threadPool.shutdown()
+
             mappingFileFound = true
         }
         if (!mappingFileFound) {
