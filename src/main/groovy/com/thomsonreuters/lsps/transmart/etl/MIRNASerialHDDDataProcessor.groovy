@@ -15,6 +15,7 @@ class MIRNASerialHDDDataProcessor extends MIRNADataProcessor {
 
     @Override
     public boolean processFiles(Path dir, Sql sql, studyInfo) {
+        studyInfo['base_datatype'] = 'MIRNA_QPCR'
         super.processFiles(dir, sql, studyInfo)
         serialHDDDataLoader.loadSerialHDDData('lt_src_mrna_xml_data', dir, sql, studyInfo)
         true

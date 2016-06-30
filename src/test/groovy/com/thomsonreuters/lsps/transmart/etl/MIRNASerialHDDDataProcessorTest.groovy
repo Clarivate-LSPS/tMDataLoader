@@ -10,7 +10,6 @@ class MIRNASerialHDDDataProcessorTest extends Specification implements ConfigAwa
 
     String studyName = 'Test MirnaQpcr Study'
     String studyId = 'TEST005'
-    String mirnaType = 'MIRNA_QPCR'
 
     void setup() {
         ConfigAwareTestCase.super.setUp()
@@ -21,7 +20,7 @@ class MIRNASerialHDDDataProcessorTest extends Specification implements ConfigAwa
         when:
         def processor = new MIRNASerialHDDDataProcessor(config)
         processor.process(new File("fixtures/Test Studies/${studyName}/MIRNA_QPCRSerialHDDDataToUpload").toPath(),
-                [name: studyName, node: "Test Studies\\${studyName}".toString(), base_datatype: mirnaType])
+                [name: studyName, node: "Test Studies\\${studyName}".toString()])
         then:
         def testNodeName = "\\Test Studies\\${studyName}\\Sample Factors Week 1\\"
         def testMetadata = """<?xml version="1.0"?>
