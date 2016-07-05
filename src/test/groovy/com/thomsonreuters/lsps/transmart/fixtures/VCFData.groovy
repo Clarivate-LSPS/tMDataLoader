@@ -1,6 +1,6 @@
 package com.thomsonreuters.lsps.transmart.fixtures;
 
-import com.thomsonreuters.lsps.transmart.etl.DataProcessor
+import com.thomsonreuters.lsps.transmart.etl.AbstractDataProcessor
 import com.thomsonreuters.lsps.transmart.etl.VCFDataProcessor;
 
 /**
@@ -11,7 +11,7 @@ public class VCFData extends AbstractData<VCFData> {
     final String dataType = "VCDData";
 
     @Override
-    protected DataProcessor newDataProcessor(config) {
+    protected AbstractDataProcessor newDataProcessor(config) {
         return new VCFDataProcessor(config);
     }
 

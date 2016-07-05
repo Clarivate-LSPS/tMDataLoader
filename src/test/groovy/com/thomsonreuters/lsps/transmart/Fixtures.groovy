@@ -57,7 +57,9 @@ class Fixtures {
     static def getStudiesForMerge() {
         return [update : new StudiesDirFile(['fixtures', 'Test Studies For Merge', 'Update'].join(File.separator)),
                 append : new StudiesDirFile(['fixtures', 'Test Studies For Merge', 'Append'].join(File.separator)),
-                replace : new StudiesDirFile(['fixtures', 'Test Studies For Merge', 'Replace'].join(File.separator))]
+                replace : new StudiesDirFile(['fixtures', 'Test Studies For Merge', 'Replace'].join(File.separator)),
+                update_var: new StudiesDirFile(['fixtures', 'Test Studies For Merge', 'UpdateVariables'].join(File.separator)),
+                first_load:  new StudiesDirFile(['fixtures', 'Test Studies For Merge', 'First Load'].join(File.separator))]
     }
 
     static StudyDirFile studyDir(String studyName, String studyId, File studiesDir = Fixtures.studiesDir) {
@@ -86,6 +88,26 @@ class Fixtures {
 
     static ClinicalData getClinicalDataWithPlusSign() {
         return studiesDir.studyDir('Test Study With Plus Sign', 'GSE0PLS').clinicalData
+    }
+
+    static ClinicalData getClinicalDataWithLongCategoryCD() {
+        return studiesDir.studyDir('Test Study With Long CategoryCD', 'GSE0LONGCCD').clinicalData
+    }
+
+    static ClinicalData getClinicalDataWithWrongMappingFileName() {
+        return studiesDir.studyDir('Test Study With Wrong Mapping File_Name', 'GSE0WRONGMAPF').clinicalData
+    }
+
+    static ClinicalData getClinicalDataWithNonVisialSymbols() {
+        return studiesDir.studyDir('Test Study With Non Visial Symbols In Header', 'GSE0NOVIS').clinicalData
+    }
+
+    static ClinicalData getClinicalDataWithDifferentStudyID() {
+        return studiesDir.studyDir('Test Study With Different StudyID', 'GSE0DIFFSID').clinicalData
+    }
+
+    static ClinicalData getClinicalDataWithDifferentStudyIDVar2() {
+        return studiesDir.studyDir('Test Study With Different StudyID In Two Files', 'GSE0DIFFSIDVAR2').clinicalData
     }
 
     static ClinicalData getClinicalDataWithTerminator() {

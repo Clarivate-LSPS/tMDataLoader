@@ -29,7 +29,7 @@ class DirectoryProcessorTest extends Specification {
         setup:
             GroovySpy(DataProcessorFactory, global: true)
             DataProcessorFactory.newDataProcessor(*_) >> {
-                DataProcessor dataProcessor = Mock(DataProcessor)
+                AbstractDataProcessor dataProcessor = Mock(AbstractDataProcessor)
                 dataProcessor.process(*_) >> true
                 dataProcessor
             }

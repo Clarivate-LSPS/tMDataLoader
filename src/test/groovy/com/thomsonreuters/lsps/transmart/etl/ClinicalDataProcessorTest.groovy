@@ -35,6 +35,8 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
 
     void testItLoadsAge() {
         setup:
+        Study.deleteById(config, clinicalData.studyId)
+
         def result = clinicalData.load(config)
 
         expect:
@@ -45,6 +47,8 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
 
     def 'it should produce SummaryStatistic.txt'() {
         when:
+        Study.deleteById(config, clinicalData.studyId)
+
         def expectedFile = new File(clinicalData.dir, 'ExpectedSummaryStatistic.txt')
         def actualFile = new File(clinicalData.dir, 'SummaryStatistic.txt')
         actualFile.delete()
@@ -58,6 +62,8 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
 
     def "it should collect statistic"() {
         setup:
+        Study.deleteById(config, clinicalData.studyId)
+
         def processor = new ClinicalDataProcessor(config)
         database.withSql { sql ->
             processor.processFiles(clinicalData.dir.toPath(), sql as Sql,
@@ -126,6 +132,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
     void testItLoadsData() {
         expect:
         String conceptPath = "\\Test Studies\\${studyName}\\"
+        Study.deleteById(config, conceptPath)
         String conceptPathForPatient = conceptPath + "Biomarker Data\\Mutations\\TST001 (Entrez ID: 1956)\\AA mutation\\"
 
         processor.process(
@@ -154,6 +161,8 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat(sql, hasPatient('2SKMEL28').inTrial(studyInfo.id))
         assertThat(sql, hasNode(conceptPathForPatient + 'tag1\\').withPatientCount(8))
         assertThat(sql, hasNode(conceptPathForPatient + 'tag2\\').withPatientCount(4))
+        assertThat(sql, hasNode(conceptPathForPatient + 'tag1 tag and Spain language\\').withPatientCount(1))
+        assertThat(sql, hasNode(conceptPathForPatient + 'tag2 tag and English language\\').withPatientCount(2))
     }
 
     void testItMergesData() {
@@ -212,6 +221,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         String languageConcept = rootConcept + "Subjects\\Demographics\\Language\\"
         String ageConcept = rootConcept + "Subjects\\Demographics\\Age (AGE)\\"
         String assessmentDateConcept = rootConcept + "Subjects\\Demographics\\Assessment Date\\"
+        String biomarkerConcept = rootConcept + "Biomarker Data\\Mutations\\TST001 (Entrez ID: 1956)\\AA mutation\\ELREA746del\\Variant Type\\DEL\\"
 
         processor.process(new File(studyDir(studyName, studyId), "ClinicalDataToUpload").toPath(),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
@@ -222,6 +232,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat(sql, hasNode(languageConcept).withPatientCount(3))
         assertThat(sql, hasNode(assessmentDateConcept + "09/15/2014\\"))
         assertThat(sql, hasFact(ageConcept, subjId, 20))
+        assertThat(sql, hasNode(biomarkerConcept).withPatientCount(3))
 
         processor.process(
                 new File(studyDir(studyName, studyId, studiesForMerge.update), "ClinicalDataToUpload").toPath(),
@@ -233,6 +244,70 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat(sql, hasNode(languageConcept).withPatientCount(4))
         assertThat(sql, hasNode(assessmentDateConcept + "09/15/2015\\"))
         assertThat(sql, hasFact(ageConcept, subjId, 21))
+        assertThat(sql, hasNode(biomarkerConcept).withPatientCount(2))
+    }
+
+    def 'it should load study with UPDATE VARIABLES merge mode'(){
+        expect:
+        String subjId = 'HCC2935'
+        String rootConcept = "\\Test Studies\\${studyName}\\"
+
+        String maleConcept = rootConcept + "Subjects\\Demographics\\Sex (SEX)\\Male\\"
+        String femaleConcept = rootConcept + "Subjects\\Demographics\\Sex (SEX)\\Female\\"
+        String languageConcept = rootConcept + "Subjects\\Demographics\\Language\\"
+        String ageConcept = rootConcept + "Subjects\\Demographics\\Age (AGE)\\"
+        String assessmentDateConcept = rootConcept + "Subjects\\Demographics\\Assessment Date\\"
+        String biomarkerConcept = rootConcept + "Biomarker Data\\Mutations\\TST001 (Entrez ID: 1956)\\AA mutation\\ELREA746del\\Variant Type\\DEL\\"
+
+        processor.process(new File(studyDir(studyName, studyId), "ClinicalDataToUpload").toPath(),
+                [name: studyName, node: "Test Studies\\${studyName}".toString()])
+
+        assertThat(sql, hasPatient(subjId).inTrial(studyId))
+        assertThat(sql, hasNode(maleConcept).withPatientCount(2))
+        assertThat(sql, hasNode(femaleConcept).withPatientCount(5))
+        assertThat(sql, hasNode(languageConcept).withPatientCount(3))
+        assertThat(sql, hasNode(assessmentDateConcept + "09/15/2014\\"))
+        assertThat(sql, hasFact(ageConcept, subjId, 20))
+        assertThat(sql, hasNode(biomarkerConcept).withPatientCount(3))
+
+        processor.process(
+                new File(studyDir(studyName, studyId, studiesForMerge.update_var), "ClinicalDataToUpload").toPath(),
+                [name: studyName, node: "Test Studies\\${studyName}".toString()])
+
+        assertThat(sql, hasPatient(subjId).inTrial(studyId))
+        assertThat(sql, hasNode(maleConcept).withPatientCount(3))
+        assertThat(sql, hasNode(femaleConcept).withPatientCount(4))
+        assertThat(sql, hasNode(languageConcept).withPatientCount(4))
+        assertThat(sql, hasNode(assessmentDateConcept + "09/15/2014\\"))
+        assertThat(sql, hasFact(ageConcept, subjId, 21))
+        assertThat(sql, hasNode(biomarkerConcept).withPatientCount(3))
+
+        String femaleFrenchConcept = '\\Test Studies\\Test Study With Single Visit Name\\Subjects\\Demographics\\Female\\French\\Sex (SEX)\\'
+        String maleFrenchConcept = '\\Test Studies\\Test Study With Single Visit Name\\Subjects\\Demographics\\Male\\French\\Sex (SEX)\\'
+        def clinicalData = Fixtures.clinicalDataWithSingleVisitName
+        clinicalData.load(config)
+        assertThat(sql, hasNode(femaleFrenchConcept).withPatientCount(2))
+
+        def studyWithVisitName = 'Test Study With Single Visit Name'
+        def newProcessor = new ClinicalDataProcessor(config)
+        newProcessor.process(new File(studyDir(studyWithVisitName, 'GSE0SINGLEVN', studiesForMerge.update_var), "ClinicalDataToUpload").toPath(),
+                [name: studyWithVisitName, node: "Test Studies\\${studyWithVisitName}".toString()])
+        assertThat(sql, hasNode(femaleFrenchConcept).withPatientCount(1))
+        assertThat(sql, hasNode(maleFrenchConcept).withPatientCount(1))
+    }
+
+    def 'Updates_Variable loading should throw error if find several categorical value on the same'() {
+        when:
+            String studyName = 'Test Study With Duplicate Category Path'
+            String studyId = 'GSE0WDCP'
+            String femaleConcept = '\\Test Studies\\Test Study With Duplicate Category Path\\DupclicateCD\\Female\\'
+            def newProcessor = new ClinicalDataProcessor(config)
+            newProcessor.process(new File(studyDir(studyName, studyId, studiesForMerge.first_load), "ClinicalDataToUpload").toPath(),
+                [name: studyName, node: "Test Studies\\${studyName}".toString()])
+            newProcessor.process(new File(studyDir(studyName, studyId, studiesForMerge.update_var), "ClinicalDataToUpload").toPath(),
+                [name: studyName, node: "Test Studies\\${studyName}".toString()])
+        then:
+            assertThat(sql, hasNode(femaleConcept).withPatientCount(5))
     }
 
     def 'it should load study with APPEND merge mode'() {
@@ -244,6 +319,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         String femaleConcept = rootConcept + "Subjects\\Demographics\\Sex (SEX)\\Female\\"
         String languageConcept = rootConcept + "Subjects\\Demographics\\Language\\"
         String ageConcept = rootConcept + "Subjects\\Demographics\\Age (AGE)\\"
+        String anotherAgeConcept = rootConcept + "Ages\\Demographics\\Age (AGE)\\"
         String assessmentDateConcept = rootConcept + "Subjects\\Demographics\\Assessment Date\\"
 
         processor.process(new File(studyDir(studyName, studyId), "ClinicalDataToUpload").toPath(),
@@ -255,6 +331,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat(sql, hasNode(languageConcept).withPatientCount(3))
         assertThat(sql, hasNode(assessmentDateConcept + "09/15/2014\\"))
         assertThat(sql, hasFact(ageConcept, subjId, 20))
+        assertThat(sql, hasFact(anotherAgeConcept, subjId, 20))
 
         processor.process(
                 new File(studyDir(studyName, studyId, studiesForMerge.append), "ClinicalDataToUpload").toPath(),
@@ -267,6 +344,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat(sql, hasNode(assessmentDateConcept + "09/15/2014\\"))
         assertThat(sql, hasNode(assessmentDateConcept + "09/15/2015\\"))
         assertThat(sql, hasFact(ageConcept, subjId, 21))
+        assertThat(sql, hasFact(anotherAgeConcept, subjId, 20))
     }
 
     def 'it should load study with non-unique column names'() {
@@ -351,8 +429,8 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat(sql, hasNode("$demoPath\\Female\\French\\Sex (SEX)\\").withPatientCount(2))
         assertThat(sql, hasNode("$demoPath\\Female\\English\\Sex (SEX)\\").withPatientCount(1))
 
-        assertThat(sql, hasNode("$demoPath\\Age (AGE)\\").withPatientCount(9))
-        assertThat(sql, not(hasNode("$demoPath\\Age (AGE)\\Baseline\\")))
+        assertThat(sql, hasNode("$demoPath\\Russian language\\Age (AGE)\\").withPatientCount(1))
+        assertThat(sql, not(hasNode("$demoPath\\Russian language\\Age (AGE)\\Baseline\\")))
 
         assertThat(sql, hasNode("$demoPath\\Language\\French\\").withPatientCount(2))
         assertThat(sql, not(hasNode("$demoPath\\Language\\French\\Baseline\\")))
@@ -370,7 +448,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat(sql, hasNode("$demoPath\\Female\\Baseline\\French\\Sex (SEX)\\").withPatientCount(2))
         assertThat(sql, hasNode("$demoPath\\Female\\Baseline\\English\\Sex (SEX)\\").withPatientCount(1))
 
-        assertThat(sql, hasNode("$demoPath\\Age (AGE)\\Baseline\\").withPatientCount(9))
+        assertThat(sql, hasNode("$demoPath\\Russian language\\Age (AGE)\\Baseline\\").withPatientCount(1))
 
         assertThat(sql, hasNode("$demoPath\\Language\\French\\Baseline\\").withPatientCount(2))
     }
@@ -695,7 +773,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat(db, hasRecord('i2b2metadata.i2b2', [c_fullname:'\\Demographics\\'], [:]))
     }
 
-    def 'it should check path then visit_name equal to data_label and data_label is not specified before terminator'(){
+    def 'it should check path when visit_name equal to data_label and data_label is not specified before terminator'(){
         when:
         Study.deleteById(config, 'GSE0REPEATLABPATH')
         def clinicalData = Fixtures.clinicalDataWithTerminatorAndSamePath
@@ -710,6 +788,59 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat(sql, hasNode("\\Test Studies\\$clinicalData.studyName\\Subjects\\Demographics\\v1\\Male\\").withPatientCount(2))
         assertThat(sql, hasNode("\\Test Studies\\$clinicalData.studyName\\Subjects\\Demographics\\v1\\Female\\").withPatientCount(5))
         assertThat(sql, hasNode("\\Test Studies\\$clinicalData.studyName\\Subjects\\Demographics\\v2\\").withPatientCount(1))
+    }
 
+    def 'it should check error when used wrong mapping file name'(){
+        when:
+        def clinicalData = Fixtures.clinicalDataWithWrongMappingFileName
+        Study.deleteById(config, clinicalData.studyId)
+        clinicalData.load(config)
+
+        then:
+        def ex = thrown(DataProcessingException)
+        ex.message == 'Mapping file wasn\'t found. Please, check file name.'
+    }
+
+    def 'it should check error with long path'(){
+        when:
+        def clinicalData = Fixtures.clinicalDataWithLongCategoryCD
+        Study.deleteById(config, clinicalData.studyId)
+        clinicalData.load(config)
+
+        then:
+        def ex = thrown(DataProcessingException)
+        ex.message.contains('CATEGORY_CD is too long (311 > 250) for row [5]')
+    }
+
+    def 'it should validate header for non visual symbols'() {
+        when:
+        def clinicalData = Fixtures.clinicalDataWithNonVisialSymbols
+        Study.deleteById(config, clinicalData.studyId)
+        clinicalData.load(config)
+
+        then:
+        thrown(DataProcessingException)
+    }
+
+    def 'it should check on different study id (Var.1 Diff in fill)'() {
+        when:
+        def clinicalData = Fixtures.clinicalDataWithDifferentStudyID
+        Study.deleteById(config, clinicalData.studyId)
+        clinicalData.load(config)
+
+        then:
+        def ex = thrown(DataProcessingException)
+        ex.message == "STUDY_ID differs from previous in 13 line in TST001.txt file."
+    }
+
+    def 'it should check on different study id (Var.2 Different in two files)'() {
+        when:
+        def clinicalData = Fixtures.clinicalDataWithDifferentStudyIDVar2
+        Study.deleteById(config, clinicalData.studyId)
+        clinicalData.load(config)
+
+        then:
+        def ex = thrown(DataProcessingException)
+        ex.message == "STUDY_ID differs from previous in 2 line in TST_DEMO.txt file."
     }
 }

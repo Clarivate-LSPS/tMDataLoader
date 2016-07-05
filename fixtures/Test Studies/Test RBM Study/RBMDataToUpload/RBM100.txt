@@ -65,7 +65,7 @@ RBM100	Clusterin	P10909		3
 RBM100	Collagen IV	P02462, P08572, Q01955, P53420, P29400, Q14031		3
 RBM100	Complement C3	P01024		3
 RBM100	Complement component C1q receptor	Q9NPY3		3
-RBM100	Complement Factor H � Related Protein 1	Q03591		3
+RBM100	Complement Factor H Related Protein 1	Q03591		3
 RBM100	Cortisol	HMDB00063		3
 RBM100	C-Peptide	P01308		3
 RBM100	C-Reactive Protein	P02741		3
@@ -302,7 +302,7 @@ RBM100	Vascular endothelial growth factor D	O43915		3
 RBM100	Vascular Endothelial Growth Factor Receptor 1	P17948		3
 RBM100	Vascular Endothelial Growth Factor Receptor 2	P35968		3
 RBM100	Vascular endothelial growth factor receptor 3	P35916		3
-RBM100	Visceral adipose tissue � derived serpin A12	Q8IW75		3
+RBM100	Visceral adipose tissue derived serpin A12	Q8IW75		3
 RBM100	Visfatin	P43490		3
 RBM100	Vitamin D-Binding Protein	P02774		3
 RBM100	Vitamin K-Dependent Protein S	P07225		3

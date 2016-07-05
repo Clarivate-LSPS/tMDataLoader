@@ -6,6 +6,8 @@ import org.hamcrest.core.IsNull
 
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasNode
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasSample
+import static org.junit.Assert.assertNotNull
+import static org.junit.Assert.assertNull
 import static org.junit.Assert.assertThat
 
 class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestCase {
@@ -391,4 +393,16 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
         assertThatTopNodeDelete("\\Test Studies\\${rnaStudyName}\\", true);
         assertRecordsWasDeleted('deapp.de_subject_rna_data', rnaStudyId);
     }
+
+    void testItDeletePartDataByIdWithoutPath() {
+        expressionData.load(config)
+        sql.execute("""DELETE
+                         FROM i2b2demodata.concept_dimension
+                        WHERE sourcesystem_cd = ?""", [studyId])
+        processorDelete.process('id': studyId, 'path': null)
+        def sample = sql.firstRow('select * from deapp.de_subject_sample_mapping where trial_name = ? and sample_cd = ?',
+                studyId, 'TST1000000719')
+        assertNull(sample)
+    }
+
 }

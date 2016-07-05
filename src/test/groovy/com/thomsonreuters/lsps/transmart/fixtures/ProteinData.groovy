@@ -1,6 +1,6 @@
 package com.thomsonreuters.lsps.transmart.fixtures
 import com.thomsonreuters.lsps.transmart.TdfUtils
-import com.thomsonreuters.lsps.transmart.etl.DataProcessor
+import com.thomsonreuters.lsps.transmart.etl.AbstractDataProcessor
 import com.thomsonreuters.lsps.transmart.etl.ProteinDataProcessor
 
 import static com.thomsonreuters.lsps.transmart.fixtures.FileAdaptUtils.adaptFile
@@ -12,7 +12,7 @@ public class ProteinData extends AbstractData<ProteinData> {
     final String dataType = "ProteinData";
 
     @Override
-    protected DataProcessor newDataProcessor(config) {
+    protected AbstractDataProcessor newDataProcessor(config) {
         return new ProteinDataProcessor(config);
     }
 
