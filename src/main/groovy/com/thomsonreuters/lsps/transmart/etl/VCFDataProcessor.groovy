@@ -14,7 +14,7 @@ import java.nio.file.Path
 /**
  * Created by bondarev on 4/3/14.
  */
-class VCFDataProcessor extends DataProcessor {
+class VCFDataProcessor extends AbstractDataProcessor {
     VCFDataProcessor(Object conf) {
         super(conf)
     }
@@ -22,7 +22,7 @@ class VCFDataProcessor extends DataProcessor {
     private void loadMappingFile(Path mappingFile, studyInfo) {
         def csv = new CsvLikeFile(mappingFile, '#')
         if (!studyInfo.id) {
-            def metaInfo = (csv as MetaInfoHeader).metaInfo
+            def metaInfo = MetaInfoHeader.getMetaInfo(csv)
             studyInfo.id = metaInfo.STUDY_ID
             studyInfo.genomeBuild = metaInfo.GENOME_BUILD
             studyInfo.platformId = metaInfo.PLATFORM_ID ?:

@@ -8,7 +8,7 @@ import groovy.sql.Sql
 
 import java.nio.file.Path
 
-public class MetabolomicsDataProcessor extends DataProcessor {
+public class MetabolomicsDataProcessor extends AbstractDataProcessor {
     public MetabolomicsDataProcessor(Object conf) {
         super(conf);
     }

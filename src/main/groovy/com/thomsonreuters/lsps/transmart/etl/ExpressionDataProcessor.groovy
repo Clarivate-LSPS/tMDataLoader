@@ -28,7 +28,7 @@ import groovy.sql.Sql
 
 import java.nio.file.Path
 
-class ExpressionDataProcessor extends DataProcessor {
+class ExpressionDataProcessor extends AbstractDataProcessor {
 
     public static final String DEFAULT_TISSUE_TYPE = 'Blood'
 

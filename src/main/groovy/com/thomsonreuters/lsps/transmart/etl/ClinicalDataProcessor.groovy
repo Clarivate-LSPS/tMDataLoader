@@ -20,25 +20,25 @@
 
 package com.thomsonreuters.lsps.transmart.etl
 
+import com.thomsonreuters.lsps.db.core.DatabaseType
 import com.thomsonreuters.lsps.db.loader.DataLoader
 import com.thomsonreuters.lsps.transmart.etl.mappings.ClinicalDataMapping
+import com.thomsonreuters.lsps.transmart.etl.mappings.TagReplacer
 import com.thomsonreuters.lsps.transmart.etl.statistic.StatisticCollector
 import com.thomsonreuters.lsps.transmart.etl.statistic.TableStatistic
 import com.thomsonreuters.lsps.transmart.etl.statistic.VariableType
 import com.thomsonreuters.lsps.transmart.files.CsvLikeFile
 import com.thomsonreuters.lsps.transmart.files.MetaInfoHeader
-import com.thomsonreuters.lsps.db.core.DatabaseType
 import groovy.sql.Sql
 import groovy.transform.CompileStatic
 
 import java.nio.file.Files
 import java.nio.file.Path
-import java.util.regex.Pattern
+import java.sql.SQLException
 
-class ClinicalDataProcessor extends DataProcessor {
+class ClinicalDataProcessor extends AbstractDataProcessor {
     StatisticCollector statistic = new StatisticCollector()
-
-    protected static final Pattern RE_PLUS = Pattern.compile(/\+/)
+    def usedStudyId = ''
 
     public ClinicalDataProcessor(Object conf) {
         super(conf);
@@ -46,29 +46,34 @@ class ClinicalDataProcessor extends DataProcessor {
 
     @CompileStatic
     private long processEachRow(Path f, ClinicalDataMapping.FileMapping fMappings, Closure<List> processRow) {
-        def lineNum = 1L
+        def processedCount = 0L
         def _DATA = fMappings._DATA
         //Custom tags
-        Map tagToColumn = _DATA.collectEntries {
-            [(it.DATA_LABEL): it.COLUMN]
-        }
-
+        def tagReplacer = TagReplacer.fromFileMapping(fMappings)
         CsvLikeFile csvFile = new CsvLikeFile(f, '# ', config.allowNonUniqueColumnNames.asBoolean())
         statistic.collectForTable(f.fileName.toString()) { table ->
             addStatisticVariables(table, csvFile, fMappings)
-            csvFile.eachEntry {
+            csvFile.eachEntry { it, lineNumber ->
                 String[] data = (String[]) it
                 String[] cols = new String[data.length + 1]
                 cols[0] = '' // to support 0-index properly (we use it for empty data values)
                 System.arraycopy(data, 0, cols, 1, data.length)
 
-                lineNum++
+                processedCount++
 
                 if (cols[fMappings.STUDY_ID]) {
                     // the line shouldn't be empty
 
                     if (!cols[fMappings.SUBJ_ID]) {
-                        throw new Exception("SUBJ_ID are not defined at line ${lineNum}")
+                        throw new Exception("SUBJ_ID are not defined at line ${lineNumber}")
+                    }
+
+                    if (!usedStudyId) {
+                        usedStudyId = cols[fMappings.STUDY_ID]
+                    }
+
+                    if (usedStudyId != cols[fMappings.STUDY_ID]) {
+                        throw new DataProcessingException("STUDY_ID differs from previous in ${lineNumber} line in ${csvFile.file.fileName} file.")
                     }
 
                     Map<String, String> output = [
@@ -100,32 +105,10 @@ class ClinicalDataProcessor extends DataProcessor {
                                     out['valuetype_cd'] = v.variableType.name().toUpperCase()
                                 }
                                 def cat_cd = v.CATEGORY_CD
-                                //Support tag start
-                                if (cat_cd.contains('$$')) {
-                                    //Default tags
-                                    cat_cd = cat_cd.replace('$$STUDY_ID', cols[fMappings.STUDY_ID])
-                                    cat_cd = cat_cd.replace('$$SITE_ID', cols[fMappings.SITE_ID])
-                                    cat_cd = cat_cd.replace('$$SUBJ_ID', cols[fMappings.SUBJ_ID])
-                                    cat_cd = cat_cd.replace('$$SAMPLE_ID', cols[fMappings.SAMPLE_ID])
-
-                                    boolean hasEmptyTags = false
-                                    cat_cd = cat_cd.replaceAll(/\$\$([A-z0-9_\"\s\(\)]+)/) { match, name ->
-                                        if (!tagToColumn.containsKey(name)) {
-                                            throw new DataProcessingException("$f.fileName: cat_cd '$cat_cd' contains not-existing tag: '$name'")
-                                        }
-                                        def tagValue = cols[tagToColumn[name] as Integer] as String
-                                        if (!tagValue) {
-                                            hasEmptyTags = true
-                                            return match
-                                        }
-                                        '$$' + tagValue.replaceAll(RE_PLUS, '(plus)')
-                                    }
-
-                                    //ignore record without tags value
-                                    if (hasEmptyTags)
-                                        continue
+                                cat_cd = tagReplacer.replaceTags(cat_cd, cols)
+                                if (!cat_cd) {
+                                    continue
                                 }
-                                //Support tag stop
 
                                 if (v.DATA_LABEL_SOURCE > 0) {
                                     // ok, the actual data label is in the referenced column
@@ -156,40 +139,53 @@ class ClinicalDataProcessor extends DataProcessor {
 
                                 out['category_cd'] = cat_cd
 
-                                processRow(out)
+                                processRow(out, lineNumber)
                             }
                         }
                         table.endCollectForRecord()
                     } else {
-                        processRow(output)
+                        processRow(output, lineNumber)
                         table.collectForRecord(SUBJ_ID: output.subj_id)
                     }
                 }
                 it
             }
         }
-        return lineNum
+        return processedCount
     }
 
     @Override
     public boolean processFiles(Path dir, Sql sql, studyInfo) {
         // read mapping file first
         // then parse files that are specified there (to allow multiple files per study)
+        def mappingFileFound = false
 
         database.truncateTable(sql, 'lt_src_clinical_data')
         if (!sql.connection.autoCommit) {
             sql.commit()
         }
+        def tableName = 'lt_src_clinical_data'
+        if (database.databaseType == DatabaseType.Oracle) {
+            tableName = tableName.toUpperCase()
+        }
+        def meta = sql.connection.metaData, cols = meta.getColumns(null, null, tableName, null)
+        def colsMetaSize = [:]
+        while (cols.next())
+            colsMetaSize.put(cols.getString('column_name').toUpperCase(), Integer.parseInt(cols.getString('column_size')))
 
         dir.eachFileMatch(~/(?i).+_Mapping_File\.txt/) {
             CsvLikeFile mappingFile = new CsvLikeFile(it, '#')
-            ClinicalDataMapping mapping = ClinicalDataMapping.loadFromCsvLikeFile(mappingFile)
+            ClinicalDataMapping mapping = ClinicalDataMapping.loadFromCsvLikeFile(mappingFile, colsMetaSize)
 
             mergeMode = getMergeMode(mappingFile)
 
             mapping.eachFileMapping { fileMapping ->
                 this.processFile(sql, dir.resolve(fileMapping.fileName), fileMapping)
             }
+            mappingFileFound = true
+        }
+        if (!mappingFileFound) {
+            throw new DataProcessingException("Mapping file wasn\'t found. Please, check file name.")
         }
         dir.resolve("SummaryStatistic.txt").withWriter { writer ->
             statistic.printReport(writer)
@@ -203,7 +199,7 @@ class ClinicalDataProcessor extends DataProcessor {
     }
 
     private MergeMode getMergeMode(CsvLikeFile mappingFile) {
-        def metaInfo = (mappingFile as MetaInfoHeader).metaInfo
+        def metaInfo = MetaInfoHeader.getMetaInfo(mappingFile)
         String modeName = metaInfo.MERGE_MODE
 
         if (!modeName)
@@ -226,46 +222,23 @@ class ClinicalDataProcessor extends DataProcessor {
             throw new DataProcessingException("File ${f.fileName} doesn't exist")
         }
 
-        if (database?.databaseType == DatabaseType.Postgres) {
-            processFileForPostgres(f, fileMapping)
-        } else {
-            processFileForGenericDatabase(sql, f, fileMapping)
-        }
+        processFile(f, fileMapping)
     }
 
-    private void processFileForPostgres(Path f, ClinicalDataMapping.FileMapping fileMapping) {
+    private void processFile(Path f, ClinicalDataMapping.FileMapping fileMapping) {
         DataLoader.start(database, "lt_src_clinical_data", ['STUDY_ID', 'SITE_ID', 'SUBJECT_ID', 'VISIT_NAME',
                                                             'DATA_LABEL', 'DATA_VALUE', 'CATEGORY_CD', 'SAMPLE_CD',
-                                                            'VALUETYPE_CD']) {
-            st ->
-                def lineNum = processEachRow(f, fileMapping) { row ->
+                                                            'VALUETYPE_CD']) { st ->
+            long rowsCount = processEachRow(f, fileMapping) { row, lineNumber ->
+                try {
                     st.addBatch([row.study_id, row.site_id, row.subj_id, row.visit_name, row.data_label,
                                  row.data_value, row.category_cd, row.sample_cd, row.valuetype_cd])
+                } catch (SQLException e) {
+                    throw new DataProcessingException("Wrong data close to ${lineNumber} line.\n ${e.getLocalizedMessage()}")
                 }
-                config.logger.log("Processed ${lineNum} rows")
-        }
-    }
-
-    private void processFileForGenericDatabase(sql, f, fMappings) {
-        def lineNum = 0
-
-        sql.withTransaction {
-            sql.withBatch(100, """\
-                INSERT into lt_src_clinical_data(
-                    STUDY_ID, SITE_ID, SUBJECT_ID, VISIT_NAME, DATA_LABEL, DATA_VALUE,
-                    CATEGORY_CD, SAMPLE_CD, VALUETYPE_CD
-                ) VALUES (
-                    :study_id, :site_id, :subj_id, :visit_name, :data_label, :data_value,
-                    :category_cd, :sample_cd, :valuetype_cd
-                )
-			""") {
-                stmt ->
-                    lineNum = processEachRow f, fMappings, {
-                        stmt.addBatch(it)
-                    }
             }
+            config.logger.log("Processed ${rowsCount} rows")
         }
-        config.logger.log("Processed ${lineNum} rows")
     }
 
     private boolean trySetStudyId(Sql sql, studyInfo) {

@@ -8,7 +8,7 @@ import groovy.sql.Sql
 
 import java.nio.file.Path
 
-public class MIRNADataProcessor extends DataProcessor {
+public class MIRNADataProcessor extends AbstractDataProcessor {
     public MIRNADataProcessor(Object conf) {
         super(conf);
     }
@@ -178,7 +178,7 @@ public class MIRNADataProcessor extends DataProcessor {
         }
 
         sql.commit()
-        sql.execute("begin dbms_stats.gather_table_stats('TM_DATALOADER', 'LT_SRC_QPCR_MIRNA_DATA', cascade => true); end;")
+        sql.execute("begin dbms_stats.gather_table_stats('TM_LZ', 'LT_SRC_QPCR_MIRNA_DATA', cascade => true); end;")
         config.logger.log(LogType.PROGRESS, "")
         config.logger.log("Processed ${lineNum} rows")
     }

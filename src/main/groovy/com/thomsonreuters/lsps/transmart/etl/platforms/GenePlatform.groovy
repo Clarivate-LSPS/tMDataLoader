@@ -64,9 +64,9 @@ abstract class GenePlatform implements PrepareIfRequired {
     }
 
     protected void readPlatformInfo() {
-        def metaInfoHeader = platformFile as MetaInfoHeader
-        title = title ?: metaInfoHeader.metaInfo.PLATFORM_TITLE
-        organism = organism ?: metaInfoHeader.metaInfo.PLATFORM_SPECIES
+        def metaInfo = MetaInfoHeader.getMetaInfo(platformFile)
+        title = title ?: metaInfo.PLATFORM_TITLE
+        organism = organism ?: metaInfo.PLATFORM_SPECIES
         if (!title) {
             def info = fetchPlatformInfo()
             title = info.title

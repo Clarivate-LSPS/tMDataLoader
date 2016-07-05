@@ -24,7 +24,7 @@ import groovy.sql.Sql
 
 import java.nio.file.Path;
 
-class MetaDataProcessor extends DataProcessor {
+class MetaDataProcessor extends AbstractDataProcessor {
 
 	public MetaDataProcessor(Object conf) {
 		super(conf);
