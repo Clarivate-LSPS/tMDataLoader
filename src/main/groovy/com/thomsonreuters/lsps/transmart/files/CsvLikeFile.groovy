@@ -9,6 +9,9 @@ import org.apache.commons.csv.CSVFormat
 import org.apache.commons.csv.CSVParser
 import org.apache.commons.csv.CSVRecord
 
+import java.nio.charset.Charset
+import java.nio.charset.CharsetDecoder
+import java.nio.charset.CodingErrorAction
 import java.nio.file.Path
 
 /**
@@ -29,18 +32,23 @@ class CsvLikeFile implements PrepareIfRequired {
             withAllowMissingColumnNames(true)
 
     protected def withParser(CSVFormat format = null, Closure closure) {
-        file.withReader { reader ->
-            def linesReader = !lineComment.is(null) ? new SkipLinesReader(reader, [lineComment]) : reader
-            def parser = new CSVParser(linesReader, format ?: this.format)
-            if (closure.maximumNumberOfParameters == 2) {
-                def lineNumberProducer = linesReader instanceof SkipLinesReader ?
-                        { (linesReader as SkipLinesReader).skippedLinesCount + parser.currentLineNumber } :
-                        parser.&getCurrentLineNumber
-                closure.call(parser, lineNumberProducer)
-            } else {
-                closure.call(parser)
+            file.withInputStream { inputStream ->
+                CharsetDecoder decoder = Charset.forName("UTF-8").newDecoder()
+                        .onMalformedInput(CodingErrorAction.REPLACE)
+                        .onUnmappableCharacter(CodingErrorAction.REPLACE);
+                InputStreamReader reader = new InputStreamReader(inputStream, decoder);
+
+                def linesReader = !lineComment.is(null) ? new SkipLinesReader(reader, [lineComment]) : reader
+                def parser = new CSVParser(linesReader, format ?: this.format)
+                if (closure.maximumNumberOfParameters == 2) {
+                    def lineNumberProducer = linesReader instanceof SkipLinesReader ?
+                            { (linesReader as SkipLinesReader).skippedLinesCount + parser.currentLineNumber } :
+                            parser.&getCurrentLineNumber
+                    closure.call(parser, lineNumberProducer)
+                } else {
+                    closure.call(parser)
+                }
             }
-        }
     }
 
     CsvLikeFile(Path file, String lineComment = null, boolean allowNonUniqueColumnNames = false) {
@@ -61,19 +69,14 @@ class CsvLikeFile implements PrepareIfRequired {
     }
 
     String[] getHeader() {
-        header ?: (header = withParser(format.withHeader((String[]) null)) { it.nextRecord().toList() })
+        header ?: (header = withParser(format.withHeader((String[]) null)) {
+            it.nextRecord().toList() }
+        )
     }
 
     String[] getHeadComments() {
         headComments ?: (headComments = file.withReader { reader ->
-            List<String> headComments = []
-            if (lineComment != null) {
-                String line
-                while ((line = reader.readLine()).startsWith(lineComment)) {
-                    headComments << line.substring(lineComment.length()).trim()
-                }
-            }
-            headComments
+            HeadCommentsReader.readHeadComments(reader, lineComment)
         })
     }
 

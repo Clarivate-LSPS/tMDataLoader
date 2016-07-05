@@ -6,7 +6,7 @@ import java.nio.file.Path
  * CelFilesConverter
  * Created by bondarev on 3/25/14.
  */
-class VcfFile extends CsvLikeFile implements MetaInfoHeader {
+class VcfFile extends CsvLikeFile {
     private Entry currentEntry = new Entry()
     private String[] _samples
     private Map<CharSequence, InfoField> infoFields
