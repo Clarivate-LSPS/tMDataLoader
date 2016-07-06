@@ -1,0 +1,5 @@
+filename	category_cd	col_nbr	data_label
+TESTNK3.txt		1	STUDY_ID
+TESTNK3.txt		2	SUBJ_ID
+TESTNK3.txt	Clinical_Data+Colm1	3	Pain Assay
+TESTNK3.txt	Clinical_Data+Colm2	4	Status
