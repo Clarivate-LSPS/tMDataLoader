@@ -1,6 +1,0 @@
-1_run_first.sql
-SERIAL_HDD_Create_Tables.sql
-RBM_Create_Tables.sql
-2_permissions.sql
-3_synonyms.sql
-4_refresh_views.sql
