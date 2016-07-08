@@ -381,12 +381,12 @@ BEGIN
 
 --	truncate tmp node table
 
-	execute immediate('truncate table TM_WZ.wt_mrna_nodes');
+	execute immediate('truncate table TM_DATALOADER.wt_mrna_nodes');
 
 --	load temp table with leaf node path, use temp table with distinct sample_type, ATTR2, platform, and title   this was faster than doing subselect
 --	from wt_subject_mrna_data
 
-	execute immediate('truncate table TM_WZ.wt_mrna_node_values');
+	execute immediate('truncate table TM_DATALOADER.wt_mrna_node_values');
 
 	insert into wt_mrna_node_values
 	(category_cd
@@ -963,7 +963,7 @@ BEGIN
 	from lt_snp_copy_number;
 
 	if cnCount > 0 then
-		execute immediate ('truncate table TM_LZ.lt_src_mrna_data');
+		execute immediate ('truncate table TM_DATALOADER.lt_src_mrna_data');
 		commit;
 
 		stepCt := stepCt + 1;
@@ -983,7 +983,7 @@ BEGIN
 
 --	tag data with probeset_id from reference.probeset_deapp
 
-		execute immediate ('truncate table TM_WZ.wt_subject_mrna_probeset');
+		execute immediate ('truncate table TM_DATALOADER.wt_subject_mrna_probeset');
 
 --	note: assay_id represents a unique subject/site/sample
 

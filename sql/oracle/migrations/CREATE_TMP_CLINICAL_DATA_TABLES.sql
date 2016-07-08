@@ -207,7 +207,7 @@ CREATE TABLE TM_DATALOADER.WRK_CLINICAL_DATA AS SELECT * FROM tm_wz.wrk_clinical
 CREATE INDEX tm_dataloader.IDX_WRK_CLN_ID_VALUE ON TM_DATALOADER.WRK_CLINICAL_DATA(usubjid, data_value, data_type);
 
 SELECT 'Creating table TM_DATALOADER.wt_clinical_data_dups' FROM DUAL;
-@@wt_work_clinical_data_dups.sql
+@@wt_clinical_data_dups.sql
 
 DECLARE
 rows int;
@@ -294,6 +294,10 @@ BEGIN
  	END IF;
  END;
 /
+
+SELECT 'Creating work mrna node tables.' FROM DUAL;
+@@wt_mrna_node_values.sql
+@@wt_mrna_nodes.sql
 
 SELECT 'Creating TM_DATALOADER.lt_src_ tables...' FROM DUAL;
 
