@@ -40,6 +40,7 @@
 @@procedures/I2B2_FILL_IN_TREE.sql
 @@procedures/I2B2_LOAD_CLINICAL_DATA.sql
 @@procedures/I2B2_LOAD_PROTEOMICS_ANNOT.sql
+@@procedures/i2b2_load_annotation_deapp.sql
 @@procedures/I2B2_LOAD_SECURITY_DATA.sql
 @@procedures/I2B2_LOAD_STUDY_METADATA.sql
 @@procedures/i2b2_load_mirna_annot_deapp.sql
