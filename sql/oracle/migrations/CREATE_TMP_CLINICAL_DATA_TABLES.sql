@@ -342,4 +342,9 @@ SELECT 'Creating proteomic tables...' FROM DUAL;
 @@wt_subject_proteomics_med.sql
 ALTER TABLE tm_lz.lt_src_deapp_annot
    modify gene_symbol character varying(400 byte);
+@@wt_proteomics_nodes.sql
+@@wt_proteomics_node_values.sql
 
+SELECT 'Creating RNA SEQ Node tables.' FROM DUAL;
+@@wt_rna_seq_nodes.sql
+@@wt_rna_seq_node_values.sql
