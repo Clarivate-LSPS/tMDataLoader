@@ -61,6 +61,19 @@ BEGIN
 	SELECT COUNT(*)
 	INTO rows
 	FROM dba_tables
+	WHERE owner= 'TM_DATALOADER'
+	AND table_name = upper('wt_subject_microarray_med');
+
+	IF rows > 0
+	THEN
+		drop_sql := 'drop table tm_dataloader.wt_subject_microarray_med';
+		dbms_output.put_line(drop_sql);
+		EXECUTE IMMEDIATE drop_sql;
+	END IF;
+
+	SELECT COUNT(*)
+	INTO rows
+	FROM dba_tables
 	WHERE table_name = 'MIRNA_PROBESET_DEAPP'
 	  and owner = 'TM_DATALOADER';
 	
@@ -80,6 +93,7 @@ END;
 @@mirna_probeset_deapp.sql
 @@wt_subject_microarray_calcs.sql
 @@wt_subject_mrna_probeset.sql
+@@wt_subject_microarray_med.sql
 -- Alter types for working tables to increase calculations speed (float point arithmetic much faster than numeric)
 alter table tm_dataloader.wt_subject_microarray_logs modify log_intensity number;
 alter table tm_dataloader.wt_subject_microarray_logs modify raw_intensity number;
