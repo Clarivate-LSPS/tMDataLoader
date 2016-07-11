@@ -321,6 +321,7 @@ SELECT 'Createing wt_subject_rna tables...' FROM DUAL;
 @@wt_subject_rna_logs
 @@wt_subject_rna_calcs
 @@wt_subject_rna_med
+@@wt_subject_rna_probeset.sql
 SELECT 'Creating metabolomic tables...' FROM DUAL;
 @@wt_metabolomic_nodes.sql
 @@wt_metabolomic_node_values.sql
