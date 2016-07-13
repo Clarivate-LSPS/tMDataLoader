@@ -37,19 +37,19 @@ AS
   pExists	number;
   nbrRecs number;
   logBase number;
-   
+
   --Audit variables
   newJobFlag INTEGER(1);
   databaseName VARCHAR(100);
   procedureName VARCHAR(100);
   jobID number(18,0);
   stepCt number(18,0);
-  
+
   --  exceptions
   invalid_runType exception;
   trial_mismatch exception;
   trial_missing exception;
-  
+
 BEGIN
 
 	TrialId := trial_id;
@@ -57,7 +57,7 @@ BEGIN
 	dataType := data_type;
 	logBase := log_base;
 	sourceCd := source_cd;
-	  
+
   --Set Audit Parameters
   newJobFlag := 0; -- False (Default)
   jobID := currentJobID;
@@ -72,32 +72,32 @@ BEGIN
     newJobFlag := 1; -- True
     cz_start_audit (procedureName, databaseName, jobID);
   END IF;
-    	
+
   stepCt := 0;
-  
+
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Starting zscore calc for ' || TrialId || ' RunType: ' || runType || ' dataType: ' || dataType,0,stepCt,'Done');
-  
+
 	if runType != 'L' then
 		stepCt := stepCt + 1;
 		cz_write_audit(jobId,databaseName,procedureName,'Invalid runType passed - procedure exiting',SQL%ROWCOUNT,stepCt,'Done');
 		raise invalid_runType;
 	end if;
-  
+
 --	For Load, make sure that the TrialId passed as parameter is the same as the trial in stg_subject_mrna_data
 --	If not, raise exception
 
 	if runType = 'L' then
 		select distinct trial_name into stgTrial
 		from wt_subject_mrna_probeset;
-		
+
 		if stgTrial != TrialId then
 			stepCt := stepCt + 1;
 			cz_write_audit(jobId,databaseName,procedureName,'TrialId not the same as trial in wt_subject_mrna_probeset - procedure exiting',SQL%ROWCOUNT,stepCt,'Done');
 			raise trial_mismatch;
 		end if;
 	end if;
-   
+
 /*	remove Reload processing
 --	For Reload, make sure that the TrialId passed as parameter has data in de_subject_microarray_data
 --	If not, raise exception
@@ -106,7 +106,7 @@ BEGIN
 		select count(*) into idxExists
 		from de_subject_microarray_data
 		where trial_name = TrialId;
-		
+
 		if idxExists = 0 then
 			stepCt := stepCt + 1;
 			cz_write_audit(jobId,databaseName,procedureName,'No data for TrialId in de_subject_microarray_data - procedure exiting',SQL%ROWCOUNT,stepCt,'Done');
@@ -114,7 +114,7 @@ BEGIN
 		end if;
 	end if;
 */
-   
+
 --	truncate tmp tables
 
 	execute immediate('truncate table tm_dataloader.wt_subject_microarray_logs');
@@ -131,8 +131,8 @@ BEGIN
 	if idxExists = 1 then
 		execute immediate('drop index tm_dataloader.wt_subject_mrna_logs_i1');		
 	end if;
-	
-	select count(*) 
+
+	select count(*)
 	into idxExists
 	from all_indexes
 	where table_name = 'WT_SUBJECT_MICROARRAY_CALCS'
@@ -153,7 +153,7 @@ BEGIN
 	if dataType = 'L' then
 /*	Remove Reload processing
 		if runType = 'R' then
-			insert into wt_subject_microarray_logs 
+			insert into wt_subject_microarray_logs
 			(probeset_id
 			,intensity_value
 			,assay_id
@@ -163,17 +163,17 @@ BEGIN
 			,subject_id
 			)
 			select probeset_id
-				  ,raw_intensity 
+				  ,raw_intensity
 				  ,assay_id
 				  ,log_intensity
 				  ,patient_id
 				  ,sample_id
 				  ,subject_id
-			from de_subject_microarray_data 
+			from de_subject_microarray_data
 			where trial_name =  TrialID;
 		else
 */
-			insert into wt_subject_microarray_logs 
+			insert into wt_subject_microarray_logs
 			(probeset_id
 			,intensity_value
 			,assay_id
@@ -183,8 +183,8 @@ BEGIN
 		--	,subject_id
 			)
 			select probeset_id
-				  ,intensity_value  
-				  ,assay_id 
+				  ,intensity_value
+				  ,assay_id
 				  ,intensity_value
 				  ,patient_id
 			--	  ,sample_cd
@@ -195,7 +195,7 @@ BEGIN
 	else
 	/*	remove Reload processing
 		if runType = 'R' then
-			insert into wt_subject_microarray_logs 
+			insert into wt_subject_microarray_logs
 			(probeset_id
 			,intensity_value
 			,assay_id
@@ -205,28 +205,28 @@ BEGIN
 			,subject_id
 			)
 			select probeset_id
-				  ,raw_intensity 
-				  ,assay_id  
+				  ,raw_intensity
+				  ,assay_id
 				  ,log(2,raw_intensity)
 				  ,patient_id
 				  ,sample_id
 				  ,subject_id
-			from de_subject_microarray_data 
+			from de_subject_microarray_data
 			where trial_name =  TrialID;
 		else
 */
-			insert into wt_subject_microarray_logs 
+			insert into wt_subject_microarray_logs
 			(probeset_id
 			,intensity_value
 			,assay_id
 			,log_intensity
 			,patient_id
-		--	,sample_cd 
+		--	,sample_cd
 		--	,subject_id
 			)
 			select probeset_id
-				  ,intensity_value 
-				  ,assay_id 
+				  ,intensity_value
+				  ,assay_id
 				  ,round(log(2,intensity_value),4)
 				  ,patient_id
 		--		  ,sample_cd
@@ -254,13 +254,13 @@ BEGIN
 	,median_intensity
 	,stddev_intensity
 	)
-	select d.trial_name 
+	select d.trial_name
 		  ,d.probeset_id
 		  ,avg(log_intensity)
 		  ,median(log_intensity)
 		  ,stddev(log_intensity)
-	from wt_subject_microarray_logs d 
-	group by d.trial_name 
+	from wt_subject_microarray_logs d
+	group by d.trial_name
 			,d.probeset_id;
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Calculate intensities for trial in TM_DATALOADER wt_subject_microarray_calcs',SQL%ROWCOUNT,stepCt,'Done');
@@ -273,7 +273,7 @@ BEGIN
 		
 -- calculate zscore
 
-	insert into wt_subject_microarray_med parallel 
+	insert into wt_subject_microarray_med parallel
 	(probeset_id
 	,intensity_value
 	,log_intensity
@@ -287,37 +287,37 @@ BEGIN
 --	,subject_id
 	)
 	select d.probeset_id
-		  ,d.intensity_value 
-		  ,d.log_intensity 
-		  ,d.assay_id  
-		  ,c.mean_intensity 
-		  ,c.stddev_intensity 
-		  ,c.median_intensity 
+		  ,d.intensity_value
+		  ,d.log_intensity
+		  ,d.assay_id
+		  ,c.mean_intensity
+		  ,c.stddev_intensity
+		  ,c.median_intensity
 		  ,CASE WHEN stddev_intensity=0 THEN 0 ELSE (log_intensity - median_intensity ) / stddev_intensity END
 		  ,d.patient_id
 	--	  ,d.sample_cd
 	--	  ,d.subject_id
-    from wt_subject_microarray_logs d 
-		,wt_subject_microarray_calcs c 
+    from wt_subject_microarray_logs d
+		,wt_subject_microarray_calcs c
     where d.probeset_id = c.probeset_id;
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Calculate Z-Score for trial in TM_DATALOADER wt_subject_microarray_med',SQL%ROWCOUNT,stepCt,'Done');
 
     commit;
-  
+
 
 	select count(*) into nbrRecs
 	from wt_subject_microarray_med;
-	
+
 	if nbrRecs > 10000000 then
-		i2b2_mrna_index_maint('DROP','',jobId);
+		i2b2_mrna_index_maint('DROP', null, jobId, TrialId||':'||sourceCD);
 		stepCt := stepCt + 1;
 		cz_write_audit(jobId,databaseName,procedureName,'Drop indexes on DEAPP de_subject_microarray_data',0,stepCt,'Done');
 	else
 		stepCt := stepCt + 1;
 		cz_write_audit(jobId,databaseName,procedureName,'Less than 10M records, index drop bypassed',0,stepCt,'Done');
 	end if;
-	
+
 
 
 	insert into de_subject_microarray_data
@@ -325,7 +325,7 @@ BEGIN
 	,trial_name
 	,assay_id
 	,probeset_id
-	,raw_intensity 
+	,raw_intensity
 	,log_intensity
 	,zscore
 	,patient_id
@@ -335,9 +335,9 @@ BEGIN
 	select TrialId || ':' || sourceCD
 		  ,TrialId
 	      ,m.assay_id
-	      ,m.probeset_id 
+	      ,m.probeset_id
 		  ,round(case when dataType = 'R' then m.intensity_value
-				when dataType = 'L' 
+				when dataType = 'L'
 				then case when logBase = -1 then null else power(logBase, m.log_intensity) end
 				else null
 				end,4) as raw_intensity
@@ -355,11 +355,11 @@ BEGIN
 
 --	add indexes, if indexes were not dropped, procedure will not try and recreate
         --added for UAT 207 on 06/03/2014
-	i2b2_mrna_index_maint('ADD',null,jobId);
+	i2b2_mrna_index_maint('ADD', null, jobId, TrialId||':'||sourceCD);
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Add indexes on DEAPP de_subject_microarray_data',0,stepCt,'Done');
 
-	
+
 --	cleanup tmp_ files
 
 	--execute immediate('truncate table tm_dataloader.wt_subject_microarray_logs');
@@ -387,78 +387,78 @@ BEGIN
     cz_error_handler (jobID, procedureName);
     --End Proc
     cz_end_audit (jobID, 'FAIL');
-	
+
 END;
 
 
 /*	--	Recreate tmp tables used for calculation of mRNA Zscore if necessary
 
-create table wt_subject_microarray_logs parallel nologging compress as 
-select probeset_id 
-	  ,raw_intensity 
-	  ,pvalue 
-	  ,refseq 
-	  ,assay_id 
-	  ,patient_id 
-	  ,subject_id 
-	  ,trial_name 
-	  ,timepoint  
-      ,raw_intensity as log_intensity 
+create table wt_subject_microarray_logs parallel nologging compress as
+select probeset_id
+	  ,raw_intensity
+	  ,pvalue
+	  ,refseq
+	  ,assay_id
+	  ,patient_id
+	  ,subject_id
+	  ,trial_name
+	  ,timepoint
+      ,raw_intensity as log_intensity
        from de_subject_microarray_data
 	   where 1=2;
-	   
+
 create index tmp_microarray_logs_i1 on wt_subject_microarray_logs (trial_name, probeset_id);
 
 create table wt_subject_microarray_calcs parallel nologging compress as
-select d.trial_name 
+select d.trial_name
 	  ,d.probeset_id
 	  ,log_intensity as mean_intensity
-	  ,log_intensity as median_intensity 
-	  ,log_intensity as stddev_intensity 
-from wt_subject_microarray_logs d 
+	  ,log_intensity as median_intensity
+	  ,log_intensity as stddev_intensity
+from wt_subject_microarray_logs d
 where 1=2;
 
-create index tmp_microarray_calcs_i1 on wt_subject_microarray_calcs (trial_name, probeset_id);	
+create index tmp_microarray_calcs_i1 on wt_subject_microarray_calcs (trial_name, probeset_id);
 
-create table wt_subject_microarray_med parallel nologging compress as  
+create table wt_subject_microarray_med parallel nologging compress as
 select d.probeset_id
-	  ,d.raw_intensity  
-	  ,d.log_intensity  
-	  ,d.assay_id  
-	  ,d.patient_id  
-	  ,d.subject_id  
-	  ,d.trial_name  
-	  ,d.timepoint  
-	  ,d.pvalue  
-	  ,d.refseq 
-	  ,c.mean_intensity  
-	  ,c.stddev_intensity  
-	  ,c.median_intensity  
-	  ,d.log_intensity as zscore 
-from wt_subject_microarray_logs d 
+	  ,d.raw_intensity
+	  ,d.log_intensity
+	  ,d.assay_id
+	  ,d.patient_id
+	  ,d.subject_id
+	  ,d.trial_name
+	  ,d.timepoint
+	  ,d.pvalue
+	  ,d.refseq
+	  ,c.mean_intensity
+	  ,c.stddev_intensity
+	  ,c.median_intensity
+	  ,d.log_intensity as zscore
+from wt_subject_microarray_logs d
 	 ,wt_subject_microarray_calcs c
 where 1=2;
-            
-create table wt_subject_microarray_mcapped parallel nologging compress as 
-select d.probeset_id 
-	  ,d.patient_id 
-	  ,d.trial_name 
-	  ,d.timepoint 
-	  ,d.pvalue 
-	  ,d.refseq 
-	  ,d.subject_id 
-	  ,d.raw_intensity 
-	  ,d.log_intensity 
-	  ,d.assay_id 
-	  ,d.mean_intensity 
-	  ,d.stddev_intensity 
-	  ,d.median_intensity 
-	  ,d.zscore 
+
+create table wt_subject_microarray_mcapped parallel nologging compress as
+select d.probeset_id
+	  ,d.patient_id
+	  ,d.trial_name
+	  ,d.timepoint
+	  ,d.pvalue
+	  ,d.refseq
+	  ,d.subject_id
+	  ,d.raw_intensity
+	  ,d.log_intensity
+	  ,d.assay_id
+	  ,d.mean_intensity
+	  ,d.stddev_intensity
+	  ,d.median_intensity
+	  ,d.zscore
  from wt_subject_microarray_med d
  where 1=2;
-		   
+
 */
 
- 
+
 /
- 
+

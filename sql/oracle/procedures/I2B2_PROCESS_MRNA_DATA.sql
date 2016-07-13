@@ -973,7 +973,7 @@ BEGIN
 		from wt_subject_mrna_probeset;
 
 		if nbrRecs > 10000000 then
-			i2b2_mrna_index_maint('DROP','',jobId);
+			i2b2_mrna_index_maint('DROP', null, jobId, TrialId||':'||sourceCd);
 			stepCt := stepCt + 1;
 			cz_write_audit(jobId,databaseName,procedureName,'Drop indexes on DEAPP de_subject_microarray_data',0,stepCt,'Done');
 		else
@@ -1011,7 +1011,7 @@ BEGIN
 
 		commit;
 
-		i2b2_mrna_index_maint('ADD',null,jobId);
+		i2b2_mrna_index_maint('ADD', null, jobId, TrialId||':'||sourceCd);
 		stepCt := stepCt + 1;
 		cz_write_audit(jobId,databaseName,procedureName,'Add indexes on DEAPP de_subject_microarray_data',0,stepCt,'Done');
 
@@ -1024,7 +1024,7 @@ BEGIN
 			from wt_subject_mrna_probeset;
 
 			if nbrRecs > 10000000 then
-				i2b2_mrna_index_maint('DROP','',jobId);
+				i2b2_mrna_index_maint('DROP', null, jobId, TrialId||':'||sourceCd);
 				stepCt := stepCt + 1;
 				cz_write_audit(jobId,databaseName,procedureName,'Drop indexes on DEAPP de_subject_microarray_data',0,stepCt,'Done');
 			else
@@ -1064,7 +1064,7 @@ BEGIN
 
       commit;
 
-      i2b2_mrna_index_maint('ADD',null,jobId);
+      i2b2_mrna_index_maint('ADD', null, jobId, TrialId||':'||sourceCd);
 			stepCt := stepCt + 1;
 			cz_write_audit(jobId,databaseName,procedureName,'Add indexes on DEAPP de_subject_microarray_data',0,stepCt,'Done');
 

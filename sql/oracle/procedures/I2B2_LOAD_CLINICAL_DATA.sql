@@ -66,6 +66,8 @@ AS
   pExists		int;
   rtnCode		int;
   tText			varchar2(2000);
+	pathRegexp VARCHAR2(2000);
+	updatedPath VARCHAR2(2000);
   
     --Audit variables
   newJobFlag INTEGER(1);
@@ -236,7 +238,7 @@ BEGIN
 		  ,category_cd
 		  ,ctrl_vocab_code
 		  -- All tag values prefixed with $$, so we should remove prefixes in category_path
-      ,replace(replace(replace(category_cd,'_',' '),'+','\'),'\$$','\')
+      ,regexp_replace(regexp_replace(replace(replace(category_cd,'_',' '),'+','\'),'\$\$\d*[A-Z]\{([^}]+)\}','\1'),'\$\$\d*[A-Z]','')
       ,(CASE WHEN site_id IS NOT NULL THEN TrialID || ':' || site_id || ':' || subject_id ELSE TrialID || ':' || subject_id END)
       ,'T'
 			,valuetype_cd
@@ -275,7 +277,7 @@ BEGIN
 	select parse_nth_value(topNode, topLevel, '\') into study_name from dual;
 	
 	--	Add any upper level nodes as needed
-	
+
 	tPath := REGEXP_REPLACE(replace(topNode,study_name,null),'(\\){2,}', '\');
 	select length(tPath) - length(replace(tPath,'\',null)) into pCount from dual;
 
@@ -389,12 +391,12 @@ BEGIN
 	if alwaysSetVisitName = 'N' then
 		update wrk_clinical_data tpm
 		set visit_name=null
-		where (regexp_replace(tpm.category_cd,'\$\$[^+]+','\$\$')) in
-				(select regexp_replace(x.category_cd,'\$\$[^+]+','\$\$')
+		where (regexp_replace(tpm.category_cd,'\$\$(\d*[A-Z])(\{[^}]+\}|[^+]+)','\$\$\1')) in
+				(select regexp_replace(x.category_cd,'\$\$(\d*[A-Z])(\{[^}]+\}|[^+]+)','\$\$\1')
 				 from wrk_clinical_data x
 				 -- all tag values started with $$ ($$ will be removed from concept_path),
 				 -- concept_cd with different tags should be in same group, so we just replace tag with $$ for grouping
-				 group by regexp_replace(x.category_cd,'\$\$[^+]+','\$\$')
+				 group by regexp_replace(x.category_cd,'\$\$(\d*[A-Z])(\{[^}]+\}|[^+]+)','\$\$\1')
 				 having count(distinct upper(x.visit_name)) = 1);
 
 		stepCt := stepCt + 1;
@@ -406,7 +408,7 @@ BEGIN
   commit;
 
 	UPDATE wrk_clinical_data tmp
-	SET category_cd = replace(tmp.category_cd, '$$', '')
+	SET category_cd = regexp_replace(regexp_replace(tmp.category_cd, '\$\$\d*[A-Z]\{([^}]+)\}', '\1'), '\$\$\d*[A-Z]', '')
 	WHERE tmp.category_cd LIKE '%$$%';
 
 	stepCt := stepCt + 1;
@@ -843,27 +845,6 @@ BEGIN
 
 		END LOOP;
 	end if;
-
-
-	if (merge_mode = 'UPDATE') then
-		for x in ( select cd.concept_path
-					 from concept_dimension cd, observation_fact fact
-					where fact.patient_num in (select pat.patient_num
-												 from tmp_subject_info si, patient_dimension pat
-					                            where si.usubjid = pat.sourcesystem_cd)
-				      and cd.concept_cd = fact.concept_cd
-				      and not exists (select 1
-										from observation_fact f
-									   where f.concept_cd = cd.concept_cd
-										 and f.patient_num in (select pat.patient_num
-																 from tmp_subject_info si, patient_dimension pat
-																where si.usubjid = pat.sourcesystem_cd))) loop
-			i2b2_delete_1_node(x.concept_path);
-			stepCt := stepCt + 1;
-			cz_write_audit(jobId,databaseName,procedureName,'Deleted old version updated node: ' || x.concept_path,SQL%ROWCOUNT,stepCt,'Done');
-
-		end loop;
-	end if;
 	
 	--	bulk insert leaf nodes
 	
@@ -1076,6 +1057,103 @@ BEGIN
 		commit;
 	end if;
 
+	if (merge_mode = 'UPDATE_VARIABLES') then
+		for x in (select wcd.category_path, wcd.data_value, wcd.data_label, wcd.visit_name,pat.patient_num, wcd.data_type
+							  from wrk_clinical_data wcd, patient_dimension pat
+								 where pat.sourcesystem_cd = wcd.usubjid) loop
+			if (x.data_type = 'T') then
+				begin
+					pathRegexp := regexp_replace(topNode || replace(replace(x.category_path,'DATALABEL',x.data_label),'VISITNAME',x.visit_name) || '\', '(\\){2,}', '\');
+					pathRegexp := REGEXP_REPLACE(pathRegexp, '([][)(}{.$*+?,|^\])', '\\\1');
+					pathRegexp := '^' || replace(pathRegexp,'DATAVALUE','[^\]+') || '$';
+					cz_write_audit(jobId,databaseName,procedureName,'RegExp for search : ' || pathRegexp,SQL%ROWCOUNT,stepCt,'Done');
+					select cd.concept_path
+					  into updatedPath
+					  from concept_dimension cd, observation_fact fact
+					 where REGEXP_LIKE (cd.concept_path, pathRegexp)
+						 and fact.concept_cd = cd.concept_cd
+						 and fact.patient_num = x.patient_num;
+					exception
+					when NO_DATA_FOUND then
+					updatedPath := null;
+				end;
+
+				if (updatedPath is not null) then
+					delete from observation_fact f
+					where f.modifier_cd = TrialId
+								and f.patient_num = x.patient_num
+								and f.CONCEPT_CD in (select cd.concept_cd
+																		 from concept_dimension cd
+																		 where cd.concept_path like updatedPath || '%' )
+								and f.CONCEPT_CD not in
+										(select distinct concept_code as concept_cd from de_subject_sample_mapping
+										where trial_name = TrialId
+													and concept_code is not null
+										 union
+										 select distinct platform_cd as concept_cd from de_subject_sample_mapping
+										 where trial_name = TrialId
+													 and platform_cd is not null
+										 union
+										 select distinct sample_type_cd as concept_cd from de_subject_sample_mapping
+										 where trial_name = TrialId
+													 and sample_type_cd is not null
+										 union
+										 select distinct tissue_type_cd as concept_cd from de_subject_sample_mapping
+										 where trial_name = TrialId
+													 and tissue_type_cd is not null
+										 union
+										 select distinct timepoint_cd as concept_cd from de_subject_sample_mapping
+										 where trial_name = TrialId
+													 and timepoint_cd is not null
+										 union
+										 select distinct concept_cd as concept_cd from de_subject_snp_dataset
+										 where trial_name = TrialId
+													 and concept_cd is not null);
+
+					stepCt := stepCt + 1;
+					cz_write_audit(jobId,databaseName,procedureName,'Delete old fact records for updated data. Path: ' || updatedPath || '. Patient:' || x.patient_num,SQL%ROWCOUNT,stepCt,'Done');
+					commit;
+				end if;
+			else
+				pathRegexp := regexp_replace(topNode || replace(replace(x.category_path,'DATALABEL',x.data_label),'VISITNAME',x.visit_name) || '\','(\\){2,}', '\');
+				delete from observation_fact f
+				where f.modifier_cd = TrialId
+							and f.patient_num = x.patient_num
+							and f.CONCEPT_CD in (select cd.concept_cd
+																	 from concept_dimension cd
+																	 where cd.concept_path = pathRegexp)
+							and f.CONCEPT_CD not in
+									(select distinct concept_code as concept_cd from de_subject_sample_mapping
+									where trial_name = TrialId
+												and concept_code is not null
+									 union
+									 select distinct platform_cd as concept_cd from de_subject_sample_mapping
+									 where trial_name = TrialId
+												 and platform_cd is not null
+									 union
+									 select distinct sample_type_cd as concept_cd from de_subject_sample_mapping
+									 where trial_name = TrialId
+												 and sample_type_cd is not null
+									 union
+									 select distinct tissue_type_cd as concept_cd from de_subject_sample_mapping
+									 where trial_name = TrialId
+												 and tissue_type_cd is not null
+									 union
+									 select distinct timepoint_cd as concept_cd from de_subject_sample_mapping
+									 where trial_name = TrialId
+												 and timepoint_cd is not null
+									 union
+									 select distinct concept_cd as concept_cd from de_subject_snp_dataset
+									 where trial_name = TrialId
+												 and concept_cd is not null);
+
+				stepCt := stepCt + 1;
+				cz_write_audit(jobId,databaseName,procedureName,'Delete old fact records for updated data. Path: ' || pathRegexp || '. Patient:' || x.patient_num,SQL%ROWCOUNT,stepCt,'Done');
+				commit;
+			end if;
+		end loop;
+	end if;
+
 	if (merge_mode = 'APPEND') then
 		delete from observation_fact f
 		 where f.modifier_cd = TrialId
@@ -1089,7 +1167,7 @@ BEGIN
 															   from tmp_subject_info si, patient_dimension pat
 															  where si.usubjid = pat.sourcesystem_cd)
 									and fact.concept_cd = cd.concept_cd
-									and cd.name_char = node.node_name
+									and cd.concept_path = node.leaf_node
 									and node.data_type = 'N');
 
 		stepCt := stepCt + 1;
@@ -1246,7 +1324,6 @@ BEGIN
 	i2b2_create_concept_counts(topNode, jobID, 'N');
 	
 	--	delete each node that is hidden after create concept counts
-	
 	 FOR r_delNodes in delNodes Loop
 
     --	deletes hidden nodes for a trial one at a time
@@ -1257,7 +1334,7 @@ BEGIN
 		
 		cz_write_audit(jobId,databaseName,procedureName,tText,SQL%ROWCOUNT,stepCt,'Done');
 
-	END LOOP;  	
+		END LOOP;
 
 	i2b2_create_security_for_trial(TrialId, secureStudy, jobID);
 	i2b2_load_security_data(jobID);

@@ -35,6 +35,7 @@ AS
   stepCt number(18,0);
   more_trial exception;
   path_not_found exception;
+  arg_not_valid exception;
 	res	number;
 
 BEGIN
@@ -57,29 +58,26 @@ BEGIN
   stepCt := stepCt + 1;
   cz_write_audit(jobId, databaseName, procedureName,'Starting I2B2_DELETE_ALL_DATA', 0, stepCt, 'Done');
 
+  if (path_string is null and trial_id is null) then
+    RAISE arg_not_valid;
+  end if;
+
   if (path_string is not null) then
 		pathString := REGEXP_REPLACE('\' || path_string || '\','(\\){2,}', '\');
   end if;
 
   if (trial_id is null) then
-		SELECT count(DISTINCT trial_name)
+		SELECT count(DISTINCT sourcesystem_cd)
 		INTO trialCount
-		FROM DEAPP.de_subject_sample_mapping
-		WHERE concept_code IN (
-			SELECT concept_cd
-			FROM I2B2DEMODATA.concept_dimension
-			WHERE concept_path LIKE pathString || '%'
-		);
+		FROM i2b2metadata.i2b2
+		WHERE c_fullname LIKE pathString || '%' ESCAPE '`';
+
 		IF (trialCount = 1)
 		THEN
-			SELECT DISTINCT trial_name
+			SELECT DISTINCT sourcesystem_cd
 			INTO TrialId
-			FROM DEAPP.de_subject_sample_mapping
-			WHERE concept_code IN (
-				SELECT concept_cd
-				FROM I2B2DEMODATA.concept_dimension
-				WHERE concept_path LIKE pathString || '%'
-			);
+			FROM i2b2metadata.i2b2
+			WHERE c_fullname LIKE pathString || '%' ESCAPE '`';
 		ELSIF (trialCount = 0)
 			THEN
 				TrialId := NULL;
@@ -91,60 +89,49 @@ BEGIN
   end if;
 
   if (path_string is null) then
+    BEGIN
     SELECT DISTINCT
       first_value(concept_path) over (partition by sourcesystem_cd order by concept_path)
     INTO pathString
     FROM i2b2demodata.concept_dimension
     WHERE sourcesystem_cd = TrialID;
-
-    If pathString is NULL THEN
-      RAISE path_not_found;
-    END IF;
+    EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+      pathString := NULL;
+      stepCt := stepCt + 1;
+	    cz_write_audit(jobId, databaseName, procedureName, 'Path string not found', 0, stepCt, 'Done');
+    END;
   end if;
 
-	stepCt := stepCt + 1;
-	cz_write_audit(jobId, databaseName, procedureName, 'Path: ' || pathString, 0, stepCt, 'Done');
-
-  select count(parent_concept_path) into topNodeCount
-    from I2B2DEMODATA.concept_counts
-    where
-    concept_path = pathString;
-
-  if (topNodeCount > 0) then
-    select distinct parent_concept_path into topNode
-      from I2B2DEMODATA.concept_counts
-      where
-      concept_path = pathString;
-  else
-    topNode := SUBSTR(pathString,0,instr(pathString,'\',2));
-  end if;
-
-  if pathString != '' or pathString != '%'
-  then
-		stepCt := stepCt + 1;
+  if (pathString is not null and (pathString != '' or pathString != '%')) then
+	  stepCt := stepCt + 1;
 		cz_write_audit(jobId, databaseName, procedureName, 'Deleting data for path: ' || pathString, 0, stepCt, 'Done');
 
-		COMMIT;
-
 		--	delete all i2b2 nodes
-
 		i2b2_delete_all_nodes(pathString,jobId);
 
 		--	delete any table_access data
 		delete from table_access
 		where c_fullname like pathString || '%';
 
-	--	delete any i2b2_tag data
+	  --	delete any i2b2_tag data
+	  delete from i2b2_tags
+	  where path like pathString || '%';
+	  stepCt := stepCt + 1;
+	  cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from I2B2METADATA i2b2_tags',SQL%ROWCOUNT,stepCt,'Done');
+	  commit;
 
-	delete from i2b2_tags
-	where path like pathString || '%';
-	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from I2B2METADATA i2b2_tags',SQL%ROWCOUNT,stepCt,'Done');
-	commit;
+	  i2b2_remove_empty_parent_nodes(pathString, jobID);
+	end if;
 
 	--	delete clinical data
 	if (trialId is not NUll)
 	then
+		delete from gwas_plink.plink_data where study_id = trialId;
+		stepCt := stepCt + 1;
+		cz_write_audit(jobId,databaseName,procedureName,'Delete gwas_plink.plink_data for trial',SQL%ROWCOUNT,stepCt,'Done');
+		commit;
+
 		delete from lz_src_clinical_data
 		where study_id = trialId;
 		stepCt := stepCt + 1;
@@ -314,17 +301,14 @@ BEGIN
       cz_write_audit(jobId,databaseName,procedureName,'Delete RNASeq data for trial from DEAPP de_subject_rbm_data',SQL%ROWCOUNT,stepCt,'Done');
       commit;
     end if;
-	end if;
 
-		delete from deapp.de_subject_snp_dataset
+    delete from deapp.de_subject_snp_dataset
 		where trial_name = trialId;
 		stepCt := stepCt + 1;
 		cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from DE_SUBJECT_SNP_DATASET',SQL%ROWCOUNT,stepCt,'Done');
 		commit;
 
-		i2b2_remove_empty_parent_nodes(pathString, jobID);
-
-  end if;
+	end if;
 
     ---Cleanup OVERALL JOB if this proc is being run standalone
   IF newJobFlag = 1
