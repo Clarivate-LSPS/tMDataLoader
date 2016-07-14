@@ -342,6 +342,8 @@ SELECT 'Creating proteomic tables...' FROM DUAL;
 @@wt_subject_proteomics_logs.sql
 @@wt_subject_proteomics_med.sql
 @@wt_subject_proteomics_probeset.sql
+@@lt_src_proteomics_data.sql
+@@lt_src_proteomics_sub_sam_map.sql
 ALTER TABLE tm_lz.lt_src_deapp_annot
    modify gene_symbol character varying(400 byte);
 @@wt_proteomics_nodes.sql
