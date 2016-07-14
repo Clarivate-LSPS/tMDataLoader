@@ -1,5 +1,6 @@
 @@migrations/CREATE_TM_DATALOADER_SCHEMA.sql
 @@migrations/1_run_first.sql
+@@migrations/gwas_plink/migrations.sql
 @@migrations/SERIAL_HDD_Create_Tables.sql
 @@migrations/RBM_Create_Tables.sql
 @@migrations/GRANT_ACCESS_TO_SCHEMA_TABLES.sql

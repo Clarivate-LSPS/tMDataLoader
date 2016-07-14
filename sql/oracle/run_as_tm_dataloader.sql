@@ -20,6 +20,7 @@
 @@procedures/i2b2_rna_seq_zscore_calc.sql
 @@procedures/i2b2_mrna_index_maint.sql
 @@procedures/i2b2_mrna_zscore_calc.sql
+@@procedures/i2b2_mrna_index_maint.sql
 @@procedures/I2B2_ADD_LV_PARTITION.sql
 @@procedures/i2b2_create_security_for_trial.sql
 @@procedures/I2B2_DELETE_LV_PARTITION.sql
