@@ -137,7 +137,7 @@ BEGIN
 	from all_indexes
 	where table_name = 'WT_SUBJECT_METABOLOMICS_LOGS'
 	  and index_name = 'WT_SUBJECT_MBOLOMICS_LOGS_I1'
-	  and owner = 'TM_WZ';
+	  and owner = 'TM_DATALOADER';
 
 	if idxExists = 1 then
 		execute immediate('drop index tm_dataloader.WT_SUBJECT_MBOLOMICS_LOGS_I1');		
@@ -148,7 +148,7 @@ BEGIN
 	from all_indexes
 	where table_name = 'WT_SUBJECT_METABOLOMICS_CALCS'
 	  and index_name = 'WT_SUBJECT_METABOLOMICS_CALCS_I1'
-	  and owner = 'TM_WZ';
+	  and owner = 'TM_DATALOADER';
 
 	if idxExists = 1 then
 		execute immediate('drop index tm_dataloader.WT_SUBJECT_METABOLOMICS_CALCS_I1');
@@ -208,13 +208,13 @@ BEGIN
 	end if;
 
 	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Loaded data for trial in TM_WZ wt_subject_mirna_logs',SQL%ROWCOUNT,stepCt,'Done');
+	cz_write_audit(jobId,databaseName,procedureName,'Loaded data for trial in TM_DATALOADER wt_subject_mirna_logs',SQL%ROWCOUNT,stepCt,'Done');
 
 	commit;
 
 	execute immediate('create index tm_dataloader.WT_SUBJECT_MBOLOMICS_LOGS_I1 on tm_dataloader.WT_SUBJECT_METABOLOMICS_LOGS (trial_name, probeset) nologging  tablespace "INDX"');
 	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Create index on TM_WZ WT_SUBJECT_MBOLOMICS_LOGS_I1',0,stepCt,'Done');
+	cz_write_audit(jobId,databaseName,procedureName,'Create index on TM_DATALOADER WT_SUBJECT_MBOLOMICS_LOGS_I1',0,stepCt,'Done');
 		
 --	calculate mean_intensity, median_intensity, and stddev_intensity per experiment, probe
 
@@ -234,13 +234,13 @@ BEGIN
 	group by d.trial_name 
 			,d.probeset;
 	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Calculate intensities for trial in TM_WZ WT_SUBJECT_METABOLOMICS_CALCS',SQL%ROWCOUNT,stepCt,'Done');
+	cz_write_audit(jobId,databaseName,procedureName,'Calculate intensities for trial in TM_DATALOADER WT_SUBJECT_METABOLOMICS_CALCS',SQL%ROWCOUNT,stepCt,'Done');
 
 	commit;
 
 	--execute immediate('create index tm_dataloader.wt_subject_METABOLOMICS_calcs_i1 on tm_dataloader.WT_SUBJECT_METABOLOMICS_CALCS (trial_name, probeset_id) nologging tablespace "INDX"');
 	--stepCt := stepCt + 1;
-	--cz_write_audit(jobId,databaseName,procedureName,'Create index on TM_WZ WT_SUBJECT_METABOLOMICS_CALCS',0,stepCt,'Done');
+	--cz_write_audit(jobId,databaseName,procedureName,'Create index on TM_DATALOADER WT_SUBJECT_METABOLOMICS_CALCS',0,stepCt,'Done');
 		
 -- calculate zscore
 
@@ -273,7 +273,7 @@ BEGIN
 		,WT_SUBJECT_METABOLOMICS_CALCS c 
     where trim(d.probeset) = c.probeset;
 	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Calculate Z-Score for trial in TM_WZ WT_SUBJECT_METABOLOMICS_MED',SQL%ROWCOUNT,stepCt,'Done');
+	cz_write_audit(jobId,databaseName,procedureName,'Calculate Z-Score for trial in TM_DATALOADER WT_SUBJECT_METABOLOMICS_MED',SQL%ROWCOUNT,stepCt,'Done');
 
     commit;
 
