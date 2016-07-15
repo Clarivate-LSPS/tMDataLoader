@@ -48,6 +48,7 @@
 @@procedures/I2B2_MOVE_STUDY_BY_PATH.sql
 @@procedures/i2b2_metabolomics_zscore_calc.sql
 @@procedures/i2b2_process_metabolomic_data.sql
+@@procedures/i2b2_load_metabolomics_annot.sql
 @@procedures/I2B2_PROCESS_MRNA_DATA.sql
 @@procedures/I2B2_PROCESS_SERIAL_HDD_DATA.sql
 @@procedures/I2B2_PROCESS_SNP_DATA.sql
