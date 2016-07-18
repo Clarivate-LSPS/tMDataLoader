@@ -36,7 +36,7 @@ class MetaDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCas
         }
 
         use(SqlMethods) {
-            def studyMetaData = db.findRecord('tm_lz.lt_src_study_metadata',
+            def studyMetaData = db.findRecord('tm_dataloader.lt_src_study_metadata',
                     study_id: studyId)
 
             def experimentId = db.findRecord('biomart.bio_experiment',

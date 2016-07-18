@@ -916,8 +916,8 @@ BEGIN
 
  	execute immediate ('truncate table TM_DATALOADER.wt_subject_mrna_probeset');
 
-        analyze_table('TM_LZ', 'LT_SRC_MRNA_DATA', jobId);
-        analyze_table('TM_LZ', 'LT_SRC_MRNA_SUBJ_SAMP_MAP', jobId);
+        analyze_table('TM_DATALOADER', 'LT_SRC_MRNA_DATA', jobId);
+        analyze_table('TM_DATALOADER', 'LT_SRC_MRNA_SUBJ_SAMP_MAP', jobId);
         analyze_table('DEAPP', 'DE_SUBJECT_SAMPLE_MAPPING', jobId);
         analyze_table('DEAPP', 'DE_MRNA_ANNOTATION', jobId);
 
