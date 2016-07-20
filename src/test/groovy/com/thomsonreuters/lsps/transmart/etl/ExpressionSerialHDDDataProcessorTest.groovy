@@ -7,15 +7,15 @@ import static org.hamcrest.CoreMatchers.equalTo
 import static org.hamcrest.CoreMatchers.notNullValue
 import static org.junit.Assert.assertThat
 
-class SerialHDDDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase {
-    private SerialHDDDataProcessor _processor
+class ExpressionSerialHDDDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase {
+    private ExpressionSerialHDDDataProcessor _processor
 
     String studyName = 'Test SerialHDD Study'
     String studyId = 'TSTSHDD'
     String platformId = 'HDD999'
 
-    SerialHDDDataProcessor getProcessor() {
-        _processor ?: (_processor = new SerialHDDDataProcessor(config))
+    ExpressionSerialHDDDataProcessor getProcessor() {
+        _processor ?: (_processor = new ExpressionSerialHDDDataProcessor(config))
     }
 
     @Override

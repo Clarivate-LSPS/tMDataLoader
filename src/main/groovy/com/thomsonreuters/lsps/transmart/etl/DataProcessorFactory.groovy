@@ -10,13 +10,17 @@ class DataProcessorFactory {
             Meta      : MetaDataProcessor,
             Clinical  : ClinicalDataProcessor,
             MIRNA_SEQ   : MIRNADataProcessor,
+            MIRNA_QPCRSerialHDD : MIRNASerialHDDDataProcessor,
             MIRNA_QPCR  : MIRNADataProcessor,
             Protein     : ProteinDataProcessor,
             Metabolomics: MetabolomicsDataProcessor,
+            MetabolomicsSerialHDD : MetabolomicsSerialHDDDataProcessor,
             RNASeq      : RNASeqDataProcessor,
-            SerialHDD   : SerialHDDDataProcessor,
+            RNASeqSerialHDD : RNASeqSerialHDDDataProcessor,
+            ExpressionSerialHDD : ExpressionSerialHDDDataProcessor,
             ACGH        : ACGHDataProcessor,
-            GWASPlink   : GWASPlinkDataProcessor
+            GWASPlink   : GWASPlinkDataProcessor,
+            ProteinSerialHDD : ProteinSerialHDDDataProcessor
     ]
 
     static Set<String> getProcessorTypes() {
