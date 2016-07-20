@@ -9,4 +9,5 @@
 *.iml
 /tm_etl.jar
 SummaryStatistic.txt
+duplicates.csv
 /fixtures/Test Directory Processor
