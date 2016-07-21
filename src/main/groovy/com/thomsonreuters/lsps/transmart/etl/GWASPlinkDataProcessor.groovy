@@ -1,9 +1,10 @@
 package com.thomsonreuters.lsps.transmart.etl
 
-import com.thomsonreuters.lsps.db.core.Database
+import com.thomsonreuters.lsps.db.loader.DataLoader
 import com.thomsonreuters.lsps.transmart.files.MetaInfoHeader
 import com.thomsonreuters.lsps.utils.DbUtils
 import groovy.io.FileType
+import groovy.sql.Sql
 import org.anarres.lzo.LzoAlgorithm
 import org.anarres.lzo.LzoCompressor
 import org.anarres.lzo.LzoLibrary
@@ -11,21 +12,24 @@ import org.anarres.lzo.LzoOutputStream
 
 import java.nio.file.Files
 import java.nio.file.Path
+import java.sql.SQLException
 
 /**
  * Date: 21-Apr-16
  * Time: 15:52
  */
-class GWASPlinkDataProcessor implements DataProcessor {
-    def config
-    Database database
+class GWASPlinkDataProcessor extends AbstractDataProcessor {
+    //def config
+//    Database database
 
     GWASPlinkDataProcessor(config) {
-        this.config = config
-        database = TransmartDatabaseFactory.newDatabase(config)
+//        this.config = config
+//        database = TransmartDatabaseFactory.newDatabase(config)
+        super(config)
     }
 
-    private static void validateFam(Path fam) {
+    private static String[] validateFamAndCollectPatientID(Path fam) {
+        LinkedList<String> patientIds = new LinkedList<String>()
         fam.eachLine { String line, Integer lineNum ->
             def prefix = "${fam.fileName.toString()}:$lineNum"
             line = line.trim()
@@ -44,7 +48,10 @@ class GWASPlinkDataProcessor implements DataProcessor {
             if (!(sex in ['0', '1', '2'])) {
                 throw new DataProcessingException("$prefix: Invalid sex value. Expected '1' = male, '2' = female, '0' = unknown, but was '${sex}'")
             }
+
+            patientIds.add(tokens[1])
         }
+        return patientIds
     }
 
     private static Path detectFile(Path dir, String ext) {
@@ -59,7 +66,7 @@ class GWASPlinkDataProcessor implements DataProcessor {
     }
 
     @Override
-    boolean process(Path dir, Object studyInfo) {
+    boolean processFiles(Path dir, Sql sql, Object studyInfo) {
         def mappingFilePath = null
         dir.eachFileMatch(FileType.FILES, { it ==~ /(?:^|_)MappingFile\.txt$/ }) {
             mappingFilePath = it
@@ -83,24 +90,60 @@ class GWASPlinkDataProcessor implements DataProcessor {
             bim = detectFile(dir, '.bim')
             fam = detectFile(dir, '.fam')
         }
-
+        studyInfo['id'] = studyId
         def missingFiles = [bed, bim, fam].findAll { Files.notExists(it) }
         if (missingFiles) {
             throw new DataProcessingException("One or more required files are missing: ${missingFiles*.fileName.join(', ')}")
         }
 
-        validateFam(fam)
+        LinkedList<String> patientIds = validateFamAndCollectPatientID(fam)
 
-        database.withSql { sql ->
-            sql.execute('delete from gwas_plink.plink_data where study_id = ?', studyId)
-            DbUtils.insertRecord(database, sql, 'gwas_plink.plink_data', [study_id: studyId],
-                    [
-                            bed: compressedStream(bed),
-                            bim: compressedStream(bim),
-                            fam: compressedStream(fam)
-                    ])
+
+        sql.execute('delete from gwas_plink.plink_data where study_id = ?', studyId)
+        DbUtils.insertRecord(database, sql, 'gwas_plink.plink_data', [study_id: studyId],
+                [
+                        bed: compressedStream(bed),
+                        bim: compressedStream(bim),
+                        fam: compressedStream(fam)
+                ])
+        database.withSql { sqlInst ->
+            if (metaInfo.CATEGORY_CD && metaInfo.DATA_LABEL) {
+                studyInfo['CATEGORY_CD'] = metaInfo.CATEGORY_CD
+                studyInfo['DATA_LABEL'] = metaInfo.DATA_LABEL
+                database.truncateTable(sqlInst, 'lt_src_gwas_data')
+                DataLoader.start(database, 'lt_src_gwas_data', ['STUDY_ID', 'SUBJECT_ID', 'DATA_LABEL', 'CATEGORY_CD']) { st ->
+                    try {
+                        patientIds.each { row ->
+                            st.addBatch([studyId, row, metaInfo.DATA_LABEL, metaInfo.CATEGORY_CD])
+                        }
+                    } catch (SQLException e) {
+                        throw new DataProcessingException("Wrong data.\n ${e.getLocalizedMessage()}")
+                    }
+                }
+            }
         }
         return true
+    }
+
+    @Override
+    public boolean runStoredProcedures(jobId, Sql sql, studyInfo) {
+        if (studyInfo['CATEGORY_CD'] && studyInfo['DATA_LABEL']) {
+            def studyId = studyInfo['id']
+            def studyNode = studyInfo['node']
+            if (studyId && studyNode) {
+                config.logger.log("Study ID=${studyId}; Node=${studyNode}")
+                sql.call("{call " + config.controlSchema + "." + getProcedureName() + "(?,?,?,?)}", [studyId, studyNode, config.securitySymbol, jobId])
+            } else {
+                config.logger.log(LogType.ERROR, "Study ID or Node not defined!")
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public String getProcedureName() {
+        return config.altClinicalProcName ?: "I2B2_PROCESS_GWAS_DATA"
     }
 
     public static InputStream compressedStream(final Path input) throws IOException {
