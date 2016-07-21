@@ -785,7 +785,7 @@ PRAGMA EXCEPTION_INIT (index_not_exists, -1418);
     UPDATE SET
       c_name = c.name_char,
       c_columndatatype = 'T',
-      c_metadataxml = I2B2_BUILD_METADATA_XML(c.name_char, c.data_type, c.valuetype_cd)
+      c_metadataxml = null
     WHEN NOT MATCHED THEN
     INSERT (
       c_hlevel
@@ -829,7 +829,7 @@ PRAGMA EXCEPTION_INIT (index_not_exists, -1418);
       , 'T'    -- if i2b2 gets fixed to respect c_columndatatype then change to t.data_type
       , 'trial:' || TrialID
       , i2b2_id_seq.nextval
-      , I2B2_BUILD_METADATA_XML(c.name_char, c.data_type, c.valuetype_cd)
+      , null
     );
 
     stepCt := stepCt + 1;

@@ -933,7 +933,7 @@ BEGIN
     UPDATE i2b2metadata.i2b2
     SET c_name           = ncd.node_name
       , c_columndatatype = 'T'
-      , c_metadataxml    = i2b2_build_metadata_xml(ncd.node_name, ncd.data_type, ncd.valuetype_cd)
+      , c_metadataxml    = null
     FROM wt_trial_nodes ncd
     WHERE c_fullname = ncd.leaf_node;
     GET DIAGNOSTICS rowCt := ROW_COUNT;
@@ -999,7 +999,7 @@ BEGIN
         'T',
         'trial:' || TrialID,
         '@',
-        i2b2_build_metadata_xml(c.name_char, t.data_type, t.valuetype_cd)
+        null
       FROM i2b2demodata.concept_dimension c
         , wt_trial_nodes t
       WHERE c.concept_path = t.leaf_node
