@@ -9,6 +9,7 @@ import com.thomsonreuters.lsps.transmart.etl.statistic.VariableType
 class MappingFileBuilder {
     private String dataFileName
     private List<List<String>> mappings = []
+    private List<List<String>> metaInfo = []
     private boolean hasVariablesInfo
 
     def forDataFile(String dataFileName, Closure block) {
@@ -56,7 +57,16 @@ class MappingFileBuilder {
         return builder
     }
 
+    def addMetaInfo(List<String> row) {
+        metaInfo.add(row)
+    }
+
     void writeTo(PrintWriter writer) {
+        if (metaInfo) {
+            for (def metaInfoRow : metaInfo) {
+                writer.println('#' + metaInfoRow.join('\t'))
+            }
+        }
         def columns = ['filename', 'category_cd', 'col_nbr', 'data_label', 'data_label_source']
         if (hasVariablesInfo) {
             columns.add('variable_type')
