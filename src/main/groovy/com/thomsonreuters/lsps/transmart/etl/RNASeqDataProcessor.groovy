@@ -79,7 +79,7 @@ public class RNASeqDataProcessor extends AbstractDataProcessor {
         return "I2B2_PROCESS_RNA_SEQ_DATA";
     }
 
-    private List processMappingFile(Path f, Sql sql, studyInfo) {
+    protected List processMappingFile(Path f, Sql sql, studyInfo) {
         def platformList = [] as Set
         def studyIdList = [] as Set
 
@@ -139,7 +139,7 @@ public class RNASeqDataProcessor extends AbstractDataProcessor {
         }
     }
 
-    private void processRNASeqFile(Path f, Sql sql, studyInfo) {
+    protected void processRNASeqFile(Path f, Sql sql, studyInfo) {
         config.logger.log("Processing ${f.fileName}")
 
         // retrieve data type
@@ -188,7 +188,7 @@ public class RNASeqDataProcessor extends AbstractDataProcessor {
         config.logger.log("Processed ${lineNum} rows")
     }
 
-    private long processEachRow(Path f, studyInfo, Closure<List> processRow) {
+    protected long processEachRow(Path f, studyInfo, Closure<List> processRow) {
         def row = [studyInfo.id as String, null, null, null]
         def lineNum = 0
         def dataFile = new CsvLikeFile(f)
