@@ -60,6 +60,7 @@ Declare
 	updatedPath varchar(2000);
   cur_row RECORD;
 	pathCount integer;
+	baselineDate TIMESTAMP;
 
 	addNodes CURSOR is
 	select DISTINCT leaf_node, node_name
@@ -975,6 +976,24 @@ BEGIN
 		end loop;
 	end if;
 
+  -- delete old leaf nodes for updated subjects
+	if (merge_mode = 'UPDATE') then
+    for leaf_fullname in ( select cd.concept_path
+                             from concept_dimension cd, observation_fact fact
+                            where fact.patient_num = any(updated_patient_nums)
+                              and cd.concept_cd = fact.concept_cd
+							  and not exists ( select 1
+												 from observation_fact f
+												where f.concept_cd = cd.concept_cd
+												  and f.patient_num <> any(updated_patient_nums) ) ) loop
+
+      select i2b2_delete_1_node(leaf_fullname) into rtnCd;
+      stepCt := stepCt + 1;
+      select cz_write_audit(jobId,databaseName,procedureName,'Deleted old version updated node: ' || leaf_fullname,1,stepCt,'Done') into rtnCd;
+
+    end loop;
+	end if;
+
 	begin
 	insert into i2b2demodata.concept_dimension
     (concept_cd
@@ -1057,6 +1076,7 @@ BEGIN
 	,c_comment
 	,m_applied_path
 	,c_metadataxml
+	,valuetype_cd
 	)
     select distinct (length(c.concept_path) - coalesce(length(replace(c.concept_path, '\','')),0)) / length('\') - 2 + root_level
 		  ,c.concept_path
@@ -1078,6 +1098,7 @@ BEGIN
 		  ,'trial:' || TrialID
 		  ,'@'
 		  ,i2b2_build_metadata_xml(c.name_char, t.data_type, t.valuetype_cd)
+			,t.valuetype_cd
     from i2b2demodata.concept_dimension c
 		,wt_trial_nodes t
     where c.concept_path = t.leaf_node

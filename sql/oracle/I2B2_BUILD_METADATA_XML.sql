@@ -32,6 +32,11 @@ RETURN CLOB IS
 					series_value := TO_CHAR(TO_NUMBER(series_value) * 60 * 24 * 30 * 12);
 				END IF;
 			END IF;
+		ELSIF valuetype_cd = 'TIMESTAMP'
+			THEN BEGIN
+				series_value := ROUND((to_date(display_name,'YYYY-MM-DD HH24:MI')-to_date('1900-01-01 00:00','YYYY-MM-DD HH24:MI'))*24*60);
+				series_unit_name := 'minutes';
+				end;
 		END IF;
 
 		RETURN

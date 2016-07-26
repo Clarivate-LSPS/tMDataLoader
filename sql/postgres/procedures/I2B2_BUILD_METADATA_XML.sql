@@ -43,6 +43,12 @@ BEGIN
 					series_value := (series_value::FLOAT * 60 * 24 * 30 * 12)::VARCHAR;
 			END IF;
 		END IF;
+	ELSEIF valuetype_cd = 'TIMESTAMP'
+		THEN
+			SELECT EXTRACT(epoch FROM
+				 (select to_timestamp(display_name, 'YYYY-MM-DD HH24:MI')::timestamp without time zone - to_timestamp('1900-01-01 00:00','YYYY-MM-DD HH24:MI')::timestamp without time zone)
+				 ) / 60  into series_value;
+			series_unit_name := 'minutes';
 	END IF;
 
 	RETURN

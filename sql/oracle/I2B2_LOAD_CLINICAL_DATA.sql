@@ -68,7 +68,7 @@ AS
   tText			varchar2(2000);
 	pathRegexp VARCHAR2(2000);
 	updatedPath VARCHAR2(2000);
-  
+
     --Audit variables
   newJobFlag INTEGER(1);
   databaseName VARCHAR(100);
@@ -277,7 +277,7 @@ BEGIN
 	select parse_nth_value(topNode, topLevel, '\') into study_name from dual;
 	
 	--	Add any upper level nodes as needed
-
+	
 	tPath := REGEXP_REPLACE(replace(topNode,study_name,null),'(\\){2,}', '\');
 	select length(tPath) - length(replace(tPath,'\',null)) into pCount from dual;
 
@@ -845,6 +845,27 @@ BEGIN
 
 		END LOOP;
 	end if;
+
+
+	if (merge_mode = 'UPDATE') then
+		for x in ( select cd.concept_path
+					 from concept_dimension cd, observation_fact fact
+					where fact.patient_num in (select pat.patient_num
+												 from tmp_subject_info si, patient_dimension pat
+					                            where si.usubjid = pat.sourcesystem_cd)
+				      and cd.concept_cd = fact.concept_cd
+				      and not exists (select 1
+										from observation_fact f
+									   where f.concept_cd = cd.concept_cd
+										 and f.patient_num in (select pat.patient_num
+																 from tmp_subject_info si, patient_dimension pat
+																where si.usubjid = pat.sourcesystem_cd))) loop
+			i2b2_delete_1_node(x.concept_path);
+			stepCt := stepCt + 1;
+			cz_write_audit(jobId,databaseName,procedureName,'Deleted old version updated node: ' || x.concept_path,SQL%ROWCOUNT,stepCt,'Done');
+
+		end loop;
+	end if;
 	
 	--	bulk insert leaf nodes
 	
@@ -891,7 +912,7 @@ BEGIN
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Inserted new leaf nodes into I2B2DEMODATA concept_dimension',SQL%ROWCOUNT,stepCt,'Done');
     commit;
-	
+
 	--	update i2b2 to pick up change in name, data_type for leaf nodes
 	merge /*+ parallel(i2b2, 8) */ into i2b2 b
 	using (
@@ -904,7 +925,8 @@ BEGIN
 		update set
 			c_name = c.name_char,
 			c_columndatatype = 'T',
-			c_metadataxml = I2B2_BUILD_METADATA_XML(c.name_char, c.data_type, c.valuetype_cd)
+			c_metadataxml = I2B2_BUILD_METADATA_XML(c.name_char, c.data_type, c.valuetype_cd),
+			valuetype_cd = c.valuetype_cd
 	when not matched then
 		insert (
 			c_hlevel
@@ -927,6 +949,7 @@ BEGIN
 			,c_comment
 			,i2b2_id
 			,c_metadataxml
+			,valuetype_cd
 		)
 		values (
 			(length(c.concept_path) - nvl(length(replace(c.concept_path, '\')),0)) / length('\') - 2 + root_level
@@ -949,6 +972,7 @@ BEGIN
 			,'trial:' || TrialID
 			,i2b2_id_seq.nextval
 			,I2B2_BUILD_METADATA_XML(c.name_char, c.data_type, c.valuetype_cd)
+			,c.valuetype_cd
 		);
 
 	stepCt := stepCt + 1;
@@ -1324,6 +1348,7 @@ BEGIN
 	i2b2_create_concept_counts(topNode, jobID, 'N');
 	
 	--	delete each node that is hidden after create concept counts
+	
 	 FOR r_delNodes in delNodes Loop
 
     --	deletes hidden nodes for a trial one at a time
