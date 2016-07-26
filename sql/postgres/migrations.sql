@@ -11,3 +11,6 @@
 \i migrations/20150324000002500_CREATE_INDEXES_FOR_ACGH_DATA.sql
 \i migrations/20150827000000000_CHANGES.sql
 \i migrations/1_2_4/20160328180000000_add_cz_form_layout_synonym.sql
+\i migrations/1_2_4/20160404220000000_add_grant_for_delete_study.sql
+\i migrations/1_2_4/20160524172500000_change_async_job_alt_viewer_url.sql
+\i migrations/gwas_plink/migrations.sql

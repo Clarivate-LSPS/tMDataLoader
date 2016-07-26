@@ -55,7 +55,7 @@ BEGIN
  
 	execute immediate('truncate table TM_DATALOADER.I2B2_LOAD_PATH');
 	INSERT INTO "I2B2_LOAD_PATH"(PATH, RECORD_ID)
-	SELECT  SUBSTR(p.c_fullname, LENGTH(path), LENGTH(p.c_fullname) - LENGTH(path) + 1), p.rowid 
+	SELECT  SUBSTR(p.c_fullname, LENGTH(path), LENGTH(p.c_fullname) - LENGTH(path) + 1), p.rowid
 	from i2b2 p 
 	where p.c_fullname like path || '%';
 	

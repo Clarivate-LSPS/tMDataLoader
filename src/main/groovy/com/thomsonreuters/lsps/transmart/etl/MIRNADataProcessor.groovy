@@ -73,7 +73,7 @@ public class MIRNADataProcessor extends AbstractDataProcessor {
         return "I2B2_PROCESS_QPCR_MIRNA_DATA";
     }
 
-    private List processMappingFile(Path f, Sql sql, studyInfo) {
+    protected List processMappingFile(Path f, Sql sql, studyInfo) {
         def platformList = [] as Set
         def studyIdList = [] as Set
 
@@ -133,7 +133,7 @@ public class MIRNADataProcessor extends AbstractDataProcessor {
         }
     }
 
-    private void processMIRNAFile(Path f, Sql sql, studyInfo) {
+    protected void processMIRNAFile(Path f, Sql sql, studyInfo) {
         config.logger.log("Processing ${f.fileName}")
 
         // retrieve data type
@@ -178,12 +178,12 @@ public class MIRNADataProcessor extends AbstractDataProcessor {
         }
 
         sql.commit()
-        sql.execute("begin dbms_stats.gather_table_stats('TM_DATALOADER', 'LT_SRC_QPCR_MIRNA_DATA', cascade => true); end;")
+        sql.execute("begin dbms_stats.gather_table_stats('TM_LZ', 'LT_SRC_QPCR_MIRNA_DATA', cascade => true); end;")
         config.logger.log(LogType.PROGRESS, "")
         config.logger.log("Processed ${lineNum} rows")
     }
 
-    private long processEachRow(Path f, studyInfo, Closure<List> processRow) {
+    protected long processEachRow(Path f, studyInfo, Closure<List> processRow) {
         def row = [studyInfo.id as String, null, null, null]
         def lineNum = 0
         def dataFile = new CsvLikeFile(f)
