@@ -21,6 +21,9 @@ class RBMDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase
         _processor ?: (_processor = new RBMDataProcessor(config))
     }
 
+    void clearAnnotation(String gpl_id) {
+        sql.execute("delete from deapp.de_rbm_annotation where gpl_id = ${gpl_id}")
+    }
     @Override
     void setUp() {
         ConfigAwareTestCase.super.setUp()
@@ -32,6 +35,7 @@ class RBMDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase
         } else if (database?.databaseType == DatabaseType.Oracle) {
             runScript('I2B2_RBM_ZSCORE_CALC.sql')
         }
+        clearAnnotation(platformId)
     }
 
     void assertThatSampleIsPresent(String sampleId, sampleData) {

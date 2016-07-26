@@ -142,9 +142,9 @@ BEGIN
         --,p.antigen_id
         ,d.antigen_name,trim(d.uniprotid) as uniprotid,d.gene_symbol,decode(d.gene_id,null,null,to_number(d.gene_id)) as gene_id FROM (
         SELECT DISTINCT REGEXP_SUBSTR (uniprotid, '[^,]+', 1, RN) AS uniprotid,antigen_name,gene_id,gpl_id,gene_symbol
-        FROM TM_LZ.LT_SRC_RBM_ANNOTATION 
+        FROM TM_DATALOADER.LT_SRC_RBM_ANNOTATION 
         CROSS JOIN (SELECT ROWNUM AS RN 
-        FROM (SELECT MAX(REGEXP_COUNT(uniprotid,',') + 1) MX FROM TM_LZ.LT_SRC_RBM_ANNOTATION) 
+        FROM (SELECT MAX(REGEXP_COUNT(uniprotid,',') + 1) MX FROM TM_DATALOADER.LT_SRC_RBM_ANNOTATION) 
         CONNECT BY LEVEL <= MX) 
         WHERE REGEXP_SUBSTR (uniprotid, '[^,]+', 1, RN) IS NOT NULL 
         ORDER BY 1
@@ -153,7 +153,7 @@ BEGIN
 	where d.antigen_name = p.antigen_name
         and d.gpl_id = p.platform
         union       ----Changes made to solve UAT 142 on 27/02/2014 -- populate antigens without uniprot_id 
-        SELECT gpl_id,antigen_name,uniprotid,gene_symbol,decode(gene_id,null,null,to_number(gene_id)) as gene_id  FROM TM_LZ.LT_SRC_RBM_ANNOTATION WHERE UNIPROTID IS NULL;        
+        SELECT gpl_id,antigen_name,uniprotid,gene_symbol,decode(gene_id,null,null,to_number(gene_id)) as gene_id  FROM TM_DATALOADER.LT_SRC_RBM_ANNOTATION WHERE UNIPROTID IS NULL;        
         
 	commit;
 	stepCt := stepCt + 1;
