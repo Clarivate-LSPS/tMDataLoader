@@ -49,5 +49,6 @@ $$;
 \i procedures/I2B2_PROCESS_ACGH_DATA.sql
 \i procedures/I2B2_LOAD_STUDY_METADATA.sql
 \i procedures/I2B2_PROCESS_GENERIC_SERIAL_HDDDATA.sql
+\i procedures/I2B2_PROCESS_GWAS_PLINK_DATA.sql
 
 

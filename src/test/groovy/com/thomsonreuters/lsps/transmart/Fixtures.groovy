@@ -2,6 +2,7 @@ package com.thomsonreuters.lsps.transmart
 
 import com.thomsonreuters.lsps.transmart.fixtures.ClinicalData
 import com.thomsonreuters.lsps.transmart.fixtures.ExpressionData
+import com.thomsonreuters.lsps.transmart.fixtures.GWASPlinkData
 import com.thomsonreuters.lsps.transmart.fixtures.ProteinData
 import com.thomsonreuters.lsps.transmart.fixtures.StudyInfo
 import com.thomsonreuters.lsps.transmart.fixtures.VCFData
@@ -33,6 +34,10 @@ class Fixtures {
 
         ProteinData getProteinData(String proteinDataFolder = 'ProteinDataToUpload') {
             return new ProteinData(studyInfo: studyInfo, dir: new File(this, proteinDataFolder))
+        }
+
+        GWASPlinkData getGWASPlinkData(String gwasPlinkDataFolder = 'GWASPlinkDataToUpload') {
+            return new GWASPlinkData(studyInfo: studyInfo, dir: new File(this, gwasPlinkDataFolder))
         }
     }
 
