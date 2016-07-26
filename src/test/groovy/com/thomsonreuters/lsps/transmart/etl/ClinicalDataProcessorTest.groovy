@@ -27,6 +27,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
     void setup() {
         ConfigAwareTestCase.super.setUp()
         runScript('I2B2_LOAD_CLINICAL_DATA.sql')
+        runScript('I2B2_BUILD_METADATA_XML.sql')
     }
 
     ClinicalDataProcessor getProcessor() {
@@ -878,8 +879,8 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat db, hasNode("$timepointsPath\\2000-12-31 12:00\\").withPatientCount(2)
         assertThat db, hasNode("$timepointsPath\\2000-12-31 12:01\\").withPatientCount(1)
 
-        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '0', '2000-12-31 12:00')
-        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '5', '2000-12-31 12:05')
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '53120880', '2000-12-31 12:00')
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '53120885', '2000-12-31 12:05')
     }
 
     def 'it should load Serial LDD data With Timestamp When All New Timestamps Greater Than Old Min Value'() {
@@ -942,8 +943,8 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         clinicalData.load(config)
 
         then:
-        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '60', period1)
-        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '65', period4)
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '53120940', period1)
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '53120945', period4)
     }
 
     def 'it should load Serial LDD data With Timestamp When Some New Timestamp Lesser Than Old Min Value'() {
@@ -1007,9 +1008,9 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         clinicalData.load(config)
 
         then:
-        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '0', period1)
-        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '5', period4)
-        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '60', periodZero)
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '53120820', period1)
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '53120825', period4)
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '53120880', periodZero)
     }
 
     def 'it should load Serial LDD data With Timestamp When Some New Timestamp Lesser Than Old Min Value merge mode UPDATE'() {
@@ -1080,9 +1081,9 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat(sql, hasFact("$timepointsPath\\2000-12-31 12:00\\", 'SUBJ2', 5))
         assertThat(sql, hasFact("$timepointsPath\\$period1\\", 'SUBJ3', 0))
 
-        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '5', period4)
-        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '63', period3)
-        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '60', periodZero)
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '53120825', period4)
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '53120883', period3)
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '53120880', periodZero)
 
     }
 
@@ -1154,8 +1155,8 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat(sql, hasFact("$timepointsPath\\$periodZero\\", 'SUBJ2', 5))
         assertThat(sql, hasFact("$timepointsPath\\$period1\\", 'SUBJ3', 0))
 
-        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '65', period4)
-        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '0', periodZero)
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '53120945', period4)
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '53120880', periodZero)
     }
 
     def checkMetaDataXMLForTimestamp(path, value, datetime){

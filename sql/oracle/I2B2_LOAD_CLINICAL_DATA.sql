@@ -68,7 +68,6 @@ AS
   tText			varchar2(2000);
 	pathRegexp VARCHAR2(2000);
 	updatedPath VARCHAR2(2000);
-	baselineDate   DATE;
 
     --Audit variables
   newJobFlag INTEGER(1);
@@ -914,21 +913,6 @@ BEGIN
 	cz_write_audit(jobId,databaseName,procedureName,'Inserted new leaf nodes into I2B2DEMODATA concept_dimension',SQL%ROWCOUNT,stepCt,'Done');
     commit;
 
-	if (merge_mode = 'APPEND') OR (merge_mode = 'UPDATE') then begin
-		select min(to_date(value, 'YYYY-MM-DD HH24:MI')) into baselineDate from (
-				 select leaf_node as node, node_name as value from wt_trial_nodes where valuetype_cd = 'TIMESTAMP'
-				 union all
-				 select c_fullname as node, c_name as value from i2b2metadata.i2b2 where c_fullname like topNode||'%' and valuetype_cd = 'TIMESTAMP'
-			 ) p;
-			update i2b2 c set
-				c_metadataxml = I2B2_BUILD_METADATA_XML(c.c_name, c.c_columndatatype, c.valuetype_cd, baselineDate)
-			where c.c_fullname like topNode||'%' and c.valuetype_cd = 'TIMESTAMP';
-		end;
-		ELSE
-			select min(to_date(node_name, 'YYYY-MM-DD HH24:MI')) into baselineDate
-			from wt_trial_nodes where valuetype_cd = 'TIMESTAMP';
-	END IF;
-
 	--	update i2b2 to pick up change in name, data_type for leaf nodes
 	merge /*+ parallel(i2b2, 8) */ into i2b2 b
 	using (
@@ -941,7 +925,7 @@ BEGIN
 		update set
 			c_name = c.name_char,
 			c_columndatatype = 'T',
-			c_metadataxml = I2B2_BUILD_METADATA_XML(c.name_char, c.data_type, c.valuetype_cd, baselineDate),
+			c_metadataxml = I2B2_BUILD_METADATA_XML(c.name_char, c.data_type, c.valuetype_cd),
 			valuetype_cd = c.valuetype_cd
 	when not matched then
 		insert (
@@ -987,7 +971,7 @@ BEGIN
 			,'T'		-- if i2b2 gets fixed to respect c_columndatatype then change to t.data_type
 			,'trial:' || TrialID
 			,i2b2_id_seq.nextval
-			,I2B2_BUILD_METADATA_XML(c.name_char, c.data_type, c.valuetype_cd, baselineDate)
+			,I2B2_BUILD_METADATA_XML(c.name_char, c.data_type, c.valuetype_cd)
 			,c.valuetype_cd
 		);
 
