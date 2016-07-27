@@ -36,8 +36,8 @@
 @@procedures/I2B2_LOAD_CHROM_REGION.sql
 @@procedures/I2B2_PROCESS_QPCR_MIRNA_DATA.sql
 @@procedures/I2B2_MIRNA_ZSCORE_CALC.sql
-@I2B2_PROCESS_GENERIC_SERIAL_HDDDATA.sql
-@I2B2_PROCESS_GWAS_PLINK_DATA
+@@procedures/I2B2_PROCESS_GENERIC_SERIAL_HDDDATA.sql
+@@procedures/I2B2_PROCESS_GWAS_PLINK_DATA
 @@procedures/parse_nth_value.sql
 @@procedures/cz_start_audit.sql
 @@procedures/cz_end_audit.sql
@@ -68,8 +68,6 @@
 @@procedures/i2b2_load_rbm_data.sql
 @@procedures/i2b2_load_rbm_annotation.sql
 @@procedures/i2b2_load_rbm_inc_data.sql
-@@/procedures/I2B2_PROCESS_GENERIC_SERIAL_HDDDATA.sql
-@@/procedures/I2B2_PROCESS_GWAS_PLINK_DATA
 
 
 @@show_invalid.sql -- compiles invalids, resolving them or highlighting problems
