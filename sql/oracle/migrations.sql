@@ -16,4 +16,6 @@
 @@migrations/CREATE_SYNONYMS.sql
 @@migrations/CHANGES.sql
 @@migrations/1_2_4/20160328180000000_add_cz_form_layout_synonym.sql
+@@migrations/1_2_4/20160524172500000_change_async_job_alt_viewer_url.sql
+@@migrations/1_2_4/20160313180000000_delete_cascade_from_search_secure_object.sql
 @@migrations/issue_87.sql
