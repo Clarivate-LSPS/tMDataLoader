@@ -9,13 +9,14 @@
 SET SERVEROUTPUT ON SIZE UNLIMITED
 set linesize 180
 set pagesize 0
+/
 
 DECLARE
 	CURSOR invalid_cursor is
 	SELECT object_name, object_type
 	from user_objects
 	where status like 'INVALID%'
-	  AND object_type  in ('PROCEDURE', 'FUNCTION','TRIGGER')
+	  AND object_type  in ('PROCEDURE', 'FUNCTION', 'TRIGGER')
 	order by 1;
 	
 	CURSOR error_cursor is

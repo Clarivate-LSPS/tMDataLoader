@@ -69,6 +69,4 @@
 @@procedures/i2b2_load_rbm_annotation.sql
 @@procedures/i2b2_load_rbm_inc_data.sql
 
-
-@@show_invalid.sql -- compiles invalids, resolving them or highlighting problems
-@@show_invalid.sql
+@show_invalid.sql -- compiles invalids, resolving them or highlighting problems

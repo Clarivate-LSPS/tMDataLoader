@@ -11,10 +11,10 @@ class TransmartDatabaseFactory {
     static Database newDatabase(config) {
         Database database = new Database(config.db)
         def controlSchema
-        if (config.controlSchema) {
+        if ('controlSchema' in config) {
             controlSchema = config.controlSchema
         } else {
-            controlSchema = database.databaseType == DatabaseType.Postgres ? 'tm_dataloader' : 'tm_dataloader'
+            controlSchema = 'tm_dataloader'
         }
         database.schema = controlSchema
         if (database.databaseType == DatabaseType.Postgres) {

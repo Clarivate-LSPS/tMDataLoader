@@ -1,7 +1,3 @@
-SET DEFINE ON;
-
-DEFINE TM_CZ_SCHEMA='TM_DATALOADER';
-
 DECLARE
 	flag NUMBER(1, 0);
 BEGIN
@@ -39,6 +35,6 @@ BEGIN
 END;
 /
 
-GRANT INSERT, UPDATE, DELETE, SELECT ON gwas_plink.plink_data TO "&TM_CZ_SCHEMA";
+GRANT INSERT, UPDATE, DELETE, SELECT ON gwas_plink.plink_data TO TM_DATALOADER;
 GRANT SELECT ON gwas_plink.plink_data TO biomart_user;
 /

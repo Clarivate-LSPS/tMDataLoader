@@ -2,6 +2,7 @@ package com.thomsonreuters.lsps.transmart.etl
 
 import com.thomsonreuters.lsps.db.core.Database
 import com.thomsonreuters.lsps.db.core.DatabaseType
+import com.thomsonreuters.lsps.io.file.TempStorage
 
 /**
  * Date: 17-Dec-15
@@ -13,6 +14,10 @@ class RunSqlScriptsCommand {
         List<File> userScripts = []
     }
 
+    private static def runScript(Database database, File script) {
+        database.runScript(script, true)
+    }
+
     def runScripts(Database database, Scripts scripts, String dbaUser, String dbaPassword) {
         if (scripts.dbaScripts) {
             if (!dbaUser || !dbaPassword) {
@@ -21,12 +26,12 @@ class RunSqlScriptsCommand {
             def dbaDatabase = database.withCredentials(dbaUser, dbaPassword)
             for (File script : scripts.dbaScripts) {
                 println("Running script as dba: ${script.name}...")
-                dbaDatabase.runScript(script, true)
+                runScript(dbaDatabase, script)
             }
         }
         for (File script : scripts.userScripts) {
             println("Running script: ${script.name}...")
-            database.runScript(script, true)
+            runScript(database, script)
         }
         println("Completed: ${scripts.dbaScripts.size() + scripts.userScripts.size()} scripts executed")
     }
@@ -48,7 +53,7 @@ class RunSqlScriptsCommand {
             case DatabaseType.Oracle:
                 def scriptsDir = new File(sqlDir, 'oracle')
                 if (!proceduresOnly) {
-                    scripts.dbaScripts.add(new File(scriptsDir, 'run_as_dba.sql'))
+                    scripts.dbaScripts.add(new File(scriptsDir, 'migrations.sql'))
                 }
                 scripts.userScripts.add(new File(scriptsDir, 'run_as_tm_dataloader.sql'))
                 break

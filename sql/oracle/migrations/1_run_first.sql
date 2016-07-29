@@ -38,24 +38,6 @@ BEGIN
 		dbms_output.put_line(drop_sql);
 		EXECUTE IMMEDIATE drop_sql;
 	END IF;
-	
-	SELECT COUNT(*)
-	INTO rows
-	FROM dba_indexes
-	WHERE owner = '"&TM_WZ_SCHEMA"'
-	AND index_name = 'IDX_WTN_LOAD_CLINICAL';
-	
-	if rows < 1
-	THEN
-		create_sql := 'CREATE INDEX "&TM_WZ_SCHEMA"."IDX_WTN_LOAD_CLINICAL" ON "&TM_WZ_SCHEMA"."WT_TRIAL_NODES"
-  	  (
-    "LEAF_NODE",
-    "CATEGORY_CD",
-    "DATA_LABEL"
-  	) TABLESPACE "INDX"';
-		dbms_output.put_line(create_sql);
-		EXECUTE IMMEDIATE create_sql;
-	END IF;
 
 	SELECT COUNT(*)
 	INTO rows
@@ -219,26 +201,6 @@ BEGIN
 		dbms_output.put_line(create_sql);
 		EXECUTE IMMEDIATE create_sql;
 	END IF;
-	
-	SELECT COUNT(*)
-	INTO rows
-	FROM dba_indexes
-	WHERE owner = '&TM_WZ_SCHEMA'
-	AND index_name = 'IDX_WT_TRIALNODES';
-	
-	if rows > 0
-	THEN
-		drop_sql := 'DROP INDEX "&TM_WZ_SCHEMA".IDX_WT_TRIALNODES';
-		dbms_output.put_line(drop_sql);
-		EXECUTE IMMEDIATE drop_sql;
-	END IF;
-	create_sql := 'CREATE INDEX "&TM_WZ_SCHEMA"."IDX_WT_TRIALNODES" ON "&TM_WZ_SCHEMA"."WT_TRIAL_NODES"
-  		(
-    		"LEAF_NODE",
-    		"NODE_NAME"
-  	  	) TABLESPACE "INDX"';
-	dbms_output.put_line(create_sql);
-	EXECUTE IMMEDIATE create_sql;
 	
 	SELECT COUNT(*)
 	INTO rows
