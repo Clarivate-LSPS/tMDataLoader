@@ -45,7 +45,7 @@ class CommandLineTool {
             m longOpt: 'move-study', args: 2, valueSeparator: ';', argName: 'old_path new_path', 'Move study'
             _ longOpt: 'highlight-clinical-data', 'Highlight studies with clinical data'
             _ longOpt: 'alt-clinical-proc', args: 1, argName: 'proc_name', 'Name of alternative clinical stored procedure (expert option)'
-            _ longOpt: 'alt-control-schema', args: 1, argName: 'schema', 'Name of alternative control schema (TM_CZ) - expert option'
+            _ longOpt: 'alt-control-schema', args: 1, argName: 'schema', 'Name of alternative control schema (TM_DATALOADER) - expert option'
             _ longOpt: 'secure-study', 'Make study securable'
             _ longOpt: 'visit-name-first', 'Put VISIT_NAME before the data value'
             _ longOpt: 'always-set-visit-name', 'Add visit name to concept path even if only one visit found'
@@ -147,7 +147,7 @@ class CommandLineTool {
         if (config.controlSchema) {
             println ">>> USING ALTERNATIVE CONTROL SCHEMA: ${config.controlSchema}"
         } else {
-            config.controlSchema = database.databaseType == DatabaseType.Postgres ? 'tm_dataloader' : 'tm_cz'
+            config.controlSchema = database.databaseType == DatabaseType.Postgres ? 'tm_dataloader' : 'tm_dataloader'
         }
 
         if (!config?.containsKey('visitNameFirst')) {

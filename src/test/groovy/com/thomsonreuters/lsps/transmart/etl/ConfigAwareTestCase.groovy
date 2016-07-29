@@ -23,7 +23,7 @@ public trait ConfigAwareTestCase {
         config = new ConfigSlurper().parse(testConfigUrl)
         config.logger = config.logger ?: logger
         _database = TransmartDatabaseFactory.newDatabase(config)
-        config.controlSchema = config.controlSchema ?: (_database.databaseType == DatabaseType.Postgres ? 'tm_dataloader' : 'tm_cz')
+        config.controlSchema = config.controlSchema ?: (_database.databaseType == DatabaseType.Postgres ? 'tm_dataloader' : 'tm_dataloader')
         config.securitySymbol = config.securitySymbol ?: 'N'
     }
     private Sql _db
@@ -33,7 +33,9 @@ public trait ConfigAwareTestCase {
         File dir = new File("sql", databaseType.toString().toLowerCase())
         if (databaseType == DatabaseType.Postgres) {
             dir = new File(dir, 'procedures')
-        }
+        } else {
+		dir = new File(dir, 'procedures')
+	}
         return dir;
     }
 

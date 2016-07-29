@@ -18,11 +18,16 @@ class MIRNAQpcrDataProcessorTest extends GroovyTestCase implements ConfigAwareTe
         _processor ?: (_processor = new MIRNADataProcessor(config))
     }
 
+    void clearAnnotation(String gpl_id) {
+        sql.execute("delete from deapp.de_qpcr_mirna_annotation where gpl_id = ${gpl_id}")
+    }
+
     @Override
     void setUp() {
         ConfigAwareTestCase.super.setUp()
         runScript('I2B2_PROCESS_QPCR_MIRNA_DATA.sql')
         runScript('I2B2_MIRNA_ZSCORE_CALC.sql')
+        clearAnnotation(platformId) // force reload for a clean test
     }
 
     void assertThatSampleIsPresent(String sampleId, sampleData) {

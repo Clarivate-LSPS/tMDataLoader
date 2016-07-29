@@ -50,7 +50,7 @@ class RunSqlScriptsCommand {
                 if (!proceduresOnly) {
                     scripts.dbaScripts.add(new File(scriptsDir, 'run_as_dba.sql'))
                 }
-                scripts.userScripts.add(new File(scriptsDir, 'run_as_tm_cz.sql'))
+                scripts.userScripts.add(new File(scriptsDir, 'run_as_tm_dataloader.sql'))
                 break
             default:
                 System.err.println("Invalid database config")
