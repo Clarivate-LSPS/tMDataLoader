@@ -29,6 +29,7 @@ class ClinicalDataMapping {
         String DATA_LABEL_SOURCE_TYPE
         VariableType variableType
         List<ValidationRule> validationRules
+        String baseline
     }
 
     public static final class FileMapping {
@@ -119,6 +120,9 @@ class ClinicalDataMapping {
                             variableType: variableType,
                             validationRules: validationRules
                     )
+                    if (columnMapping.containsKey('baseline')){
+                        entry.baseline = cols[columnMapping['baseline']]
+                    }
                     if (entry.CATEGORY_CD.length() > colsMetaSize.CATEGORY_CD) {
                         mappingErrors.add("CATEGORY_CD is too long (${entry.CATEGORY_CD.length()} > ${colsMetaSize.CATEGORY_CD}) for row [$lineNum]: ${cols}")
                         return

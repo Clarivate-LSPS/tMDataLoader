@@ -77,16 +77,17 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
                     }
 
                     Map<String, String> output = [
-                            study_id       : cols[fMappings.STUDY_ID],
-                            site_id        : cols[fMappings.SITE_ID],
-                            subj_id        : cols[fMappings.SUBJ_ID],
-                            visit_name     : cols[fMappings.VISIT_NAME],
-                            sample_cd      : cols[fMappings.SAMPLE_ID],
-                            data_label     : '', // DATA_LABEL
-                            data_value     : '', // DATA_VALUE
-                            category_cd    : '', // CATEGORY_CD
-                            ctrl_vocab_code: '', // CTRL_VOCAB_CODE - unused
-                            valuetype_cd   : (String) null,
+                            study_id          : cols[fMappings.STUDY_ID],
+                            site_id           : cols[fMappings.SITE_ID],
+                            subj_id           : cols[fMappings.SUBJ_ID],
+                            visit_name        : cols[fMappings.VISIT_NAME],
+                            sample_cd         : cols[fMappings.SAMPLE_ID],
+                            data_label        : '', // DATA_LABEL
+                            data_value        : '', // DATA_VALUE
+                            category_cd       : '', // CATEGORY_CD
+                            ctrl_vocab_code   : '', // CTRL_VOCAB_CODE - unused
+                            valuetype_cd      : (String) null,
+                            timestamp_baseline: (String) null
                     ]
 
                     if (_DATA) {
@@ -101,7 +102,7 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
                             if (v['CATEGORY_CD'] != '') {
                                 def out = output.clone()
                                 out['data_value'] = fixColumn(value)
-                                if (v.variableType == VariableType.Timepoint) {
+                                if (v.variableType == VariableType.Timepoint || v.variableType == VariableType.Timestamp) {
                                     out['valuetype_cd'] = v.variableType.name().toUpperCase()
                                 }
                                 def cat_cd = v.CATEGORY_CD
@@ -138,6 +139,10 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
                                 }
 
                                 out['category_cd'] = cat_cd
+
+                                if (v.baseline) {
+                                    out['timestamp_baseline'] = cols[Integer.parseInt(v.baseline)]
+                                }
 
                                 processRow(out, lineNumber)
                             }
@@ -228,11 +233,11 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
     private void processFile(Path f, ClinicalDataMapping.FileMapping fileMapping) {
         DataLoader.start(database, "lt_src_clinical_data", ['STUDY_ID', 'SITE_ID', 'SUBJECT_ID', 'VISIT_NAME',
                                                             'DATA_LABEL', 'DATA_VALUE', 'CATEGORY_CD', 'SAMPLE_CD',
-                                                            'VALUETYPE_CD']) { st ->
+                                                            'VALUETYPE_CD', 'TIMESTAMP_BASELINE']) { st ->
             long rowsCount = processEachRow(f, fileMapping) { row, lineNumber ->
                 try {
                     st.addBatch([row.study_id, row.site_id, row.subj_id, row.visit_name, row.data_label,
-                                 row.data_value, row.category_cd, row.sample_cd, row.valuetype_cd])
+                                 row.data_value, row.category_cd, row.sample_cd, row.valuetype_cd, row.timestamp_baseline])
                 } catch (SQLException e) {
                     throw new DataProcessingException("Wrong data close to ${lineNumber} line.\n ${e.getLocalizedMessage()}")
                 }

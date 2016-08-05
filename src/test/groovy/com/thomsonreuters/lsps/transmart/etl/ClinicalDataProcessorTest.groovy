@@ -143,7 +143,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat(sql, hasNode(conceptPathForPatient).withPatientCount(9))
         assertThat(sql, hasNode(conceptPathForPatient + 'T790M\\'))
         def c = sql.firstRow('select count(*) from i2b2metadata.i2b2 where c_fullname like ? || \'%\' ESCAPE \'`\' and c_visualattributes=\'FAS\'', '\\Test Studies\\Test Study\\' as String)
-        assertEquals('Count study nodes wrong', 1, c[0] as Integer )
+        assertEquals('Count study nodes wrong', 1, c[0] as Integer)
     }
 
     void testItLoadsDataWithTags() {
@@ -247,7 +247,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat(sql, hasNode(biomarkerConcept).withPatientCount(2))
     }
 
-    def 'it should load study with UPDATE VARIABLES merge mode'(){
+    def 'it should load study with UPDATE VARIABLES merge mode'() {
         expect:
         String subjId = 'HCC2935'
         String rootConcept = "\\Test Studies\\${studyName}\\"
@@ -298,16 +298,16 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
 
     def 'Updates_Variable loading should throw error if find several categorical value on the same'() {
         when:
-            String studyName = 'Test Study With Duplicate Category Path'
-            String studyId = 'GSE0WDCP'
-            String femaleConcept = '\\Test Studies\\Test Study With Duplicate Category Path\\DupclicateCD\\Female\\'
-            def newProcessor = new ClinicalDataProcessor(config)
-            newProcessor.process(new File(studyDir(studyName, studyId, studiesForMerge.first_load), "ClinicalDataToUpload").toPath(),
+        String studyName = 'Test Study With Duplicate Category Path'
+        String studyId = 'GSE0WDCP'
+        String femaleConcept = '\\Test Studies\\Test Study With Duplicate Category Path\\DupclicateCD\\Female\\'
+        def newProcessor = new ClinicalDataProcessor(config)
+        newProcessor.process(new File(studyDir(studyName, studyId, studiesForMerge.first_load), "ClinicalDataToUpload").toPath(),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
-            newProcessor.process(new File(studyDir(studyName, studyId, studiesForMerge.update_var), "ClinicalDataToUpload").toPath(),
+        newProcessor.process(new File(studyDir(studyName, studyId, studiesForMerge.update_var), "ClinicalDataToUpload").toPath(),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
         then:
-            assertThat(sql, hasNode(femaleConcept).withPatientCount(5))
+        assertThat(sql, hasNode(femaleConcept).withPatientCount(5))
     }
 
     def 'it should load study with APPEND merge mode'() {
@@ -740,7 +740,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         ])
     }
 
-    def 'it should load values with upper and lower case'(){
+    def 'it should load values with upper and lower case'() {
         setup:
         def customClinicalData = Fixtures.getClinicalData('Test Study With Upper and Lower Case', 'GSE0ULC')
         Study.deleteById(config, customClinicalData.studyId)
@@ -755,7 +755,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat(db, hasNode("${conceptPath}ABILIFY\\"))
     }
 
-    def 'it should validate load values with non-utf8 symbols'(){
+    def 'it should validate load values with non-utf8 symbols'() {
         when:
         def nonUTF8ClinicalData = Fixtures.getClinicalData('Test Study With Non-UTF8 symbols', studyId)
         nonUTF8ClinicalData.load(config)
@@ -764,16 +764,16 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         thrown(DataProcessingException)
     }
 
-    def 'it should validate top node was created '(){
+    def 'it should validate top node was created '() {
         setup:
         Study.deleteByPath(config, '\\Demographics\\')
         clinicalData.load(config)
         clinicalData.copyWithSuffix('SECOND').load(config, '\\Demographics\\Test Study SECOND\\')
         expect:
-        assertThat(db, hasRecord('i2b2metadata.i2b2', [c_fullname:'\\Demographics\\'], [:]))
+        assertThat(db, hasRecord('i2b2metadata.i2b2', [c_fullname: '\\Demographics\\'], [:]))
     }
 
-    def 'it should check path when visit_name equal to data_label and data_label is not specified before terminator'(){
+    def 'it should check path when visit_name equal to data_label and data_label is not specified before terminator'() {
         when:
         Study.deleteById(config, 'GSE0REPEATLABPATH')
         def clinicalData = Fixtures.clinicalDataWithTerminatorAndSamePath
@@ -790,7 +790,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat(sql, hasNode("\\Test Studies\\$clinicalData.studyName\\Subjects\\Demographics\\v2\\").withPatientCount(1))
     }
 
-    def 'it should check error when used wrong mapping file name'(){
+    def 'it should check error when used wrong mapping file name'() {
         when:
         def clinicalData = Fixtures.clinicalDataWithWrongMappingFileName
         Study.deleteById(config, clinicalData.studyId)
@@ -801,7 +801,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         ex.message == 'Mapping file wasn\'t found. Please, check file name.'
     }
 
-    def 'it should check error with long path'(){
+    def 'it should check error with long path'() {
         when:
         def clinicalData = Fixtures.clinicalDataWithLongCategoryCD
         Study.deleteById(config, clinicalData.studyId)
@@ -842,5 +842,433 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         then:
         def ex = thrown(DataProcessingException)
         ex.message == "STUDY_ID differs from previous in 2 line in TST_DEMO.txt file."
+    }
+
+    def 'it should load Serial LDD data with timestamp'() {
+        given:
+        def clinicalData = ClinicalData.build('GSE0SLDDWTS', 'Test Study With Serial LDD with timestamp') {
+            mappingFile {
+                forDataFile('TEST.txt') {
+                    map('Vars+DATALABEL+$$Timestamp', 3, 'Timestamp', '6', VariableType.Timestamp)
+                    map('', 4, 'Timestamp', '', VariableType.Timestamp)
+                    map('Vars', 5, 'Sex')
+                    map('', 6, 'Baseline')
+                }
+            }
+            dataFile('TEST.txt', ['Days', 'Timestamp', 'Sex', 'Baseline']) {
+                forSubject('SUBJ1') {
+                    row '0', '2000-12-31 12:00', 'Female', '2000-12-31 12:00'
+                    row '10', '2000-12-31 12:01', 'Female', '2000-12-31 12:00'
+                    row '12', '2000-12-31 12:02', 'Female', '2000-12-31 12:00'
+                    row '10', '2000-12-31 12:05', 'Female', '2000-12-31 12:00'
+                }
+                forSubject('SUBJ2') {
+                    row '5', '2000-12-31 12:00', 'Male', '2000-12-31 12:00'
+                    row '13', '2000-12-31 12:02', 'Male', '2000-12-31 12:00'
+                    row '15', '2000-12-31 12:05', 'Male', '2000-12-31 12:00'
+                }
+            }
+        }
+        String timepointsPath = "\\Test Studies\\Test Study With Serial LDD with timestamp\\Vars\\Timestamp"
+
+        when:
+        clinicalData.load(config)
+
+        then:
+        assertThat db, hasNode("$timepointsPath\\2000-12-31 12:00\\").withPatientCount(2)
+        assertThat db, hasNode("$timepointsPath\\2000-12-31 12:00\\").withPatientCount(2)
+        assertThat db, hasNode("$timepointsPath\\2000-12-31 12:01\\").withPatientCount(1)
+
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '0', '2000-12-31 12:00')
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '5', '2000-12-31 12:05')
+    }
+
+    def 'it should load Serial LDD data With Timestamp When All New Timestamps Greater Than Old Min Value'() {
+        given:
+        def clinicalDataFirst = ClinicalData.build('GSE0SLDDWTS', 'Test Study With Serial LDD with timestamp') {
+            mappingFile {
+                forDataFile('TEST.txt') {
+                    map('Vars+DATALABEL+$$Timestamp', 3, 'Timestamp', '6', VariableType.Timestamp)
+                    map('', 4, 'Timestamp', '', VariableType.Timestamp)
+                    map('Vars', 5, 'Sex')
+                    map('', 6, 'Baseline')
+                }
+            }
+            dataFile('TEST.txt', ['Days', 'Timestamp', 'Sex', 'Baseline']) {
+                forSubject('SUBJ1') {
+                    row '0', '2000-12-31 12:00', 'Female', '2000-12-31 12:00'
+                    row '10', '2000-12-31 12:01', 'Female', '2000-12-31 12:00'
+                    row '12', '2000-12-31 12:02', 'Female', '2000-12-31 12:00'
+                    row '10', '2000-12-31 12:05', 'Female', '2000-12-31 12:00'
+                }
+                forSubject('SUBJ2') {
+                    row '5', '2000-12-31 12:00', 'Male', '2000-12-31 12:00'
+                    row '13', '2000-12-31 12:02', 'Male', '2000-12-31 12:00'
+                    row '15', '2000-12-31 12:05', 'Male', '2000-12-31 12:00'
+                }
+            }
+        }
+        clinicalDataFirst.load(config)
+
+        def period1 = '2000-12-31 13:00'
+        def period2 = '2000-12-31 13:02'
+        def period3 = '2000-12-31 13:01'
+        def period4 = '2000-12-31 13:05'
+
+        def clinicalData = ClinicalData.build('GSE0SLDDWTS', 'Test Study With Serial LDD with timestamp') {
+            mappingFile {
+                addMetaInfo(['MERGE_MODE: APPEND'])
+                forDataFile('TEST.txt') {
+                    map('Vars+DATALABEL+$$Timestamp', 3, 'Timestamp', '6', VariableType.Timestamp)
+                    map('', 4, 'Timestamp', '', VariableType.Timestamp)
+                    map('Vars', 5, 'Race')
+                    map('', 6, 'Baseline')
+                }
+            }
+            dataFile('TEST.txt', ['Days', 'Timestamp St.1', 'Race', 'Baseline']) {
+                forSubject('SUBJ1') {
+                    row '0', period1, 'One', '2000-12-31 12:00'
+                    row '10',period3, 'One', '2000-12-31 12:00'
+                    row '12', period2, 'One', '2000-12-31 12:00'
+                    row '10', period4, 'One', '2000-12-31 12:00'
+                }
+                forSubject('SUBJ2') {
+                    row '5', period1, 'Two', '2000-12-31 12:00'
+                    row '13', period2, 'Two', '2000-12-31 12:00'
+                    row '15', '2000-12-31 13:05', 'Two', '2000-12-31 12:00'
+                }
+            }
+        }
+        String timepointsPath = "\\Test Studies\\Test Study With Serial LDD with timestamp\\Vars\\Timestamp"
+
+        when:
+        clinicalData.load(config)
+
+        then:
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '60', period1)
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '65', period4)
+    }
+
+    def 'it should load Serial LDD data With Timestamp When Some New Timestamp Lesser Than Old Min Value'() {
+        given:
+        def clinicalDataFirst = ClinicalData.build('GSE0SLDDWTS', 'Test Study With Serial LDD with timestamp') {
+            mappingFile {
+                forDataFile('TEST.txt') {
+                    map('Vars+DATALABEL+$$Timestamp', 3, 'Timestamp', '6', VariableType.Timestamp)
+                    map('', 4, 'Timestamp', '', VariableType.Timestamp)
+                    map('Vars', 5, 'Sex')
+                    map('', 6, 'Baseline')
+                }
+            }
+            dataFile('TEST.txt', ['Days', 'Timestamp', 'Sex', 'Baseline']) {
+                forSubject('SUBJ1') {
+                    row '0', '2000-12-31 12:00', 'Female', '2000-12-31 12:00'
+                    row '10', '2000-12-31 12:01', 'Female', '2000-12-31 12:00'
+                    row '12', '2000-12-31 12:02', 'Female', '2000-12-31 12:00'
+                    row '10', '2000-12-31 12:05', 'Female', '2000-12-31 12:00'
+                }
+                forSubject('SUBJ2') {
+                    row '5', '2000-12-31 12:00', 'Male', '2000-12-31 12:00'
+                    row '13', '2000-12-31 12:02', 'Male', '2000-12-31 12:00'
+                    row '15', '2000-12-31 12:05', 'Male', '2000-12-31 12:00'
+                }
+            }
+        }
+        clinicalDataFirst.load(config)
+
+        def period1 = '2000-12-31 11:00'
+        def period2 = '2000-12-31 11:02'
+        def period3 = '2000-12-31 11:01'
+        def period4 = '2000-12-31 11:05'
+        def periodZero = '2000-12-31 12:00'
+
+        def clinicalData = ClinicalData.build('GSE0SLDDWTS', 'Test Study With Serial LDD with timestamp') {
+            mappingFile {
+                addMetaInfo(['MERGE_MODE: APPEND'])
+                forDataFile('TEST.txt') {
+                    map('Vars+DATALABEL+$$Timestamp', 3, 'Timestamp', '6', VariableType.Timestamp)
+                    map('', 4, 'Timestamp', '', VariableType.Timestamp)
+                    map('Vars', 5, 'Race')
+                    map('', 6, 'Baseline')
+                }
+            }
+            dataFile('TEST.txt', ['Days', 'Timestamp St.1', 'Race', 'Baseline']) {
+                forSubject('SUBJ1') {
+                    row '5', period1, 'One', '2000-12-31 12:00'
+                    row '7',period3, 'One', '2000-12-31 12:00'
+                    row '2', period2, 'One', '2000-12-31 12:00'
+                    row '4', period4, 'One', '2000-12-31 12:00'
+                }
+                forSubject('SUBJ2') {
+                    row '10', period1, 'Two', '2000-12-31 12:00'
+                    row '9', period2, 'Two', '2000-12-31 12:00'
+                    row '11', '2000-12-31 11:05', 'Two', '2000-12-31 12:00'
+                }
+            }
+        }
+        String timepointsPath = "\\Test Studies\\Test Study With Serial LDD with timestamp\\Vars\\Timestamp"
+
+        when:
+        clinicalData.load(config)
+
+        then:
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '-60', period1)
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '-55', period4)
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '0', periodZero)
+    }
+
+    def 'it should load Serial LDD data With Timestamp When Some New Timestamp Lesser Than Old Min Value merge mode UPDATE'() {
+        given:
+        def clinicalDataFirst = ClinicalData.build('GSE0SLDDWTS', 'Test Study With Serial LDD with timestamp') {
+            mappingFile {
+                forDataFile('TEST.txt') {
+                    map('Vars+DATALABEL+$$Timestamp', 3, 'Timestamp', '6', VariableType.Timestamp)
+                    map('', 4, 'Timestamp', '', VariableType.Timestamp)
+                    map('Vars', 5, 'Sex')
+                    map('', 6, 'Baseline')
+                }
+            }
+            dataFile('TEST.txt', ['Days', 'Timestamp St.1', 'Race', 'Baseline']) {
+                forSubject('SUBJ1') {
+                    row '0', '2000-12-31 12:00', 'Female', '2000-12-31 12:00'
+                    row '10', '2000-12-31 12:01', 'Female', '2000-12-31 12:00'
+                    row '12', '2000-12-31 12:02', 'Female', '2000-12-31 12:00'
+                    row '10', '2000-12-31 12:05', 'Female', '2000-12-31 12:00'
+                }
+                forSubject('SUBJ2') {
+                    row '5', '2000-12-31 12:00', 'Male', '2000-12-31 12:00'
+                    row '13', '2000-12-31 12:02', 'Male', '2000-12-31 12:00'
+                    row '15', '2000-12-31 12:05', 'Male', '2000-12-31 12:00'
+                }
+            }
+        }
+        clinicalDataFirst.load(config)
+
+        def period1 = '2000-12-31 11:00'
+        def period2 = '2000-12-31 11:02'
+        def period3 = '2000-12-31 12:03'
+        def period4 = '2000-12-31 11:05'
+        def periodZero = '2000-12-31 12:00'
+
+        def clinicalData = ClinicalData.build('GSE0SLDDWTS', 'Test Study With Serial LDD with timestamp') {
+            mappingFile {
+                addMetaInfo(['MERGE_MODE: UPDATE'])
+                forDataFile('TEST.txt') {
+                    map('Vars+DATALABEL+$$Timestamp', 3, 'Timestamp', '6', VariableType.Timestamp)
+                    map('', 4, 'Timestamp', '', VariableType.Timestamp)
+                    map('Vars', 5, 'Sex')
+                    map('', 6, 'Baseline')
+                }
+            }
+            dataFile('TEST.txt', ['Days', 'Timestamp', 'Sex', 'Baseline']) {
+                forSubject('SUBJ1') {
+                    row '5', period1, 'Male', '2000-12-31 12:00'
+                    row '7',period3, 'Male', '2000-12-31 12:00'
+                    row '2', period2, 'Male', '2000-12-31 12:00'
+                    row '4', period4, 'Male', '2000-12-31 12:00'
+                }
+                forSubject('SUBJ3') {
+                    row '0', period1, 'Male', '2000-12-31 12:00'
+                    row '1', period2, 'Male', '2000-12-31 12:00'
+                    row '2', period4, 'Male', '2000-12-31 12:00'
+                }
+            }
+        }
+        String timepointsPath = "\\Test Studies\\Test Study With Serial LDD with timestamp\\Vars\\Timestamp"
+
+        when:
+        clinicalData.load(config)
+
+        then:
+        assertThat(sql, hasFact("$timepointsPath\\$period1\\", 'SUBJ1', 5))
+        assertThat(sql, hasFact("$timepointsPath\\$period2\\", 'SUBJ1', 2))
+        assertThat(sql, hasFact("$timepointsPath\\$period3\\", 'SUBJ1', 7))
+        assertThat(sql, hasFact("$timepointsPath\\$period4\\", 'SUBJ1', 4))
+        assertThat(sql, hasFact("$timepointsPath\\2000-12-31 12:00\\", 'SUBJ2', 5))
+        assertThat(sql, hasFact("$timepointsPath\\$period1\\", 'SUBJ3', 0))
+
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '-55', period4)
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '3', period3)
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '0', periodZero)
+
+    }
+
+    def 'it should load Serial LDD data With Timestamp  When All New Timestamps Greater Than Old Min Value merge mode UPDATE'() {
+        given:
+        def periodZero = '2000-12-31 12:00'
+        def clinicalDataFirst = ClinicalData.build('GSE0SLDDWTS', 'Test Study With Serial LDD with timestamp') {
+            mappingFile {
+                forDataFile('TEST.txt') {
+                    map('Vars+DATALABEL+$$Timestamp', 3, 'Timestamp', '6', VariableType.Timestamp)
+                    map('', 4, 'Timestamp', '', VariableType.Timestamp)
+                    map('Vars', 5, 'Sex')
+                    map('', 6, 'Baseline')
+                }
+            }
+            dataFile('TEST.txt', ['Days', 'Timestamp', 'Sex', 'Baseline']) {
+                forSubject('SUBJ1') {
+                    row '0', periodZero, 'Female', '2000-12-31 12:00'
+                    row '10', '2000-12-31 12:01', 'Female', '2000-12-31 12:00'
+                    row '12', '2000-12-31 12:02', 'Female', '2000-12-31 12:00'
+                    row '10', '2000-12-31 12:05', 'Female', '2000-12-31 12:00'
+                }
+                forSubject('SUBJ2') {
+                    row '5', periodZero, 'Male', '2000-12-31 12:00'
+                    row '13', '2000-12-31 12:02', 'Male', '2000-12-31 12:00'
+                    row '15', '2000-12-31 12:05', 'Male', '2000-12-31 12:00'
+                }
+            }
+        }
+        clinicalDataFirst.load(config)
+
+        def period1 = '2000-12-31 13:00'
+        def period2 = '2000-12-31 13:02'
+        def period3 = '2000-12-31 13:01'
+        def period4 = '2000-12-31 13:05'
+
+        def clinicalData = ClinicalData.build('GSE0SLDDWTS', 'Test Study With Serial LDD with timestamp') {
+            mappingFile {
+                addMetaInfo(['MERGE_MODE: UPDATE'])
+                forDataFile('TEST.txt') {
+                    map('Vars+DATALABEL+$$Timestamp', 3, 'Timestamp', '6', VariableType.Timestamp)
+                    map('', 4, 'Timestamp', '', VariableType.Timestamp)
+                    map('Vars', 5, 'Sex')
+                    map('', 6, 'Baseline')
+                }
+            }
+            dataFile('TEST.txt', ['Days', 'Timestamp St.1', 'Sex', 'Baseline']) {
+                forSubject('SUBJ1') {
+                    row '5', period1, 'Male', '2000-12-31 12:00'
+                    row '7',period3, 'Male', '2000-12-31 12:00'
+                    row '2', period2, 'Male', '2000-12-31 12:00'
+                    row '4', period4, 'Male', '2000-12-31 12:00'
+                }
+                forSubject('SUBJ3') {
+                    row '0', period1, 'Male', '2000-12-31 12:00'
+                    row '1', period2, 'Male', '2000-12-31 12:00'
+                }
+            }
+        }
+        String timepointsPath = "\\Test Studies\\Test Study With Serial LDD with timestamp\\Vars\\Timestamp"
+
+        when:
+        clinicalData.load(config)
+
+        then:
+        assertThat(sql, hasFact("$timepointsPath\\$period1\\", 'SUBJ1', 5))
+        assertThat(sql, hasFact("$timepointsPath\\$period2\\", 'SUBJ1', 2))
+        assertThat(sql, hasFact("$timepointsPath\\$period3\\", 'SUBJ1', 7))
+        assertThat(sql, hasFact("$timepointsPath\\$period4\\", 'SUBJ1', 4))
+        assertThat(sql, hasFact("$timepointsPath\\$periodZero\\", 'SUBJ2', 5))
+        assertThat(sql, hasFact("$timepointsPath\\$period1\\", 'SUBJ3', 0))
+
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '65', period4)
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '0', periodZero)
+    }
+
+    def 'it should load Serial LDD data with timestamp with two timestamp column'() {
+        given:
+        def clinicalData = ClinicalData.build('GSE0SLDDW2TS', 'Test Study With Serial LDD with timestamp with two column') {
+            mappingFile {
+                forDataFile('TEST.txt') {
+                    map('Vars+DATALABEL+$$Timestamp', 3, 'Timestamp', '6', VariableType.Timestamp)
+                    map('', 4, 'Timestamp', '', VariableType.Timestamp)
+                    map('Vars', 5, 'Sex')
+                    map('', 6, 'Baseline')
+                    map('Other+DATALABEL+$$Timestamp2', 7, 'Timestamp2', '6', VariableType.Timestamp)
+                    map('', 8, 'Timestamp2', '', VariableType.Timestamp)
+                }
+            }
+            dataFile('TEST.txt', ['Days', 'Timestamp', 'Sex', 'Baseline', 'Count', 'Timestamp2']) {
+                forSubject('SUBJ1') {
+                    row '0', '2000-12-31 12:00', 'Female', '2000-12-31 12:00', '1', '2000-12-31 14:00'
+                    row '10', '2000-12-31 12:01', 'Female', '2000-12-31 12:00', '2', '2000-12-31 14:01'
+                    row '12', '2000-12-31 12:02', 'Female', '2000-12-31 12:00', '3', '2000-12-31 14:02'
+                    row '10', '2000-12-31 12:05', 'Female', '2000-12-31 12:00', '4', '2000-12-31 14:03'
+                }
+                forSubject('SUBJ2') {
+                    row '5', '2000-12-31 12:00', 'Male', '2000-12-31 12:00', '1', '2000-12-31 14:00'
+                    row '13', '2000-12-31 12:02', 'Male', '2000-12-31 12:00', '10', '2000-12-31 14:01'
+                    row '15', '2000-12-31 12:05', 'Male', '2000-12-31 12:00', '100', '2000-12-31 14:02'
+                }
+            }
+        }
+        String timepointsPath = "\\Test Studies\\Test Study With Serial LDD with timestamp with two column\\Vars\\Timestamp"
+        String timepointsPathForSecond = "\\Test Studies\\Test Study With Serial LDD with timestamp with two column\\Other\\Timestamp2"
+
+        when:
+        clinicalData.load(config)
+
+        then:
+        assertThat db, hasNode("$timepointsPath\\2000-12-31 12:00\\").withPatientCount(2)
+        assertThat db, hasNode("$timepointsPath\\2000-12-31 12:00\\").withPatientCount(2)
+        assertThat db, hasNode("$timepointsPath\\2000-12-31 12:01\\").withPatientCount(1)
+        assertThat db, hasNode("$timepointsPathForSecond\\2000-12-31 14:00\\").withPatientCount(2)
+        assertThat db, hasNode("$timepointsPathForSecond\\2000-12-31 14:03\\").withPatientCount(1)
+
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '0', '2000-12-31 12:00')
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '5', '2000-12-31 12:05')
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPathForSecond, '120', '2000-12-31 14:00')
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPathForSecond, '123', '2000-12-31 14:03')
+    }
+
+    def 'it should load Serial LDD data with timestamp with two timestamp and baseline'() {
+        given:
+        def clinicalData = ClinicalData.build('GSE0SLDDW2TS2B', 'Test Study With Serial LDD with two timestamp and baseline') {
+            mappingFile {
+                forDataFile('TEST.txt') {
+                    map('Vars+DATALABEL+$$Timestamp', 3, 'Timestamp', '6', VariableType.Timestamp)
+                    map('', 4, 'Timestamp', '', VariableType.Timestamp)
+                    map('Vars', 5, 'Sex')
+                    map('', 6, 'Baseline')
+                    map('Other+DATALABEL+$$Timestamp2', 7, 'Timestamp2', '9', VariableType.Timestamp)
+                    map('', 8, 'Timestamp2', '', VariableType.Timestamp)
+                    map('', 9, 'Baseline2')
+                }
+            }
+            dataFile('TEST.txt', ['Days', 'Timestamp', 'Sex', 'Baseline', 'Count', 'Timestamp2', 'Baseline2']) {
+                forSubject('SUBJ1') {
+                    row '0', '2000-12-31 12:00', 'Female', '2000-12-31 12:00', '1', '2000-12-31 14:00','2000-12-31 13:00'
+                    row '10', '2000-12-31 12:01', 'Female', '2000-12-31 12:00', '2', '2000-12-31 14:01','2000-12-31 13:00'
+                    row '12', '2000-12-31 12:02', 'Female', '2000-12-31 12:00', '3', '2000-12-31 14:02','2000-12-31 13:00'
+                    row '10', '2000-12-31 12:05', 'Female', '2000-12-31 12:00', '4', '2000-12-31 14:03','2000-12-31 13:00'
+                }
+                forSubject('SUBJ2') {
+                    row '5', '2000-12-31 12:00', 'Male', '2000-12-31 12:00', '1', '2000-12-31 14:00','2000-12-31 13:00'
+                    row '13', '2000-12-31 12:02', 'Male', '2000-12-31 12:00', '10', '2000-12-31 14:01','2000-12-31 13:00'
+                    row '15', '2000-12-31 12:05', 'Male', '2000-12-31 12:00', '100', '2000-12-31 14:02','2000-12-31 13:00'
+                }
+            }
+        }
+        String timepointsPath = "\\Test Studies\\Test Study With Serial LDD with two timestamp and baseline\\Vars\\Timestamp"
+        String timepointsPathForSecond = "\\Test Studies\\Test Study With Serial LDD with two timestamp and baseline\\Other\\Timestamp2"
+
+        when:
+        clinicalData.load(config)
+
+        then:
+        assertThat db, hasNode("$timepointsPath\\2000-12-31 12:00\\").withPatientCount(2)
+        assertThat db, hasNode("$timepointsPath\\2000-12-31 12:00\\").withPatientCount(2)
+        assertThat db, hasNode("$timepointsPath\\2000-12-31 12:01\\").withPatientCount(1)
+        assertThat db, hasNode("$timepointsPathForSecond\\2000-12-31 14:00\\").withPatientCount(2)
+        assertThat db, hasNode("$timepointsPathForSecond\\2000-12-31 14:03\\").withPatientCount(1)
+
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '0', '2000-12-31 12:00')
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '5', '2000-12-31 12:05')
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPathForSecond, '60', '2000-12-31 14:00')
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPathForSecond, '63', '2000-12-31 14:03')
+    }
+
+    def checkMetaDataXMLForTimestamp(path, value, datetime) {
+        hasRecord("i2b2", [c_fullname: "$path\\$datetime\\"], [
+                c_metadataxml: {
+                    def metadata = new XmlParser().parseText(it as String)
+                    assertThat(metadata.Oktousevalues.text(), equalTo('Y'))
+                    assertThat(metadata.SeriesMeta.Value.text(), equalTo(value))
+                    assertThat(metadata.SeriesMeta.Unit.text(), equalTo('minutes'))
+                    assertThat(metadata.SeriesMeta.DisplayName.text(), equalTo(datetime))
+                    true
+                }
+        ])
     }
 }

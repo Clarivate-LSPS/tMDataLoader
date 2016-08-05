@@ -127,62 +127,6 @@ BEGIN
 		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return -16;
 	end if;
-
-	--	delete any existing data from lz_src_clinical_data and load new data
-	begin
-	delete from lz_src_clinical_data
-	where study_id = TrialId;
-	exception
-	when others then
-		errorNumber := SQLSTATE;
-		errorMessage := SQLERRM;
-		--Handle errors.
-		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
-		--End Proc
-		select cz_end_audit (jobID, 'FAIL') into rtnCd;
-		return -16;
-	get diagnostics rowCt := ROW_COUNT;
-	end;
-	stepCt := stepCt + 1;
-	select cz_write_audit(jobId,databaseName,procedureName,'Delete existing data from lz_src_clinical_data',rowCt,stepCt,'Done') into rtnCd;
-
-	begin
-	insert into lz_src_clinical_data
-	(study_id
-	,site_id
-	,subject_id
-	,visit_name
-	,data_label
-	,data_value
-	,category_cd
-	,etl_job_id
-	,etl_date
-	,ctrl_vocab_code)
-	select study_id
-		  ,site_id
-		  ,subject_id
-		  ,visit_name
-		  ,data_label
-		  ,data_value
-		  ,category_cd
-		  ,jobId
-		  ,etlDate
-		  ,ctrl_vocab_code
-	from lt_src_clinical_data;
-	exception
-	when others then
-		errorNumber := SQLSTATE;
-		errorMessage := SQLERRM;
-		--Handle errors.
-		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
-		--End Proc
-		select cz_end_audit (jobID, 'FAIL') into rtnCd;
-		return -16;
-	end;
-	get diagnostics rowCt := ROW_COUNT;
-	stepCt := stepCt + 1;
-	select cz_write_audit(jobId,databaseName,procedureName,'Insert data into lz_src_clinical_data',rowCt,stepCt,'Done') into rtnCd;
-
 	--	truncate wrk_clinical_data and load data from external file
 
 	execute ('truncate table wrk_clinical_data');
@@ -201,6 +145,7 @@ BEGIN
 	,ctrl_vocab_code
 	,sample_cd
 	,valuetype_cd
+	,timestamp_baseline
 	)
 	select study_id
 		  ,site_id
@@ -212,6 +157,7 @@ BEGIN
 		  ,ctrl_vocab_code
 		  ,sample_cd
 			,valuetype_cd
+			,timestamp_baseline
 	from lt_src_clinical_data;
 	exception
 	when others then
@@ -777,6 +723,7 @@ BEGIN
 	,data_value
 	,data_type
 	,valuetype_cd
+	,timestamp_baseline
 	)
   select DISTINCT
     Case
@@ -792,6 +739,7 @@ BEGIN
     ,case when a.data_type = 'T' then a.data_value else null end as data_value
     ,a.data_type
 		,a.valuetype_cd
+		,timestamp_baseline
 	from  wrk_clinical_data a;
 	get diagnostics rowCt := ROW_COUNT;
 	exception
@@ -1018,7 +966,7 @@ BEGIN
 	update i2b2metadata.i2b2
 	set c_name=ncd.node_name
 	   ,c_columndatatype='T'
-	   ,c_metadataxml=i2b2_build_metadata_xml(ncd.node_name, ncd.data_type, ncd.valuetype_cd)
+	   ,c_metadataxml=i2b2_build_metadata_xml(ncd.node_name, ncd.data_type, ncd.valuetype_cd, ncd.timestamp_baseline)
 	from wt_trial_nodes ncd
 	where c_fullname = ncd.leaf_node;
 	get diagnostics rowCt := ROW_COUNT;
@@ -1077,7 +1025,7 @@ BEGIN
 		  , 'T' --t.data_type
 		  ,'trial:' || TrialID
 		  ,'@'
-		  ,i2b2_build_metadata_xml(c.name_char, t.data_type, t.valuetype_cd)
+		  ,i2b2_build_metadata_xml(c.name_char, t.data_type, t.valuetype_cd, t.timestamp_baseline)
     from i2b2demodata.concept_dimension c
 		,wt_trial_nodes t
     where c.concept_path = t.leaf_node
