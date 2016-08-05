@@ -145,7 +145,7 @@ BEGIN
 	,ctrl_vocab_code
 	,sample_cd
 	,valuetype_cd
-	,timestamp_baseline
+	,baseline_value
 	)
 	select study_id
 		  ,site_id
@@ -157,7 +157,7 @@ BEGIN
 		  ,ctrl_vocab_code
 		  ,sample_cd
 			,valuetype_cd
-			,timestamp_baseline
+			,baseline_value
 	from lt_src_clinical_data;
 	exception
 	when others then
@@ -723,7 +723,7 @@ BEGIN
 	,data_value
 	,data_type
 	,valuetype_cd
-	,timestamp_baseline
+	,baseline_value
 	)
   select DISTINCT
     Case
@@ -739,7 +739,7 @@ BEGIN
     ,case when a.data_type = 'T' then a.data_value else null end as data_value
     ,a.data_type
 		,a.valuetype_cd
-		,timestamp_baseline
+		,baseline_value
 	from  wrk_clinical_data a;
 	get diagnostics rowCt := ROW_COUNT;
 	exception
@@ -966,7 +966,7 @@ BEGIN
 	update i2b2metadata.i2b2
 	set c_name=ncd.node_name
 	   ,c_columndatatype='T'
-	   ,c_metadataxml=i2b2_build_metadata_xml(ncd.node_name, ncd.data_type, ncd.valuetype_cd, ncd.timestamp_baseline)
+	   ,c_metadataxml=i2b2_build_metadata_xml(ncd.node_name, ncd.data_type, ncd.valuetype_cd, ncd.baseline_value)
 	from wt_trial_nodes ncd
 	where c_fullname = ncd.leaf_node;
 	get diagnostics rowCt := ROW_COUNT;
@@ -1025,7 +1025,7 @@ BEGIN
 		  , 'T' --t.data_type
 		  ,'trial:' || TrialID
 		  ,'@'
-		  ,i2b2_build_metadata_xml(c.name_char, t.data_type, t.valuetype_cd, t.timestamp_baseline)
+		  ,i2b2_build_metadata_xml(c.name_char, t.data_type, t.valuetype_cd, t.baseline_value)
     from i2b2demodata.concept_dimension c
 		,wt_trial_nodes t
     where c.concept_path = t.leaf_node

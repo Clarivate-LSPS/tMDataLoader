@@ -849,7 +849,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         def clinicalData = ClinicalData.build('GSE0SLDDWTS', 'Test Study With Serial LDD with timestamp') {
             mappingFile {
                 forDataFile('TEST.txt') {
-                    map('Vars+DATALABEL+$$Timestamp', 3, 'Timestamp', '6', VariableType.Timestamp)
+                    map('Vars+DATALABEL+$$Timestamp', 3, 'Timestamp', 'Baseline', VariableType.Timestamp)
                     map('', 4, 'Timestamp', '', VariableType.Timestamp)
                     map('Vars', 5, 'Sex')
                     map('', 6, 'Baseline')
@@ -888,7 +888,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         def clinicalDataFirst = ClinicalData.build('GSE0SLDDWTS', 'Test Study With Serial LDD with timestamp') {
             mappingFile {
                 forDataFile('TEST.txt') {
-                    map('Vars+DATALABEL+$$Timestamp', 3, 'Timestamp', '6', VariableType.Timestamp)
+                    map('Vars+DATALABEL+$$Timestamp', 3, 'Timestamp', 'Baseline', VariableType.Timestamp)
                     map('', 4, 'Timestamp', '', VariableType.Timestamp)
                     map('Vars', 5, 'Sex')
                     map('', 6, 'Baseline')
@@ -919,7 +919,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
             mappingFile {
                 addMetaInfo(['MERGE_MODE: APPEND'])
                 forDataFile('TEST.txt') {
-                    map('Vars+DATALABEL+$$Timestamp', 3, 'Timestamp', '6', VariableType.Timestamp)
+                    map('Vars+DATALABEL+$$Timestamp', 3, 'Timestamp', 'Baseline', VariableType.Timestamp)
                     map('', 4, 'Timestamp', '', VariableType.Timestamp)
                     map('Vars', 5, 'Race')
                     map('', 6, 'Baseline')
@@ -954,7 +954,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         def clinicalDataFirst = ClinicalData.build('GSE0SLDDWTS', 'Test Study With Serial LDD with timestamp') {
             mappingFile {
                 forDataFile('TEST.txt') {
-                    map('Vars+DATALABEL+$$Timestamp', 3, 'Timestamp', '6', VariableType.Timestamp)
+                    map('Vars+DATALABEL+$$Timestamp', 3, 'Timestamp', 'Baseline', VariableType.Timestamp)
                     map('', 4, 'Timestamp', '', VariableType.Timestamp)
                     map('Vars', 5, 'Sex')
                     map('', 6, 'Baseline')
@@ -986,7 +986,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
             mappingFile {
                 addMetaInfo(['MERGE_MODE: APPEND'])
                 forDataFile('TEST.txt') {
-                    map('Vars+DATALABEL+$$Timestamp', 3, 'Timestamp', '6', VariableType.Timestamp)
+                    map('Vars+DATALABEL+$$Timestamp', 3, 'Timestamp', 'Baseline', VariableType.Timestamp)
                     map('', 4, 'Timestamp', '', VariableType.Timestamp)
                     map('Vars', 5, 'Race')
                     map('', 6, 'Baseline')
@@ -1022,7 +1022,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         def clinicalDataFirst = ClinicalData.build('GSE0SLDDWTS', 'Test Study With Serial LDD with timestamp') {
             mappingFile {
                 forDataFile('TEST.txt') {
-                    map('Vars+DATALABEL+$$Timestamp', 3, 'Timestamp', '6', VariableType.Timestamp)
+                    map('Vars+DATALABEL+$$Timestamp', 3, 'Timestamp', 'Baseline', VariableType.Timestamp)
                     map('', 4, 'Timestamp', '', VariableType.Timestamp)
                     map('Vars', 5, 'Sex')
                     map('', 6, 'Baseline')
@@ -1054,7 +1054,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
             mappingFile {
                 addMetaInfo(['MERGE_MODE: UPDATE'])
                 forDataFile('TEST.txt') {
-                    map('Vars+DATALABEL+$$Timestamp', 3, 'Timestamp', '6', VariableType.Timestamp)
+                    map('Vars+DATALABEL+$$Timestamp', 3, 'Timestamp', 'Baseline', VariableType.Timestamp)
                     map('', 4, 'Timestamp', '', VariableType.Timestamp)
                     map('Vars', 5, 'Sex')
                     map('', 6, 'Baseline')
@@ -1099,7 +1099,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         def clinicalDataFirst = ClinicalData.build('GSE0SLDDWTS', 'Test Study With Serial LDD with timestamp') {
             mappingFile {
                 forDataFile('TEST.txt') {
-                    map('Vars+DATALABEL+$$Timestamp', 3, 'Timestamp', '6', VariableType.Timestamp)
+                    map('Vars+DATALABEL+$$Timestamp', 3, 'Timestamp', 'Baseline', VariableType.Timestamp)
                     map('', 4, 'Timestamp', '', VariableType.Timestamp)
                     map('Vars', 5, 'Sex')
                     map('', 6, 'Baseline')
@@ -1130,7 +1130,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
             mappingFile {
                 addMetaInfo(['MERGE_MODE: UPDATE'])
                 forDataFile('TEST.txt') {
-                    map('Vars+DATALABEL+$$Timestamp', 3, 'Timestamp', '6', VariableType.Timestamp)
+                    map('Vars+DATALABEL+$$Timestamp', 3, 'Timestamp', 'Baseline', VariableType.Timestamp)
                     map('', 4, 'Timestamp', '', VariableType.Timestamp)
                     map('Vars', 5, 'Sex')
                     map('', 6, 'Baseline')
@@ -1171,11 +1171,11 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         def clinicalData = ClinicalData.build('GSE0SLDDW2TS', 'Test Study With Serial LDD with timestamp with two column') {
             mappingFile {
                 forDataFile('TEST.txt') {
-                    map('Vars+DATALABEL+$$Timestamp', 3, 'Timestamp', '6', VariableType.Timestamp)
+                    map('Vars+DATALABEL+$$Timestamp', 3, 'Timestamp', 'Baseline', VariableType.Timestamp)
                     map('', 4, 'Timestamp', '', VariableType.Timestamp)
                     map('Vars', 5, 'Sex')
                     map('', 6, 'Baseline')
-                    map('Other+DATALABEL+$$Timestamp2', 7, 'Timestamp2', '6', VariableType.Timestamp)
+                    map('Other+DATALABEL+$$Timestamp2', 7, 'Timestamp2', 'Baseline2', VariableType.Timestamp)
                     map('', 8, 'Timestamp2', '', VariableType.Timestamp)
                 }
             }
@@ -1217,11 +1217,11 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         def clinicalData = ClinicalData.build('GSE0SLDDW2TS2B', 'Test Study With Serial LDD with two timestamp and baseline') {
             mappingFile {
                 forDataFile('TEST.txt') {
-                    map('Vars+DATALABEL+$$Timestamp', 3, 'Timestamp', '6', VariableType.Timestamp)
+                    map('Vars+DATALABEL+$$Timestamp', 3, 'Timestamp', 'Baseline', VariableType.Timestamp)
                     map('', 4, 'Timestamp', '', VariableType.Timestamp)
                     map('Vars', 5, 'Sex')
                     map('', 6, 'Baseline')
-                    map('Other+DATALABEL+$$Timestamp2', 7, 'Timestamp2', '9', VariableType.Timestamp)
+                    map('Other+DATALABEL+$$Timestamp2', 7, 'Timestamp2', 'Baseline2', VariableType.Timestamp)
                     map('', 8, 'Timestamp2', '', VariableType.Timestamp)
                     map('', 9, 'Baseline2')
                 }

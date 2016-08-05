@@ -30,6 +30,7 @@ class ClinicalDataMapping {
         VariableType variableType
         List<ValidationRule> validationRules
         String baseline
+        int baselineColumn
     }
 
     public static final class FileMapping {
@@ -120,7 +121,7 @@ class ClinicalDataMapping {
                             variableType: variableType,
                             validationRules: validationRules
                     )
-                    if (columnMapping.containsKey('baseline')){
+                    if (columnMapping.containsKey('baseline')) {
                         entry.baseline = cols[columnMapping['baseline']]
                     }
                     if (entry.CATEGORY_CD.length() > colsMetaSize.CATEGORY_CD) {
@@ -153,6 +154,14 @@ class ClinicalDataMapping {
                     }
                     curMapping._DATA.add(entry)
                 }
+            }
+        }
+
+        for (def entry : mappings.entrySet()) {
+            entry.value.fileMapping._DATA.each { e ->
+                e.baselineColumn = entry.value.fileMapping._DATA.find {
+                    it.DATA_LABEL == e.baseline
+                }?.COLUMN ?: -1
             }
         }
 

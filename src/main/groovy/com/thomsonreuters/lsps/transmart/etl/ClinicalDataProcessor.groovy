@@ -87,7 +87,7 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
                             category_cd       : '', // CATEGORY_CD
                             ctrl_vocab_code   : '', // CTRL_VOCAB_CODE - unused
                             valuetype_cd      : (String) null,
-                            timestamp_baseline: (String) null
+                            baseline_value    : (String) null
                     ]
 
                     if (_DATA) {
@@ -141,7 +141,7 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
                                 out['category_cd'] = cat_cd
 
                                 if (v.baseline) {
-                                    out['timestamp_baseline'] = cols[Integer.parseInt(v.baseline)]
+                                    out['baseline_value'] = cols[v.baselineColumn]
                                 }
 
                                 processRow(out, lineNumber)
@@ -233,11 +233,11 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
     private void processFile(Path f, ClinicalDataMapping.FileMapping fileMapping) {
         DataLoader.start(database, "lt_src_clinical_data", ['STUDY_ID', 'SITE_ID', 'SUBJECT_ID', 'VISIT_NAME',
                                                             'DATA_LABEL', 'DATA_VALUE', 'CATEGORY_CD', 'SAMPLE_CD',
-                                                            'VALUETYPE_CD', 'TIMESTAMP_BASELINE']) { st ->
+                                                            'VALUETYPE_CD', 'BASELINE_VALUE']) { st ->
             long rowsCount = processEachRow(f, fileMapping) { row, lineNumber ->
                 try {
                     st.addBatch([row.study_id, row.site_id, row.subj_id, row.visit_name, row.data_label,
-                                 row.data_value, row.category_cd, row.sample_cd, row.valuetype_cd, row.timestamp_baseline])
+                                 row.data_value, row.category_cd, row.sample_cd, row.valuetype_cd, row.baseline_value])
                 } catch (SQLException e) {
                     throw new DataProcessingException("Wrong data close to ${lineNumber} line.\n ${e.getLocalizedMessage()}")
                 }
