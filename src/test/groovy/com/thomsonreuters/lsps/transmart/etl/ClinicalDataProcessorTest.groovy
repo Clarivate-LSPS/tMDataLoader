@@ -1175,7 +1175,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
                     map('', 4, 'Timestamp', '', VariableType.Timestamp)
                     map('Vars', 5, 'Sex')
                     map('', 6, 'Baseline')
-                    map('Other+DATALABEL+$$Timestamp2', 7, 'Timestamp2', 'Baseline2', VariableType.Timestamp)
+                    map('Other+DATALABEL+$$Timestamp2', 7, 'Timestamp2', 'Baseline', VariableType.Timestamp)
                     map('', 8, 'Timestamp2', '', VariableType.Timestamp)
                 }
             }

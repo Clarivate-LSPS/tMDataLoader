@@ -228,6 +228,7 @@ BEGIN
   ,usubjid
   ,data_type
 	,valuetype_cd
+  ,baseline_value
 	)
 	select study_id
 		  ,site_id
@@ -242,6 +243,7 @@ BEGIN
       ,(CASE WHEN site_id IS NOT NULL THEN TrialID || ':' || site_id || ':' || subject_id ELSE TrialID || ':' || subject_id END)
       ,'T'
 			,valuetype_cd
+			,baseline_value
 	from lt_src_clinical_data
 	WHERE data_value is not null;
 	
@@ -693,6 +695,7 @@ BEGIN
 	,data_value
 	,data_type
 	,valuetype_cd
+	,baseline_value
 	)
   select /*+ parallel(a, 4) */  DISTINCT
 		Case
@@ -708,6 +711,7 @@ BEGIN
 		decode(a.data_type,'T',a.data_value,null) as data_value
     ,a.data_type
 		,a.valuetype_cd
+		,baseline_value
 	from  wrk_clinical_data a;
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Create leaf nodes for trial',SQL%ROWCOUNT,stepCt,'Done');
@@ -895,7 +899,7 @@ BEGIN
 	--	update i2b2 to pick up change in name, data_type for leaf nodes
 	merge /*+ parallel(i2b2, 8) */ into i2b2 b
 	using (
-		select distinct c.concept_path, c.name_char, c.sourcesystem_cd, c.concept_cd, t.data_type, t.valuetype_cd
+		select distinct c.concept_path, c.name_char, c.sourcesystem_cd, c.concept_cd, t.data_type, t.valuetype_cd, t.baseline_value
 		from concept_dimension c
 			,wt_trial_nodes t
 		where c.concept_path = t.leaf_node
@@ -904,7 +908,7 @@ BEGIN
 		update set
 			c_name = c.name_char,
 			c_columndatatype = 'T',
-			c_metadataxml = I2B2_BUILD_METADATA_XML(c.name_char, c.data_type, c.valuetype_cd)
+			c_metadataxml = I2B2_BUILD_METADATA_XML(c.name_char, c.data_type, c.valuetype_cd,c.baseline_value)
 	when not matched then
 		insert (
 			c_hlevel
@@ -948,7 +952,7 @@ BEGIN
 			,'T'		-- if i2b2 gets fixed to respect c_columndatatype then change to t.data_type
 			,'trial:' || TrialID
 			,i2b2_id_seq.nextval
-			,I2B2_BUILD_METADATA_XML(c.name_char, c.data_type, c.valuetype_cd)
+			,I2B2_BUILD_METADATA_XML(c.name_char, c.data_type, c.valuetype_cd, c.baseline_value)
 		);
 
 	stepCt := stepCt + 1;
