@@ -81,6 +81,15 @@ class VCFDataProcessor extends AbstractDataProcessor {
         return true
     }
 
+    static Calendar getCurrentETLDate() {
+        Calendar cal = Calendar.getInstance()
+        cal.clear(Calendar.HOUR)
+        cal.clear(Calendar.MINUTE)
+        cal.clear(Calendar.SECOND)
+        cal.clear(Calendar.MILLISECOND)
+        return cal
+    }
+
     def createDataSet(Sql sql, trialId, sourceCd) {
         use(SqlMethods) {
             String dataSetId = "${trialId}:${sourceCd}"
@@ -89,7 +98,7 @@ class VCFDataProcessor extends AbstractDataProcessor {
             logger.log(LogType.DEBUG, 'Loading study information into deapp.de_variant_dataset')
             sql.insertRecord('deapp.de_variant_dataset',
                     dataset_id: dataSetId, etl_id: 'tMDataLoader', genome: 'hg19',
-                    etl_date: Calendar.getInstance())
+                    etl_date: getCurrentETLDate())
             sql.commit()
             return dataSetId
         }
