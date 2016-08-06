@@ -75,6 +75,7 @@ AS
   procedureName VARCHAR(100);
   jobID number(18,0);
   stepCt number(18,0);
+	session_decimal_separator varchar2(1);
   
   duplicate_values	exception;
   invalid_topNode	exception;
@@ -166,7 +167,10 @@ BEGIN
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Validate secure params',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
-	
+
+	select substr(value,1,1) session_decimal_separator into session_decimal_separator
+	from  nls_session_parameters
+	where parameter = 'NLS_NUMERIC_CHARACTERS';
 	--	delete any existing data from lz_src_clinical_data and load new data
 	
 	/*delete from lz_src_clinical_data
@@ -476,9 +480,17 @@ BEGIN
 		data_value  = trim(trailing ',' from trim(replace(replace(data_value,'  ', ' '),' ,',','))),
 --		sample_type = trim(trailing ',' from trim(replace(replace(sample_type,'  ', ' '),' ,',','))),
 		visit_name  = trim(trailing ',' from trim(replace(replace(visit_name,'  ', ' '),' ,',',')));*/
-		
-	 -- July 2013. Performace fix by TR. Merge into one query
-   
+
+
+	update /*+ parallel(4) */ wrk_clinical_data
+	set data_value = regexp_replace(data_value, '\.|,',session_decimal_separator)
+	where is_number(data_value) = 0;
+
+	stepCt := stepCt + 1;
+	cz_write_audit(jobId,databaseName,procedureName,'Changed decimal separator',SQL%ROWCOUNT,stepCt,'Done');
+	commit;
+
+	-- July 2013. Performace fix by TR. Merge into one query
 	update /*+ parallel(4) */ wrk_clinical_data
 	set data_label  = trim(trailing ',' from trim(replace(replace(/**/
 				replace(replace(replace(replace(replace(data_label,'%',' Pct'),'&',' and '),'+',' and '),'_',' '),'(plus)','+')
