@@ -76,6 +76,7 @@ AS
   procedureName VARCHAR(100);
   jobID number(18,0);
   stepCt number(18,0);
+	session_decimal_separator varchar2(1);
 
   --unmapped_patients exception;
   missing_platform	exception;
@@ -241,6 +242,17 @@ BEGIN
 	cz_write_audit(jobId,databaseName,procedureName,'Uppercase trial_name in lt_src_mrna_subj_samp_map',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
 
+	select substr(value,1,1) session_decimal_separator into session_decimal_separator
+	from  nls_session_parameters
+	where parameter = 'NLS_NUMERIC_CHARACTERS';
+
+	update /*+ parallel(4) */ lt_src_mrna_data
+	set intensity_value = regexp_replace(intensity_value, '\.|,',session_decimal_separator)
+	where is_number(intensity_value) = 0;
+
+	stepCt := stepCt + 1;
+	cz_write_audit(jobId,databaseName,procedureName,'Changed decimal separator',SQL%ROWCOUNT,stepCt,'Done');
+	commit;
 	--	create records in patient_dimension for subject_ids if they do not exist
 	--	format of sourcesystem_cd:  trial:[site:]subject_cd
 
