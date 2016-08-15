@@ -59,22 +59,6 @@ BEGIN
 	SELECT COUNT(*)
 	INTO rows
 	FROM dba_indexes
-	WHERE owner = '&TM_CZ_SCHEMA'
-	AND index_name = 'IDX_TMP_SUBJ_USUBJID';
-	
-	if rows < 1
-	THEN
-		create_sql := 'CREATE INDEX "&TM_CZ_SCHEMA"."IDX_TMP_SUBJ_USUBJID" ON "&TM_CZ_SCHEMA"."TMP_SUBJECT_INFO "
-  	  	(
-    	  "USUBJID"
-  		) TABLESPACE "INDX"';
-		dbms_output.put_line(create_sql);
-		EXECUTE IMMEDIATE create_sql;
-	END IF;
-	
-	SELECT COUNT(*)
-	INTO rows
-	FROM dba_indexes
 	WHERE owner = '&TM_LZ_SCHEMA'
 	AND index_name = 'IDX_SCD_STUDY';
 	
