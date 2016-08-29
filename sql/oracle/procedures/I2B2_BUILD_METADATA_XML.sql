@@ -6,8 +6,8 @@ CREATE OR REPLACE FUNCTION "I2B2_BUILD_METADATA_XML"(
   series_value     VARCHAR2(200) := NULL;
   series_unit_name VARCHAR2(200) := NULL;
   iter             INT;
-  minutes          NUMBER(18,0);
-  negative         INT := 0 ;
+  minutes          NUMBER(18, 0);
+  negative         INT := 0;
   dName            VARCHAR2(4000);
   BEGIN
     IF valuetype_cd = 'TIMEPOINT'
@@ -17,51 +17,91 @@ CREATE OR REPLACE FUNCTION "I2B2_BUILD_METADATA_XML"(
         series_value := '0';
         series_unit_name := 'minutes';
       ELSE
-        iter := 1;
-        minutes := 0;
-
-        select INSTR(display_name, '-', 1) into negative from dual;
-        if (negative > 0 ) then
-          dName := substr(display_name, (negative + 1));
-        ELSE
-          dName := display_name;
-        END IF;
-
-        WHILE (REGEXP_INSTR(dName, '[0-9]+ (week|weeks|minute|minutes|hour|hours|day|days|year|years|month|months)+', iter) > 0) LOOP
-          series_value := REGEXP_SUBSTR(dName, '[0-9]+', iter);
-          series_unit_name := LOWER(REGEXP_SUBSTR(dName, '(week|weeks|minute|minutes|hour|hours|day|days|year|years|month|months)+', iter + 2));
-
-          iter := REGEXP_INSTR(dName, '[0-9]+ (week|weeks|minute|minutes|hour|hours|day|days|year|years|month|months)+', iter) + 4;
-          IF series_unit_name IN ('minute','minutes')
+        IF (regexp_instr(display_name, '^[a-zA-Z]+ -?[0-9]+') > 0)
+        THEN
+          series_value := REGEXP_SUBSTR(display_name, '-?[0-9]+');
+          series_unit_name := LOWER(REGEXP_SUBSTR(display_name, '[a-zA-Z]+'));
+          IF series_unit_name  IN ('minute', 'minutes')
           THEN
             series_unit_name := 'minutes';
-            minutes := minutes + TO_NUMBER(series_value);
           ELSIF series_unit_name IN ('hour', 'hours')
             THEN
               series_unit_name := 'minutes';
-              minutes := minutes + TO_NUMBER(series_value) * 60;
+              series_value := TO_CHAR(TO_NUMBER(series_value) * 60);
           ELSIF series_unit_name IN ('day', 'days')
             THEN
               series_unit_name := 'minutes';
-              minutes := minutes + TO_NUMBER(series_value) * 60 * 24;
+              series_value := TO_CHAR(TO_NUMBER(series_value) * 60 * 24);
           ELSIF series_unit_name IN ('week', 'weeks')
             THEN
               series_unit_name := 'minutes';
-              minutes := minutes + TO_NUMBER(series_value) * 60 * 24 * 7;
+              series_value := TO_CHAR(TO_NUMBER(series_value) * 60 * 24 * 7);
           ELSIF series_unit_name IN ('month', 'months')
             THEN
               series_unit_name := 'minutes';
-              minutes := minutes + TO_NUMBER(series_value) * 60 * 24 * 30;
+              series_value := TO_CHAR(TO_NUMBER(series_value) * 60 * 24 * 30);
           ELSIF series_unit_name IN ('year', 'years')
             THEN
               series_unit_name := 'minutes';
-              minutes := minutes + TO_NUMBER(series_value) * 60 * 24 * 30 * 12;
+              series_value := TO_CHAR(TO_NUMBER(series_value) * 60 * 24 * 30 * 12);
           END IF;
-        END LOOP;
-        if (negative > 0) THEN
-          minutes := -1 * minutes;
+        ELSE
+          iter := 1;
+          minutes := 0;
+
+          SELECT INSTR(display_name, '-', 1)
+          INTO negative
+          FROM dual;
+          IF (negative > 0)
+          THEN
+            dName := substr(display_name, (negative + 1));
+          ELSE
+            dName := display_name;
+          END IF;
+
+          WHILE (
+            REGEXP_INSTR(dName, '[0-9]+ (week|weeks|minute|minutes|hour|hours|day|days|year|years|month|months)+', iter)
+            > 0) LOOP
+            series_value := REGEXP_SUBSTR(dName, '[0-9]+', iter);
+            series_unit_name := LOWER(
+                REGEXP_SUBSTR(dName, '(week|weeks|minute|minutes|hour|hours|day|days|year|years|month|months)+',
+                              iter + 2));
+
+            iter :=
+            REGEXP_INSTR(dName, '[0-9]+ (week|weeks|minute|minutes|hour|hours|day|days|year|years|month|months)+', iter)
+            + 4;
+            IF series_unit_name IN ('minute', 'minutes')
+            THEN
+              series_unit_name := 'minutes';
+              minutes := minutes + TO_NUMBER(series_value);
+            ELSIF series_unit_name IN ('hour', 'hours')
+              THEN
+                series_unit_name := 'minutes';
+                minutes := minutes + TO_NUMBER(series_value) * 60;
+            ELSIF series_unit_name IN ('day', 'days')
+              THEN
+                series_unit_name := 'minutes';
+                minutes := minutes + TO_NUMBER(series_value) * 60 * 24;
+            ELSIF series_unit_name IN ('week', 'weeks')
+              THEN
+                series_unit_name := 'minutes';
+                minutes := minutes + TO_NUMBER(series_value) * 60 * 24 * 7;
+            ELSIF series_unit_name IN ('month', 'months')
+              THEN
+                series_unit_name := 'minutes';
+                minutes := minutes + TO_NUMBER(series_value) * 60 * 24 * 30;
+            ELSIF series_unit_name IN ('year', 'years')
+              THEN
+                series_unit_name := 'minutes';
+                minutes := minutes + TO_NUMBER(series_value) * 60 * 24 * 30 * 12;
+            END IF;
+          END LOOP;
+          IF (negative > 0)
+          THEN
+            minutes := -1 * minutes;
+          END IF;
+          series_value := TO_CHAR(minutes);
         END IF;
-        series_value := TO_CHAR(minutes);
       END IF;
     END IF;
 

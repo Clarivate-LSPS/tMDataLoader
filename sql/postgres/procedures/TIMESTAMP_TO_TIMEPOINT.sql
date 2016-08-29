@@ -1,5 +1,5 @@
-CREATE OR REPLACE FUNCTION i2b2_modifi_last_part_path(
-  leaf_node      CHARACTER VARYING,
+CREATE OR REPLACE FUNCTION timestamp_to_timepoint(
+  mValue      CHARACTER VARYING,
   baseline_value CHARACTER VARYING
 )
   RETURNS CHARACTER VARYING AS
@@ -7,7 +7,7 @@ $BODY$
 DECLARE
   series_value VARCHAR(200) := NULL;
   result       VARCHAR(2000) := NULL;
-  last_part    TEXT [];
+  last_part    VARCHAR(200);
   rawValue     NUMERIC(20, 0);
   diffValue    INTERVAL;
   secondValue  NUMERIC(4, 0);
@@ -17,8 +17,8 @@ DECLARE
   yearValue    NUMERIC(4, 0);
 BEGIN
   series_value := '';
-  last_part := regexp_matches(leaf_node, '.*\\([0-9]{1,4}-[0-9]{1,2}-[0-9]{1,2} [0-9]{1,2}:[0-9]{1,2}:?[0-9]{0,2})\\$');
-  SELECT (to_timestamp(last_part [1], 'YYYY-MM-DD HH24:MI:SS') :: TIMESTAMP WITHOUT TIME ZONE -
+  last_part := mValue;
+  SELECT (to_timestamp(last_part, 'YYYY-MM-DD HH24:MI:SS') :: TIMESTAMP WITHOUT TIME ZONE -
           to_timestamp(baseline_value, 'YYYY-MM-DD HH24:MI:SS') :: TIMESTAMP WITHOUT TIME ZONE)
   INTO diffValue;
 
@@ -27,7 +27,7 @@ BEGIN
   IF (rawValue < 0)
   THEN series_value := '-';
     SELECT (to_timestamp(baseline_value, 'YYYY-MM-DD HH24:MI:SS') :: TIMESTAMP WITHOUT TIME ZONE -
-            to_timestamp(last_part [1], 'YYYY-MM-DD HH24:MI:SS') :: TIMESTAMP WITHOUT TIME ZONE)
+            to_timestamp(last_part, 'YYYY-MM-DD HH24:MI:SS') :: TIMESTAMP WITHOUT TIME ZONE)
     INTO diffValue;
   END IF;
 
@@ -70,8 +70,7 @@ BEGIN
     ELSE series_value := series_value || ' '; END IF; END IF;
 
   series_value := trim(series_value);
-  result := regexp_replace(leaf_node, last_part [1] || '\\$', series_value || '\\');
-  RETURN result;
+  RETURN series_value;
 END;
 $BODY$
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER

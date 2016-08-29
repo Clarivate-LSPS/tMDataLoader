@@ -1,5 +1,5 @@
-CREATE OR REPLACE FUNCTION "I2B2_MODIFI_LAST_PART_PATH"(
-  leaf_node VARCHAR2,
+CREATE OR REPLACE FUNCTION "TIMESTAMP_TO_TIMEPOINT"(
+  mValue VARCHAR2,
   baseline  VARCHAR2)
   RETURN VARCHAR2 IS
   series_value     VARCHAR2(200) := NULL;
@@ -16,9 +16,7 @@ CREATE OR REPLACE FUNCTION "I2B2_MODIFI_LAST_PART_PATH"(
   modString        VARCHAR2(4000);
   BEGIN
     series_value := '';
-    last_part := REGEXP_SUBSTR(REGEXP_SUBSTR(leaf_node,
-                                             '\\([0-9]{1,4}-[0-9]{1,2}-[0-9]{1,2} [0-9]{1,2}:[0-9]{1,2}:?[0-9]{0,2})\\$'),
-                               '([0-9]{1,4}-[0-9]{1,2}-[0-9]{1,2} [0-9]{1,2}:[0-9]{1,2}:?[0-9]{0,2})');
+    last_part := mValue;
     diffValue := TO_TIMESTAMP(last_part, 'YYYY-MM-DD HH24:MI:SS') - TO_TIMESTAMP(baseline, 'YYYY-MM-DD HH24:MI:SS');
     diffDate := TO_DATE(last_part, 'YYYY-MM-DD HH24:MI:SS') - TO_DATE(baseline, 'YYYY-MM-DD HH24:MI:SS');
 
@@ -75,7 +73,6 @@ CREATE OR REPLACE FUNCTION "I2B2_MODIFI_LAST_PART_PATH"(
 
 
     series_value := trim(series_value);
-    modString := regexp_replace(leaf_node, last_part || '\\$', series_value || '\\');
-    RETURN modString;
+    RETURN series_value;
   END;
 /

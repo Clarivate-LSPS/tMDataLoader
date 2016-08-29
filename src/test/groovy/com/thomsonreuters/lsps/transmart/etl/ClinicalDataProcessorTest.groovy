@@ -688,20 +688,20 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
             }
             dataFile('TEST.txt', ['Days', 'Time point', 'Sex']) {
                 forSubject('SUBJ1') {
-                    row '20', '-1 Week', 'Female'
+                    row '20', 'Week -1', 'Female'
                     row '0', 'Baseline', 'Female'
-                    row '1', '1 Day', 'Female'
-                    row '7', '1 Week', 'Female'
-                    row '60', '2 Month', 'Female'
-                    row '30', '1 months', 'Female'
-                    row '3', '3 days', 'Female'
-                    row '2', '2 day', 'Female'
+                    row '1', 'Day 1', 'Female'
+                    row '7', 'Week 1', 'Female'
+                    row '60', 'Month 2', 'Female'
+                    row '30', 'months 1', 'Female'
+                    row '3', 'days 3', 'Female'
+                    row '2', 'day 2', 'Female'
                 }
                 forSubject('SUBJ2') {
                     row '0', 'Baseline', 'Male'
-                    row '30', '3 days', 'Female'
+                    row '30', 'days 3', 'Female'
                     row '20', '2 days', 'Female'
-                    row '90', '3 Month', 'Male'
+                    row '90', 'Month 3', 'Male'
                 }
             }
         }
@@ -712,8 +712,8 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
 
         then:
         assertThat db, hasNode("$timepointsPath\\Baseline\\").withPatientCount(2)
-        assertThat db, hasNode("$timepointsPath\\1 Day\\").withPatientCount(1)
-        assertThat db, hasNode("$timepointsPath\\3 Month\\").withPatientCount(1)
+        assertThat db, hasNode("$timepointsPath\\Day 1\\").withPatientCount(1)
+        assertThat db, hasNode("$timepointsPath\\Month 3\\").withPatientCount(1)
 
         assertThat db, hasRecord("i2b2", [c_fullname: "$timepointsPath\\Baseline\\"], [
                 c_metadataxml: {
@@ -728,13 +728,13 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
                 }
         ])
 
-        assertThat db, hasRecord("i2b2", [c_fullname: "$timepointsPath\\2 Month\\"], [
+        assertThat db, hasRecord("i2b2", [c_fullname: "$timepointsPath\\Month 2\\"], [
                 c_metadataxml: {
                     def metadata = new XmlParser().parseText(it as String)
                     assertThat(metadata.Oktousevalues.text(), equalTo('Y'))
                     assertThat(metadata.SeriesMeta.Value.text(), equalTo((60 * 24 * 30 * 2).toString()))
                     assertThat(metadata.SeriesMeta.Unit.text(), equalTo('minutes'))
-                    assertThat(metadata.SeriesMeta.DisplayName.text(), equalTo('2 Month'))
+                    assertThat(metadata.SeriesMeta.DisplayName.text(), equalTo('Month 2'))
                     true
                 }
         ])

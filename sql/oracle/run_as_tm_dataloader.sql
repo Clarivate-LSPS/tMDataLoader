@@ -68,6 +68,8 @@
 @@procedures/i2b2_load_rbm_data.sql
 @@procedures/i2b2_load_rbm_annotation.sql
 @@procedures/i2b2_load_rbm_inc_data.sql
-@@procedures/I2B2_MODIFI_LAST_PART_PATH.sql
+@@procedures/TIMESTAMP_TO_TIMEPOINT.sql
+@@procedures/REPLACE_LAST_PATH_COMPONENT.sql
+@@procedures/GET_LASH_PATH_COMPONENT.sql
 
 @show_invalid.sql -- compiles invalids, resolving them or highlighting problems

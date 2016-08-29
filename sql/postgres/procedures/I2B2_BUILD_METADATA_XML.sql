@@ -16,6 +16,33 @@ BEGIN
 		THEN
 			series_value := '0';
 			series_unit_name := 'minutes';
+		ELSIF lower(display_name) ~ '^[a-zA-Z]+ -?\d+' THEN
+			series_value := substring(display_name from '-?[0-9]+');
+			series_unit_name := lower(substring(display_name from '[a-zA-Z]+'));
+			IF series_unit_name = 'minute'
+			THEN
+				series_unit_name := 'minutes';
+			ELSIF series_unit_name IN ('hour', 'hours')
+				THEN
+					series_unit_name := 'minutes';
+					series_value := (series_value::FLOAT * 60)::VARCHAR;
+			ELSIF series_unit_name IN ('day', 'days')
+				THEN
+					series_unit_name := 'minutes';
+					series_value := (series_value::FLOAT * 60 * 24)::VARCHAR;
+			ELSIF series_unit_name IN ('week', 'weeks')
+				THEN
+					series_unit_name := 'minutes';
+					series_value := (series_value::FLOAT * 60 * 24 * 7)::VARCHAR;
+			ELSIF series_unit_name IN ('month', 'months')
+				THEN
+					series_unit_name := 'minutes';
+					series_value := (series_value::FLOAT * 60 * 24 * 30)::VARCHAR;
+			ELSIF series_unit_name IN ('year', 'years')
+				THEN
+					series_unit_name := 'minutes';
+					series_value := (series_value::FLOAT * 60 * 24 * 30 * 12)::VARCHAR;
+			END IF;
 		ELSE
 			regTable := regexp_matches(lower(display_name), '^(-?[0-9]{1,4} (week|weeks|minute|minutes|hour|hours|day|days|year|years|month|months))+');
 			IF array_length(regTable, 1) > 0 THEN

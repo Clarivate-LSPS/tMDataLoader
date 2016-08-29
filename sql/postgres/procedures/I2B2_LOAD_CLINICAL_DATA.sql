@@ -759,7 +759,7 @@ BEGIN
 
 	begin
 		update wt_trial_nodes
-		set leaf_node = i2b2_modifi_last_part_path(leaf_node, baseline_value),
+		set leaf_node = replace_last_path_component(leaf_node, timestamp_to_timepoint(get_last_path_component(leaf_node), baseline_value)), --i2b2_modifi_last_part_path(leaf_node, baseline_value),
 			valuetype_cd = 'TIMEPOINT'
 		where baseline_value is not null;
 		get diagnostics rowCt := ROW_COUNT;
