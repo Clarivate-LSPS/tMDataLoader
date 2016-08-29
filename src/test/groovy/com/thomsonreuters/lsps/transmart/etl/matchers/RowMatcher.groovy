@@ -30,6 +30,11 @@ class RowMatcher extends BaseMatcher<GroovyRowResult> {
             case Double:
                 value = value as Double
                 break
+            case Calendar:
+                if (value instanceof Date) {
+                    value = value.toCalendar()
+                }
+                break
         }
         return value
     }
