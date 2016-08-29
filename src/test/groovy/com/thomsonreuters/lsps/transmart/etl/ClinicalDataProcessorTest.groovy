@@ -688,20 +688,20 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
             }
             dataFile('TEST.txt', ['Days', 'Time point', 'Sex']) {
                 forSubject('SUBJ1') {
-                    row '20', 'Week -1', 'Female'
+                    row '20', '-1 Week', 'Female'
                     row '0', 'Baseline', 'Female'
-                    row '1', 'Day 1', 'Female'
-                    row '7', 'Week 1', 'Female'
-                    row '60', 'Month 2', 'Female'
-                    row '30', 'months 1', 'Female'
-                    row '3', 'days 3', 'Female'
-                    row '2', 'day 2', 'Female'
+                    row '1', '1 Day', 'Female'
+                    row '7', '1 Week', 'Female'
+                    row '60', '2 Month', 'Female'
+                    row '30', '1 months', 'Female'
+                    row '3', '3 days', 'Female'
+                    row '2', '2 day', 'Female'
                 }
                 forSubject('SUBJ2') {
                     row '0', 'Baseline', 'Male'
-                    row '30', 'days 3', 'Female'
+                    row '30', '3 days', 'Female'
                     row '20', '2 days', 'Female'
-                    row '90', 'Month 3', 'Male'
+                    row '90', '3 Month', 'Male'
                 }
             }
         }
@@ -712,8 +712,8 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
 
         then:
         assertThat db, hasNode("$timepointsPath\\Baseline\\").withPatientCount(2)
-        assertThat db, hasNode("$timepointsPath\\Day 1\\").withPatientCount(1)
-        assertThat db, hasNode("$timepointsPath\\Month 3\\").withPatientCount(1)
+        assertThat db, hasNode("$timepointsPath\\1 Day\\").withPatientCount(1)
+        assertThat db, hasNode("$timepointsPath\\3 Month\\").withPatientCount(1)
 
         assertThat db, hasRecord("i2b2", [c_fullname: "$timepointsPath\\Baseline\\"], [
                 c_metadataxml: {
@@ -728,13 +728,13 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
                 }
         ])
 
-        assertThat db, hasRecord("i2b2", [c_fullname: "$timepointsPath\\Month 2\\"], [
+        assertThat db, hasRecord("i2b2", [c_fullname: "$timepointsPath\\2 Month\\"], [
                 c_metadataxml: {
                     def metadata = new XmlParser().parseText(it as String)
                     assertThat(metadata.Oktousevalues.text(), equalTo('Y'))
                     assertThat(metadata.SeriesMeta.Value.text(), equalTo((60 * 24 * 30 * 2).toString()))
                     assertThat(metadata.SeriesMeta.Unit.text(), equalTo('minutes'))
-                    assertThat(metadata.SeriesMeta.DisplayName.text(), equalTo('Month 2'))
+                    assertThat(metadata.SeriesMeta.DisplayName.text(), equalTo('2 Month'))
                     true
                 }
         ])
@@ -846,6 +846,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
 
     def 'it should load Serial LDD data with timestamp'() {
         given:
+        Study.deleteById(config, 'GSE0SLDDWTS')
         def clinicalData = ClinicalData.build('GSE0SLDDWTS', 'Test Study With Serial LDD with timestamp') {
             mappingFile {
                 forDataFile('TEST.txt') {
@@ -875,16 +876,16 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         clinicalData.load(config)
 
         then:
-        assertThat db, hasNode("$timepointsPath\\2000-12-31 12:00\\").withPatientCount(2)
-        assertThat db, hasNode("$timepointsPath\\2000-12-31 12:00\\").withPatientCount(2)
-        assertThat db, hasNode("$timepointsPath\\2000-12-31 12:01\\").withPatientCount(1)
+        assertThat db, hasNode("$timepointsPath\\Baseline\\").withPatientCount(2)
+        assertThat db, hasNode("$timepointsPath\\1 minute\\").withPatientCount(1)
 
-        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '0', '2000-12-31 12:00')
-        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '5', '2000-12-31 12:05')
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '0', 'Baseline')
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '5', '5 minutes')
     }
 
     def 'it should load Serial LDD data With Timestamp When All New Timestamps Greater Than Old Min Value'() {
         given:
+        Study.deleteById(config, 'GSE0SLDDWTS')
         def clinicalDataFirst = ClinicalData.build('GSE0SLDDWTS', 'Test Study With Serial LDD with timestamp') {
             mappingFile {
                 forDataFile('TEST.txt') {
@@ -911,9 +912,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         clinicalDataFirst.load(config)
 
         def period1 = '2000-12-31 13:00'
-        def period2 = '2000-12-31 13:02'
-        def period3 = '2000-12-31 13:01'
-        def period4 = '2000-12-31 13:05'
+        def period2 = '2000-12-31 14:00'
 
         def clinicalData = ClinicalData.build('GSE0SLDDWTS', 'Test Study With Serial LDD with timestamp') {
             mappingFile {
@@ -928,14 +927,11 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
             dataFile('TEST.txt', ['Days', 'Timestamp St.1', 'Race', 'Baseline']) {
                 forSubject('SUBJ1') {
                     row '0', period1, 'One', '2000-12-31 12:00'
-                    row '10',period3, 'One', '2000-12-31 12:00'
                     row '12', period2, 'One', '2000-12-31 12:00'
-                    row '10', period4, 'One', '2000-12-31 12:00'
                 }
                 forSubject('SUBJ2') {
                     row '5', period1, 'Two', '2000-12-31 12:00'
                     row '13', period2, 'Two', '2000-12-31 12:00'
-                    row '15', '2000-12-31 13:05', 'Two', '2000-12-31 12:00'
                 }
             }
         }
@@ -945,12 +941,13 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         clinicalData.load(config)
 
         then:
-        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '60', period1)
-        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '65', period4)
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '60', '1 hour')
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '120', '2 hours')
     }
 
     def 'it should load Serial LDD data With Timestamp When Some New Timestamp Lesser Than Old Min Value'() {
         given:
+        Study.deleteById(config, 'GSE0SLDDWTS')
         def clinicalDataFirst = ClinicalData.build('GSE0SLDDWTS', 'Test Study With Serial LDD with timestamp') {
             mappingFile {
                 forDataFile('TEST.txt') {
@@ -1012,9 +1009,9 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         clinicalData.load(config)
 
         then:
-        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '-60', period1)
-        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '-55', period4)
-        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '0', periodZero)
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '-60', '-1 hour')
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '-55', '-55 minutes')
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '0', 'Baseline')
     }
 
     def 'it should load Serial LDD data With Timestamp When Some New Timestamp Lesser Than Old Min Value merge mode UPDATE'() {
@@ -1080,16 +1077,16 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         clinicalData.load(config)
 
         then:
-        assertThat(sql, hasFact("$timepointsPath\\$period1\\", 'SUBJ1', 5))
-        assertThat(sql, hasFact("$timepointsPath\\$period2\\", 'SUBJ1', 2))
-        assertThat(sql, hasFact("$timepointsPath\\$period3\\", 'SUBJ1', 7))
-        assertThat(sql, hasFact("$timepointsPath\\$period4\\", 'SUBJ1', 4))
-        assertThat(sql, hasFact("$timepointsPath\\2000-12-31 12:00\\", 'SUBJ2', 5))
-        assertThat(sql, hasFact("$timepointsPath\\$period1\\", 'SUBJ3', 0))
+        assertThat(sql, hasFact("$timepointsPath\\-1 hour\\", 'SUBJ1', 5))
+        assertThat(sql, hasFact("$timepointsPath\\-58 minutes\\", 'SUBJ1', 2))
+        assertThat(sql, hasFact("$timepointsPath\\3 minutes\\", 'SUBJ1', 7))
+        assertThat(sql, hasFact("$timepointsPath\\-55 minutes\\", 'SUBJ1', 4))
+        assertThat(sql, hasFact("$timepointsPath\\Baseline\\", 'SUBJ2', 5))
+        assertThat(sql, hasFact("$timepointsPath\\-58 minutes\\", 'SUBJ3', 1))
 
-        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '-55', period4)
-        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '3', period3)
-        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '0', periodZero)
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '-55', '-55 minutes')
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '3', '3 minutes')
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '0', 'Baseline')
 
     }
 
@@ -1155,15 +1152,16 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         clinicalData.load(config)
 
         then:
-        assertThat(sql, hasFact("$timepointsPath\\$period1\\", 'SUBJ1', 5))
-        assertThat(sql, hasFact("$timepointsPath\\$period2\\", 'SUBJ1', 2))
-        assertThat(sql, hasFact("$timepointsPath\\$period3\\", 'SUBJ1', 7))
-        assertThat(sql, hasFact("$timepointsPath\\$period4\\", 'SUBJ1', 4))
-        assertThat(sql, hasFact("$timepointsPath\\$periodZero\\", 'SUBJ2', 5))
-        assertThat(sql, hasFact("$timepointsPath\\$period1\\", 'SUBJ3', 0))
+        assertThat(sql, hasFact("$timepointsPath\\1 hour\\", 'SUBJ1', 5))
+        assertThat(sql, hasFact("$timepointsPath\\1 hour 2 minutes\\", 'SUBJ1', 2))
+        assertThat(sql, hasFact("$timepointsPath\\1 hour 1 minute\\", 'SUBJ1', 7))
+        assertThat(sql, hasFact("$timepointsPath\\1 hour 5 minutes\\", 'SUBJ1', 4))
+        assertThat(sql, hasFact("$timepointsPath\\Baseline\\", 'SUBJ2', 5))
+        assertThat(sql, hasFact("$timepointsPath\\1 hour\\", 'SUBJ3', 0))
 
-        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '65', period4)
-        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '0', periodZero)
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '60', '1 hour')
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '65', '1 hour 5 minutes')
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '0', 'Baseline')
     }
 
     def 'it should load Serial LDD data with timestamp with two timestamp column'() {
@@ -1200,16 +1198,15 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         clinicalData.load(config)
 
         then:
-        assertThat db, hasNode("$timepointsPath\\2000-12-31 12:00\\").withPatientCount(2)
-        assertThat db, hasNode("$timepointsPath\\2000-12-31 12:00\\").withPatientCount(2)
-        assertThat db, hasNode("$timepointsPath\\2000-12-31 12:01\\").withPatientCount(1)
-        assertThat db, hasNode("$timepointsPathForSecond\\2000-12-31 14:00\\").withPatientCount(2)
-        assertThat db, hasNode("$timepointsPathForSecond\\2000-12-31 14:03\\").withPatientCount(1)
+        assertThat db, hasNode("$timepointsPath\\Baseline\\").withPatientCount(2)
+        assertThat db, hasNode("$timepointsPath\\1 minute\\").withPatientCount(1)
+        assertThat db, hasNode("$timepointsPathForSecond\\2 hours\\").withPatientCount(2)
+        assertThat db, hasNode("$timepointsPathForSecond\\2 hours 3 minutes\\").withPatientCount(1)
 
-        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '0', '2000-12-31 12:00')
-        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '5', '2000-12-31 12:05')
-        assertThat db, checkMetaDataXMLForTimestamp(timepointsPathForSecond, '120', '2000-12-31 14:00')
-        assertThat db, checkMetaDataXMLForTimestamp(timepointsPathForSecond, '123', '2000-12-31 14:03')
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '0', 'Baseline')
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '5', '5 minutes')
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPathForSecond, '120', '2 hours')
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPathForSecond, '123', '2 hours 3 minutes')
     }
 
     def 'it should load Serial LDD data with timestamp with two timestamp and baseline'() {
@@ -1247,16 +1244,15 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         clinicalData.load(config)
 
         then:
-        assertThat db, hasNode("$timepointsPath\\2000-12-31 12:00\\").withPatientCount(2)
-        assertThat db, hasNode("$timepointsPath\\2000-12-31 12:00\\").withPatientCount(2)
-        assertThat db, hasNode("$timepointsPath\\2000-12-31 12:01\\").withPatientCount(1)
-        assertThat db, hasNode("$timepointsPathForSecond\\2000-12-31 14:00\\").withPatientCount(2)
-        assertThat db, hasNode("$timepointsPathForSecond\\2000-12-31 14:03\\").withPatientCount(1)
+        assertThat db, hasNode("$timepointsPath\\Baseline\\").withPatientCount(2)
+        assertThat db, hasNode("$timepointsPath\\1 minute\\").withPatientCount(1)
+        assertThat db, hasNode("$timepointsPathForSecond\\1 hour\\").withPatientCount(2)
+        assertThat db, hasNode("$timepointsPathForSecond\\1 hour 3 minutes\\").withPatientCount(1)
 
-        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '0', '2000-12-31 12:00')
-        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '5', '2000-12-31 12:05')
-        assertThat db, checkMetaDataXMLForTimestamp(timepointsPathForSecond, '60', '2000-12-31 14:00')
-        assertThat db, checkMetaDataXMLForTimestamp(timepointsPathForSecond, '63', '2000-12-31 14:03')
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '0', 'Baseline')
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '5', '5 minutes')
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPathForSecond, '60', '1 hour')
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPathForSecond, '63', '1 hour 3 minutes')
     }
 
     def checkMetaDataXMLForTimestamp(path, value, datetime) {

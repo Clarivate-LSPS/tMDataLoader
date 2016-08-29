@@ -1,14 +1,14 @@
 CREATE OR REPLACE FUNCTION i2b2_build_metadata_xml(
 	display_name CHARACTER VARYING,
 	data_type    CHARACTER VARYING,
-	valuetype_cd CHARACTER VARYING,
-	baselineValue CHARACTER VARYING
+	valuetype_cd CHARACTER VARYING
 )
 	RETURNS TEXT AS
 $BODY$
 DECLARE
 	series_value     VARCHAR(200) := NULL;
 	series_unit_name VARCHAR(200) := NULL;
+	regTable					text[];
 BEGIN
 	IF valuetype_cd = 'TIMEPOINT'
 	THEN
@@ -17,39 +17,14 @@ BEGIN
 			series_value := '0';
 			series_unit_name := 'minutes';
 		ELSE
-			series_value := substring(display_name from '-?[0-9]+');
-			series_unit_name := lower(substring(display_name from '[a-zA-Z]+'));
-			IF series_unit_name = 'minute'
-			THEN
-				series_unit_name := 'minutes';
-			ELSIF series_unit_name IN ('hour', 'hours')
-				THEN
-					series_unit_name := 'minutes';
-					series_value := (series_value::FLOAT * 60)::VARCHAR;
-			ELSIF series_unit_name IN ('day', 'days')
-				THEN
-					series_unit_name := 'minutes';
-					series_value := (series_value::FLOAT * 60 * 24)::VARCHAR;
-			ELSIF series_unit_name IN ('week', 'weeks')
-				THEN
-					series_unit_name := 'minutes';
-					series_value := (series_value::FLOAT * 60 * 24 * 7)::VARCHAR;
-			ELSIF series_unit_name IN ('month', 'months')
-				THEN
-					series_unit_name := 'minutes';
-					series_value := (series_value::FLOAT * 60 * 24 * 30)::VARCHAR;
-			ELSIF series_unit_name IN ('year', 'years')
-				THEN
-					series_unit_name := 'minutes';
-					series_value := (series_value::FLOAT * 60 * 24 * 30 * 12)::VARCHAR;
-			END IF;
+			regTable := regexp_matches(lower(display_name), '^(-?[0-9]{1,4} (week|weeks|minute|minutes|hour|hours|day|days|year|years|month|months))+');
+			IF array_length(regTable, 1) > 0 THEN
+        select EXTRACT(epoch FROM trim(display_name)::INTERVAL) / 60 into series_value;
+        series_unit_name := 'minutes';
+      ELSE
+				RAISE EXCEPTION  'Check date format';
+      END IF;
 		END IF;
-	ELSEIF valuetype_cd = 'TIMESTAMP'
-		THEN
-			SELECT EXTRACT(epoch FROM
-										 (select (to_timestamp(display_name, 'YYYY-MM-DD HH24:MI')::timestamp without time zone - to_timestamp(baselineValue, 'YYYY-MM-DD HH24:MI')::timestamp without time zone))
-						 ) / 60  into series_value;
-			series_unit_name := 'minutes';
 	END IF;
 
 	RETURN

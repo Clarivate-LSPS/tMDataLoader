@@ -716,7 +716,16 @@ BEGIN
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Create leaf nodes for trial',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
-	
+
+	begin
+		update wt_trial_nodes
+		set leaf_node = i2b2_modifi_last_part_path(leaf_node, baseline_value),
+			valuetype_cd = 'TIMEPOINT'
+		where baseline_value is not null;
+	end;
+	stepCt := stepCt + 1;
+	cz_write_audit(jobId,databaseName,procedureName,'Updated node path for nodes',SQL%ROWCOUNT,stepCt,'Done');
+
 	--	set node_name
 	
 	update wt_trial_nodes
@@ -908,7 +917,7 @@ BEGIN
 		update set
 			c_name = c.name_char,
 			c_columndatatype = 'T',
-			c_metadataxml = I2B2_BUILD_METADATA_XML(c.name_char, c.data_type, c.valuetype_cd,c.baseline_value)
+			c_metadataxml = I2B2_BUILD_METADATA_XML(c.name_char, c.data_type, c.valuetype_cd)
 	when not matched then
 		insert (
 			c_hlevel
@@ -952,7 +961,7 @@ BEGIN
 			,'T'		-- if i2b2 gets fixed to respect c_columndatatype then change to t.data_type
 			,'trial:' || TrialID
 			,i2b2_id_seq.nextval
-			,I2B2_BUILD_METADATA_XML(c.name_char, c.data_type, c.valuetype_cd, c.baseline_value)
+			,I2B2_BUILD_METADATA_XML(c.name_char, c.data_type, c.valuetype_cd)
 		);
 
 	stepCt := stepCt + 1;

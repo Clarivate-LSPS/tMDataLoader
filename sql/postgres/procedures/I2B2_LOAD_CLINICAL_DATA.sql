@@ -758,6 +758,25 @@ BEGIN
 	--	set node_name
 
 	begin
+		update wt_trial_nodes
+		set leaf_node = i2b2_modifi_last_part_path(leaf_node, baseline_value),
+			valuetype_cd = 'TIMEPOINT'
+		where baseline_value is not null;
+		get diagnostics rowCt := ROW_COUNT;
+		exception
+		when others then
+			errorNumber := SQLSTATE;
+			errorMessage := SQLERRM;
+			--Handle errors.
+			select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+			--End Proc
+			select cz_end_audit (jobID, 'FAIL') into rtnCd;
+			return -16;
+	end;
+	stepCt := stepCt + 1;
+	select cz_write_audit(jobId,databaseName,procedureName,'Updated node path for nodes',rowCt,stepCt,'Done') into rtnCd;
+
+	begin
 	update wt_trial_nodes
 	set node_name=parse_nth_value(leaf_node,length(leaf_node)-length(replace(leaf_node,'\','')),'\');
 	get diagnostics rowCt := ROW_COUNT;
@@ -966,7 +985,7 @@ BEGIN
 	update i2b2metadata.i2b2
 	set c_name=ncd.node_name
 	   ,c_columndatatype='T'
-	   ,c_metadataxml=i2b2_build_metadata_xml(ncd.node_name, ncd.data_type, ncd.valuetype_cd, ncd.baseline_value)
+	   ,c_metadataxml=i2b2_build_metadata_xml(ncd.node_name, ncd.data_type, ncd.valuetype_cd)
 	from wt_trial_nodes ncd
 	where c_fullname = ncd.leaf_node;
 	get diagnostics rowCt := ROW_COUNT;
@@ -1025,7 +1044,7 @@ BEGIN
 		  , 'T' --t.data_type
 		  ,'trial:' || TrialID
 		  ,'@'
-		  ,i2b2_build_metadata_xml(c.name_char, t.data_type, t.valuetype_cd, t.baseline_value)
+		  ,i2b2_build_metadata_xml(c.name_char, t.data_type, t.valuetype_cd)
     from i2b2demodata.concept_dimension c
 		,wt_trial_nodes t
     where c.concept_path = t.leaf_node
