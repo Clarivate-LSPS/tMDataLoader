@@ -719,7 +719,7 @@ BEGIN
 
 	begin
 		update wt_trial_nodes
-		set leaf_node = REPLACE_LAST_PATH_COMPONENT(leaf_node, TIMESTAMP_TO_TIMEPOINT(GET_LASH_PATH_COMPONENT(leaf_node), baseline_value)),
+		set leaf_node = REPLACE_LAST_PATH_COMPONENT(leaf_node, TIMESTAMP_TO_TIMEPOINT(GET_LAST_PATH_COMPONENT(leaf_node), baseline_value)),
 			valuetype_cd = 'TIMEPOINT'
 		where baseline_value is not null;
 	end;

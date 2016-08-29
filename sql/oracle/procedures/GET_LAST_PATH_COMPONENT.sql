@@ -1,4 +1,4 @@
-create or replace FUNCTION "GET_LASH_PATH_COMPONENT"(
+create or replace FUNCTION "GET_LAST_PATH_COMPONENT"(
   node_path VARCHAR2)
   RETURN VARCHAR2 IS
   previousBracket INT;

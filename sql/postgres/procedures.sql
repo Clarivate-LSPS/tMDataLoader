@@ -52,6 +52,6 @@ $$;
 \i procedures/I2B2_PROCESS_GWAS_PLINK_DATA.sql
 \i procedures/TIMESTAMP_TO_TIMEPOINT.sql
 \i procedures/REPLACE_LAST_PATH_COMPONENT.sql
-\i procedures/GET_LASH_PATH_COMPONENT.sql
+\i procedures/GET_LAST_PATH_COMPONENT.sql
 
 
