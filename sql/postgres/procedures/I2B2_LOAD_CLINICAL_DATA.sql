@@ -759,7 +759,10 @@ BEGIN
 
 	begin
 		update wt_trial_nodes
-		set leaf_node = replace_last_path_component(leaf_node, timestamp_to_timepoint(get_last_path_component(leaf_node), baseline_value)), --i2b2_modifi_last_part_path(leaf_node, baseline_value),
+		set leaf_node = replace_last_path_component(leaf_node, timestamp_to_timepoint(get_last_path_component(leaf_node), baseline_value)),
+			category_cd = regexp_replace(category_cd,
+																	 '\+' || get_last_path_component(leaf_node) || '$',
+																	 '+' || timestamp_to_timepoint(get_last_path_component(leaf_node), baseline_value)),
 			valuetype_cd = 'TIMEPOINT'
 		where baseline_value is not null;
 		get diagnostics rowCt := ROW_COUNT;
@@ -775,6 +778,27 @@ BEGIN
 	end;
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Updated node path for nodes',rowCt,stepCt,'Done') into rtnCd;
+
+	begin
+		update wrk_clinical_data
+		set
+			category_cd = regexp_replace(category_cd,
+																	 '\+' || get_last_path_component(category_cd) || '$',
+																	 '+' || timestamp_to_timepoint(get_last_path_component(category_cd), baseline_value))
+		where baseline_value is not null;
+		get diagnostics rowCt := ROW_COUNT;
+		exception
+		when others then
+			errorNumber := SQLSTATE;
+			errorMessage := SQLERRM;
+			--Handle errors.
+			select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+			--End Proc
+			select cz_end_audit (jobID, 'FAIL') into rtnCd;
+			return -16;
+	end;
+	stepCt := stepCt + 1;
+	select cz_write_audit(jobId,databaseName,procedureName,'Updated category_cd in wrk_clinical_data table',rowCt,stepCt,'Done') into rtnCd;
 
 	begin
 	update wt_trial_nodes

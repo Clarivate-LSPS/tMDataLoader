@@ -10,7 +10,14 @@ BEGIN
   parts := regexp_split_to_array(node_path, '\\');
   partsCount:= array_length(parts, 1);
 
-  lastComp := parts [partsCount - 1];
+  IF (partsCount = 1) THEN
+    parts := regexp_split_to_array(node_path, '\+');
+
+    partsCount:= array_length(parts, 1);
+    lastComp := parts [partsCount];
+  ELSE
+    lastComp := parts [partsCount - 1];
+  END IF;
 
   RETURN lastComp;
 END;

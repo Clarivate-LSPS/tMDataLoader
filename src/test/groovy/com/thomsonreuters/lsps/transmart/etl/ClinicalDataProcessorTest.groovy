@@ -844,6 +844,45 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         ex.message == "STUDY_ID differs from previous in 2 line in TST_DEMO.txt file."
     }
 
+    def 'it should load Serial LDD data with timestamp different baseline in one column'() {
+        given:
+        Study.deleteById(config, 'GSE0SLDDWTS')
+        def clinicalData = ClinicalData.build('GSE0SLDDWTS', 'Test Study With Serial LDD with timestamp') {
+            mappingFile {
+                forDataFile('TEST.txt') {
+                    map('Vars+DATALABEL+$$Timestamp', 3, 'Timestamp', 'Baseline', VariableType.Timestamp)
+                    map('', 4, 'Timestamp', '', VariableType.Timestamp)
+                    map('Vars', 5, 'Sex')
+                    map('', 6, 'Baseline')
+                }
+            }
+            dataFile('TEST.txt', ['Days', 'Timestamp', 'Sex', 'Baseline']) {
+                forSubject('SUBJ1') {
+                    row '0', '2000-12-31 12:00', 'Female', '2000-12-31 12:00'
+                    row '10', '2000-12-31 12:01', 'Female', '2000-12-31 12:00'
+                    row '12', '2000-12-31 12:02', 'Female', '2000-12-31 12:00'
+                    row '10', '2000-12-31 12:05', 'Female', '2000-12-31 12:00'
+                }
+                forSubject('SUBJ2') {
+                    row '5', '2000-12-31 12:00', 'Male', '2000-12-31 12:05'
+                    row '13', '2000-12-31 12:02', 'Male', '2000-12-31 12:05'
+                    row '15', '2000-12-31 12:05', 'Male', '2000-12-31 12:05'
+                }
+            }
+        }
+        String timepointsPath = "\\Test Studies\\Test Study With Serial LDD with timestamp\\Vars\\Timestamp"
+
+        when:
+        clinicalData.load(config)
+
+        then:
+        assertThat db, hasNode("$timepointsPath\\Baseline\\").withPatientCount(2)
+        assertThat db, hasNode("$timepointsPath\\1 minute\\").withPatientCount(1)
+
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '0', 'Baseline')
+        assertThat db, checkMetaDataXMLForTimestamp(timepointsPath, '5', '5 minutes')
+    }
+
     def 'it should load Serial LDD data with timestamp'() {
         given:
         Study.deleteById(config, 'GSE0SLDDWTS')

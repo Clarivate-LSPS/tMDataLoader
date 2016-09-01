@@ -720,12 +720,23 @@ BEGIN
 	begin
 		update wt_trial_nodes
 		set leaf_node = REPLACE_LAST_PATH_COMPONENT(leaf_node, TIMESTAMP_TO_TIMEPOINT(GET_LAST_PATH_COMPONENT(leaf_node), baseline_value)),
+			category_cd = regexp_replace(category_cd,
+																	 '\+' || get_last_path_component(leaf_node) || '$',
+																	 '+' || timestamp_to_timepoint(get_last_path_component(leaf_node), baseline_value)),
 			valuetype_cd = 'TIMEPOINT'
-		where baseline_value is not null;
+		where baseline_value is not null and data_type = 'N';
 	end;
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Updated node path for nodes',SQL%ROWCOUNT,stepCt,'Done');
-
+	begin
+		update wrk_clinical_data
+		set category_cd = regexp_replace(category_cd,
+																		 '\+' || GET_LAST_PATH_COMPONENT(category_cd) || '$',
+																		 '+' || TIMESTAMP_TO_TIMEPOINT(GET_LAST_PATH_COMPONENT(category_cd), baseline_value))
+		where baseline_value is not null;
+	end;
+	stepCt := stepCt + 1;
+	cz_write_audit(jobId,databaseName,procedureName,'Updated category_cd in wrk_clinical_data table',SQL%ROWCOUNT,stepCt,'Done');
 	--	set node_name
 	
 	update wt_trial_nodes
@@ -908,7 +919,7 @@ BEGIN
 	--	update i2b2 to pick up change in name, data_type for leaf nodes
 	merge /*+ parallel(i2b2, 8) */ into i2b2 b
 	using (
-		select distinct c.concept_path, c.name_char, c.sourcesystem_cd, c.concept_cd, t.data_type, t.valuetype_cd, t.baseline_value
+		select distinct c.concept_path, c.name_char, c.sourcesystem_cd, c.concept_cd, t.data_type, t.valuetype_cd
 		from concept_dimension c
 			,wt_trial_nodes t
 		where c.concept_path = t.leaf_node
