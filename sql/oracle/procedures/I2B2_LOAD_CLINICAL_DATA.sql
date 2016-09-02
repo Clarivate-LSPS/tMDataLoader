@@ -721,8 +721,8 @@ BEGIN
 		update wt_trial_nodes
 		set leaf_node = REPLACE_LAST_PATH_COMPONENT(leaf_node, TIMESTAMP_TO_TIMEPOINT(GET_LAST_PATH_COMPONENT(leaf_node), baseline_value)),
 			category_cd = regexp_replace(category_cd,
-																	 '\+' || get_last_path_component(leaf_node) || '$',
-																	 '+' || timestamp_to_timepoint(get_last_path_component(leaf_node), baseline_value)),
+																	 '\+' || get_last_path_component(leaf_node) || '(\+\$)?$',
+																	 '+' || timestamp_to_timepoint(get_last_path_component(leaf_node), baseline_value) || '\1'),
 			valuetype_cd = 'TIMEPOINT'
 		where baseline_value is not null and data_type = 'N';
 	end;
@@ -731,8 +731,8 @@ BEGIN
 	begin
 		update wrk_clinical_data
 		set category_cd = regexp_replace(category_cd,
-																		 '\+' || GET_LAST_PATH_COMPONENT(category_cd) || '$',
-																		 '+' || TIMESTAMP_TO_TIMEPOINT(GET_LAST_PATH_COMPONENT(category_cd), baseline_value))
+																		 '\+' || GET_LAST_PATH_COMPONENT(category_cd) || '(\+\$)?$',
+																		 '+' || TIMESTAMP_TO_TIMEPOINT(GET_LAST_PATH_COMPONENT(category_cd), baseline_value) || '\1')
 		where baseline_value is not null;
 	end;
 	stepCt := stepCt + 1;
