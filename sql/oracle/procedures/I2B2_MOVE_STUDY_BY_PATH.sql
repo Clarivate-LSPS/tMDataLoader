@@ -2,7 +2,8 @@ CREATE OR REPLACE
 PROCEDURE "I2B2_MOVE_STUDY_BY_PATH"
   (old_path_in  VARCHAR2,
    new_path_in  VARCHAR2,
-   currentJobID NUMBER := null
+   deleteBefore VARCHAR2,
+   currentJobID NUMBER := NULL
   )
 AS
 --Audit variables
@@ -43,6 +44,8 @@ AS
 	subnode_exists_exception EXCEPTION;
   subfolder_outside_of_study EXCEPTION;
 
+  accession_old           VARCHAR2(50);
+  accession_new           VARCHAR2(50);
   cursor r1(path VARCHAR2) is
     select regexp_substr(path,'[^\\]+', 1, level) as res from dual
     connect by regexp_substr(path, '[^\\]+', 1, level) is not null;
@@ -148,6 +151,31 @@ AS
     new_root_node := REGEXP_REPLACE(new_path, '(\\[^\\]*\\).*', '\1');
     new_root_node_name := REGEXP_REPLACE(new_path, '\\([^\\]*)\\.*', '\1');
     new_path_last_node_name := REGEXP_REPLACE(new_path, '.*\\([^\\]*)\\', '\1');
+
+    IF (deleteBefore = 'Y') THEN
+      select distinct secure_obj_token INTO accession_new from i2b2metadata.i2b2_secure where c_fullname = new_path;
+      select distinct secure_obj_token INTO accession_old from i2b2metadata.i2b2_secure where c_fullname = old_path;
+      accession_new := replace(accession_new, 'EXP:', '');
+      accession_old := replace(accession_old, 'EXP:', '');
+
+      -- Deleted security configuration from first study
+      DELETE FROM biomart.bio_experiment WHERE accession = accession_old;
+      DELETE FROM biomart.bio_data_uid WHERE unique_id = 'EXP:'||accession_old;
+      DELETE FROM searchapp.search_secure_object WHERE bio_data_unique_id = 'EXP:'||accession_old;
+      COMMIT;
+      --Changed accession to new path
+      UPDATE biomart.bio_experiment SET accession = accession_old WHERE accession = accession_new;
+      UPDATE biomart.bio_data_uid SET unique_id = 'EXP:'||accession_old WHERE unique_id = 'EXP:'||accession_new;
+      UPDATE searchapp.search_secure_object SET bio_data_unique_id = 'EXP:'||accession_old WHERE bio_data_unique_id = 'EXP:'||accession_new;
+      COMMIT;
+      stepCt := stepCt + 1;
+      cz_write_audit(jobId,databaseName,procedureName,'Security configuration changed',0,stepCt,'Done');
+
+      I2B2_DELETE_ALL_DATA(null, new_path, jobID);
+
+      stepCt := stepCt + 1;
+      cz_write_audit(jobId,databaseName,procedureName,'Study '|| new_path || ' deleted!',0,stepCt,'Done');
+    END IF;
 
 		--check new path is not root node
     IF new_root_node = new_path

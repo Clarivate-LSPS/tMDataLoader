@@ -224,17 +224,22 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
         }
     }
 
+    private boolean moveStudy(oldPath, newPath, Boolean copySecurity) {
+        def studyNode = newPath[newPath.length()-1] == '\\'?newPath:(newPath+'\\')
+        moveStudy(oldPath, newPath, true, studyNode, copySecurity)
+    }
+
     private boolean moveStudy(oldPath, newPath) {
         def studyNode = newPath[newPath.length()-1] == '\\'?newPath:(newPath+'\\')
-        moveStudy(oldPath, newPath, true, studyNode)
+        moveStudy(oldPath, newPath, true, studyNode, false)
     }
 
     private boolean moveStudy(oldPath, newPath, String studyNode) {
-        moveStudy(oldPath, newPath, true, studyNode)
+        moveStudy(oldPath, newPath, true, studyNode, false)
     }
 
-    private boolean moveStudy(oldPath, newPath, boolean checkResult = true, studyNode) {
-        def result = moveStudyProcessor.process(old_path: oldPath, new_path: newPath)
+    private boolean moveStudy(oldPath, newPath, boolean checkResult = true, studyNode, boolean copySecurity) {
+        def result = moveStudyProcessor.process(old_path: oldPath, new_path: newPath, copySecurity: copySecurity)
         if (checkResult) {
             assert result, "Moving study from '${oldPath}' to '$newPath' failed"
             if (studyNode){
@@ -312,7 +317,7 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
         def oldPath = "\\$rootName\\$studyName\\Subjects\\Demographics\\Language\\"
         def newPath = "\\$rootName\\Other Study\\Subjects\\Demographics\\Language\\"
 
-        assertFalse("Shouldn't move subfolder outside of study", moveStudy(oldPath, newPath, false, ''))
+        assertFalse("Shouldn't move subfolder outside of study", moveStudy(oldPath, newPath, false, '', false))
     }
 
     void testItCheckUpdateConceptCounts(){
@@ -374,5 +379,30 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
 
         def checkPath = "\\${rootName} Update\\C\\D\\"
         assertThat(db, not(hasRecord('i2b2demodata.concept_counts',[concept_path:"${checkPath}"], [:])))
+    }
+
+    void testMoveStudyWithSaveSecurity() {
+        Study.deleteById(config, clinicalData.studyId)
+        Study.deleteById(config, otherClinicalData.studyId)
+        sql.executeUpdate("DELETE FROM biomart.bio_experiment WHERE accession = ?", clinicalData.studyId)
+        sql.executeUpdate("DELETE FROM biomart.bio_experiment WHERE accession = ? ", otherClinicalData.studyId)
+        sql.executeUpdate("DELETE FROM biomart.bio_data_uid WHERE unique_id = ? ", (String) "EXP:${clinicalData.studyId}")
+        sql.executeUpdate("DELETE FROM biomart.bio_data_uid WHERE unique_id = ? ", (String) "EXP:${otherClinicalData.studyId}")
+        sql.executeUpdate("DELETE FROM searchapp.search_secure_object WHERE bio_data_unique_id = ? ", (String) "EXP:${clinicalData.studyId}")
+        sql.executeUpdate("DELETE FROM searchapp.search_secure_object WHERE bio_data_unique_id = ? ", (String) "EXP:${otherClinicalData.studyId}")
+
+        config.securitySymbol = 'Y'
+        clinicalData.load(config, rootName)
+        otherClinicalData.load(config, rootName)
+
+        Boolean copySecurity = true
+        def newPath = "\\$rootName\\${otherClinicalData.studyName}\\"
+        moveStudy(originalPath, newPath, copySecurity)
+
+        assertMovement(originalPath, newPath)
+
+        assertThat(db, hasRecord('biomart.bio_data_uid ', [unique_id: "EXP:${clinicalData.studyId}"], [:]))
+        assertThat(db, hasRecord('biomart.bio_experiment ', [accession: clinicalData.studyId], [:]))
+        assertThat(db, hasRecord('searchapp.search_secure_object ', [bio_data_unique_id: "EXP:${clinicalData.studyId}"], [:]))
     }
 }

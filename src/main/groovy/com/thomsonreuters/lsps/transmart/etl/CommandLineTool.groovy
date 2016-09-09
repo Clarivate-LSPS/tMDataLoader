@@ -43,6 +43,8 @@ class CommandLineTool {
             t longOpt: 'use-t', 'Do not use Z datatype for T expression data (expert option)'
             s longOpt: 'stop-on-fail', 'Stop when upload is failed'
             m longOpt: 'move-study', args: 2, valueSeparator: ';', argName: 'old_path new_path', 'Move study'
+            _ longOpt: 'move-study-save-security', args: 2, valueSeparator: ';', argName: 'old_path new_path', 'Move study with save security configuration from new path'
+
             _ longOpt: 'highlight-clinical-data', 'Highlight studies with clinical data'
             _ longOpt: 'alt-clinical-proc', args: 1, argName: 'proc_name', 'Name of alternative clinical stored procedure (expert option)'
             _ longOpt: 'alt-control-schema', args: 1, argName: 'schema', 'Name of alternative control schema (TM_DATALOADER) - expert option'
@@ -216,6 +218,15 @@ class CommandLineTool {
         if (opts?.'replace-study') {
             println ">>> Save SECURITY TOKEN"
             config.replaceStudy = true
+        }
+
+        if (opts?.'move-study-save-security'){
+            config.copySecurity = true
+            config.moveStudy = true
+            config.moveStudyOldPath = opts.getInner().options[0].getValues()[0]
+            config.moveStudyNewPath = opts.getInner().options[0].getValues()[1]
+            config.mdOperation = true
+            println ">>> Move study ${config.moveStudyOldPath} and save security configuration from ${config.moveStudyNewPath} to it"
         }
 
         def extra_args = opts.arguments()
