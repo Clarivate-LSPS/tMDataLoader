@@ -90,7 +90,6 @@ BEGIN
 END;
 /
 
-@@mirna_probeset_deapp.sql
 @@wt_subject_microarray_calcs.sql
 @@wt_subject_mrna_probeset.sql
 @@wt_subject_microarray_med.sql
