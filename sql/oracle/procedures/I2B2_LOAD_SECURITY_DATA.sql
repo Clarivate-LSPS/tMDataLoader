@@ -79,7 +79,7 @@ BEGIN
     SOURCESYSTEM_CD,
     VALUETYPE_CD,
 	secure_obj_token)
-  select /*+ parallel(b, 4) parallel(f, 4) */
+  select
     b.C_HLEVEL,
     b.C_FULLNAME,
     b.C_NAME,
