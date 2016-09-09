@@ -1,5 +1,7 @@
 CREATE OR REPLACE PROCEDURE analyze_table (p_owner VARCHAR2, p_table VARCHAR2, p_job_id NUMBER := NULL)
 AS
+    l_owner VARCHAR2(32);
+    l_table VARCHAR2(32);
     stats_locked exception;
     pragma exception_init(stats_locked, -20005);
     stats_locked2 exception;
@@ -26,8 +28,21 @@ BEGIN
         cz_start_audit(procedure_name, current_schema_name, l_job_id);
     END IF;
 
+    l_owner := p_owner;
+    l_table := p_table;
     BEGIN
-        dbms_stats.gather_table_stats(p_owner, p_table, cascade => true);
+        FOR i IN 0..99 LOOP
+            IF i = 99 THEN
+                raise_application_error(-20100, 'Too many synonyms for '||p_owner||'.'||p_table);
+            END IF;
+            SELECT table_owner, table_name INTO l_owner, l_table FROM all_synonyms WHERE owner=l_owner AND synonym_name=l_table;
+        END LOOP;
+    EXCEPTION
+        WHEN no_data_found THEN
+            NULL;
+    END;
+    BEGIN
+        dbms_stats.gather_table_stats(l_owner, l_table, cascade => true);
         step := step + 1;
         cz_write_audit(l_job_id, current_schema_name, procedure_name, 'Analyzed table '||p_owner||'.'||p_table, 0, step, 'Done');
     EXCEPTION
