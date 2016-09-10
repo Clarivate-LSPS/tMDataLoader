@@ -843,4 +843,18 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         def ex = thrown(DataProcessingException)
         ex.message == "STUDY_ID differs from previous in 2 line in TST_DEMO.txt file."
     }
+
+    def 'it should not set study_id for upper level directories'() {
+        when:
+        def clinicalData = Fixtures.clinicalDataWithExtraLevel
+        Study.deleteById(config, clinicalData.studyId)
+        def result = clinicalData.load(config, "Test Studies\\Extra Level\\")
+        
+        then:
+        assertThat("Clinical data loading shouldn't fail", result, equalTo(true))
+        assertThat(sql, hasNode("\\Test Studies\\Extra Level\\$clinicalData.studyName\\Subjects\\Demographics\\Age (AGE)\\").withPatientCount(9))
+        def c = sql.firstRow('select count(*) from concept_dimension where concept_path = ? and sourcesystem_cd is null', '\\Test Studies\\Extra Level\\' as String)
+        assertEquals('Count study nodes wrong', 1, c[0] as Integer)
+    }
+
 }

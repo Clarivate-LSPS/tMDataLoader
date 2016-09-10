@@ -36,6 +36,7 @@ AS
     escaped_path VARCHAR2(4000);
     node_path VARCHAR2(4000);
     existing_path VARCHAR2(4000);
+    n_nodes NUMBER;
 
     --Audit variables
     job_was_created boolean;
@@ -71,18 +72,29 @@ BEGIN
     -- Iterate through each node
     new_paths := string_table_t();
     existing_path := paths_hash.FIRST;
-    LOOP
+    WHILE existing_path IS NOT NULL LOOP
         node_path := existing_path;
         LOOP
             node_path := SUBSTR(node_path, 1, INSTR(node_path, '\', -2));
-            EXIT WHEN paths_hash.EXISTS(node_path) OR INSTR(node_path, '\', 1, 3) < 1 OR node_path IS NULL;
+            EXIT WHEN paths_hash.EXISTS(node_path) OR LENGTH(node_path) < LENGTH(Path) OR node_path IS NULL;
             new_paths.EXTEND;
             new_paths(new_paths.LAST) := node_path;
             paths_hash(node_path) := null;
         END LOOP;
         existing_path := paths_hash.NEXT(existing_path);
-        EXIT WHEN existing_path IS NULL;
     END LOOP;
+    -- This procedure must be called for the first time to add study's ancestor nodes. In this case parameter Trial_id must be null.
+    IF Trial_id IS NULL THEN
+        node_path := Path;
+        WHILE node_path IS NOT NULL AND INSTR(node_path, '\', 1, 3) > 0 LOOP
+            select count(*) into n_nodes from i2b2 where c_fullname = node_path;
+            IF n_nodes = 0 THEN
+                new_paths.EXTEND;
+                new_paths(new_paths.LAST) := node_path;
+            END IF;
+            node_path := SUBSTR(node_path, 1, INSTR(node_path, '\', -2));
+        END LOOP;
+    END IF;
     audit_text := 'Found missing nodes';
     step := step + 1;
     cz_write_audit(job_id, current_schema_name, procedure_name, audit_text, new_paths.COUNT, step, 'Done');

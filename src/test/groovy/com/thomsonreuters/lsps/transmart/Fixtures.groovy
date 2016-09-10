@@ -135,6 +135,10 @@ class Fixtures {
         return studiesDir.studyDir('Test Study With Duplicated Patient ID', 'GSE0DUPPID').clinicalData
     }
 
+    static ClinicalData getClinicalDataWithExtraLevel() {
+        return studiesDir.studyDir('Test Study Deeper in the Tree', 'GSE0EL').clinicalData
+    }
+
     static ProteinData getProteinData() {
         return studiesDir.studyDir('Test Protein Study', 'GSE37425').proteinData
     }
