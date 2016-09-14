@@ -68,5 +68,6 @@
 @@procedures/i2b2_load_rbm_data.sql
 @@procedures/i2b2_load_rbm_annotation.sql
 @@procedures/i2b2_load_rbm_inc_data.sql
+@@procedures/COPY_SECURITY_FROM_DIFF_STUDY.sql
 
 @show_invalid.sql -- compiles invalids, resolving them or highlighting problems

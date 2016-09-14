@@ -143,7 +143,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat(sql, hasNode(conceptPathForPatient).withPatientCount(9))
         assertThat(sql, hasNode(conceptPathForPatient + 'T790M\\'))
         def c = sql.firstRow('select count(*) from i2b2metadata.i2b2 where c_fullname like ? || \'%\' ESCAPE \'`\' and c_visualattributes=\'FAS\'', '\\Test Studies\\Test Study\\' as String)
-        assertEquals('Count study nodes wrong', 1, c[0] as Integer )
+        assertEquals('Count study nodes wrong', 1, c[0] as Integer)
     }
 
     void testItLoadsDataWithTags() {
@@ -247,7 +247,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat(sql, hasNode(biomarkerConcept).withPatientCount(2))
     }
 
-    def 'it should load study with UPDATE VARIABLES merge mode'(){
+    def 'it should load study with UPDATE VARIABLES merge mode'() {
         expect:
         String subjId = 'HCC2935'
         String rootConcept = "\\Test Studies\\${studyName}\\"
@@ -298,16 +298,16 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
 
     def 'Updates_Variable loading should throw error if find several categorical value on the same'() {
         when:
-            String studyName = 'Test Study With Duplicate Category Path'
-            String studyId = 'GSE0WDCP'
-            String femaleConcept = '\\Test Studies\\Test Study With Duplicate Category Path\\DupclicateCD\\Female\\'
-            def newProcessor = new ClinicalDataProcessor(config)
-            newProcessor.process(new File(studyDir(studyName, studyId, studiesForMerge.first_load), "ClinicalDataToUpload").toPath(),
+        String studyName = 'Test Study With Duplicate Category Path'
+        String studyId = 'GSE0WDCP'
+        String femaleConcept = '\\Test Studies\\Test Study With Duplicate Category Path\\DupclicateCD\\Female\\'
+        def newProcessor = new ClinicalDataProcessor(config)
+        newProcessor.process(new File(studyDir(studyName, studyId, studiesForMerge.first_load), "ClinicalDataToUpload").toPath(),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
-            newProcessor.process(new File(studyDir(studyName, studyId, studiesForMerge.update_var), "ClinicalDataToUpload").toPath(),
+        newProcessor.process(new File(studyDir(studyName, studyId, studiesForMerge.update_var), "ClinicalDataToUpload").toPath(),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
         then:
-            assertThat(sql, hasNode(femaleConcept).withPatientCount(5))
+        assertThat(sql, hasNode(femaleConcept).withPatientCount(5))
     }
 
     def 'it should load study with APPEND merge mode'() {
@@ -740,7 +740,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         ])
     }
 
-    def 'it should load values with upper and lower case'(){
+    def 'it should load values with upper and lower case'() {
         setup:
         def customClinicalData = Fixtures.getClinicalData('Test Study With Upper and Lower Case', 'GSE0ULC')
         Study.deleteById(config, customClinicalData.studyId)
@@ -755,7 +755,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat(db, hasNode("${conceptPath}ABILIFY\\"))
     }
 
-    def 'it should validate load values with non-utf8 symbols'(){
+    def 'it should validate load values with non-utf8 symbols'() {
         when:
         def nonUTF8ClinicalData = Fixtures.getClinicalData('Test Study With Non-UTF8 symbols', studyId)
         nonUTF8ClinicalData.load(config)
@@ -764,16 +764,16 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         thrown(DataProcessingException)
     }
 
-    def 'it should validate top node was created '(){
+    def 'it should validate top node was created '() {
         setup:
         Study.deleteByPath(config, '\\Demographics\\')
         clinicalData.load(config)
         clinicalData.copyWithSuffix('SECOND').load(config, '\\Demographics\\Test Study SECOND\\')
         expect:
-        assertThat(db, hasRecord('i2b2metadata.i2b2', [c_fullname:'\\Demographics\\'], [:]))
+        assertThat(db, hasRecord('i2b2metadata.i2b2', [c_fullname: '\\Demographics\\'], [:]))
     }
 
-    def 'it should check path when visit_name equal to data_label and data_label is not specified before terminator'(){
+    def 'it should check path when visit_name equal to data_label and data_label is not specified before terminator'() {
         when:
         Study.deleteById(config, 'GSE0REPEATLABPATH')
         def clinicalData = Fixtures.clinicalDataWithTerminatorAndSamePath
@@ -790,7 +790,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat(sql, hasNode("\\Test Studies\\$clinicalData.studyName\\Subjects\\Demographics\\v2\\").withPatientCount(1))
     }
 
-    def 'it should check error when used wrong mapping file name'(){
+    def 'it should check error when used wrong mapping file name'() {
         when:
         def clinicalData = Fixtures.clinicalDataWithWrongMappingFileName
         Study.deleteById(config, clinicalData.studyId)
@@ -801,7 +801,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         ex.message == 'Mapping file wasn\'t found. Please, check file name.'
     }
 
-    def 'it should check error with long path'(){
+    def 'it should check error with long path'() {
         when:
         def clinicalData = Fixtures.clinicalDataWithLongCategoryCD
         Study.deleteById(config, clinicalData.studyId)
