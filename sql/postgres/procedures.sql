@@ -50,5 +50,8 @@ $$;
 \i procedures/I2B2_LOAD_STUDY_METADATA.sql
 \i procedures/I2B2_PROCESS_GENERIC_SERIAL_HDDDATA.sql
 \i procedures/I2B2_PROCESS_GWAS_PLINK_DATA.sql
+\i procedures/TIMESTAMP_TO_TIMEPOINT.sql
+\i procedures/REPLACE_LAST_PATH_COMPONENT.sql
+\i procedures/GET_LAST_PATH_COMPONENT.sql
 
 

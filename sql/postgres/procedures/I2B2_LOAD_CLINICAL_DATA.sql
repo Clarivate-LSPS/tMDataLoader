@@ -127,62 +127,6 @@ BEGIN
 		select cz_end_audit (jobID, 'FAIL') into rtnCd;
 		return -16;
 	end if;
-
-	--	delete any existing data from lz_src_clinical_data and load new data
-	begin
-	delete from lz_src_clinical_data
-	where study_id = TrialId;
-	exception
-	when others then
-		errorNumber := SQLSTATE;
-		errorMessage := SQLERRM;
-		--Handle errors.
-		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
-		--End Proc
-		select cz_end_audit (jobID, 'FAIL') into rtnCd;
-		return -16;
-	get diagnostics rowCt := ROW_COUNT;
-	end;
-	stepCt := stepCt + 1;
-	select cz_write_audit(jobId,databaseName,procedureName,'Delete existing data from lz_src_clinical_data',rowCt,stepCt,'Done') into rtnCd;
-
-	begin
-	insert into lz_src_clinical_data
-	(study_id
-	,site_id
-	,subject_id
-	,visit_name
-	,data_label
-	,data_value
-	,category_cd
-	,etl_job_id
-	,etl_date
-	,ctrl_vocab_code)
-	select study_id
-		  ,site_id
-		  ,subject_id
-		  ,visit_name
-		  ,data_label
-		  ,data_value
-		  ,category_cd
-		  ,jobId
-		  ,etlDate
-		  ,ctrl_vocab_code
-	from lt_src_clinical_data;
-	exception
-	when others then
-		errorNumber := SQLSTATE;
-		errorMessage := SQLERRM;
-		--Handle errors.
-		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
-		--End Proc
-		select cz_end_audit (jobID, 'FAIL') into rtnCd;
-		return -16;
-	end;
-	get diagnostics rowCt := ROW_COUNT;
-	stepCt := stepCt + 1;
-	select cz_write_audit(jobId,databaseName,procedureName,'Insert data into lz_src_clinical_data',rowCt,stepCt,'Done') into rtnCd;
-
 	--	truncate wrk_clinical_data and load data from external file
 
 	execute ('truncate table wrk_clinical_data');
@@ -201,6 +145,7 @@ BEGIN
 	,ctrl_vocab_code
 	,sample_cd
 	,valuetype_cd
+	,baseline_value
 	)
 	select study_id
 		  ,site_id
@@ -212,6 +157,7 @@ BEGIN
 		  ,ctrl_vocab_code
 		  ,sample_cd
 			,valuetype_cd
+			,baseline_value
 	from lt_src_clinical_data;
 	exception
 	when others then
@@ -778,6 +724,7 @@ BEGIN
 	,data_value
 	,data_type
 	,valuetype_cd
+	,baseline_value
 	)
   select DISTINCT
     Case
@@ -793,6 +740,7 @@ BEGIN
     ,case when a.data_type = 'T' then a.data_value else null end as data_value
     ,a.data_type
 		,a.valuetype_cd
+		,baseline_value
 	from  wrk_clinical_data a;
 	get diagnostics rowCt := ROW_COUNT;
 	exception
@@ -809,6 +757,49 @@ BEGIN
 	select cz_write_audit(jobId,databaseName,procedureName,'Create leaf nodes for trial',rowCt,stepCt,'Done') into rtnCd;
 
 	--	set node_name
+
+	begin
+		update wt_trial_nodes
+		set leaf_node = replace_last_path_component(leaf_node, timestamp_to_timepoint(get_last_path_component(leaf_node), baseline_value)),
+			category_cd = regexp_replace(category_cd,
+																	 '\+' || get_last_path_component(leaf_node) || '(\+\$?)$',
+																	 '+' || timestamp_to_timepoint(get_last_path_component(leaf_node), baseline_value)),
+			valuetype_cd = 'TIMEPOINT'
+		where baseline_value is not null;
+		get diagnostics rowCt := ROW_COUNT;
+		exception
+		when others then
+			errorNumber := SQLSTATE;
+			errorMessage := SQLERRM;
+			--Handle errors.
+			select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+			--End Proc
+			select cz_end_audit (jobID, 'FAIL') into rtnCd;
+			return -16;
+	end;
+	stepCt := stepCt + 1;
+	select cz_write_audit(jobId,databaseName,procedureName,'Updated node path for nodes',rowCt,stepCt,'Done') into rtnCd;
+
+	begin
+		update wrk_clinical_data
+		set
+			category_cd = regexp_replace(category_cd,
+																	 '\+' || get_last_path_component(category_cd) || '(\+\$?)$',
+																	 '+' || timestamp_to_timepoint(get_last_path_component(category_cd), baseline_value))
+		where baseline_value is not null;
+		get diagnostics rowCt := ROW_COUNT;
+		exception
+		when others then
+			errorNumber := SQLSTATE;
+			errorMessage := SQLERRM;
+			--Handle errors.
+			select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+			--End Proc
+			select cz_end_audit (jobID, 'FAIL') into rtnCd;
+			return -16;
+	end;
+	stepCt := stepCt + 1;
+	select cz_write_audit(jobId,databaseName,procedureName,'Updated category_cd in wrk_clinical_data table',rowCt,stepCt,'Done') into rtnCd;
 
 	begin
 	update wt_trial_nodes

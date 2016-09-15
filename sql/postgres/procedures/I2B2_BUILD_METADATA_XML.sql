@@ -8,6 +8,7 @@ $BODY$
 DECLARE
 	series_value     VARCHAR(200) := NULL;
 	series_unit_name VARCHAR(200) := NULL;
+	regTable					text[];
 BEGIN
 	IF valuetype_cd = 'TIMEPOINT'
 	THEN
@@ -15,7 +16,7 @@ BEGIN
 		THEN
 			series_value := '0';
 			series_unit_name := 'minutes';
-		ELSE
+		ELSIF lower(display_name) ~ '^[a-zA-Z]+ -?\d+' THEN
 			series_value := substring(display_name from '-?[0-9]+');
 			series_unit_name := lower(substring(display_name from '[a-zA-Z]+'));
 			IF series_unit_name = 'minute'
@@ -42,6 +43,14 @@ BEGIN
 					series_unit_name := 'minutes';
 					series_value := (series_value::FLOAT * 60 * 24 * 30 * 12)::VARCHAR;
 			END IF;
+		ELSE
+			regTable := regexp_matches(lower(display_name), '^(-?[0-9]{1,4} (week|weeks|minute|minutes|hour|hours|day|days|year|years|month|months))+');
+			IF array_length(regTable, 1) > 0 THEN
+        select EXTRACT(epoch FROM trim(display_name)::INTERVAL) / 60 into series_value;
+        series_unit_name := 'minutes';
+      ELSE
+				RAISE EXCEPTION  'Check date format';
+      END IF;
 		END IF;
 	END IF;
 

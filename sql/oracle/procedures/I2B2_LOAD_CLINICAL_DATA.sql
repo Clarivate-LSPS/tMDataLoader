@@ -228,6 +228,7 @@ BEGIN
   ,usubjid
   ,data_type
 	,valuetype_cd
+  ,baseline_value
 	)
 	select study_id
 		  ,site_id
@@ -242,6 +243,7 @@ BEGIN
       ,(CASE WHEN site_id IS NOT NULL THEN TrialID || ':' || site_id || ':' || subject_id ELSE TrialID || ':' || subject_id END)
       ,'T'
 			,valuetype_cd
+			,baseline_value
 	from lt_src_clinical_data
 	WHERE data_value is not null;
 	
@@ -693,6 +695,7 @@ BEGIN
 	,data_value
 	,data_type
 	,valuetype_cd
+	,baseline_value
 	)
   select /*+ parallel(a, 4) */  DISTINCT
 		Case
@@ -708,11 +711,32 @@ BEGIN
 		decode(a.data_type,'T',a.data_value,null) as data_value
     ,a.data_type
 		,a.valuetype_cd
+		,baseline_value
 	from  wrk_clinical_data a;
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Create leaf nodes for trial',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
-	
+
+	begin
+		update wt_trial_nodes
+		set leaf_node = REPLACE_LAST_PATH_COMPONENT(leaf_node, TIMESTAMP_TO_TIMEPOINT(GET_LAST_PATH_COMPONENT(leaf_node), baseline_value)),
+			category_cd = regexp_replace(category_cd,
+																	 '\+' || get_last_path_component(leaf_node) || '(\+\$)?$',
+																	 '+' || timestamp_to_timepoint(get_last_path_component(leaf_node), baseline_value) || '\1'),
+			valuetype_cd = 'TIMEPOINT'
+		where baseline_value is not null and data_type = 'N';
+	end;
+	stepCt := stepCt + 1;
+	cz_write_audit(jobId,databaseName,procedureName,'Updated node path for nodes',SQL%ROWCOUNT,stepCt,'Done');
+	begin
+		update wrk_clinical_data
+		set category_cd = regexp_replace(category_cd,
+																		 '\+' || GET_LAST_PATH_COMPONENT(category_cd) || '(\+\$)?$',
+																		 '+' || TIMESTAMP_TO_TIMEPOINT(GET_LAST_PATH_COMPONENT(category_cd), baseline_value) || '\1')
+		where baseline_value is not null;
+	end;
+	stepCt := stepCt + 1;
+	cz_write_audit(jobId,databaseName,procedureName,'Updated category_cd in wrk_clinical_data table',SQL%ROWCOUNT,stepCt,'Done');
 	--	set node_name
 	
 	update wt_trial_nodes
