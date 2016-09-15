@@ -389,6 +389,7 @@ BEGIN
 
 	--	set visit_name to null when there's only a single visit_name for the category
 
+  analyze wrk_clinical_data;
   if alwaysSetVisitName = 'N' then
    begin
     begin
