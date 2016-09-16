@@ -1,5 +1,5 @@
 CREATE OR REPLACE FUNCTION timestamp_to_timepoint(
-  mValue      CHARACTER VARYING,
+  timestamp_value      CHARACTER VARYING,
   baseline_value CHARACTER VARYING
 )
   RETURNS CHARACTER VARYING AS
@@ -7,7 +7,6 @@ $BODY$
 DECLARE
   series_value VARCHAR(200) := NULL;
   result       VARCHAR(2000) := NULL;
-  last_part    VARCHAR(200);
   rawValue     NUMERIC(20, 0);
   diffValue    INTERVAL;
   secondValue  NUMERIC(4, 0);
@@ -17,18 +16,17 @@ DECLARE
   yearValue    NUMERIC(4, 0);
 BEGIN
   series_value := '';
-  last_part := mValue;
-  SELECT (to_timestamp(last_part, 'YYYY-MM-DD HH24:MI:SS') :: TIMESTAMP WITHOUT TIME ZONE -
+
+  SELECT (to_timestamp(timestamp_value, 'YYYY-MM-DD HH24:MI:SS') :: TIMESTAMP WITHOUT TIME ZONE -
           to_timestamp(baseline_value, 'YYYY-MM-DD HH24:MI:SS') :: TIMESTAMP WITHOUT TIME ZONE)
   INTO diffValue;
 
   SELECT EXTRACT(EPOCH FROM diffValue)
   INTO rawValue;
-  IF (rawValue < 0)
-  THEN series_value := '-';
-    SELECT (to_timestamp(baseline_value, 'YYYY-MM-DD HH24:MI:SS') :: TIMESTAMP WITHOUT TIME ZONE -
-            to_timestamp(last_part, 'YYYY-MM-DD HH24:MI:SS') :: TIMESTAMP WITHOUT TIME ZONE)
-    INTO diffValue;
+
+  IF (rawValue < 0) THEN
+    series_value := '-';
+    diffValue := -diffValue;
   END IF;
 
   SELECT EXTRACT(DAY FROM diffValue)

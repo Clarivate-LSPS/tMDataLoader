@@ -757,13 +757,10 @@ BEGIN
 	select cz_write_audit(jobId,databaseName,procedureName,'Create leaf nodes for trial',rowCt,stepCt,'Done') into rtnCd;
 
 	--	set node_name
-
 	begin
 		update wt_trial_nodes
-		set leaf_node = replace_last_path_component(leaf_node, timestamp_to_timepoint(get_last_path_component(leaf_node), baseline_value)),
-			category_cd = regexp_replace(category_cd,
-																	 '\+' || get_last_path_component(leaf_node) || '(\+\$?)$',
-																	 '+' || timestamp_to_timepoint(get_last_path_component(leaf_node), baseline_value)),
+		set
+			leaf_node = replace_last_path_component(leaf_node, timestamp_to_timepoint(get_last_path_component(leaf_node), baseline_value)),
 			valuetype_cd = 'TIMEPOINT'
 		where baseline_value is not null;
 		get diagnostics rowCt := ROW_COUNT;
@@ -778,28 +775,7 @@ BEGIN
 			return -16;
 	end;
 	stepCt := stepCt + 1;
-	select cz_write_audit(jobId,databaseName,procedureName,'Updated node path for nodes',rowCt,stepCt,'Done') into rtnCd;
-
-	begin
-		update wrk_clinical_data
-		set
-			category_cd = regexp_replace(category_cd,
-																	 '\+' || get_last_path_component(category_cd) || '(\+\$?)$',
-																	 '+' || timestamp_to_timepoint(get_last_path_component(category_cd), baseline_value))
-		where baseline_value is not null;
-		get diagnostics rowCt := ROW_COUNT;
-		exception
-		when others then
-			errorNumber := SQLSTATE;
-			errorMessage := SQLERRM;
-			--Handle errors.
-			select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
-			--End Proc
-			select cz_end_audit (jobID, 'FAIL') into rtnCd;
-			return -16;
-	end;
-	stepCt := stepCt + 1;
-	select cz_write_audit(jobId,databaseName,procedureName,'Updated category_cd in wrk_clinical_data table',rowCt,stepCt,'Done') into rtnCd;
+	select cz_write_audit(jobId,databaseName,procedureName,'Updated last path component for timestamps',rowCt,stepCt,'Done') into rtnCd;
 
 	begin
 	update wt_trial_nodes
@@ -1358,6 +1334,7 @@ BEGIN
 	  and coalesce(a.category_cd,'@') = coalesce(t.category_cd,'@')
 	  and coalesce(a.data_label,'**NULL**') = coalesce(t.data_label,'**NULL**')
 	  and coalesce(a.visit_name,'**NULL**') = coalesce(t.visit_name,'**NULL**')
+	  and coalesce(a.baseline_value,'**NULL**') = coalesce(t.baseline_value,'**NULL**')
 	  and case when a.data_type = 'T' then a.data_value else '**NULL**' end = coalesce(t.data_value,'**NULL**')
 	  and t.leaf_node = i.c_fullname
 --	  and not exists		-- don't insert if lower level node exists

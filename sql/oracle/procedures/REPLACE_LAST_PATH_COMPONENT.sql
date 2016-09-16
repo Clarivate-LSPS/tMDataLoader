@@ -2,12 +2,10 @@ create or replace FUNCTION "REPLACE_LAST_PATH_COMPONENT"(
   node_path VARCHAR2,
   new_value VARCHAR2)
   RETURN VARCHAR2 IS
-  lastComp        VARCHAR2(4000);
-  modString       VARCHAR2(4000);
+    previousBackSlash INT;
   BEGIN
-    lastComp := GET_LAST_PATH_COMPONENT(node_path);
+		previousBackSlash := INSTR(node_path, '\', -1, 2);
 
-    modString := regexp_replace(node_path, lastComp || '\\$', new_value || '\\');
-    RETURN modString;
+    RETURN SUBSTR(node_path, 1, previousBackSlash) || new_value || '\';
   END;
   /

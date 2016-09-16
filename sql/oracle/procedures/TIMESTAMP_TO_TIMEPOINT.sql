@@ -1,11 +1,9 @@
-CREATE OR REPLACE FUNCTION "TIMESTAMP_TO_TIMEPOINT"(
-  mValue VARCHAR2,
+CREATE OR REPLACE FUNCTION "TIMESTAMP_TO_timestamp"(
+  timestamp VARCHAR2,
   baseline  VARCHAR2)
   RETURN VARCHAR2 IS
   series_value     VARCHAR2(200) := NULL;
   series_unit_name VARCHAR2(200) := NULL;
-  last_part        VARCHAR2(200);
-  rawValue         LONG;
   diffValue        INTERVAL DAY TO SECOND;
   diffDate         NUMBER;
   secondValue      INTEGER;
@@ -16,14 +14,14 @@ CREATE OR REPLACE FUNCTION "TIMESTAMP_TO_TIMEPOINT"(
   modString        VARCHAR2(4000);
   BEGIN
     series_value := '';
-    last_part := mValue;
-    diffValue := TO_TIMESTAMP(last_part, 'YYYY-MM-DD HH24:MI:SS') - TO_TIMESTAMP(baseline, 'YYYY-MM-DD HH24:MI:SS');
-    diffDate := TO_DATE(last_part, 'YYYY-MM-DD HH24:MI:SS') - TO_DATE(baseline, 'YYYY-MM-DD HH24:MI:SS');
+    diffDate := TO_DATE(timestamp, 'YYYY-MM-DD HH24:MI:SS') - TO_DATE(baseline, 'YYYY-MM-DD HH24:MI:SS');
 
     IF (diffDate < 0)
     THEN
       series_value := '-';
-      diffValue := TO_TIMESTAMP(baseline, 'YYYY-MM-DD HH24:MI:SS') - TO_TIMESTAMP(last_part, 'YYYY-MM-DD HH24:MI:SS');
+      diffValue := TO_TIMESTAMP(baseline, 'YYYY-MM-DD HH24:MI:SS') - TO_TIMESTAMP(timestamp, 'YYYY-MM-DD HH24:MI:SS');
+    ELSE
+       diffValue := TO_TIMESTAMP(timestamp, 'YYYY-MM-DD HH24:MI:SS') - TO_TIMESTAMP(baseline, 'YYYY-MM-DD HH24:MI:SS');
     END IF;
 
     SELECT EXTRACT(DAY FROM diffValue) / 365

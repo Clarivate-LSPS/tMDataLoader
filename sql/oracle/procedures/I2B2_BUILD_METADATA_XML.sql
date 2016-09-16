@@ -8,7 +8,6 @@ CREATE OR REPLACE FUNCTION "I2B2_BUILD_METADATA_XML"(
   iter             INT;
   minutes          NUMBER(18, 0);
   negative         INT := 0;
-  dName            VARCHAR2(4000);
   BEGIN
     IF valuetype_cd = 'TIMEPOINT'
     THEN
@@ -49,27 +48,25 @@ CREATE OR REPLACE FUNCTION "I2B2_BUILD_METADATA_XML"(
           iter := 1;
           minutes := 0;
 
-          SELECT INSTR(display_name, '-', 1)
+          SELECT REGEXP_INSTR(display_name, '^\s*-', iter)
           INTO negative
           FROM dual;
           IF (negative > 0)
           THEN
-            dName := substr(display_name, (negative + 1));
-          ELSE
-            dName := display_name;
+            iter := negative + 1;
           END IF;
 
-          WHILE (
-            REGEXP_INSTR(dName, '[0-9]+ (week|weeks|minute|minutes|hour|hours|day|days|year|years|month|months)+', iter)
-            > 0) LOOP
-            series_value := REGEXP_SUBSTR(dName, '[0-9]+', iter);
-            series_unit_name := LOWER(
-                REGEXP_SUBSTR(dName, '(week|weeks|minute|minutes|hour|hours|day|days|year|years|month|months)+',
-                              iter + 2));
 
-            iter :=
-            REGEXP_INSTR(dName, '[0-9]+ (week|weeks|minute|minutes|hour|hours|day|days|year|years|month|months)+', iter)
-            + 4;
+          WHILE (TRUE) LOOP
+            iter := REGEXP_INSTR(display_name, '[0-9]+\s+(week|weeks|minute|minutes|hour|hours|day|days|year|years|month|months)+', iter);
+            EXIT WHEN iter is null or iter < 1;
+
+            series_value := REGEXP_SUBSTR(display_name, '[0-9]+', iter);
+            iter := iter + LENGTH(series_value) + 1;
+            series_unit_name := LOWER(
+                REGEXP_SUBSTR(display_name, '(week|weeks|minute|minutes|hour|hours|day|days|year|years|month|months)+', iter));
+            iter := iter + LENGTH(series_unit_name);
+
             IF series_unit_name IN ('minute', 'minutes')
             THEN
               series_unit_name := 'minutes';
@@ -98,7 +95,7 @@ CREATE OR REPLACE FUNCTION "I2B2_BUILD_METADATA_XML"(
           END LOOP;
           IF (negative > 0)
           THEN
-            minutes := -1 * minutes;
+            minutes := -minutes;
           END IF;
           series_value := TO_CHAR(minutes);
         END IF;
@@ -120,6 +117,4 @@ CREATE OR REPLACE FUNCTION "I2B2_BUILD_METADATA_XML"(
     ELSE NULL
     END;
   END;
-
-
-        /
+/

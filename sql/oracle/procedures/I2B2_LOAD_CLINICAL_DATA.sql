@@ -719,24 +719,14 @@ BEGIN
 
 	begin
 		update wt_trial_nodes
-		set leaf_node = REPLACE_LAST_PATH_COMPONENT(leaf_node, TIMESTAMP_TO_TIMEPOINT(GET_LAST_PATH_COMPONENT(leaf_node), baseline_value)),
-			category_cd = regexp_replace(category_cd,
-																	 '\+' || get_last_path_component(leaf_node) || '(\+\$)?$',
-																	 '+' || timestamp_to_timepoint(get_last_path_component(leaf_node), baseline_value) || '\1'),
+		set
+			leaf_node = REPLACE_LAST_PATH_COMPONENT(leaf_node, TIMESTAMP_TO_TIMEPOINT(GET_LAST_PATH_COMPONENT(leaf_node), baseline_value)),
 			valuetype_cd = 'TIMEPOINT'
 		where baseline_value is not null and data_type = 'N';
 	end;
 	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Updated node path for nodes',SQL%ROWCOUNT,stepCt,'Done');
-	begin
-		update wrk_clinical_data
-		set category_cd = regexp_replace(category_cd,
-																		 '\+' || GET_LAST_PATH_COMPONENT(category_cd) || '(\+\$)?$',
-																		 '+' || TIMESTAMP_TO_TIMEPOINT(GET_LAST_PATH_COMPONENT(category_cd), baseline_value) || '\1')
-		where baseline_value is not null;
-	end;
-	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Updated category_cd in wrk_clinical_data table',SQL%ROWCOUNT,stepCt,'Done');
+	cz_write_audit(jobId,databaseName,procedureName,'Updated last path component for timestamps',SQL%ROWCOUNT,stepCt,'Done');
+
 	--	set node_name
 	
 	update wt_trial_nodes
@@ -1244,6 +1234,7 @@ BEGIN
 	  and nvl(a.category_cd,'@') = nvl(t.category_cd,'@')
 	  and nvl(a.data_label,'**NULL**') = nvl(t.data_label,'**NULL**')
 	  and nvl(a.visit_name,'**NULL**') = nvl(t.visit_name,'**NULL**')
+		and nvl(a.baseline_value,'**NULL**') = nvl(t.baseline_value,'**NULL**')
 	  and decode(a.data_type,'T',a.data_value,'**NULL**') = nvl(t.data_value,'**NULL**')
 	  and t.leaf_node = i.c_fullname
 	  and not exists		-- don't insert if lower level node exists

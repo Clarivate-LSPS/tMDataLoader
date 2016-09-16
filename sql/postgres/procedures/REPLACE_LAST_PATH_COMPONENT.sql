@@ -7,10 +7,7 @@ DECLARE
   lastComp  CHARACTER VARYING;
   modString CHARACTER VARYING;
 BEGIN
-  lastComp := get_last_path_component(node_path);
-
-  modString := regexp_replace(node_path, lastComp || '\\$', new_value || '\\');
-  RETURN modString;
+  RETURN regexp_replace(node_path, '\\[^\\]+\\$', '\\' || new_value || '\\');
 END;
 $BODY$
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER

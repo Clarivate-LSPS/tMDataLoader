@@ -78,6 +78,7 @@ class ClinicalDataMapping {
         }
         int variableTypeIdx = columnMapping.variable_type ?: -1
         int validationRulesIdx = columnMapping.validation_rules ?: -1
+        boolean hasBaselineColumn = columnMapping.containsKey('baseline')
         mappingFile.eachEntry { cols, lineNum ->
             String fileName = cols[0]
             FileParsingInfo parsingInfo = mappings[fileName]
@@ -121,7 +122,7 @@ class ClinicalDataMapping {
                             variableType: variableType,
                             validationRules: validationRules
                     )
-                    if (columnMapping.containsKey('baseline')) {
+                    if (hasBaselineColumn) {
                         entry.baseline = cols[columnMapping['baseline']]
                     }
                     if (entry.CATEGORY_CD.length() > colsMetaSize.CATEGORY_CD) {
@@ -157,11 +158,13 @@ class ClinicalDataMapping {
             }
         }
 
-        for (def entry : mappings.entrySet()) {
-            entry.value.fileMapping._DATA.each { e ->
-                e.baselineColumn = entry.value.fileMapping._DATA.find {
-                    it.DATA_LABEL == e.baseline
-                }?.COLUMN ?: -1
+        if (hasBaselineColumn) {
+            for (def entry : mappings.entrySet()) {
+                entry.value.fileMapping._DATA.each { e ->
+                    e.baselineColumn = entry.value.fileMapping._DATA.find {
+                        it.DATA_LABEL == e.baseline
+                    }?.COLUMN ?: -1
+                }
             }
         }
 

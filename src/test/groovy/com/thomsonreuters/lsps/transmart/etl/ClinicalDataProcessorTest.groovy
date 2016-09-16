@@ -896,9 +896,10 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         String timepointsPath = "\\Test Studies\\Test Study With Serial LDD with timestamp\\Vars\\Timestamp"
 
         when:
-        clinicalData.load(config)
+        def loaded = clinicalData.load(config)
 
         then:
+        loaded
         assertThat db, hasNode("$timepointsPath\\Baseline\\").withPatientCount(3)
         assertThat db, hasNode("$timepointsPath\\1 minute\\").withPatientCount(1)
 
@@ -1349,9 +1350,10 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         String timepointsPathForSecond = "\\Test Studies\\Test Study With Serial LDD with two timestamp and baseline\\Other\\Timestamp2"
 
         when:
-        clinicalData.load(config)
+        def loaded = clinicalData.load(config)
 
         then:
+        loaded
         assertThat db, hasNode("$timepointsPath\\Baseline\\").withPatientCount(2)
         assertThat db, hasNode("$timepointsPath\\1 minute\\").withPatientCount(1)
         assertThat db, hasNode("$timepointsPathForSecond\\1 hour\\").withPatientCount(2)
