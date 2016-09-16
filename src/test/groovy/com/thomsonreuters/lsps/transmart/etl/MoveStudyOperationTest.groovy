@@ -224,9 +224,9 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
         }
     }
 
-    private boolean moveStudy(oldPath, newPath, Boolean copySecurity) {
+    private boolean moveStudy(oldPath, newPath, Boolean keepSecurity) {
         def studyNode = newPath[newPath.length()-1] == '\\'?newPath:(newPath+'\\')
-        moveStudy(oldPath, newPath, true, studyNode, copySecurity)
+        moveStudy(oldPath, newPath, true, studyNode, keepSecurity)
     }
 
     private boolean moveStudy(oldPath, newPath) {
@@ -238,8 +238,8 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
         moveStudy(oldPath, newPath, true, studyNode, false)
     }
 
-    private boolean moveStudy(oldPath, newPath, boolean checkResult = true, studyNode, boolean copySecurity) {
-        def result = moveStudyProcessor.process(old_path: oldPath, new_path: newPath, copySecurity: copySecurity)
+    private boolean moveStudy(oldPath, newPath, boolean checkResult = true, studyNode, boolean keepSecurity) {
+        def result = moveStudyProcessor.process(old_path: oldPath, new_path: newPath, keepSecurity: keepSecurity)
         if (checkResult) {
             assert result, "Moving study from '${oldPath}' to '$newPath' failed"
             if (studyNode){
@@ -395,9 +395,9 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
         clinicalData.load(config, rootName)
         otherClinicalData.load(config, rootName)
 
-        Boolean copySecurity = true
+        Boolean keepSecurity = true
         def newPath = "\\$rootName\\${otherClinicalData.studyName}\\"
-        moveStudy(originalPath, newPath, copySecurity)
+        moveStudy(originalPath, newPath, keepSecurity)
 
         assertMovement(originalPath, newPath)
 

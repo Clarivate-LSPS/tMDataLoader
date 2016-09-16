@@ -2,7 +2,7 @@ CREATE OR REPLACE
 PROCEDURE "I2B2_MOVE_STUDY_BY_PATH"
   (old_path_in  VARCHAR2,
    new_path_in  VARCHAR2,
-   deleteBefore VARCHAR2,
+   saveSecurity VARCHAR2,
    currentJobID NUMBER := NULL
   )
 AS
@@ -17,6 +17,7 @@ AS
   genPath                 VARCHAR2(700 BYTE);
   rCount                  INT;
   trialId                 VARCHAR2(700 BYTE);
+  trialId2                VARCHAR2(700 BYTE);
 
   old_path                VARCHAR2(2000 BYTE);
   old_study_path					VARCHAR2(2000 BYTE);
@@ -26,6 +27,7 @@ AS
   new_root_node           VARCHAR2(700 BYTE);
   new_root_node_name      VARCHAR2(700 BYTE);
   new_path_last_node_name VARCHAR2(700 BYTE);
+  new_study_path          VARCHAR2(2000 BYTE);
   rowsExists              INT;
   counter                 INT;
   substringPos            INT;
@@ -41,6 +43,7 @@ AS
 	duplicated_paths EXCEPTION;
 	new_node_root_exception EXCEPTION;
 	new_path_exists_exception EXCEPTION;
+	new_path_is_not_a_study_root EXCEPTION;
 	subnode_exists_exception EXCEPTION;
   subfolder_outside_of_study EXCEPTION;
 
@@ -89,46 +92,6 @@ AS
     old_path := regexp_replace('\' || old_path || '\', '\\{2,}', '\');
     new_path := regexp_replace('\' || new_path || '\', '\\{2,}', '\');
 
-    select sourcesystem_cd into trialId from i2b2demodata.concept_dimension
-    where concept_path = old_path;
-
-     -- check first and last /
-    SELECT
-      SUBSTR(old_path, 1, 1)
-    INTO tmp
-    FROM dual;
-    IF tmp <> '\'
-    THEN
-      old_path := '\' || old_path;
-    END IF;
-
-    SELECT
-      SUBSTR(new_path, 1, 1)
-    INTO tmp
-    FROM dual;
-    IF tmp <> '\'
-    THEN
-      new_path := '\' || new_path;
-    END IF;
-
-    SELECT
-      SUBSTR(old_path, -1, 1)
-    INTO tmp
-    FROM dual;
-    IF tmp <> '\'
-    THEN
-      old_path := old_path || '\';
-    END IF;
-
-    SELECT
-      SUBSTR(new_path, -1, 1)
-    INTO tmp
-    FROM dual;
-    IF tmp <> '\'
-    THEN
-      new_path := new_path || '\';
-    END IF;
-
     -- check duplicates
     IF old_path = new_path
     THEN
@@ -146,52 +109,72 @@ AS
       RAISE old_study_missed;
     END IF;
 
+    select sourcesystem_cd into trialId from i2b2demodata.concept_dimension
+     where concept_path = old_path;
+
     old_parent_path := REGEXP_REPLACE(old_path, '^(.*)\\[^\\]+\\$', '\1');
     new_parent_path := REGEXP_REPLACE(new_path, '^(.*)\\[^\\]+\\$', '\1');
     new_root_node := REGEXP_REPLACE(new_path, '(\\[^\\]*\\).*', '\1');
     new_root_node_name := REGEXP_REPLACE(new_path, '\\([^\\]*)\\.*', '\1');
     new_path_last_node_name := REGEXP_REPLACE(new_path, '.*\\([^\\]*)\\', '\1');
 
-    IF (deleteBefore = 'Y') THEN
-      select distinct secure_obj_token INTO accession_new from i2b2metadata.i2b2_secure where c_fullname = new_path;
-      select distinct secure_obj_token INTO accession_old from i2b2metadata.i2b2_secure where c_fullname = old_path;
-      accession_new := replace(accession_new, 'EXP:', '');
-      accession_old := replace(accession_old, 'EXP:', '');
-
-      -- Deleted security configuration from first study
-      DELETE FROM biomart.bio_experiment WHERE accession = accession_old;
-      DELETE FROM biomart.bio_data_uid WHERE unique_id = 'EXP:'||accession_old;
-      DELETE FROM searchapp.search_secure_object WHERE bio_data_unique_id = 'EXP:'||accession_old;
-      COMMIT;
-      --Changed accession to new path
-      UPDATE biomart.bio_experiment SET accession = accession_old WHERE accession = accession_new;
-      UPDATE biomart.bio_data_uid SET unique_id = 'EXP:'||accession_old WHERE unique_id = 'EXP:'||accession_new;
-      UPDATE searchapp.search_secure_object SET bio_data_unique_id = 'EXP:'||accession_old WHERE bio_data_unique_id = 'EXP:'||accession_new;
-      COMMIT;
-      stepCt := stepCt + 1;
-      cz_write_audit(jobId,databaseName,procedureName,'Security configuration changed',0,stepCt,'Done');
-
-      I2B2_DELETE_ALL_DATA(null, new_path, jobID);
-
-      stepCt := stepCt + 1;
-      cz_write_audit(jobId,databaseName,procedureName,'Study '|| new_path || ' deleted!',0,stepCt,'Done');
-    END IF;
-
-		--check new path is not root node
+    --check new path is not root node
     IF new_root_node = new_path
     THEN
       RAISE new_node_root_exception;
     END IF;
 
-    select distinct
-    	first_value(c_fullname) over (partition by sourcesystem_cd order by c_fullname) into old_study_path
-		from i2b2metadata.i2b2
-		where sourcesystem_cd = trialId;
+    select min(c_fullname) into old_study_path
+      from i2b2metadata.i2b2
+     where sourcesystem_cd = trialId;
 
-		is_sub_node := old_path <> old_study_path;
+    is_sub_node := old_path <> old_study_path;
 
     IF is_sub_node and (instr(new_path, old_study_path) = 0 or new_path = old_study_path) THEN
       RAISE subfolder_outside_of_study;
+    END IF;
+
+    IF (saveSecurity = 'Y') THEN
+        begin
+            select sourcesystem_cd into trialId2 from i2b2demodata.concept_dimension
+             where concept_path = new_path;
+        exception
+            when no_data_found then null;
+        end;
+        IF trialId2 is not NULL THEN
+            select min(c_fullname) into new_study_path
+              from i2b2metadata.i2b2
+             where sourcesystem_cd = trialId2;
+            IF new_path <> new_study_path THEN
+                RAISE new_path_is_not_a_study_root;
+            END IF;
+
+            select secure_obj_token INTO accession_new from i2b2metadata.i2b2_secure where c_fullname = new_path;
+            select secure_obj_token INTO accession_old from i2b2metadata.i2b2_secure where c_fullname = old_path;
+            accession_new := replace(accession_new, 'EXP:', '');
+            accession_old := replace(accession_old, 'EXP:', '');
+
+            -- Deleted security configuration from first study
+            DELETE FROM biomart.bio_experiment WHERE accession = accession_old;
+            DELETE FROM biomart.bio_data_uid WHERE unique_id = 'EXP:'||accession_old;
+            DELETE FROM searchapp.search_secure_object WHERE bio_data_unique_id = 'EXP:'||accession_old;
+            COMMIT;
+            --Changed accession to new path
+            UPDATE biomart.bio_experiment SET accession = accession_old WHERE accession = accession_new;
+            UPDATE biomart.bio_data_uid SET unique_id = 'EXP:'||accession_old WHERE unique_id = 'EXP:'||accession_new;
+            UPDATE searchapp.search_secure_object SET bio_data_unique_id = 'EXP:'||accession_old WHERE bio_data_unique_id = 'EXP:'||accession_new;
+            COMMIT;
+            stepCt := stepCt + 1;
+            cz_write_audit(jobId,databaseName,procedureName,'Security configuration changed',0,stepCt,'Done');
+
+            I2B2_DELETE_ALL_DATA(null, new_path, jobID);
+
+            stepCt := stepCt + 1;
+            cz_write_audit(jobId,databaseName,procedureName,'Study '|| new_path || ' deleted!',0,stepCt,'Done');
+        ELSE
+            stepCt := stepCt + 1;
+            cz_write_audit(jobId,databaseName,procedureName,'No study found with path '||new_path||'. Ignoring save security settings option.',0,stepCt,'Done');
+        END IF;
     END IF;
 
 
@@ -305,7 +288,11 @@ AS
         if rCount = 0 THEN
           SELECT count(*) into rCount from i2b2metadata.i2b2_secure where c_fullname = (genPath || '\');
           if rCount = 0 then
-            i2b2_add_node(trialId , genPath|| '\', x.res, jobId);
+            if is_sub_node and length(genPath) > length(old_study_path) then
+              i2b2_add_node(trialId , genPath|| '\', x.res, jobId);
+            else
+              i2b2_add_node(null , genPath|| '\', x.res, jobId);
+            end if;
           end if;
         end if;
   	END LOOP;
@@ -386,6 +373,12 @@ AS
     cz_error_handler(jobid, procedurename);
     cz_end_audit(jobId, 'FAIL');
     DBMS_OUTPUT.PUT_LINE('subfolder_outside_of_study');
+
+    WHEN new_path_is_not_a_study_root THEN
+    cz_write_audit(jobId, databasename, procedurename, 'You can only save security settings when the target is the top node for the study', 1, stepCt, 'ERROR');
+    cz_error_handler(jobid, procedurename);
+    cz_end_audit(jobId, 'FAIL');
+    DBMS_OUTPUT.PUT_LINE('new_path_is_not_a_study_root');
 
     WHEN OTHERS THEN
 --Handle errors.
