@@ -58,6 +58,8 @@ BEGIN
             select regexp_replace(c_fullname, '\\[^\\]+\\$', '') as txt_path
               from i2b2metadata.i2b2
              where c_fullname like escaped_path || '%' escape '*'
+            union
+            select regexp_replace(path, '\\$', '') where not exists(select 1 from i2b2metadata.i2b2 where c_fullname = path)
         ) foo where length(txt_path) > 0;
 
     select max(array_length(node_path, 1)) into max_path_len from tmp_i2b2_paths;
@@ -94,7 +96,10 @@ BEGIN
         END LOOP;
     END LOOP;
 
-    PERFORM i2b2_add_nodes(trial_id, new_paths::text[], job_id);
+    SELECT i2b2_add_nodes(trial_id, new_paths::text[], job_id) INTO return_code;
+    IF return_code <> 1 THEN
+        RETURN return_code;
+    END IF;
 
     ---Cleanup OVERALL JOB if this proc is being run standalone
     IF new_job_flag THEN
@@ -111,7 +116,7 @@ EXCEPTION
         select cz_error_handler (job_id, function_name, error_number, error_message) into return_code;
         --End Proc
         select cz_end_audit (job_id, 'FAIL') into return_code;
-        RAISE;
+        RETURN -16;
 END;
 $$;
 

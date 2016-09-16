@@ -206,6 +206,9 @@ BEGIN
 		stepCt := stepCt + 1;
 		select cz_write_audit(jobId,databaseName,procedureName,'Adding upper-level nodes for "' || tPath || '"',0,stepCt,'Done') into rtnCd;
 		select i2b2_fill_in_tree(null, tPath, jobId) into rtnCd;
+		IF rtnCd <> 1 THEN
+			RETURN rtnCd;
+		END IF;
 	end if;
 
 	select count(*) into pExists
@@ -1069,6 +1072,9 @@ BEGIN
 
 	--New place form fill_in_tree
 	select i2b2_fill_in_tree(TrialId, topNode, jobID) into rtnCd;
+	IF rtnCd <> 1 THEN
+		RETURN rtnCd;
+	END IF;
 
 	--	delete from observation_fact all concept_cds for trial that are clinical data, exclude concept_cds from biomarker data
 	if (merge_mode = 'REPLACE') then

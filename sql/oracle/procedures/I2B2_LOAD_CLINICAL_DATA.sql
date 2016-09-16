@@ -285,7 +285,7 @@ BEGIN
 
 	if pCount > 2 then
 		stepCt := stepCt + 1;
-		cz_write_audit(jobId,databaseName,procedureName,'Adding upper-level nodes',0,stepCt,'Done');
+		cz_write_audit(jobId,databaseName,procedureName,'Adding upper-level nodes: ' || tPath,0,stepCt,'Done');
 		i2b2_fill_in_tree(null, tPath, jobId);
 	end if;
 	
