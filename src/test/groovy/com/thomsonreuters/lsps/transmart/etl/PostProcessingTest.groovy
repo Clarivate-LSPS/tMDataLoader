@@ -11,7 +11,7 @@ class PostProcessingTest extends Specification implements ConfigAwareTestCase {
 
     void setup() {
         ConfigAwareTestCase.super.setUp()
-        runScript('COPY_SECURITY_FROM_DIFF_STUDY.sql')
+        runScript('COPY_SECURITY_FROM_OTHER_STUDY.sql')
     }
 
     ClinicalDataProcessor getProcessor() {

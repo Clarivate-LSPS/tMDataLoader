@@ -13,7 +13,7 @@ class PostStudyProcessor{
     def studyInfo
     def jobId
 
-    private static final String COPY_SECURITY_PROCEDURE_NAME = 'COPY_SECURITY_FROM_DIFF_STUDY'
+    private static final String COPY_SECURITY_PROCEDURE_NAME = 'COPY_SECURITY_FROM_OTHER_STUDY'
 
     PostStudyProcessor(conf, sql, Path dir, studyInfo, jobId) {
         this.config = conf

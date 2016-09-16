@@ -1,4 +1,4 @@
-CREATE OR REPLACE PROCEDURE COPY_SECURITY_FROM_DIFF_STUDY(studyid      VARCHAR2, studyidfrom VARCHAR2,
+CREATE OR REPLACE PROCEDURE COPY_SECURITY_FROM_OTHER_STUDY(studyid      VARCHAR2, studyidfrom VARCHAR2,
                                                           currentjobid NUMERIC := NULL)
 AS
 
