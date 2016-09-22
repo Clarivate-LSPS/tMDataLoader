@@ -2,6 +2,7 @@ create or replace function I2B2_DELETE_ALL_DATA
 (
   trial_id character varying
  ,path_string varchar
+ ,delete_security character varying
  ,currentJobID numeric default -1
 ) returns numeric AS
 $BODY$
@@ -337,6 +338,17 @@ BEGIN
     end if;
 
   perform cz_end_audit (jobID, 'SUCCESS') where coalesce(currentJobId, -1) <> jobId;
+
+  -- delete security configuration
+  if (delete_security = 'Y') THEN
+    DELETE FROM biomart.bio_experiment WHERE accession = TrialID;
+    DELETE FROM biomart.bio_data_uid WHERE unique_id = 'EXP:'||TrialID;
+    DELETE FROM searchapp.search_secure_object WHERE bio_data_unique_id = 'EXP:'||TrialID;
+
+    stepCt := stepCt + 1;
+    get diagnostics rowCt := ROW_COUNT;
+    select cz_write_audit(jobId,databaseName,procedureName,'Deleted security configuration to '|| TrialID,rowCt,stepCt,'Done') into rtnCd;
+  END IF;
 
   return 1;
 END;

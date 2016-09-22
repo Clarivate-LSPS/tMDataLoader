@@ -54,6 +54,7 @@ class CommandLineTool {
             _ longOpt: 'data-value-first', 'Put VISIT NAME after the data value (default behavior, use to override non-standard config)'
             _ longOpt: 'delete-study-by-id', args: 1, argName: 'delete_id', 'Delete study by id'
             _ longOpt: 'delete-study-by-path', args: 1, argName: 'delete_path', 'Delete study by path'
+            _ longOpt: 'delete-security', 'Delete security configuration'
             _ longOpt: 'force-start', 'Force TM Data Loader start (even if another instance is already running)'
             _ longOpt: 'allow-non-unique-columns', 'Allow non-unique column names in clinical data files'
             _ longOpt: 'use-first-gene-id', 'When probe maps to multiple Entrez Gene IDs use only the first one'
@@ -230,6 +231,10 @@ class CommandLineTool {
             config.copySecurityFrom = true
             config.csStudyId = opts?.'copy-security-settings-from'
             println ">>> Copy security configuration from ${config.csStudyId}"
+        }
+        if (opts?.'delete-security'){
+            config.deleteSecurity = true
+            println ">>> Delete security configuration"
         }
 
         def extra_args = opts.arguments()

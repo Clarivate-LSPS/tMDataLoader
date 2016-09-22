@@ -1,12 +1,12 @@
 package com.thomsonreuters.lsps.transmart.etl
+
+import com.thomsonreuters.lsps.db.core.DatabaseType
 import com.thomsonreuters.lsps.transmart.Fixtures
 import com.thomsonreuters.lsps.transmart.fixtures.StudyInfo
-import com.thomsonreuters.lsps.db.core.DatabaseType
 import org.hamcrest.core.IsNull
 
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasNode
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasSample
-import static org.junit.Assert.assertNotNull
 import static org.junit.Assert.assertNull
 import static org.junit.Assert.assertThat
 
@@ -403,6 +403,39 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
         def sample = sql.firstRow('select * from deapp.de_subject_sample_mapping where trial_name = ? and sample_cd = ?',
                 studyId, 'TST1000000719')
         assertNull(sample)
+    }
+
+    void testDeleteSecurityConfiguration(){
+        String conceptPath = "\\Delete Operation Test\\${studyNameClinical}\\"
+        String conceptPathForPatient = conceptPath + "Biomarker Data\\Mutations\\TST001 (Entrez ID: 1956)\\AA mutation\\"
+
+        config.securitySymbol = 'Y'
+        processorLoadClinical.process(
+                new File("fixtures/Test Studies/${studyNameClinical}_${studyId}/ClinicalDataToUpload").toPath(),
+                [name: studyNameClinical, node: "\\Delete Operation Test\\${studyNameClinical}\\".toString()])
+
+        def inpData = ['id'  : null,
+                       'path': "\\Delete Operation Test\\${studyNameClinical}\\",
+                        'ds': true
+        ];
+
+        processorDelete.process(inpData);
+
+        assertThatTopNodeDelete("\\Delete Operation Test\\", true);
+        checkSetSecurityStatus(studyId, 0)
+    }
+
+    private void checkSetSecurityStatus(String checkStudyId, value) {
+        checkStudyId = checkStudyId.toUpperCase()
+        def tables = [
+                ['table': 'biomart.bio_experiment', 'value': checkStudyId, 'column': 'accession'],
+                ['table': 'biomart.bio_data_uid', 'value': "EXP:$checkStudyId", 'column': 'unique_id'],
+                ['table': 'searchapp.search_secure_object', 'value': "EXP:$checkStudyId", 'column': 'bio_data_unique_id']
+        ]
+        for (t in tables) {
+            def res = sql.firstRow("SELECT COUNT(*) AS cnt FROM ${t.table} WHERE ${t.column} = ?", [t.value as String])
+            assert res.cnt == value, "${checkStudyId}: Number of records in ${t.table} (${res.cnt}) doesn't match expected ($value)"
+        }
     }
 
 }

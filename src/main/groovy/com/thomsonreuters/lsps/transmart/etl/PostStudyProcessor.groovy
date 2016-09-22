@@ -5,7 +5,7 @@ import groovy.sql.Sql
 
 import java.nio.file.Path
 
-class PostStudyProcessor{
+class PostStudyProcessor {
     Map config
     Database database
     Sql sql

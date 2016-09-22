@@ -10,8 +10,9 @@ class DeleteDataProcessor extends DataOperationProcessor {
 
     @Override
     public def processData() {
-        def data = ['id': (config.deleteStudyByIdValue ?: null),
-                'path': (config.deleteStudyByPathValue ?: null)
+        def data = ['id'  : (config.deleteStudyByIdValue ?: null),
+                    'path': (config.deleteStudyByPathValue ?: null),
+                    'ds'  : (config.deleteSecurity ? 'Y' : 'N')
         ]
         return data;
     }
@@ -20,8 +21,9 @@ class DeleteDataProcessor extends DataOperationProcessor {
     public boolean runStoredProcedures(jobId, Sql sql, data) {
         def trialId = data.id?.toString()?.toUpperCase()
         def path = data.path?.toString()
+        def deleteSecurity = data.ds
         if (trialId || path) {
-            sql.call("{call " + config.controlSchema + "." + getProcedureName() + "(?,?,?)}", [trialId, path, jobId])
+            sql.call("{call " + config.controlSchema + "." + getProcedureName() + "(?,?,?,?)}", [trialId, path, deleteSecurity, jobId])
         } else {
             config.logger.log(LogType.ERROR, "Study ID or Node not defined!")
             return false;

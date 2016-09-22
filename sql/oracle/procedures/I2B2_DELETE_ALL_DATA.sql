@@ -3,6 +3,7 @@ PROCEDURE "I2B2_DELETE_ALL_DATA"
 (
   trial_id VARCHAR2 := null
  ,path_string varchar2 :=null
+ ,delete_security varchar2 :=null
  ,currentJobID NUMBER := null
 )
 AS
@@ -310,7 +311,17 @@ BEGIN
 
 	end if;
 
-    ---Cleanup OVERALL JOB if this proc is being run standalone
+  -- delete security configuration
+  if (delete_security = 'Y') THEN
+    DELETE FROM biomart.bio_experiment WHERE accession = TrialID;
+    DELETE FROM biomart.bio_data_uid WHERE unique_id = 'EXP:'||TrialID;
+    DELETE FROM searchapp.search_secure_object WHERE bio_data_unique_id = 'EXP:'||TrialID;
+
+    stepCt := stepCt + 1;
+    cz_write_audit(jobId,databaseName,procedureName,'Deleted security configuration to '|| TrialID,SQL%ROWCOUNT,stepCt,'Done');
+  END IF;
+
+  ---Cleanup OVERALL JOB if this proc is being run standalone
   IF newJobFlag = 1
   THEN
     cz_end_audit (jobID, 'SUCCESS');
