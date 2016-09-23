@@ -25,7 +25,7 @@ class PostStudyProcessor{
 
     boolean process() {
         if ((config?.replaceStudy) && (studyInfo.oldId) && studyInfo.id != studyInfo.oldId) {
-            replaceStudy(studyInfo, sql)
+            replaceStudy()
         }
         if (config.copySecurityFrom){
             copySecurityFrom()
