@@ -66,7 +66,10 @@ abstract class AbstractDataProcessor implements DataProcessor {
                     }
                 }
                 if (res) {
-                    postProcessData(studyInfo, sql)
+                    res = new AuditableJobRunner(sql, config).runJob(procedureName) { jobId ->
+                        def postStudyProcessor = new PostStudyProcessor(config, sql, dir, studyInfo, jobId)
+                        postStudyProcessor.process()
+                    }
                 }
             }
         }
@@ -100,31 +103,6 @@ abstract class AbstractDataProcessor implements DataProcessor {
         }
 
         return res
-    }
-
-    protected void postProcessData(studyInfo, Sql sql) {
-        if ((config?.replaceStudy) && (studyInfo.oldId) && studyInfo.id != studyInfo.oldId) {
-            String studyId = studyInfo.id.toUpperCase()
-            String oldStudyId = studyInfo.oldId.toUpperCase()
-            String newToken = "EXP:$studyId"
-            String oldToken = "EXP:$oldStudyId"
-
-            sql.execute("DELETE FROM biomart.bio_experiment WHERE accession = :studyId", [studyId: studyId])
-            sql.execute("DELETE FROM biomart.bio_data_uid WHERE unique_id = :newToken", [newToken: newToken])
-            sql.execute("DELETE FROM searchapp.search_secure_object WHERE bio_data_unique_id = :newToken",
-                    [newToken: newToken])
-
-            sql.executeUpdate("UPDATE biomart.bio_experiment SET accession = :studyId WHERE accession = :oldStudyId",
-                    [studyId: studyId,
-                     oldStudyId: oldStudyId])
-            sql.executeUpdate("UPDATE biomart.bio_data_uid SET unique_id = :newToken WHERE unique_id = :oldToken",
-                    [newToken: newToken,
-                     oldToken: oldToken])
-            sql.executeUpdate("""
-                UPDATE searchapp.search_secure_object SET bio_data_unique_id = :newToken
-                WHERE bio_data_unique_id = :oldToken
-            """, [newToken: newToken, oldToken: oldToken])
-        }
     }
 
     protected void checkStudiesBySamePath(studyInfo, sql) {

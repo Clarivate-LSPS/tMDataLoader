@@ -53,5 +53,5 @@ $$;
 \i procedures/TIMESTAMP_TO_TIMEPOINT.sql
 \i procedures/REPLACE_LAST_PATH_COMPONENT.sql
 \i procedures/GET_LAST_PATH_COMPONENT.sql
-
+\i procedures/COPY_SECURITY_FROM_OTHER_STUDY.sql
 

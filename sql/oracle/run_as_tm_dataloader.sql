@@ -71,5 +71,5 @@
 @@procedures/TIMESTAMP_TO_TIMEPOINT.sql
 @@procedures/REPLACE_LAST_PATH_COMPONENT.sql
 @@procedures/GET_LAST_PATH_COMPONENT.sql
-
+@@procedures/COPY_SECURITY_FROM_OTHER_STUDY.sql
 @show_invalid.sql -- compiles invalids, resolving them or highlighting problems
