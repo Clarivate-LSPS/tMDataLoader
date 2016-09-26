@@ -727,6 +727,7 @@ order by c_fullname
 	from bio_experiment be
 		,i2b2 b
 	where be.accession = b.sourcesystem_cd
+				and b.c_fullname = tag_path
 	group by be.accession;
 	
 	stepCt := stepCt + 1;
@@ -749,6 +750,7 @@ order by c_fullname
        and bc.bio_compound_id = c.bio_compound_id
        and be.accession = o.sourcesystem_cd
        and coalesce(c.generic_name,c.brand_name) is not null
+				and o.c_fullname = tag_path
 	group by coalesce(c.generic_name,c.brand_name);
 
 	stepCt := stepCt + 1;
@@ -770,6 +772,7 @@ order by c_fullname
 	where be.bio_experiment_id = bc.bio_data_id
       and bc.bio_disease_id = c.bio_disease_id
       and be.accession = o.sourcesystem_cd
+			and o.c_fullname = tag_path
 	group by c.prefered_name;
 
 	stepCt := stepCt + 1;
