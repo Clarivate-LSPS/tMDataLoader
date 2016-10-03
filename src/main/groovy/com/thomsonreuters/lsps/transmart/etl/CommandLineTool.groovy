@@ -44,6 +44,8 @@ class CommandLineTool {
             s longOpt: 'stop-on-fail', 'Stop when upload is failed'
             m longOpt: 'move-study', args: 2, valueSeparator: ';', argName: 'old_path new_path', 'Move study'
             _ longOpt: 'keep-security', 'Preserve security settings when moving a new study over an old one (only makes sense with --move-study)'
+            _ longOpt: 'keep-security-as', args: 1, argName: 'accessionTo', 'Save security settings by new accession when moving a new study over an old one (only makes sense with --move-study)'
+            _ longOpt: 'use-security-from', args: 1, argName: 'accessionFrom', 'Save security settings by new accession when moving a new study over an old one (only makes sense with --move-study)'
             _ longOpt: 'copy-security-settings-from', args: 1, argName: 'study_id', 'Copy security configuration from exist study'
             _ longOpt: 'highlight-clinical-data', 'Highlight studies with clinical data'
             _ longOpt: 'alt-clinical-proc', args: 1, argName: 'proc_name', 'Name of alternative clinical stored procedure (expert option)'
@@ -199,9 +201,17 @@ class CommandLineTool {
             config.moveStudyNewPath = opts.ms[1];
             config.mdOperation = true;
             def  msg = ">>> MOVE STUDY from ${opts.ms[0]} to ${opts.ms[1]}"
-            if (opts?.'keep-security'){
+            if (opts?.'keep-security') {
                 config.keepSecurity = true
                 msg += ' and preserve security configuration'
+            }
+            if (opts?.'keep-security-as') {
+                config.keepSecurityAs = opts?.'keep-security-as'
+                msg += ' and update security configuration'
+            }
+            if (opts?.'use-security-from'){
+                config.useSecurityFrom = opts?.'use-security-from'
+                msg += ' and use saved security configuration'
             }
             println msg
         }

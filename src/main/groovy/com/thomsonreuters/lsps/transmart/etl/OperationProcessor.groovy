@@ -20,8 +20,14 @@ class OperationProcessor {
         }
 
         try {
+            def preOpeationProcessor = new PreOperationProccesor(config)
+            preOpeationProcessor.process()
+
             def data = dataOperationProcessor.processData()
             res = dataOperationProcessor.process(data);
+
+            def postOpeationProcessor = new PostOperationProcessor(config)
+            postOpeationProcessor.process()
         }
         catch (Exception e) {
             config.logger.log(LogType.ERROR, "Exception: ${e}")
