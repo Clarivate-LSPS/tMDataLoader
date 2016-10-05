@@ -26,6 +26,11 @@ abstract class SubOperationProcessor {
         return exist.cnt > 0
     }
 
+    String getBioExperimentIdByAccession(String studyId) {
+        def id = sql.firstRow('select bio_experiment_id bei FROM biomart.bio_experiment WHERE accession = ?', studyId)
+        return id.bei
+    }
+
     Boolean existStudyId(String studyId) {
         def exist = sql.firstRow('select count(sourcesystem_cd) as cnt from i2b2metadata.i2b2 where sourcesystem_cd = ?', studyId)
         return exist.cnt > 0

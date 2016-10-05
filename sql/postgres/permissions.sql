@@ -15,6 +15,15 @@ grant truncate, select, insert, delete on tm_dataloader.lt_src_mrna_xml_data to 
 -- grant insert, delete, select on deapp.de_snp_calls_by_gsm to tm_dataloader;
 -- grant insert, delete, select on deapp.de_snp_copy_number to tm_dataloader;
 
+-- biomart
+grant usage on schema biomart to tm_dataloader;
+grant select on biomart.bio_experiment to tm_dataloader;
+grant select on biomart.bio_data_uid to tm_dataloader;
+
+-- fmapp
+grant usage on schema fmapp to tm_dataloader;
+grant select on fmapp.fm_folder_association to tm_dataloader;
+
 -- deapp
 grant usage on schema deapp to tm_dataloader;
 grant select on deapp.de_mrna_annotation to tm_dataloader;
