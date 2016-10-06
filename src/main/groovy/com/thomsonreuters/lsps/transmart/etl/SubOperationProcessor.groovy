@@ -6,6 +6,8 @@ abstract class SubOperationProcessor {
     def config
     Sql sql
 
+    public static final String PUBLIC_TOKEN = "EXP:PUBLIC"
+
     SubOperationProcessor(Object conf) {
         config = conf
     }
@@ -37,8 +39,13 @@ abstract class SubOperationProcessor {
     }
 
     String getStudyIdByPath(String path) {
-        def result = sql.firstRow('SELECT DISTINCT sourcesystem_cd as scd FROM i2b2metadata.i2b2 WHERE c_fullname LIKE ?ESCAPE \'`\'', path + '%')
+        def result = sql.firstRow('SELECT DISTINCT sourcesystem_cd as scd FROM i2b2metadata.i2b2 WHERE c_fullname LIKE ? ESCAPE \'`\'', path + '%')
         result.scd
+    }
+
+    String getSecurityTokenByPath(String path) {
+        def result = sql.firstRow('SELECT secure_obj_token as sot FROM i2b2metadata.i2b2_secure WHERE c_fullname = ?', path)
+        result?.sot
     }
 
     def updateStudyId(String studyId, String newStudyId) {
@@ -48,6 +55,16 @@ abstract class SubOperationProcessor {
                 [newStudyId: ('EXP:' + newStudyId), studyId: ('EXP:' + studyId)])
         sql.executeUpdate('UPDATE searchapp.search_secure_object SET bio_data_unique_id = :newStudyId WHERE bio_data_unique_id = :studyId',
                 [newStudyId: 'EXP:' + newStudyId, studyId: 'EXP:' + studyId])
+    }
+
+    def updateSecurityToken(token, path) {
+        def trial = getStudyIdByPath(path)
+        sql.executeUpdate("UPDATE i2b2demodata.observation_fact SET tval_char = :token WHERE concept_cd = 'SECURITY' AND sourcesystem_cd = :trial",
+                [token: token, trial: trial])
+        sql.executeUpdate("UPDATE i2b2metadata.i2b2_secure SET secure_obj_token = :token WHERE c_fullname = :path",
+                [token: token, path: path])
+        sql.executeUpdate("UPDATE i2b2demodata.patient_trial SET secure_obj_token = :token WHERE trial = :trial",
+                [token: token, trial: trial])
     }
 
     Boolean checkPathForTop(String path) {

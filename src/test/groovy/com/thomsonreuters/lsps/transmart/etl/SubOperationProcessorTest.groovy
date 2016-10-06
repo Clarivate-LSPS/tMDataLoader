@@ -42,8 +42,9 @@ class SubOperationProcessorTest extends Specification implements ConfigAwareTest
         def oldPath = '\\Test Studies\\' + clinicalData.studyName + '\\'
         def newPath = '\\Test Studies\\' + clinicalData.studyName + ' new way\\'
 
-        Study.deleteByPath(config, newPath)
-        Study.deleteByPath(config, oldPath)
+//        Study.deleteByPath(config, newPath)
+//        Study.deleteByPath(config, oldPath)
+        Study.deleteById(config, clinicalData.studyId)
         cleanOldData(clinicalData.studyId)
         cleanOldData(clinicalData.studyId + '2')
 
@@ -71,9 +72,11 @@ class SubOperationProcessorTest extends Specification implements ConfigAwareTest
         def forgetPath = '\\Test Studies\\' + clinicalData.studyName + ' new way\\'
         def secondPath = '\\Test Studies\\' + secondClinicalData.studyName + '\\'
 
-        Study.deleteByPath(config, forgetPath)
-        Study.deleteByPath(config, firstPath)
-        Study.deleteByPath(config, firstPath)
+//        Study.deleteByPath(config, forgetPath)
+//        Study.deleteByPath(config, firstPath)
+//        Study.deleteByPath(config, firstPath)
+        Study.deleteById(config, clinicalData.studyId)
+        Study.deleteById(config, secondClinicalData.studyId)
 
         cleanOldData(clinicalData.studyId)
         cleanOldData(secondClinicalData.studyId)
@@ -129,5 +132,107 @@ class SubOperationProcessorTest extends Specification implements ConfigAwareTest
             def res = sql.firstRow("SELECT COUNT(*) AS cnt FROM ${t.table} WHERE ${t.column} = ?", [t.value as String])
             assert res.cnt == value, "${checkStudyId}: Number of records in ${t.table} (${res.cnt}) doesn't match expected ($value)"
         }
+    }
+
+    def 'it should check move security study to public study'(){
+        setup:
+        def secondClinicalData = clinicalData.copyWithSuffix('MOVEPUBLIC')
+
+        def firstPath = '\\Test Studies\\' + clinicalData.studyName + '\\'
+        def secondPath = '\\Test Studies\\' + secondClinicalData.studyName + '\\'
+
+        Study.deleteById(config, clinicalData.studyId)
+        Study.deleteById(config, secondClinicalData.studyId)
+
+        Study.deleteByPath(config, firstPath)
+        Study.deleteByPath(config, secondPath)
+
+        cleanOldData(clinicalData.studyId)
+        cleanOldData(secondClinicalData.studyId)
+
+        config.securitySymbol = 'Y'
+        clinicalData.load(config)
+
+        config.securitySymbol = 'N'
+        secondClinicalData.load(config)
+
+        config.moveStudy = true
+        config.moveStudyOldPath = firstPath
+        config.moveStudyNewPath = secondPath
+        config.replaceStudy = true
+
+        operationProcessor.process()
+
+        expect:
+        checkSetSecurityStatus(clinicalData.studyId, 0)
+        checkSetSecurityStatus(secondClinicalData.studyId, 0)
+    }
+
+    def 'it should check move public study to security study'(){
+        setup:
+        def secondClinicalData = clinicalData.copyWithSuffix('MOVESECURE')
+
+        def firstPath = '\\Test Studies\\' + clinicalData.studyName + '\\'
+        def secondPath = '\\Test Studies\\' + secondClinicalData.studyName + '\\'
+
+        Study.deleteById(config, clinicalData.studyId)
+        Study.deleteById(config, secondClinicalData.studyId)
+
+        Study.deleteByPath(config, firstPath)
+        Study.deleteByPath(config, secondPath)
+
+        cleanOldData(clinicalData.studyId)
+        cleanOldData(secondClinicalData.studyId)
+
+        config.securitySymbol = 'N'
+        clinicalData.load(config)
+
+        config.securitySymbol = 'Y'
+        secondClinicalData.load(config)
+
+        config.moveStudy = true
+        config.moveStudyOldPath = firstPath
+        config.moveStudyNewPath = secondPath
+        config.replaceStudy = true
+
+        operationProcessor.process()
+
+        expect:
+        checkSetSecurityStatus(clinicalData.studyId, 0)
+        checkSetSecurityStatus(secondClinicalData.studyId, 1)
+    }
+
+    def 'it should check move security study to security study'(){
+        setup:
+        def secondClinicalData = clinicalData.copyWithSuffix('MOVESECURE')
+
+        def firstPath = '\\Test Studies\\' + clinicalData.studyName + '\\'
+        def secondPath = '\\Test Studies\\' + secondClinicalData.studyName + '\\'
+
+        Study.deleteById(config, clinicalData.studyId)
+        Study.deleteById(config, secondClinicalData.studyId)
+
+        Study.deleteByPath(config, firstPath)
+        Study.deleteByPath(config, secondPath)
+
+        cleanOldData(clinicalData.studyId)
+        cleanOldData(secondClinicalData.studyId)
+
+        config.securitySymbol = 'Y'
+        clinicalData.load(config)
+
+        config.securitySymbol = 'Y'
+        secondClinicalData.load(config)
+
+        config.moveStudy = true
+        config.moveStudyOldPath = firstPath
+        config.moveStudyNewPath = secondPath
+        config.replaceStudy = true
+
+        operationProcessor.process()
+
+        expect:
+        checkSetSecurityStatus(clinicalData.studyId, 1)
+        checkSetSecurityStatus(secondClinicalData.studyId, 0)
     }
 }

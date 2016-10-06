@@ -213,23 +213,23 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
     END IF;
 
     -- check new path exists
-    SELECT
-      count(*)
-    INTO rowsExists
-    FROM i2b2metadata.i2b2
-    WHERE c_fullname = new_path;
-
-    SELECT position (new_path in old_path)
-              INTO substringPos;
-
-    IF rowsExists > 0 and substringPos = 0
-    THEN
-      stepCt := stepCt + 1;
-      select cz_write_audit(jobId,databaseName,procedureName,'Study target path is already exists',0,stepCt,'Done') into rtnCd;
-      select cz_error_handler (jobID, procedureName, '-1', 'Application raised error') into rtnCd;
-      select cz_end_audit (jobID, 'FAIL') into rtnCd;
-      return -16;
-    END IF;
+--     SELECT
+--       count(*)
+--     INTO rowsExists
+--     FROM i2b2metadata.i2b2
+--     WHERE c_fullname = new_path;
+--
+--     SELECT position (new_path in old_path)
+--               INTO substringPos;
+--
+--     IF rowsExists > 0 and substringPos = 0
+--     THEN
+--       stepCt := stepCt + 1;
+--       select cz_write_audit(jobId,databaseName,procedureName,'Study target path is already exists',0,stepCt,'Done') into rtnCd;
+--       select cz_error_handler (jobID, procedureName, '-1', 'Application raised error') into rtnCd;
+--       select cz_end_audit (jobID, 'FAIL') into rtnCd;
+--       return -16;
+--     END IF;
 
     -- TODO: check that new path is not subnode of exists study
 

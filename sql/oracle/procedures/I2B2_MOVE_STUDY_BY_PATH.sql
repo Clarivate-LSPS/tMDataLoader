@@ -179,18 +179,18 @@ AS
 
 
 -- check new path exists
-    SELECT
-      count(*)
-    INTO rowsExists
-    FROM i2b2metadata.i2b2
-    WHERE c_fullname = new_path;
+--     SELECT
+--       count(*)
+--     INTO rowsExists
+--     FROM i2b2metadata.i2b2
+--     WHERE c_fullname = new_path;
 
     SELECT instr(old_path, new_path) INTO substringPos FROM dual;
 
-    IF rowsExists > 0 and substringPos = 0
-    THEN
-       RAISE new_path_exists_exception;
-    END IF;
+--     IF rowsExists > 0 and substringPos = 0
+--     THEN
+--        RAISE new_path_exists_exception;
+--     END IF;
 
     SELECT
       count(*)

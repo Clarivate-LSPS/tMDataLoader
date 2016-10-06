@@ -23,6 +23,7 @@ class PostOperationProcessor extends SubOperationProcessor{
             }
         }
 
+        config.logger.log("Finish post-operation processor")
         true
     }
 }

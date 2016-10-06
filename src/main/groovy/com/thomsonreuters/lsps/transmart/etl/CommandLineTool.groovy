@@ -209,11 +209,12 @@ class CommandLineTool {
                 config.keepSecurityAs = opts?.'keep-security-as'
                 msg += ' and update security configuration'
             }
-            if (opts?.'use-security-from'){
-                config.useSecurityFrom = opts?.'use-security-from'
-                msg += ' and use saved security configuration'
-            }
             println msg
+        }
+
+        if (opts?.'use-security-from'){
+            config.useSecurityFrom = opts?.'use-security-from'
+            println '>> Use saved security configuration'
         }
 
         if (opts?.'allow-non-unique-columns') {
