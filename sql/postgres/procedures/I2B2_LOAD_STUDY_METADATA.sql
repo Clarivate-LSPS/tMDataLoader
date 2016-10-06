@@ -919,6 +919,7 @@ BEGIN
 			from biomart.bio_experiment be
 				,i2b2metadata.i2b2 b
 			where be.accession = b.sourcesystem_cd
+			      and b.c_fullname = tag_path
 			group by be.accession;
 		exception
 		when others then
@@ -950,6 +951,7 @@ BEGIN
             and bc.bio_compound_id = c.bio_compound_id
             and be.accession = o.sourcesystem_cd
             and coalesce(c.generic_name,c.brand_name) is not null
+            and o.c_fullname = tag_path
       group by coalesce(c.generic_name,c.brand_name);
     exception
     when others then
@@ -982,6 +984,7 @@ BEGIN
 					and bc.bio_disease_id = c.bio_disease_id
 					and be.accession = o.sourcesystem_cd
 					and c.prefered_name is not null
+					and o.c_fullname = tag_path
 			group by c.prefered_name;
     exception
     when others then
