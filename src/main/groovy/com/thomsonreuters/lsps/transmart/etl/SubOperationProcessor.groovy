@@ -39,11 +39,13 @@ abstract class SubOperationProcessor {
     }
 
     String getStudyIdByPath(String path) {
+        path = ('\\' + path + '\\').replace('\\\\', '\\')
         def result = sql.firstRow('SELECT DISTINCT sourcesystem_cd as scd FROM i2b2metadata.i2b2 WHERE c_fullname LIKE ? ESCAPE \'`\'', path + '%')
-        result.scd
+        result?.scd
     }
 
     String getSecurityTokenByPath(String path) {
+        path = ('\\' + path + '\\').replace('\\\\', '\\')
         def result = sql.firstRow('SELECT secure_obj_token as sot FROM i2b2metadata.i2b2_secure WHERE c_fullname = ?', path)
         result?.sot
     }
@@ -53,11 +55,12 @@ abstract class SubOperationProcessor {
                 [newStudyId: newStudyId, studyId: studyId])
         sql.executeUpdate('UPDATE biomart.bio_data_uid SET unique_id = :newStudyId WHERE unique_id = :studyId',
                 [newStudyId: ('EXP:' + newStudyId), studyId: ('EXP:' + studyId)])
-        sql.executeUpdate('UPDATE searchapp.search_secure_object SET bio_data_unique_id = :newStudyId WHERE bio_data_unique_id = :studyId',
-                [newStudyId: 'EXP:' + newStudyId, studyId: 'EXP:' + studyId])
+        sql.executeUpdate('UPDATE searchapp.search_secure_object SET bio_data_unique_id = :newStudyId, display_name = replace(display_name, :studyId, :newStudyId) WHERE bio_data_unique_id = \'EXP:\' || :studyId',
+                [newStudyId: 'EXP:' + newStudyId, studyId: studyId])
     }
 
     def updateSecurityToken(token, path) {
+        path = ('\\' + path + '\\').replace('\\\\', '\\')
         def trial = getStudyIdByPath(path)
         sql.executeUpdate("UPDATE i2b2demodata.observation_fact SET tval_char = :token WHERE concept_cd = 'SECURITY' AND sourcesystem_cd = :trial",
                 [token: token, trial: trial])
@@ -68,6 +71,7 @@ abstract class SubOperationProcessor {
     }
 
     Boolean checkPathForTop(String path) {
+        path = ('\\' + path + '\\').replace('\\\\', '\\')
         def count = sql.firstRow("SELECT count(*) as cnt FROM i2b2metadata.i2b2 WHERE c_fullname = ? AND c_visualattributes = 'FAS'", path)
         return count.cnt == 1
     }

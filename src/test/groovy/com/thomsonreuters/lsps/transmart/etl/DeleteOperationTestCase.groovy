@@ -414,9 +414,11 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
                 new File("fixtures/Test Studies/${studyNameClinical}_${studyId}/ClinicalDataToUpload").toPath(),
                 [name: studyNameClinical, node: "\\Delete Operation Test\\${studyNameClinical}\\".toString()])
 
+        config.deleteSecurity = true
+        config.deleteStudyByPathValue = "\\Delete Operation Test\\${studyNameClinical}\\"
         def inpData = ['id'  : null,
                        'path': "\\Delete Operation Test\\${studyNameClinical}\\",
-                        'ds': true
+                        'ds': 'Y'
         ];
 
         processorDelete.process(inpData);

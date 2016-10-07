@@ -201,15 +201,17 @@ class CommandLineTool {
             config.moveStudyNewPath = opts.ms[1];
             config.mdOperation = true;
             def  msg = ">>> MOVE STUDY from ${opts.ms[0]} to ${opts.ms[1]}"
-            if (opts?.'keep-security') {
-                config.keepSecurity = true
-                msg += ' and preserve security configuration'
-            }
-            if (opts?.'keep-security-as') {
-                config.keepSecurityAs = opts?.'keep-security-as'
-                msg += ' and update security configuration'
-            }
+
             println msg
+        }
+
+        if (opts?.'keep-security') {
+            config.keepSecurity = true
+            println '>>> Preserve security configuration'
+        }
+        if (opts?.'keep-security-as') {
+            config.keepSecurityAs = opts?.'keep-security-as'
+            println '>>> Update security configuration'
         }
 
         if (opts?.'use-security-from'){

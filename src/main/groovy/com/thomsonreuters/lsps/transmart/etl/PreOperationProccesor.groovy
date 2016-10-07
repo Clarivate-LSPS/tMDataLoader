@@ -14,13 +14,15 @@ class PreOperationProccesor extends SubOperationProcessor {
 
         if (config.deleteStudyById || config.deleteStudyByPath) {
             if (config.deleteStudyByPath) {
-                config.deleteStudyByIdValue = getStudyIdByPath(config.moveStudyOldPath)
+                config.deleteStudyByIdValue = getStudyIdByPath(config.deleteStudyByPathValue)
             }
-            if (existSecurityConfiguration(config.deleteStudyByIdValue)) {
+            if (config.deleteStudyByIdValue && existSecurityConfiguration(config.deleteStudyByIdValue)) {
                 def browseLink = sql.firstRow("select count(fm.folder_id) as cnt from fmapp.fm_folder_association fm, biomart.bio_data_uid bdu where fm.object_uid = bdu.unique_id and bdu.bio_data_id = ?",
                         getBioExperimentIdByAccession(config.deleteStudyByIdValue))
                 if (browseLink.cnt > 0 && !config.deleteSecurity) {
                     throw new DataProcessingException("Tab \"Browse\" contain link to this study. You have to use tMDataLoader option --delete-security for delete this study.")
+                } else if (!config.keepSecurity && !config.keepSecurityAs && !config.deleteSecurity){
+                    config.deleteSecurity = true
                 }
             }
         }
