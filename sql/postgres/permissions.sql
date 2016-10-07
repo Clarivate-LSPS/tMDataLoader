@@ -14,6 +14,11 @@ grant truncate, select, insert, delete on tm_dataloader.lt_src_mrna_xml_data to 
 -- grant insert, delete, select on deapp.de_snp_gene_map to tm_dataloader;
 -- grant insert, delete, select on deapp.de_snp_calls_by_gsm to tm_dataloader;
 -- grant insert, delete, select on deapp.de_snp_copy_number to tm_dataloader;
+GRANT USAGE ON SCHEMA tm_lz TO tm_dataloader;
+ALTER TABLE tm_lz.lt_src_rna_seq_subj_samp_map OWNER TO tm_dataloader;
+ALTER TABLE tm_lz.lt_src_rna_seq_data OWNER TO tm_dataloader;
+ALTER TABLE tm_lz.lt_rnaseq_annotation OWNER TO tm_dataloader;
+GRANT SELECT, INSERT, UPDATE, DELETE ON deapp.de_rnaseq_annotation TO tm_dataloader;
 
 -- deapp
 grant usage on schema deapp to tm_dataloader;
