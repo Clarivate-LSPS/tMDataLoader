@@ -15,7 +15,7 @@ public class RNASeqDataProcessor extends AbstractDataProcessor {
 
     @Override
     public boolean processFiles(Path dir, Sql sql, studyInfo) {
-        database.truncateTable(sql, 'lt_src_rna_seq_subj_samp_map')
+        database.truncateTable(sql, 'tm_lz.lt_src_rna_seq_subj_samp_map')
         database.truncateTable(sql, 'lt_src_rna_seq_data')
 
         def platformList = [] as Set
@@ -90,7 +90,7 @@ public class RNASeqDataProcessor extends AbstractDataProcessor {
 
         sql.withTransaction {
             sql.withBatch(100, """\
-				INSERT into lt_src_rna_seq_subj_samp_map (TRIAL_NAME, SITE_ID,
+				INSERT into tm_lz.lt_src_rna_seq_subj_samp_map (TRIAL_NAME, SITE_ID,
 					SUBJECT_ID, SAMPLE_CD, PLATFORM, TISSUE_TYPE,
 					ATTRIBUTE_1, ATTRIBUTE_2, CATEGORY_CD, SOURCE_CD)
 				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
