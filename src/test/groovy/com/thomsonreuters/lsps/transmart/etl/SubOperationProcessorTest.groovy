@@ -4,6 +4,9 @@ import com.thomsonreuters.lsps.transmart.Fixtures
 import com.thomsonreuters.lsps.transmart.fixtures.ClinicalData
 import com.thomsonreuters.lsps.transmart.fixtures.Study
 import spock.lang.Specification
+import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasRecord
+
+import static org.junit.Assert.assertThat
 
 class SubOperationProcessorTest extends Specification implements ConfigAwareTestCase {
     ClinicalData clinicalData = Fixtures.clinicalData.copyWithSuffix('MOVESC')
@@ -42,8 +45,6 @@ class SubOperationProcessorTest extends Specification implements ConfigAwareTest
         def oldPath = '\\Test Studies\\' + clinicalData.studyName + '\\'
         def newPath = '\\Test Studies\\' + clinicalData.studyName + ' new way\\'
 
-//        Study.deleteByPath(config, newPath)
-//        Study.deleteByPath(config, oldPath)
         Study.deleteById(config, clinicalData.studyId)
         cleanOldData(clinicalData.studyId)
         cleanOldData(clinicalData.studyId + '2')
@@ -72,9 +73,6 @@ class SubOperationProcessorTest extends Specification implements ConfigAwareTest
         def forgetPath = '\\Test Studies\\' + clinicalData.studyName + ' new way\\'
         def secondPath = '\\Test Studies\\' + secondClinicalData.studyName + '\\'
 
-//        Study.deleteByPath(config, forgetPath)
-//        Study.deleteByPath(config, firstPath)
-//        Study.deleteByPath(config, firstPath)
         Study.deleteById(config, clinicalData.studyId)
         Study.deleteById(config, secondClinicalData.studyId)
 
@@ -234,5 +232,28 @@ class SubOperationProcessorTest extends Specification implements ConfigAwareTest
         expect:
         checkSetSecurityStatus(clinicalData.studyId, 1)
         checkSetSecurityStatus(secondClinicalData.studyId, 0)
+    }
+
+    def 'it should check load study with use-security-from option'(){
+        setup:
+        Study.deleteById(config, clinicalData.studyId)
+        cleanOldData(clinicalData.studyId)
+        cleanOldData('GSE-TEST')
+
+        sql.executeInsert("INSERT INTO biomart.bio_data_uid (bio_data_id,unique_id,bio_data_type) VALUES (-1, 'EXP:GSE-TEST', 'BIO_EXPERIMENT')")
+        sql.executeInsert("INSERT INTO biomart.bio_experiment (bio_experiment_id, title, accession, etl_id) VALUES (-1, 'Test Experiment', 'GSE-TEST', 'METADATA:GSE-TEST')")
+        sql.executeInsert("INSERT INTO searchapp.search_secure_object (search_secure_object_id, bio_data_id, display_name, data_type, bio_data_unique_id) VALUES (-1, -1, 'Test Studies - GSE-TEST', 'BIO_CLINICAL_TRIAL', 'EXP:GSE-TEST')")
+
+
+        config.securitySymbol = 'Y'
+        config.useSecurityFrom = 'GSE-TEST'
+        clinicalData.load(config)
+
+        expect:
+        checkSetSecurityStatus(clinicalData.studyId, 1)
+        checkSetSecurityStatus('GSE-TEST', 0)
+
+        assertThat(db, hasRecord('biomart.bio_experiment', [bio_experiment_id: '-1'], null))
+        assertThat(db, hasRecord('searchapp.search_secure_object', [bio_data_unique_id:"EXP:${clinicalData.studyId}"],[display_name:"Test Studies - EXP:${clinicalData.studyId}"]))
     }
 }

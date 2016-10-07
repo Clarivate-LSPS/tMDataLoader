@@ -27,14 +27,27 @@ class PostStudyProcessor {
         if ((config?.replaceStudy) && (studyInfo.oldId) && studyInfo.id != studyInfo.oldId) {
             replaceStudy(studyInfo, sql)
         }
-        if (config.copySecurityFrom){
+        if (config.copySecurityFrom) {
             copySecurityFrom()
+        }
+        if (config.useSecurityFrom && config.securitySymbol == 'Y') {
+            sql.executeUpdate('DELETE FROM biomart.bio_experiment WHERE accession = ?', studyInfo.id)
+            sql.executeUpdate('DELETE FROM biomart.bio_data_uid WHERE unique_id = ?', ('EXP:' + studyInfo.id))
+            sql.executeUpdate('DELETE FROM searchapp.search_secure_object WHERE bio_data_unique_id = ?', ('EXP:' + studyInfo.id))
+
+            sql.executeUpdate('UPDATE biomart.bio_experiment SET accession = :newStudyId WHERE accession = :studyId',
+                    [newStudyId: studyInfo.id, studyId: config.useSecurityFrom])
+            sql.executeUpdate('UPDATE biomart.bio_data_uid SET unique_id = :newStudyId WHERE unique_id = :studyId',
+                    [newStudyId: ('EXP:' + studyInfo.id), studyId: ('EXP:' + config.useSecurityFrom)])
+            sql.executeUpdate('UPDATE searchapp.search_secure_object SET bio_data_unique_id = :newStudyId, display_name = replace(display_name, :studyId, :newStudyId) WHERE bio_data_unique_id = \'EXP:\' || :studyId',
+                    [newStudyId: 'EXP:' + studyInfo.id, studyId: config.useSecurityFrom])
+
         }
 
         return true;
     }
 
-    protected void copySecurityFrom(){
+    protected void copySecurityFrom() {
         def studyId = studyInfo['id']
         def studyIdFrom = config.csStudyId
         sql.call("{call " + config.controlSchema + "." + COPY_SECURITY_PROCEDURE_NAME + "(?,?,?)}", [studyId, studyIdFrom, jobId])
