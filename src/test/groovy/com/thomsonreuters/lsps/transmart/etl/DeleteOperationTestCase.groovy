@@ -1,12 +1,12 @@
 package com.thomsonreuters.lsps.transmart.etl
+
+import com.thomsonreuters.lsps.db.core.DatabaseType
 import com.thomsonreuters.lsps.transmart.Fixtures
 import com.thomsonreuters.lsps.transmart.fixtures.StudyInfo
-import com.thomsonreuters.lsps.db.core.DatabaseType
 import org.hamcrest.core.IsNull
 
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasNode
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasSample
-import static org.junit.Assert.assertNotNull
 import static org.junit.Assert.assertNull
 import static org.junit.Assert.assertThat
 
@@ -146,6 +146,17 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
         assertThatDataDeleted(testData, true);
     }
 
+    void testItDeleteDataSensitiveCase() {
+        processorLoadClinical.process(
+                new File("fixtures/Test Studies/${studyNameClinical}_${studyId}/ClinicalDataToUpload").toPath(),
+                [name: studyNameClinical, node: "\\Delete Operation Test\\${studyNameClinical}\\".toString()])
+
+        def inpData = ['id'  : studyId.toLowerCase(),
+                       'path': null];
+        processorDelete.process(inpData);
+
+        assertThatTopNodeDelete("\\Delete Operation Test\\", true);
+    }
     /**
      * Remove data by full path study and don't understand trialId.
      */

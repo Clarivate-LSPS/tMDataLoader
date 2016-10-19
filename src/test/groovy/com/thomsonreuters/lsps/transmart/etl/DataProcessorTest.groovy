@@ -5,7 +5,9 @@ import com.thomsonreuters.lsps.transmart.fixtures.ExpressionData
 import com.thomsonreuters.lsps.transmart.fixtures.Study
 import spock.lang.Specification
 
+import static org.hamcrest.CoreMatchers.equalTo
 import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertThat
 /**
  * Created by Alexander Omelchenko on 15.12.2015.
  */
@@ -14,6 +16,9 @@ class DataProcessorTest extends Specification implements ConfigAwareTestCase {
     ClinicalData secondClinicalData = clinicalData.copyAttachedToStudy(clinicalData.studyInfo.withSuffixForId("_2"))
     ClinicalData thirdClinicalData = clinicalData.copyWithSuffix('THD')
     ClinicalData fourthClinicalData = clinicalData.copyWithSuffix('FTH')
+
+    ClinicalData lowLetterCD = Fixtures.clinicalData.copyWithSuffix('Letter')
+    ClinicalData bigLetterCD = Fixtures.clinicalData.copyWithSuffix('LETTER')
 
     String rootName = 'Test Studies'
     String studyName = clinicalData.studyName
@@ -70,6 +75,19 @@ class DataProcessorTest extends Specification implements ConfigAwareTestCase {
         then:
         def ex = thrown(DataProcessingException)
         ex.message == "Other study by same path found with different studyId: \\Test Studies\\Test Study DP\\" as String
+    }
+
+    def 'it should check case sensitive when data upload'(){
+        setup:
+        Study.deleteById(config, lowLetterCD.studyId)
+
+        when:
+        def lowRes = lowLetterCD.load(config)
+        def bigRes = bigLetterCD.load(config)
+
+        then:
+        assertThat("Clinical data loading shouldn't fail", lowRes, equalTo(true))
+        assertThat("Clinical data loading shouldn't fail", bigRes, equalTo(true))
     }
 
     void 'Reupload by same path, different studyId without replace study option Expression data'() {
