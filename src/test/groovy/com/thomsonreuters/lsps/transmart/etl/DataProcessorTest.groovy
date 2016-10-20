@@ -17,8 +17,8 @@ class DataProcessorTest extends Specification implements ConfigAwareTestCase {
     ClinicalData thirdClinicalData = clinicalData.copyWithSuffix('THD')
     ClinicalData fourthClinicalData = clinicalData.copyWithSuffix('FTH')
 
-    ClinicalData lowLetterCD = Fixtures.clinicalData.copyWithSuffix('Letter')
-    ClinicalData bigLetterCD = Fixtures.clinicalData.copyWithSuffix('LETTER')
+    ClinicalData lowLetterCD = Fixtures.clinicalData.copyWithSuffixCS('Letter', 'Letter')
+    ClinicalData bigLetterCD = Fixtures.clinicalDataForCaseSensitive
 
     String rootName = 'Test Studies'
     String studyName = clinicalData.studyName
@@ -83,7 +83,7 @@ class DataProcessorTest extends Specification implements ConfigAwareTestCase {
 
         when:
         def lowRes = lowLetterCD.load(config)
-        def bigRes = bigLetterCD.load(config)
+        def bigRes = bigLetterCD.loadByPath(config, '\\Test Studies\\Test Study Letter\\')
 
         then:
         assertThat("Clinical data loading shouldn't fail", lowRes, equalTo(true))

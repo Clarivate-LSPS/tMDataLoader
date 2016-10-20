@@ -129,7 +129,7 @@ abstract class AbstractDataProcessor implements DataProcessor {
     }
 
     void checkStudyExist(Sql sql, studyInfo) {
-        if (studyInfo.oldId && !config.replaceStudy && studyInfo.oldId != studyInfo.id) {
+        if (studyInfo.oldId && !config.replaceStudy && (String)studyInfo.oldId.toUpperCase() != (String)studyInfo.id.toUpperCase()) {
             throw new DataProcessingException("Other study by same path found with different studyId: ${studyInfo.node}"  as String)
         }
 
@@ -139,7 +139,7 @@ abstract class AbstractDataProcessor implements DataProcessor {
                 from i2b2metadata.i2b2
                 where sourcesystem_cd = UPPER(?)""",
                 [studyInfo.id])
-        if (row && (String)row.c_fullname.toUpperCase() != (String)studyInfo.node.toUpperCase()) {
+        if (row && (String)row.c_fullname != (String)studyInfo.node) {
             throw new DataProcessingException("Other study with same id found by different path: ${row.c_fullname}" as String)
         }
     }

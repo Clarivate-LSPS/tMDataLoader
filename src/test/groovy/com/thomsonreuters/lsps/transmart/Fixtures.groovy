@@ -127,6 +127,10 @@ class Fixtures {
         return studiesDir.studyDir('Test Study With Data Value In Path', 'GSE0DVINPATH').clinicalData
     }
 
+    static ClinicalData getClinicalDataForCaseSensitive() {
+        return studiesDir.studyDir('Test Study', 'GSE0LETTER').clinicalData
+    }
+
     static ClinicalData getClinicalDataWithSingleVisitName() {
         return studiesDir.studyDir('Test Study With Single Visit Name', 'GSE0SINGLEVN').clinicalData
     }

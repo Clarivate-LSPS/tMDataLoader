@@ -43,6 +43,10 @@ abstract class AbstractData<T extends AbstractData> {
         return copyAttachedToStudy(studyInfo.withSuffix(suffix))
     }
 
+    public T copyWithSuffixCS(String studyIdSuffix, String pathSuffix) {
+        return copyAttachedToStudy(studyInfo.withSuffixCS(studyIdSuffix, pathSuffix))
+    }
+
     /**
      * Creates a copy of data, attached to specified study
      *
