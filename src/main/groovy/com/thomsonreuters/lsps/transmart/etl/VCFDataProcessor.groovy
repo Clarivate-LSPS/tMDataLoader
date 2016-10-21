@@ -23,7 +23,7 @@ class VCFDataProcessor extends AbstractDataProcessor {
         def csv = new CsvLikeFile(mappingFile, '#')
         if (!studyInfo.id) {
             def metaInfo = MetaInfoHeader.getMetaInfo(csv)
-            studyInfo.id = metaInfo.STUDY_ID
+            studyInfo.id = ((String)metaInfo.STUDY_ID).toUpperCase()
             studyInfo.genomeBuild = metaInfo.GENOME_BUILD
             studyInfo.platformId = metaInfo.PLATFORM_ID ?:
                     (studyInfo.genomeBuild ? "VCF_${studyInfo.genomeBuild}".toString() : 'VCF')
@@ -69,7 +69,7 @@ class VCFDataProcessor extends AbstractDataProcessor {
         }
         loadMappingFile(mappingFile, studyInfo)
 
-        String studyId = studyInfo.id as String
+        String studyId = ((String)studyInfo.id).toUpperCase()
         def samplesLoader = new SamplesLoader(studyId)
         studyInfo.sources = []
         def files = []
@@ -116,7 +116,7 @@ class VCFDataProcessor extends AbstractDataProcessor {
         String vcfName = inputFile.fileName.toString().replaceFirst(/\.\w+$/, '').replaceAll(/\./, '_')
         String sourceCd = vcfName.toUpperCase()
         studyInfo.sources << sourceCd
-        String dataSetId = createDataSet(sql, studyInfo.id, sourceCd)
+        String dataSetId = createDataSet(sql, ((String)studyInfo.id).toUpperCase(), sourceCd)
         logger.log(LogType.MESSAGE, "Processing file ${inputFile.fileName}")
         use(SqlMethods) {
             long siRecords, piRecords, sdRecords, ssRecords, pdRecords

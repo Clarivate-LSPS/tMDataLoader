@@ -24,7 +24,7 @@ class PostStudyProcessor{
     }
 
     boolean process() {
-        if ((config?.replaceStudy) && (studyInfo.oldId) && studyInfo.id != studyInfo.oldId) {
+        if ((config?.replaceStudy) && (studyInfo.oldId) && ((String)studyInfo.id).toUpperCase() != ((String)studyInfo.oldId).toUpperCase()) {
             replaceStudy()
         }
         if (config.copySecurityFrom){
