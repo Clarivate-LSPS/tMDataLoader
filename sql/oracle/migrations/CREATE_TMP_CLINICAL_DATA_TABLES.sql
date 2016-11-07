@@ -177,7 +177,7 @@ BEGIN
 
 SELECT 'Creating table TM_DATALOADER.wt_num_data_types' FROM DUAL;
 
-CREATE TABLE TM_DATALOADER.wt_num_data_types AS SELECT * FROM tm_wz.wt_num_data_types NOLOGGING;
+CREATE TABLE TM_DATALOADER.wt_num_data_types NOLOGGING AS SELECT * FROM tm_wz.wt_num_data_types where 1=0;
 
 ALTER TABLE TM_DATALOADER.wt_num_data_types MODIFY category_cd VARCHAR2(250);
 
@@ -202,7 +202,7 @@ BEGIN
 
 SELECT 'Creating table TM_DATALOADER.WRK_CLINICAL_DATA' FROM DUAL;
 
-CREATE TABLE TM_DATALOADER.WRK_CLINICAL_DATA AS SELECT * FROM tm_wz.wrk_clinical_data NOLOGGING;
+CREATE TABLE TM_DATALOADER.WRK_CLINICAL_DATA NOLOGGING AS SELECT * FROM tm_wz.wrk_clinical_data where 1=0;
 
 CREATE INDEX tm_dataloader.IDX_WRK_CLN_ID_VALUE ON TM_DATALOADER.WRK_CLINICAL_DATA(usubjid, data_value, data_type);
 
@@ -230,7 +230,7 @@ BEGIN
 
 SELECT 'Creating table TM_DATALOADER.lt_src_clinical_data' FROM DUAL;
 
-CREATE TABLE TM_DATALOADER.lt_src_clinical_data AS SELECT * FROM tm_lz.lt_src_clinical_data NOLOGGING;
+CREATE TABLE TM_DATALOADER.lt_src_clinical_data NOLOGGING AS SELECT * FROM tm_lz.lt_src_clinical_data where 1=0;
 
 DECLARE
 rows int;
@@ -252,7 +252,7 @@ BEGIN
 /
 
 SELECT 'Creating TM_DATALOADER.lt_src_mrna_subj_samp_map' FROM DUAL;
-CREATE TABLE TM_DATALOADER.lt_src_mrna_subj_samp_map AS SELECT * FROM tm_lz.lt_src_mrna_subj_samp_map NOLOGGING;
+CREATE TABLE TM_DATALOADER.lt_src_mrna_subj_samp_map NOLOGGING AS SELECT * FROM tm_lz.lt_src_mrna_subj_samp_map where 1=0;
 
 DECLARE
 rows int;
@@ -274,7 +274,7 @@ BEGIN
 /
 
 SELECT 'Creating TM_DATALOADER.lt_src_mrna_data' FROM DUAL;
-CREATE TABLE TM_DATALOADER.lt_src_mrna_data AS SELECT * FROM tm_lz.lt_src_mrna_data NOLOGGING;
+CREATE TABLE TM_DATALOADER.lt_src_mrna_data NOLOGGING AS SELECT * FROM tm_lz.lt_src_mrna_data where 1=0;
 
 DECLARE
 rows int;

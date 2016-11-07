@@ -1,12 +1,12 @@
 -- Copy tables from tm_wz schema to tm_dataloader schema
 drop table if exists tm_dataloader.wt_subject_mrna_probeset;
-create unlogged table tm_dataloader.wt_subject_mrna_probeset as (select * from tm_wz.wt_subject_mrna_probeset);
+create unlogged table tm_dataloader.wt_subject_mrna_probeset as (select * from tm_wz.wt_subject_mrna_probeset where 1=0);
 
 drop table if exists tm_dataloader.wt_subject_microarray_logs;
-create unlogged table tm_dataloader.wt_subject_microarray_logs as (select * from tm_wz.wt_subject_microarray_logs);
+create unlogged table tm_dataloader.wt_subject_microarray_logs as (select * from tm_wz.wt_subject_microarray_logs where 1=0);
 
 drop table if exists tm_dataloader.wt_subject_microarray_calcs;
-create unlogged table tm_dataloader.wt_subject_microarray_calcs as (select * from tm_wz.wt_subject_microarray_calcs);
+create unlogged table tm_dataloader.wt_subject_microarray_calcs as (select * from tm_wz.wt_subject_microarray_calcs where 1=0);
 
 -- Alter types for working tables to increase calculations speed (float point arithmetic much faster than numeric)
 alter table tm_dataloader.wt_subject_microarray_logs alter column log_intensity type double precision;
