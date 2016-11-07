@@ -120,6 +120,3 @@ EXCEPTION
 END;
 $$;
 
-ALTER FUNCTION i2b2_fill_in_tree(varchar, varchar, numeric)
-  OWNER TO postgres;
-

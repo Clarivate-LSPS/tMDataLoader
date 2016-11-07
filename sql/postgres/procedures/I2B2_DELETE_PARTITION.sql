@@ -114,5 +114,3 @@ $BODY$
 	SET search_path FROM CURRENT
   COST 100;
 
-ALTER FUNCTION i2b2_delete_partition(varchar(100), character varying, character varying, character varying, character varying, numeric)
-  OWNER TO postgres;

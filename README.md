@@ -40,15 +40,15 @@ From `sql/oracle/` run following scripts using SQLDeveloper or sqlplus:
 
 ### For PostgreSQL
 
-From `sql/postgres` directory run following commands (you may need to add credentials and/or host/port information):
+From `sql/postgres` directory run following commands (you may need to add host/port information or change "postgres" to your database's superuser name):
 				
-	psql -d transmart -f migrations.sql
-	psql -d transmart -f permissions.sql
-	psql -d transmart -f procedures.sql
+	psql -d transmart -U postgres -f migrations.sql
+	psql -d transmart -U postgres -f permissions.sql
+	psql -d transmart -U tm_dataloader -f procedures.sql
 
 ### Notes	
 	
-You should connect to database with user `tm_dataloader` (default password is `tm_dataloader` as well, but it is highly recommended to change the default password). You can use any other user as well, but you should care about permissions.
+You should connect to database with user `tm_dataloader` (default password is `tm_dataloader` as well, but it is highly recommended to change the default password).
 
 PREPARING DATA FOR UPLOAD
 =========================

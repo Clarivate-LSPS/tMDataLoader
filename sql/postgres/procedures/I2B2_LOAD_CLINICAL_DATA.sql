@@ -1551,5 +1551,3 @@ $BODY$
   SET search_path FROM CURRENT
   COST 100;
 
-ALTER FUNCTION i2b2_load_clinical_data(character varying, character varying, character varying, character varying, character varying, numeric, character varying)
-  OWNER TO postgres;

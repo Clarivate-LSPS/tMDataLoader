@@ -305,5 +305,3 @@ LANGUAGE plpgsql VOLATILE SECURITY DEFINER
 SET SEARCH_PATH FROM CURRENT
 COST 100;
 
-ALTER FUNCTION i2b2_metabolomics_zscore_calc(character varying, character varying, character varying, numeric, character varying, character varying, numeric, character varying, numeric)
-OWNER TO postgres;
