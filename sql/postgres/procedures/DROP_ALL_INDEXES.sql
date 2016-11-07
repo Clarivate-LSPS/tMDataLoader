@@ -14,6 +14,3 @@ $BODY$
   LANGUAGE plpgsql VOLATILE SECURITY DEFINER
   SET search_path FROM CURRENT
   COST 100;
-
-ALTER FUNCTION drop_all_indexes(character varying, character varying)
-  OWNER TO postgres;

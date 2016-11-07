@@ -3,17 +3,8 @@ grant usage on schema tm_dataloader to tm_dataloader;
 alter schema tm_dataloader owner to tm_dataloader;
 grant execute on all functions in schema tm_dataloader to tm_dataloader;
 
-grant truncate, select, insert, delete on tm_dataloader.lt_src_clinical_data to tm_dataloader;
-grant truncate, select, insert, delete on tm_dataloader.lt_src_mrna_subj_samp_map to tm_dataloader;
-grant truncate, select, insert, delete on tm_dataloader.lt_src_mrna_data to tm_dataloader;
-grant truncate, select, insert, delete on tm_dataloader.lt_src_deapp_annot to tm_dataloader;
-grant truncate, select, insert, delete on tm_dataloader.lt_snp_gene_map to tm_dataloader;
-grant truncate, select, insert, delete on tm_dataloader.lt_snp_calls_by_gsm to tm_dataloader;
-grant truncate, select, insert, delete on tm_dataloader.lt_snp_copy_number to tm_dataloader;
-grant truncate, select, insert, delete on tm_dataloader.lt_src_mrna_xml_data to tm_dataloader;
--- grant insert, delete, select on deapp.de_snp_gene_map to tm_dataloader;
--- grant insert, delete, select on deapp.de_snp_calls_by_gsm to tm_dataloader;
--- grant insert, delete, select on deapp.de_snp_copy_number to tm_dataloader;
+grant truncate, select, insert, update, delete on gwas_plink.plink_data to tm_dataloader;
+grant usage on gwas_plink.plink_data_plink_data_id_seq to tm_dataloader;
 
 -- deapp
 grant usage on schema deapp to tm_dataloader;

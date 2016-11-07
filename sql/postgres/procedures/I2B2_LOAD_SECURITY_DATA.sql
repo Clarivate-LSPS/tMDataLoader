@@ -122,9 +122,6 @@ $BODY$
   SET search_path FROM CURRENT
   COST 100;
 
-ALTER FUNCTION i2b2_load_security_data(numeric)
-  OWNER TO postgres;
-
 CREATE OR REPLACE FUNCTION i2b2_load_security_data(sourcesystemCd varchar(50), currentjobid numeric DEFAULT (-1))
   RETURNS numeric AS
 $BODY$
@@ -243,6 +240,3 @@ $BODY$
   LANGUAGE plpgsql VOLATILE SECURITY DEFINER
   SET search_path FROM CURRENT
   COST 100;
-
-ALTER FUNCTION i2b2_load_security_data(varchar, numeric)
-  OWNER TO postgres;

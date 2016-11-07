@@ -506,5 +506,3 @@ $BODY$
   SET search_path FROM CURRENT
   COST 100;
 
-ALTER FUNCTION i2b2_load_metabolomics_annot(numeric)
-  OWNER TO postgres;

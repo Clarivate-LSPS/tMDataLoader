@@ -165,6 +165,3 @@ $BODY$
   LANGUAGE plpgsql VOLATILE SECURITY DEFINER
   SET search_path FROM CURRENT
   COST 100;
-
-ALTER FUNCTION i2b2_add_node(character varying, character varying, character varying, numeric)
-  OWNER TO postgres;

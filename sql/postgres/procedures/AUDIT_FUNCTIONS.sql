@@ -159,10 +159,6 @@ $BODY$
   SET search_path FROM CURRENT
   COST 100;
 
-ALTER FUNCTION cz_error_handler(numeric, character varying, character varying, character varying)
-  OWNER TO postgres;
-
-
 CREATE OR REPLACE FUNCTION cz_write_audit (jobid numeric, databasename varchar, procedurename varchar, stepdesc varchar, recordsmanipulated numeric, stepnumber numeric, stepstatus varchar)
   RETURNS numeric
 AS

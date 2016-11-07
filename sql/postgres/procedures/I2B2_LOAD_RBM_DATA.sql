@@ -1083,6 +1083,3 @@ category_cd,'PLATFORM',title),'ATTR1',coalesce(attribute_1,'')),'ATTR2',coalesce
 END;
  
 $$;
-
-ALTER FUNCTION i2b2_load_rbm_data(character varying, character varying, character varying, character varying, numeric, character varying, numeric)
-	OWNER TO postgres;
