@@ -201,6 +201,15 @@ BEGIN
 		cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from de_variant_dataset',SQL%ROWCOUNT,stepCt,'Done');
 		commit;
 
+		delete from observation_fact f
+		where f.concept_cd = 'SECURITY'
+			and f.patient_num in
+				(select distinct p.patient_num from patient_dimension p
+				 where p.sourcesystem_cd like trialId || ':%');
+		stepCt := stepCt + 1;
+		cz_write_audit(jobId,databaseName,procedureName,'Delete SECURITY data for trial from I2B2DEMODATA observation_fact',SQL%ROWCOUNT,stepCt,'Done');
+		commit;
+
 		--	delete observation_fact SECURITY data, do before patient_dimension delete
 		select count(x.source_cd) into countSourceCD
 			  from de_subject_sample_mapping x
@@ -212,15 +221,6 @@ BEGIN
           where x.trial_name = trialId;
 
     FOR i IN sourceCD.FIRST..sourceCD.LAST LOOP
-      delete from observation_fact f
-      where f.concept_cd = 'SECURITY'
-        and f.patient_num in
-         (select distinct p.patient_num from patient_dimension p
-          where p.sourcesystem_cd like trialId || ':%');
-      stepCt := stepCt + 1;
-      cz_write_audit(jobId,databaseName,procedureName,'Delete SECURITY data for trial from I2B2DEMODATA observation_fact',SQL%ROWCOUNT,stepCt,'Done');
-      commit;
-
 			i2b2_delete_lv_partition('DEAPP', 'DE_SUBJECT_MICROARRAY_DATA', 'TRIAL_SOURCE',
 															 trialID || ':' || sourceCD(i), drop_partition=>1,
 															 job_id=>jobId, ret_code=>res);

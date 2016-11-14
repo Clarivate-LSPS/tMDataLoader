@@ -2,9 +2,11 @@ package com.thomsonreuters.lsps.transmart.etl
 import com.thomsonreuters.lsps.transmart.Fixtures
 import com.thomsonreuters.lsps.transmart.fixtures.StudyInfo
 import com.thomsonreuters.lsps.db.core.DatabaseType
+import org.hamcrest.CoreMatchers
 import org.hamcrest.core.IsNull
 
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasNode
+import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasRecord
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasSample
 import static org.junit.Assert.assertNotNull
 import static org.junit.Assert.assertNull
@@ -256,6 +258,7 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
         processorDelete.process(inpData);
 
         assertThatTopNodeDelete("\\Delete Operation Test\\", true);
+        assertThat(db, CoreMatchers.not(hasRecord("observation_fact", sourcesystem_cd: studyId)))
     }
 
     void testItDeleteSubNodeClinicalData() {
