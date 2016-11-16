@@ -1,7 +1,7 @@
 -- --------------------------------------------------------------
 -- GRANT_ACCESS_TO_SCHEMA_TABLES.sql
 -- Give access to TM_DATALOADER SCHEMA
--- from schemas: tm_cz, tm_lz, tm_wz,
+-- from schemas: tm_cz, tm_lz, tm_wz, amapp,
 -- i2b2metadata, i2b2demodata, biomart, deapp, searchapp, fmapp
 --
 -- Also grant select on sys.all tables,
@@ -15,7 +15,7 @@ SET SERVEROUTPUT ON
 
 DECLARE
 	TYPE schema_names IS TABLE OF dba_users.username%type ;
-	tm_schemas schema_names := schema_names('tm_cz','tm_lz','tm_wz',
+	tm_schemas schema_names := schema_names('tm_cz','tm_lz','tm_wz', 'amapp',
 											'i2b2metadata','i2b2demodata',
 											'biomart','deapp','searchapp','fmapp','gwas_plink');
 	CURSOR table_cursor (schemaname IN dba_users.username%type) is
