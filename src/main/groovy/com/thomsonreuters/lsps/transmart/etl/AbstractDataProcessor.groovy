@@ -73,34 +73,6 @@ abstract class AbstractDataProcessor implements DataProcessor {
                 }
             }
         }
-        if ((config?.checkDuplicates) && (!res)) {
-            database.withSql { sql ->
-                def rows = sql.rows("select * from wt_clinical_data_dups" as String)
-                CSVFormat csvFormat = CSVFormat.DEFAULT.withRecordSeparator('\n')
-                try {
-                    Files.newBufferedWriter(dir.resolve('duplicates.csv'), StandardCharsets.UTF_8).withWriter { fileWriter ->
-                        new CSVPrinter(fileWriter, csvFormat).withCloseable { CSVPrinter csvFilePrinter ->
-                            Object[] FILE_HEADER = ["site_id", "subject_id", "visit_name", "data_label", "category_cd", "modifier_cd", "link_value"]
-                            csvFilePrinter.printRecord(FILE_HEADER);
-                            rows.each {
-                                List csvRow = new ArrayList();
-                                csvRow.add(it.site_id ?: '')
-                                csvRow.add(it.subject_id ?: '')
-                                csvRow.add(it.visit_name ?: '')
-                                csvRow.add(it.data_label ?: '')
-                                csvRow.add(it.category_cd ?: '')
-                                csvRow.add(it.modifier_cd ?: '')
-                                csvRow.add(it.link_value ?: '')
-
-                                csvFilePrinter.printRecord(csvRow)
-                            }
-                        }
-                    }
-                } catch (Exception e) {
-                    logger.log(LogType.ERROR, e)
-                }
-            }
-        }
 
         return res
     }
