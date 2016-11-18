@@ -53,7 +53,7 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
         def _DATA = fMappings._DATA
         //Custom tags
         def tagReplacer = TagReplacer.fromFileMapping(fMappings)
-        CsvLikeFile csvFile = new CsvLikeFile(f, '# ', config.allowNonUniqueColumnNames.asBoolean())
+        CsvLikeFile csvFile = new CsvLikeFile(f, '# ', !!config.allowNonUniqueColumnNames)
         statistic.collectForTable(f.fileName.toString()) { table ->
             addStatisticVariables(table, csvFile, fMappings)
             csvFile.eachEntry { it, lineNumber ->

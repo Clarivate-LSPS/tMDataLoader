@@ -39,7 +39,17 @@ class CsvLikeFile implements PrepareIfRequired {
                 InputStreamReader reader = new InputStreamReader(inputStream, decoder);
 
                 def linesReader = !lineComment.is(null) ? new SkipLinesReader(reader, [lineComment]) : reader
-                def parser = new CSVParser(linesReader, format ?: this.format)
+                def parser
+                try {
+                    parser = new CSVParser(linesReader, format ?: this.format)
+                } catch (IllegalArgumentException ex) {
+                    if (ex.message.contains("The header contains a duplicate name")) {
+                        throw new IllegalArgumentException("Duplicate names found in the header. You should either " +
+                                "check and fix these names or use `--allow-non-unique-columns` option", ex)
+                    } else {
+                        throw ex
+                    }
+                }
                 if (closure.maximumNumberOfParameters == 2) {
                     def lineNumberProducer = linesReader instanceof SkipLinesReader ?
                             { (linesReader as SkipLinesReader).skippedLinesCount + parser.currentLineNumber } :
