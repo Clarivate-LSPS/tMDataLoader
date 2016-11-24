@@ -281,7 +281,7 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
                        'path': "\\Test Studies\\${studyNameClinical}\\Biomarker Data\\Mutations\\TST001 (Entrez ID: 1956)\\AA mutation\\T790M\\"];
         processorDelete.process(inpData);
 
-        assertThatTopNodeDelete("\\Test Studies\\", false);
+        assertThatTopNodeDelete("\\Test Studies\\", false)
     }
 
     void testItDeleteVCFData() {

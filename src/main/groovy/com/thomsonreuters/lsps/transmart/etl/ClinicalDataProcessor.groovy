@@ -64,7 +64,8 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
 
                 processedCount++
 
-                if (cols[fMappings.STUDY_ID]) {
+                def studyId = cols[fMappings.STUDY_ID]?.toUpperCase()
+                if (studyId) {
                     // the line shouldn't be empty
 
                     if (!cols[fMappings.SUBJ_ID]) {
@@ -72,15 +73,15 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
                     }
 
                     if (!usedStudyId) {
-                        usedStudyId = cols[fMappings.STUDY_ID]
+                        usedStudyId = studyId
                     }
 
-                    if (usedStudyId != cols[fMappings.STUDY_ID]) {
+                    if (usedStudyId != studyId) {
                         throw new DataProcessingException("STUDY_ID differs from previous in ${lineNumber} line in ${csvFile.file.fileName} file.")
                     }
 
                     Map<String, String> output = [
-                            study_id       : cols[fMappings.STUDY_ID],
+                            study_id       : studyId,
                             site_id        : cols[fMappings.SITE_ID],
                             subj_id        : cols[fMappings.SUBJ_ID],
                             visit_name     : cols[fMappings.VISIT_NAME],
@@ -282,7 +283,7 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
 
     @Override
     boolean runStoredProcedures(jobId, Sql sql, studyInfo) {
-        String studyId = studyInfo['id'].toString().toUpperCase()
+        String studyId = studyInfo['id']
         def studyNode = studyInfo['node']
         if (studyId && studyNode) {
             config.logger.log("Study ID=${studyId}; Node=${studyNode}")
@@ -291,10 +292,10 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
             sql.call("{call " + config.controlSchema + "." + getProcedureName() + "(?,?,?,?,?,?,?)}", [studyId, studyNode, config.securitySymbol, highlightFlag, alwaysSetVisitName, jobId, mergeMode.name()])
         } else {
             config.logger.log(LogType.ERROR, "Study ID or Node not defined!")
-            return false;
+            return false
         }
 
-        return true;
+        return true
     }
 
     @Override

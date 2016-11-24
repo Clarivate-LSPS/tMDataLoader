@@ -47,7 +47,7 @@ class SerialHDDDataLoader {
     }
 
     private processEachMappingRow(Path f, studyInfo, Closure<List> processRow) {
-        def row = [((String)studyInfo.id).toUpperCase(), null, null]
+        def row = [studyInfo.id, null, null]
         def lineNum = 0
         def dataFile = new CsvLikeFile(f)
         def header = dataFile.header

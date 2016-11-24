@@ -96,12 +96,12 @@ abstract class AbstractDataProcessor implements DataProcessor {
 
         if (studyInfo.oldId && (config?.replaceStudy)) {
             logger.log(LogType.MESSAGE, "Found another study by path: '${studyInfo.node}' with ID: ${studyInfo.oldId}. Removing...")
-            new DeleteDataProcessor(config).process('id': studyInfo.oldId, 'path': studyInfo.node);
+            new DeleteDataProcessor(config).process('id': studyInfo.oldId, 'path': studyInfo.node)
         }
     }
 
     void checkStudyExist(Sql sql, studyInfo) {
-        if (studyInfo.oldId && !config.replaceStudy && studyInfo.oldId != studyInfo.id?.toUpperCase()) {
+        if (studyInfo.oldId && !config.replaceStudy && studyInfo.oldId != studyInfo.id) {
             throw new DataProcessingException("Other study by the same path found with different studyId: old = '${studyInfo.oldId}', new = '${studyInfo.id}'" as String)
         }
 

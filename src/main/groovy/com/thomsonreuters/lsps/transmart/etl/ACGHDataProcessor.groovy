@@ -39,8 +39,9 @@ class ACGHDataProcessor extends AbstractDataProcessor {
                     if (!(cols[2] && cols[3] && cols[4] && cols[8]))
                         throw new Exception("Incorrect mapping file: mandatory columns not defined")
 
+                    cols[0] = cols[0]?.toUpperCase()
                     platformList << cols[4]
-                    studyIdList << cols[0]?.toUpperCase()
+                    studyIdList << cols[0]
 
                     stmt.addBatch(cols)
                 }
@@ -131,7 +132,7 @@ class ACGHDataProcessor extends AbstractDataProcessor {
     }
 
     long processEachRow(Path f, studyInfo, Closure<List> processRow) {
-        def row = [((String)studyInfo.id).toUpperCase(), null, null, null, null, null, null, null, null, null]
+        def row = [studyInfo.id, null, null, null, null, null, null, null, null, null]
         def lineNum = 0
         def dataFile = new CsvLikeFile(f)
         def header = dataFile.header

@@ -68,7 +68,7 @@ class GWASPlinkDataProcessor extends AbstractDataProcessor {
             throw new DataProcessingException("Missing mapping file for GWAS Plike Data")
 
         def metaInfo = MetaInfoHeader.getMetaInfo(mappingFilePath, "# ")
-        String studyId = metaInfo.STUDY_ID
+        String studyId = metaInfo.STUDY_ID?.toUpperCase()
         if (!studyId) {
             throw new DataProcessingException("No STUDY_ID specified in mapping file (ex: # STUDY_ID: MYSTUDY)")
         }

@@ -3,20 +3,20 @@ package com.thomsonreuters.lsps.transmart.etl
 import com.thomsonreuters.lsps.db.loader.DataLoader
 import com.thomsonreuters.lsps.transmart.etl.platforms.ProteinPlatform
 import com.thomsonreuters.lsps.transmart.files.CsvLikeFile
-import com.thomsonreuters.lsps.db.core.DatabaseType;
+import com.thomsonreuters.lsps.db.core.DatabaseType
 import groovy.sql.Sql
 
 import java.nio.file.Path
 
-public class ProteinDataProcessor extends AbstractDataProcessor {
+class ProteinDataProcessor extends AbstractDataProcessor {
     protected int havePeptide = 1 // 1 - if peptide is defined, 0 - else
 
-    public ProteinDataProcessor(Object conf) {
-        super(conf);
+    ProteinDataProcessor(Object conf) {
+        super(conf)
     }
 
     @Override
-    public boolean processFiles(Path dir, Sql sql, studyInfo) {
+    boolean processFiles(Path dir, Sql sql, studyInfo) {
         database.truncateTable(sql, 'lt_src_proteomics_sub_sam_map')
         database.truncateTable(sql, 'lt_src_proteomics_data')
 
@@ -39,11 +39,11 @@ public class ProteinDataProcessor extends AbstractDataProcessor {
             throw new Exception("No platforms defined")
         }
 
-        return true;
+        return true
     }
 
     @Override
-    public boolean runStoredProcedures(Object jobId, Sql sql, Object studyInfo) {
+    boolean runStoredProcedures(Object jobId, Sql sql, Object studyInfo) {
         def studyId = studyInfo['id']
         def studyNode = studyInfo['node']
         def studyDataType = studyInfo['datatype']
@@ -59,14 +59,14 @@ public class ProteinDataProcessor extends AbstractDataProcessor {
                     [studyId, studyNode, studyDataType, jobId, Sql.NUMERIC]) {}
         } else {
             config.logger.log(LogType.ERROR, "Study ID or Node or DataType not defined!")
-            return false;
+            return false
         }
-        return true;
+        return true
     }
 
     @Override
-    public String getProcedureName() {
-        return "I2B2_PROCESS_PROTEOMICS_DATA";
+    String getProcedureName() {
+        return "I2B2_PROCESS_PROTEOMICS_DATA"
     }
 
     protected List processMappingFile(Path f, Sql sql, studyInfo) {
@@ -92,8 +92,9 @@ public class ProteinDataProcessor extends AbstractDataProcessor {
                     if (!(cols[2] && cols[3] && cols[4] && cols[8]))
                         throw new Exception("Incorrect mapping file: mandatory columns not defined")
 
+                    cols[0] = cols[0]?.toUpperCase()
                     platformList << cols[4]
-                    studyIdList << cols[0]?.toUpperCase()
+                    studyIdList << cols[0]
 
                     stmt.addBatch(cols)
                 }
@@ -179,18 +180,18 @@ public class ProteinDataProcessor extends AbstractDataProcessor {
     }
 
     protected long processEachRow(Path f, studyInfo, Closure<List> processRow) {
-        def row = [((String)studyInfo.id).toUpperCase(), null, null, null]
+        def row = [studyInfo.id, null, null, null]
         def lineNum = 0
         def dataFile = new CsvLikeFile(f)
         def header = dataFile.header
         /*if (header[0].toUpperCase() != 'PEPTIDE' && header[1].toUpperCase() != 'MAJORITY PROTEIN IDS') {
             throw new Exception("Incorrect protein data file")
         } */
-        if (header[0].toUpperCase() != 'PEPTIDE'){
-            havePeptide = 0;
+        if (header[0].toUpperCase() != 'PEPTIDE') {
+            havePeptide = 0
         }
         dataFile.eachEntry { cols ->
-            lineNum++;
+            lineNum++
 
             config.logger.log(LogType.PROGRESS, "[${lineNum}]")
             row[1] = cols[0]

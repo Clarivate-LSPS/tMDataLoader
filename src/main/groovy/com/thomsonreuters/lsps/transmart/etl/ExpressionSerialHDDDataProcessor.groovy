@@ -14,14 +14,14 @@ class ExpressionSerialHDDDataProcessor extends ExpressionDataProcessor {
     }
 
     @Override
-    public boolean processFiles(Path dir, Sql sql, studyInfo) {
+    boolean processFiles(Path dir, Sql sql, studyInfo) {
         super.processFiles(dir, sql, studyInfo)
         serialHDDDataLoader.loadSerialHDDData('lt_src_mrna_xml_data', dir, sql, studyInfo)
         true
     }
 
     @Override
-    public boolean runStoredProcedures(Object jobId, Sql sql, Object studyInfo) {
+    boolean runStoredProcedures(Object jobId, Sql sql, Object studyInfo) {
         def studyId = studyInfo['id']
 
         if (super.runStoredProcedures(jobId, sql, studyInfo)) {

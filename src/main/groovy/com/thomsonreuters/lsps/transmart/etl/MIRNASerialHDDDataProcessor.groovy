@@ -14,7 +14,7 @@ class MIRNASerialHDDDataProcessor extends MIRNADataProcessor {
     }
 
     @Override
-    public boolean processFiles(Path dir, Sql sql, studyInfo) {
+    boolean processFiles(Path dir, Sql sql, studyInfo) {
         studyInfo['base_datatype'] = 'MIRNA_QPCR'
         super.processFiles(dir, sql, studyInfo)
         serialHDDDataLoader.loadSerialHDDData('lt_src_mrna_xml_data', dir, sql, studyInfo)
@@ -22,7 +22,7 @@ class MIRNASerialHDDDataProcessor extends MIRNADataProcessor {
     }
 
     @Override
-    public boolean runStoredProcedures(Object jobId, Sql sql, Object studyInfo) {
+    boolean runStoredProcedures(Object jobId, Sql sql, Object studyInfo) {
         def studyId = studyInfo['id']
 
         if (super.runStoredProcedures(jobId, sql, studyInfo)) {

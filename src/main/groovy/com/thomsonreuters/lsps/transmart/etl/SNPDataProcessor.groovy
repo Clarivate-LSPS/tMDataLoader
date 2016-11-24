@@ -28,12 +28,12 @@ import java.nio.file.Path
 
 class SNPDataProcessor extends AbstractDataProcessor {
 
-    public SNPDataProcessor(Object conf) {
-        super(conf);
+    SNPDataProcessor(Object conf) {
+        super(conf)
     }
 
     @Override
-    public boolean processFiles(Path dir, Sql sql, studyInfo) {
+    boolean processFiles(Path dir, Sql sql, studyInfo) {
         database.truncateTable(sql, 'lt_src_mrna_subj_samp_map')
         database.truncateTable(sql, 'lt_src_mrna_data')
 
@@ -75,7 +75,7 @@ class SNPDataProcessor extends AbstractDataProcessor {
             throw new Exception("No platforms defined")
         }
 
-        return true;
+        return true
     }
 
     private void processSnpCallsFile(Sql sql, Path f) {
@@ -99,7 +99,7 @@ class SNPDataProcessor extends AbstractDataProcessor {
     }
 
     @Override
-    public boolean runStoredProcedures(Object jobId, Sql sql, Object studyInfo) {
+    boolean runStoredProcedures(Object jobId, Sql sql, Object studyInfo) {
         def studyId = studyInfo['id']
         def studyNode = studyInfo['node']
         def studyDataType = studyInfo['datatype']
@@ -120,14 +120,14 @@ class SNPDataProcessor extends AbstractDataProcessor {
                     [studyId, studyNode, studyDataType, jobId, Sql.NUMERIC]) {}
         } else {
             config.logger.log(LogType.ERROR, "Study ID or Node or DataType not defined!")
-            return false;
+            return false
         }
-        return true;
+        return true
     }
 
     @Override
-    public String getProcedureName() {
-        return "I2B2_PROCESS_SNP_DATA";
+    String getProcedureName() {
+        return "I2B2_PROCESS_SNP_DATA"
     }
 
     private List processMappingFile(Path f, Sql sql, studyInfo) {
@@ -167,8 +167,9 @@ class SNPDataProcessor extends AbstractDataProcessor {
                             if (cols[1]) {
                                 copyNumberFileList << cols[1]
                             }
+                            cols[2] = cols[2]?.toUpperCase()
                             platformList << cols[6]
-                            studyIdList << cols[2]?.toUpperCase()
+                            studyIdList << cols[2]
 
                             stmt.addBatch(cols[2..-1])
                         }
