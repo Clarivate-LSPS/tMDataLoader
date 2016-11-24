@@ -25,9 +25,14 @@ import com.thomsonreuters.lsps.transmart.files.CsvLikeFile
 import groovy.sql.Sql
 
 import java.nio.file.Path
+import java.util.concurrent.Callable
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import java.util.concurrent.Future
 
 class SNPDataProcessor extends AbstractDataProcessor {
 
+    int THREAD_COUNT = 4
     public SNPDataProcessor(Object conf) {
         super(conf);
     }
@@ -59,15 +64,15 @@ class SNPDataProcessor extends AbstractDataProcessor {
             // Load data to tmp tables LT_SNP_CALLS_BY_GSM and LT_SNP_COPY_NUMBER
             def callsFileList = studyInfo['callsFileNameList'] as List
             if (callsFileList.size() > 0) {
-                callsFileList.each { String name ->
-                    processSnpCallsFile(sql, dir.resolve(name))
+                parallerCall(callsFileList) { fileName, sqlInst ->
+                    processSnpCallsFile(sqlInst, dir.resolve(fileName))
                 }
             }
 
             def copyNumberFileList = studyInfo['copyNumberFileList'] as List
             if (copyNumberFileList.size() > 0) {
-                copyNumberFileList.each { String name ->
-                    processSnpCopyNumberFile(sql, dir.resolve(name))
+                parallerCall(copyNumberFileList) { fileName, sqlInst ->
+                    processSnpCopyNumberFile(sqlInst, dir.resolve(fileName))
                 }
             }
 
@@ -76,6 +81,37 @@ class SNPDataProcessor extends AbstractDataProcessor {
         }
 
         return true;
+    }
+
+    private void parallerCall(fileList, Closure uploadFunction) {
+        ExecutorService executorService = Executors.newFixedThreadPool(THREAD_COUNT)
+        List<Callable<Object>> tasks = new ArrayList<>();
+        try {
+            fileList.each { String name ->
+                tasks.add(new Callable<Object>() {
+                    @Override
+                    Object call() throws Exception {
+                        Sql threadSql = database.newSql()
+                        threadSql.connection.autoCommit = false
+                        try {
+                            uploadFunction(name, threadSql)
+                            threadSql.commit()
+                        }
+                        finally {
+                            threadSql.connection.close()
+                        }
+                        return null;
+                    }
+                });
+            }
+            List<Future<Object>> invokeAll = executorService.invokeAll(tasks);
+        }
+        catch (InterruptedException e) {
+            config.logger.log(LogType.ERROR, "Data wasn't upload")
+        }
+        finally {
+            executorService.shutdown()
+        }
     }
 
     private void processSnpCallsFile(Sql sql, Path f) {
