@@ -6,7 +6,9 @@ import com.thomsonreuters.lsps.transmart.fixtures.Study
 import com.thomsonreuters.lsps.transmart.fixtures.StudyInfo
 import spock.lang.Specification
 
+import static org.hamcrest.CoreMatchers.equalTo
 import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertThat
 /**
  * Created by Alexander Omelchenko on 15.12.2015.
  */
@@ -15,6 +17,9 @@ class DataProcessorTest extends Specification implements ConfigAwareTestCase {
     ClinicalData secondClinicalData = clinicalData.copyAttachedToStudy(clinicalData.studyInfo.withSuffixForId("_2"))
     ClinicalData thirdClinicalData = clinicalData.copyWithSuffix('THD')
     ClinicalData fourthClinicalData = clinicalData.copyWithSuffix('FTH')
+
+    ClinicalData lowLetterCD = Fixtures.clinicalData.copyWithSuffixCS('Letter', 'Letter')
+    ClinicalData bigLetterCD = Fixtures.clinicalDataForCaseSensitive
 
     String rootName = 'Test Studies'
     String studyName = clinicalData.studyName

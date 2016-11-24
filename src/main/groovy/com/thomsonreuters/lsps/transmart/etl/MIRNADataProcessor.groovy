@@ -184,7 +184,7 @@ class MIRNADataProcessor extends AbstractDataProcessor {
     }
 
     protected long processEachRow(Path f, studyInfo, Closure<List> processRow) {
-        def row = [studyInfo.id as String, null, null, null]
+        def row = [((String)studyInfo.id).toUpperCase(), null, null, null]
         def lineNum = 0
         def dataFile = new CsvLikeFile(f)
         def header = dataFile.header

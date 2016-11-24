@@ -1,7 +1,6 @@
 package com.thomsonreuters.lsps.transmart.etl
 
 import com.thomsonreuters.lsps.db.core.Database
-import com.thomsonreuters.lsps.db.core.DatabaseType
 import com.thomsonreuters.lsps.db.loader.DataLoader
 import com.thomsonreuters.lsps.transmart.files.CsvLikeFile
 import groovy.sql.Sql
@@ -48,7 +47,7 @@ class SerialHDDDataLoader {
     }
 
     private processEachMappingRow(Path f, studyInfo, Closure<List> processRow) {
-        def row = [studyInfo.id as String, null, null]
+        def row = [((String)studyInfo.id).toUpperCase(), null, null]
         def lineNum = 0
         def dataFile = new CsvLikeFile(f)
         def header = dataFile.header

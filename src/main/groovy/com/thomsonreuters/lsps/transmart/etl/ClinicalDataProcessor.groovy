@@ -282,7 +282,7 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
 
     @Override
     boolean runStoredProcedures(jobId, Sql sql, studyInfo) {
-        def studyId = studyInfo['id']
+        String studyId = studyInfo['id'].toString().toUpperCase()
         def studyNode = studyInfo['node']
         if (studyId && studyNode) {
             config.logger.log("Study ID=${studyId}; Node=${studyNode}")

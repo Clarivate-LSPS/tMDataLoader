@@ -17,6 +17,10 @@ class StudyInfo {
         return new StudyInfo("${id}${suffix.toUpperCase()}", "${name} ${suffix}")
     }
 
+    StudyInfo withSuffixCS(String studyIdSuffix, String pathSuffix) {
+        return new StudyInfo("${id}${studyIdSuffix}", "${name} ${pathSuffix}")
+    }
+
     StudyInfo withName(String studyName) {
         return new StudyInfo(id, studyName)
     }

@@ -111,7 +111,7 @@ abstract class AbstractDataProcessor implements DataProcessor {
                 from i2b2metadata.i2b2
                 where sourcesystem_cd = UPPER(?)""",
                 [studyInfo.id])
-        if (row && row.c_fullname != studyInfo.node) {
+        if (row && (String)row.c_fullname != (String)studyInfo.node) {
             throw new DataProcessingException("Other study with same id found by different path: ${row.c_fullname}" as String)
         }
     }
