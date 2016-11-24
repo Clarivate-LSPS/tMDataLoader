@@ -58,7 +58,7 @@ class CommandLineTool {
             _ longOpt: 'allow-non-unique-columns', 'Allow non-unique column names in clinical data files'
             _ longOpt: 'use-first-gene-id', 'When probe maps to multiple Entrez Gene IDs use only the first one'
             _ longOpt: 'check-duplicates', 'Check patient duplicates'
-            _ longOpt: 'replace-study', 'Upload study by same path'
+            _ longOpt: 'replace-study', 'Upload study by the same path'
         }
         // TODO: implement stop-on-fail mode!
         def opts = cli.parse(args)

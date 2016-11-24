@@ -3,18 +3,18 @@ package com.thomsonreuters.lsps.transmart.etl
 import com.thomsonreuters.lsps.db.loader.DataLoader
 import com.thomsonreuters.lsps.transmart.etl.platforms.MIRNAPlatform
 import com.thomsonreuters.lsps.transmart.files.CsvLikeFile
-import com.thomsonreuters.lsps.db.core.DatabaseType;
+import com.thomsonreuters.lsps.db.core.DatabaseType
 import groovy.sql.Sql
 
 import java.nio.file.Path
 
-public class MIRNADataProcessor extends AbstractDataProcessor {
-    public MIRNADataProcessor(Object conf) {
-        super(conf);
+class MIRNADataProcessor extends AbstractDataProcessor {
+    MIRNADataProcessor(Object conf) {
+        super(conf)
     }
 
     @Override
-    public boolean processFiles(Path dir, Sql sql, studyInfo) {
+    boolean processFiles(Path dir, Sql sql, studyInfo) {
         database.truncateTable(sql, 'lt_src_mirna_subj_samp_map')
         database.truncateTable(sql, 'lt_src_qpcr_mirna_data')
 
@@ -37,11 +37,11 @@ public class MIRNADataProcessor extends AbstractDataProcessor {
             throw new Exception("No platforms defined")
         }
 
-        return true;
+        return true
     }
 
     @Override
-    public boolean runStoredProcedures(Object jobId, Sql sql, Object studyInfo) {
+    boolean runStoredProcedures(Object jobId, Sql sql, Object studyInfo) {
         def studyId = studyInfo['id']
         def studyNode = studyInfo['node']
         def studyDataType = studyInfo['datatype']
@@ -63,13 +63,13 @@ public class MIRNADataProcessor extends AbstractDataProcessor {
                     [studyId, studyNode, studyDataType, jobId, mirnaType, Sql.NUMERIC]) {}
         } else {
             config.logger.log(LogType.ERROR, "Study ID or Node or DataType not defined!")
-            return false;
+            return false
         }
-        return true;
+        return true
     }
 
     @Override
-    public String getProcedureName() {
+    String getProcedureName() {
         return "I2B2_PROCESS_QPCR_MIRNA_DATA";
     }
 

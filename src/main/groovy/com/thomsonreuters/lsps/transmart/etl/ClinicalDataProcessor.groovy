@@ -43,8 +43,8 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
     StatisticCollector statistic = new StatisticCollector()
     def usedStudyId = ''
 
-    public ClinicalDataProcessor(Object conf) {
-        super(conf);
+    ClinicalDataProcessor(Object conf) {
+        super(conf)
     }
 
     @CompileStatic
@@ -80,17 +80,17 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
                     }
 
                     Map<String, String> output = [
-                            study_id          : cols[fMappings.STUDY_ID],
-                            site_id           : cols[fMappings.SITE_ID],
-                            subj_id           : cols[fMappings.SUBJ_ID],
-                            visit_name        : cols[fMappings.VISIT_NAME],
-                            sample_cd         : cols[fMappings.SAMPLE_ID],
-                            data_label        : '', // DATA_LABEL
-                            data_value        : '', // DATA_VALUE
-                            category_cd       : '', // CATEGORY_CD
-                            ctrl_vocab_code   : '', // CTRL_VOCAB_CODE - unused
-                            valuetype_cd      : (String) null,
-                            baseline_value    : (String) null
+                            study_id       : cols[fMappings.STUDY_ID],
+                            site_id        : cols[fMappings.SITE_ID],
+                            subj_id        : cols[fMappings.SUBJ_ID],
+                            visit_name     : cols[fMappings.VISIT_NAME],
+                            sample_cd      : cols[fMappings.SAMPLE_ID],
+                            data_label     : '', // DATA_LABEL
+                            data_value     : '', // DATA_VALUE
+                            category_cd    : '', // CATEGORY_CD
+                            ctrl_vocab_code: '', // CTRL_VOCAB_CODE - unused
+                            valuetype_cd   : (String) null,
+                            baseline_value : (String) null
                     ]
 
                     if (_DATA) {
@@ -163,7 +163,7 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
     }
 
     @Override
-    public boolean processFiles(Path dir, Sql sql, studyInfo) {
+    boolean processFiles(Path dir, Sql sql, studyInfo) {
         // read mapping file first
         // then parse files that are specified there (to allow multiple files per study)
         def mappingFileFound = false
@@ -276,12 +276,12 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
     }
 
     @Override
-    public String getProcedureName() {
+    String getProcedureName() {
         return config.altClinicalProcName ?: "I2B2_LOAD_CLINICAL_DATA"
     }
 
     @Override
-    public boolean runStoredProcedures(jobId, Sql sql, studyInfo) {
+    boolean runStoredProcedures(jobId, Sql sql, studyInfo) {
         def studyId = studyInfo['id']
         def studyNode = studyInfo['node']
         if (studyId && studyNode) {
@@ -299,7 +299,7 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
 
     @Override
     boolean process(Path dir, Object studyInfo) {
-        boolean res =  super.process(dir, studyInfo)
+        boolean res = super.process(dir, studyInfo)
         if ((config?.checkDuplicates) && (!res)) {
             database.withSql { sql ->
                 def rows = sql.rows("select * from wt_clinical_data_dups" as String)

@@ -101,8 +101,8 @@ abstract class AbstractDataProcessor implements DataProcessor {
     }
 
     void checkStudyExist(Sql sql, studyInfo) {
-        if (studyInfo.oldId && !config.replaceStudy && studyInfo.oldId != studyInfo.id) {
-            throw new DataProcessingException("Other study by same path found with different studyId: ${studyInfo.node}"  as String)
+        if (studyInfo.oldId && !config.replaceStudy && studyInfo.oldId != studyInfo.id?.toUpperCase()) {
+            throw new DataProcessingException("Other study by the same path found with different studyId: old = '${studyInfo.oldId}', new = '${studyInfo.id}'" as String)
         }
 
         def row = sql.firstRow("""

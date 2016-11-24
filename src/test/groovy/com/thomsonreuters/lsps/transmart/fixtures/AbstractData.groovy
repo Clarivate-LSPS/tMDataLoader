@@ -39,7 +39,7 @@ abstract class AbstractData<T extends AbstractData> {
         newDataProcessor(config).process(dir.toPath(), [name: studyName, node: path])
     }
 
-    public T copyWithSuffix(String suffix) {
+    T copyWithSuffix(String suffix) {
         return copyAttachedToStudy(studyInfo.withSuffix(suffix))
     }
 
@@ -49,9 +49,9 @@ abstract class AbstractData<T extends AbstractData> {
      * @param studyInfo study information
      * @return copy of expression data attached to study
      */
-    T copyAttachedToStudy(StudyInfo studyInfo) {
+    T copyAttachedToStudy(StudyInfo studyInfo, String copyName = null) {
         def newDir = TempStorage.instance.createSingletonTempDirectoryFrom(dir,
-                "${studyInfo.name}_${studyInfo.id}_${dataType}") { dir ->
+                copyName ?: "${studyInfo.name}_${studyInfo.id}_${dataType}") { dir ->
             if (studyInfo.id != this.studyInfo.id || studyInfo.name != this.studyInfo.name) {
                 this.class.newInstance(dir: dir, studyInfo: studyInfo).adaptFiles(this.studyInfo)
             }
