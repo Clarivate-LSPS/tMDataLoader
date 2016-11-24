@@ -152,7 +152,7 @@ class MetaDataProcessor extends AbstractDataProcessor {
 
                                             val = fixColumn(val)
 
-                                            if (val ==~ /(?i)Accession \(Internal study_id\)/) header_mappings['study_id'] = i?.toUpperCase()
+                                            if (val ==~ /(?i)Accession \(Internal study_id\)/) header_mappings['study_id'] = i
                                             else if (val ==~ /(?i)Title/) header_mappings['title'] = i
                                             else if (val ==~ /(?i)Description/) header_mappings['description'] = i
                                             else if (val ==~ /(?i)Study design/) header_mappings['study_design'] = i
@@ -228,7 +228,7 @@ class MetaDataProcessor extends AbstractDataProcessor {
                                         def species = getColumnValue(cols, header_mappings, 'species') ?: 'Homo Sapiens'
 
                                         stmt.addBatch([
-                                                getColumnValue(cols, header_mappings, 'study_id'),
+                                                getColumnValue(cols, header_mappings, 'study_id')?.toUpperCase(),
                                                 getColumnValue(cols, header_mappings, 'title'),
                                                 getColumnValue(cols, header_mappings, 'description'),
                                                 getColumnValue(cols, header_mappings, 'study_design'),
