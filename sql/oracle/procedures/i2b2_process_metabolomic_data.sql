@@ -529,18 +529,13 @@ BEGIN
 --	add leaf nodes for metabolomics data  The cursor will only add nodes that do not already exist.
 
 	 FOR r_addNodes in addNodes Loop
-
     --Add nodes for all types (ALSO DELETES EXISTING NODE)
-
 		i2b2_add_node(TrialID, r_addNodes.leaf_node, r_addNodes.node_name, jobId);
 		stepCt := stepCt + 1;
 		tText := 'Added Leaf Node: ' || r_addNodes.leaf_node || '  Name: ' || r_addNodes.node_name;
-		
 		cz_write_audit(jobId,databaseName,procedureName,tText,SQL%ROWCOUNT,stepCt,'Done');
-		
-		i2b2_fill_in_tree(TrialId, r_addNodes.leaf_node, jobID);
-
 	END LOOP;  
+        i2b2_fill_in_tree(TrialId, topNode, jobID);
 	
 --	update concept_cd for nodes, this is done to make the next insert easier
 	
