@@ -11,7 +11,7 @@ BEGIN
   SELECT count(*)
   INTO cnt
   FROM dba_tab_cols c
-  WHERE c.table_name = 'LT_SRC_CLINICAL_DATA' AND c.column_name = 'BASELINE_VALUE';
+  WHERE c.table_name = 'LT_SRC_CLINICAL_DATA' AND c.column_name = 'BASELINE_VALUE' and owner = 'TM_DATALOADER';
   IF (cnt <> 1)
   THEN
     EXECUTE IMMEDIATE 'ALTER TABLE TM_DATALOADER.LT_SRC_CLINICAL_DATA ADD (BASELINE_VALUE VARCHAR2 (250) )';
@@ -20,7 +20,7 @@ BEGIN
   SELECT count(*)
   INTO cnt
   FROM dba_tab_cols c
-  WHERE c.table_name = 'WRK_CLINICAL_DATA' AND c.column_name = 'BASELINE_VALUE';
+  WHERE c.table_name = 'WRK_CLINICAL_DATA' AND c.column_name = 'BASELINE_VALUE' and owner = 'TM_DATALOADER';
   IF (cnt <> 1)
   THEN
     EXECUTE IMMEDIATE 'ALTER TABLE TM_DATALOADER.WRK_CLINICAL_DATA ADD (BASELINE_VALUE VARCHAR2(250) )';
@@ -28,7 +28,7 @@ BEGIN
   SELECT count(*)
   INTO cnt
   FROM dba_tab_cols c
-  WHERE c.table_name = 'WT_TRIAL_NODES' AND c.column_name = 'BASELINE_VALUE';
+  WHERE c.table_name = 'WT_TRIAL_NODES' AND c.column_name = 'BASELINE_VALUE' and owner = 'TM_DATALOADER';
   IF (cnt <> 1)
   THEN
     EXECUTE IMMEDIATE 'ALTER TABLE TM_DATALOADER.WT_TRIAL_NODES ADD (BASELINE_VALUE VARCHAR2(250) )';
