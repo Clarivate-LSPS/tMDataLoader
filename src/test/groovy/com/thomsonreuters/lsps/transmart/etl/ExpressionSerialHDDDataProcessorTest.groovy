@@ -10,7 +10,7 @@ import static org.junit.Assert.assertThat
 class ExpressionSerialHDDDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase {
     private ExpressionSerialHDDDataProcessor _processor
 
-    String studyName = 'Test SerialHDD Study'
+    String studyName = 'Test ExpressionSerialHDD Study'
     String studyId = 'TSTSHDD'
     String platformId = 'HDD999'
 
@@ -60,10 +60,10 @@ class ExpressionSerialHDDDataProcessorTest extends GroovyTestCase implements Con
 
     void testItLoadsData() {
         processor.process(
-                new File("fixtures/Test Studies/${studyName}/SerialHDDDataToUpload").toPath(),
+                new File("fixtures/Test Studies/${studyName}/ExpressionSerialHDDDataToUpload").toPath(),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
 
-        def testNodeName = "\\Test Studies\\Test SerialHDD Study\\Sample Factors Week 1\\"
+        def testNodeName = "\\Test Studies\\${studyName}\\Sample Factors Week 1\\"
         def testMetadata = """<?xml version="1.0"?>
                         <ValueMetadata>
                             <Oktousevalues>Y</Oktousevalues>
