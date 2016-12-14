@@ -62,20 +62,31 @@ class Logger {
 	}
 
     void log(LogType ltype, Exception ex) {
-        StringWriter stringWriter = new StringWriter()
-        PrintWriter writer = new PrintWriter(stringWriter)
-        writer.append('Exception: ')
-        ex.printStackTrace(writer)
-        if (ex instanceof SQLException && ex.nextException != null) {
-            writer.append('Next exception: ')
-            ex.nextException.printStackTrace(writer)
-        }
-        writer.flush()
-        log(ltype, stringWriter.toString())
+        log(ltype, ex.message, ex)
     }
 
+	void log(LogType logType, String message, Exception ex) {
+		StringWriter stringWriter = new StringWriter()
+		PrintWriter writer = new PrintWriter(stringWriter)
+		if (message) {
+			writer.append("Message: ").println(message)
+		}
+		writer.append('Exception: ')
+		ex.printStackTrace(writer)
+		if (ex instanceof SQLException && ex.nextException != null) {
+			writer.append('Next exception: ')
+			ex.nextException.printStackTrace(writer)
+		}
+		writer.flush()
+		log(logType, stringWriter.toString())
+	}
+
+	void logAndThrow(String message, Exception ex) {
+		log(LogType.ERROR, message, ex)
+	}
+
 	void logAndThrow(Exception ex) {
-		log(LogType.ERROR, ex.message)
+		log(LogType.ERROR, ex)
 		throw ex
 	}
 

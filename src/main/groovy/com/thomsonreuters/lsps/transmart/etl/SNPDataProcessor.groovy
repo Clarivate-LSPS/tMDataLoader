@@ -31,8 +31,8 @@ import java.util.concurrent.Executors
 import java.util.concurrent.Future
 
 class SNPDataProcessor extends AbstractDataProcessor {
+    int THREAD_COUNT = Runtime.runtime.availableProcessors()
 
-    int THREAD_COUNT = 4
     SNPDataProcessor(Object conf) {
         super(conf)
     }
@@ -104,10 +104,11 @@ class SNPDataProcessor extends AbstractDataProcessor {
                     }
                 });
             }
-            List<Future<Object>> invokeAll = executorService.invokeAll(tasks);
+            List<Future<Object>> invokeAll = executorService.invokeAll(tasks)
+            invokeAll*.get()
         }
         catch (InterruptedException e) {
-            config.logger.log(LogType.ERROR, "Data wasn't upload")
+            config.logger.logAndThrow(LogType.ERROR, "Data wasn't upload", e)
         }
         finally {
             executorService.shutdown()

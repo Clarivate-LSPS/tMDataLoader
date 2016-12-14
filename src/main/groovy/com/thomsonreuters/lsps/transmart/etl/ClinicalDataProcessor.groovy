@@ -39,11 +39,12 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.sql.SQLException
 import java.util.concurrent.*
+import java.util.concurrent.atomic.AtomicReference
 
 class ClinicalDataProcessor extends AbstractDataProcessor {
     StatisticCollector statistic = new StatisticCollector()
-    def usedStudyId = ''
-    int THREAD_COUNT = 4
+    AtomicReference<String> usedStudyId = new AtomicReference<>('')
+    int THREAD_COUNT = Runtime.runtime.availableProcessors()
 
     ClinicalDataProcessor(Object conf) {
         super(conf)
@@ -56,6 +57,7 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
         //Custom tags
         def tagReplacer = TagReplacer.fromFileMapping(fMappings)
         CsvLikeFile csvFile = new CsvLikeFile(f, '# ', !!config.allowNonUniqueColumnNames)
+        String usedStudyId = ''
         statistic.collectForTable(f.fileName.toString()) { table ->
             addStatisticVariables(table, csvFile, fMappings)
             csvFile.eachEntry { it, lineNumber ->
@@ -75,7 +77,11 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
                     }
 
                     if (!usedStudyId) {
-                        usedStudyId = studyId
+                        usedStudyId = this.usedStudyId.get()
+                        if (!usedStudyId) {
+                            this.usedStudyId.compareAndSet(usedStudyId, studyId)
+                        }
+                        usedStudyId = this.usedStudyId.get()
                     }
 
                     if (usedStudyId != studyId) {
@@ -190,8 +196,8 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
 
             mergeMode = getMergeMode(mappingFile)
 
-            final ExecutorService threadPool = Executors.newFixedThreadPool(THREAD_COUNT);
-            final ExecutorCompletionService<Object> completionService = new ExecutorCompletionService<>(threadPool);
+            final ExecutorService threadPool = Executors.newFixedThreadPool(THREAD_COUNT)
+            final ExecutorCompletionService<Object> completionService = new ExecutorCompletionService<>(threadPool)
 
             mapping.eachFileMapping { fileMapping ->
                 completionService.submit(new Callable<Object>() {
@@ -199,15 +205,16 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
                     Object call() throws Exception {
                         sql.connection.autoCommit = false
                         processFile(sql, dir.resolve(fileMapping.fileName), fileMapping)
+                        return null
                     }
                 })
             }
 
-            for (int i = 0; i< mapping.mappings.size(); i++){
+            for (int i = 0; i < mapping.mappings.size(); i++) {
                 final Future<Object> f = completionService.take()
                 try {
-                    Object result = f.get()
-                } catch (ExecutionException e){
+                    f.get()
+                } catch (ExecutionException e) {
                     throw new DataProcessingException(e.getCause().message)
                 }
             }
