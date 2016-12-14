@@ -64,14 +64,14 @@ class SNPDataProcessor extends AbstractDataProcessor {
             // Load data to tmp tables LT_SNP_CALLS_BY_GSM and LT_SNP_COPY_NUMBER
             def callsFileList = studyInfo['callsFileNameList'] as List
             if (callsFileList.size() > 0) {
-                parallerCall(callsFileList) { fileName, sqlInst ->
+                parallelCall(callsFileList) { fileName, sqlInst ->
                     processSnpCallsFile(sqlInst, dir.resolve(fileName))
                 }
             }
 
             def copyNumberFileList = studyInfo['copyNumberFileList'] as List
             if (copyNumberFileList.size() > 0) {
-                parallerCall(copyNumberFileList) { fileName, sqlInst ->
+                parallelCall(copyNumberFileList) { fileName, sqlInst ->
                     processSnpCopyNumberFile(sqlInst, dir.resolve(fileName))
                 }
             }
@@ -83,7 +83,7 @@ class SNPDataProcessor extends AbstractDataProcessor {
         return true
     }
 
-    private void parallerCall(fileList, Closure uploadFunction) {
+    private void parallelCall(fileList, Closure uploadFunction) {
         ExecutorService executorService = Executors.newFixedThreadPool(THREAD_COUNT)
         List<Callable<Object>> tasks = new ArrayList<>();
         try {
