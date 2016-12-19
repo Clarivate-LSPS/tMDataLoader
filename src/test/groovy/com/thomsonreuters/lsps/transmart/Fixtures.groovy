@@ -155,6 +155,10 @@ class Fixtures {
         return studiesDir.studyDir('Test Protein Study 2', 'GSE374251').proteinData
     }
 
+    static ProteinData getProteinDataWithoutPeptide3() {
+        return studiesDir.studyDir('Test Protein Study 3', 'GSE374253').proteinData
+    }
+
     public static class FilePathBuilder {
         File file
 
