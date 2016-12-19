@@ -20,3 +20,4 @@
 @@migrations/1_2_4/20160313180000000_delete_cascade_from_search_secure_object.sql
 @@migrations/issue_87.sql
 @@migrations/20160805133000000_ADD_COLUMN_FOR_TIMESTAMP.sql
+@@migrations/20161218000000000_add_platform_for_protein_tables.sql

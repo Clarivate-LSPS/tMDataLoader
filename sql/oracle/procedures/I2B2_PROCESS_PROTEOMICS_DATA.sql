@@ -967,6 +967,7 @@ BEGIN
 	,subject_id
 	,trial_name
 	,assay_id
+	,platform
 	)
 	select md.peptide
 		  ,avg(md.intensity_value)
@@ -974,6 +975,7 @@ BEGIN
       ,sd.subject_id
 		  ,TrialId
 		  ,sd.assay_id
+		  ,sd.gpl_id
 	from deapp.de_subject_sample_mapping sd
 		inner join lt_src_proteomics_sub_sam_map psm
 			on psm.trial_name = sd.trial_name
@@ -990,7 +992,7 @@ BEGIN
 	 -- and sd.gpl_id = gs.id_ref
 	--  and md.peptide =p.peptide-- gs.mirna_id
 	 and decode(dataType,'R',sign(md.intensity_value),1) <> -1   --UAT 154 changes done on 19/03/2014
-	group by md.peptide, sd.subject_id, sd.patient_id, sd.assay_id;
+	group by md.peptide, sd.subject_id, sd.patient_id, sd.assay_id, sd.gpl_id;
 
 	pExists := SQL%ROWCOUNT;
 
@@ -1029,7 +1031,8 @@ BEGIN
 		from WT_SUBJECT_PROTEOMICS_PROBESET  m
                 ,DEAPP.DE_PROTEIN_ANNOTATION d
 		where trial_name = TrialID
-                 and d.peptide=m.probeset;
+                 and d.peptide=m.probeset
+                 and d.gpl_id=m.platform;
 		stepCt := stepCt + 1;
 		cz_write_audit(jobId,databaseName,procedureName,'Insert transformed into DEAPP DE_SUBJECT_PROTEIN_DATA',SQL%ROWCOUNT,stepCt,'Done');
 

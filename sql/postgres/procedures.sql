@@ -54,4 +54,4 @@ $$;
 \i procedures/REPLACE_LAST_PATH_COMPONENT.sql
 \i procedures/GET_LAST_PATH_COMPONENT.sql
 \i procedures/COPY_SECURITY_FROM_OTHER_STUDY.sql
-
+\i procedures/i2b2_proteomics_zscore_calc.sql

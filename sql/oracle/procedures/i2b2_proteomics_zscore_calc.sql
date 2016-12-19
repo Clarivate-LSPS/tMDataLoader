@@ -148,6 +148,7 @@ BEGIN
 			,patient_id
 		--	,sample_cd
 			,subject_id
+			,platform
 			)
 			select probeset
 				  ,intensity_value ----UAT 154 changes done on 19/03/2014
@@ -156,6 +157,7 @@ BEGIN
 				  ,patient_id
 			--	  ,sample_cd
 				  ,subject_id
+				  ,platform
 			from WT_SUBJECT_PROTEOMICS_PROBESET
 			where trial_name = TrialId;
            
@@ -169,6 +171,7 @@ BEGIN
 			,patient_id
 		--	,sample_cd
 			,subject_id
+			,platform
 			)
 			select probeset
 				  ,intensity_value  ----UAT 154 changes done on 19/03/2014
@@ -177,6 +180,7 @@ BEGIN
 				  ,patient_id
 		--		  ,sample_cd
 				  ,subject_id
+				  ,platform
 			from WT_SUBJECT_PROTEOMICS_PROBESET
 			where trial_name = TrialId;
 --		end if;
@@ -232,6 +236,7 @@ BEGIN
 	,patient_id
 --	,sample_cd
 	,subject_id
+	,platform
 	)
 	select d.probeset_id
 		  ,d.intensity_value 
@@ -244,6 +249,7 @@ BEGIN
 		  ,d.patient_id
 	--	  ,d.sample_cd
 		  ,d.subject_id
+		  ,d.platform
     from WT_SUBJECT_PROTEOMICS_LOGS d 
 		,WT_SUBJECT_PROTEOMICS_CALCS c 
     where d.probeset_id = c.probeset_id;
@@ -296,7 +302,8 @@ BEGIN
                 ,m.patient_id
 	from WT_SUBJECT_PROTEOMICS_MED m
        , DEAPP.DE_PROTEIN_ANNOTATION d
-        where d.peptide=m.probeset_id;
+        where d.peptide=m.probeset_id
+              and d.gpl_id=m.platform;
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Insert data for trial in DEAPP DE_SUBJECT_PROTEIN_DATA',SQL%ROWCOUNT,stepCt,'Done');
 
