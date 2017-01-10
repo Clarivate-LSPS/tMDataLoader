@@ -29,6 +29,8 @@ class ClinicalDataMapping {
         String DATA_LABEL_SOURCE_TYPE
         VariableType variableType
         List<ValidationRule> validationRules
+        String baseline
+        int baselineColumn
     }
 
     public static final class FileMapping {
@@ -76,6 +78,7 @@ class ClinicalDataMapping {
         }
         int variableTypeIdx = columnMapping.variable_type ?: -1
         int validationRulesIdx = columnMapping.validation_rules ?: -1
+        boolean hasBaselineColumn = columnMapping.containsKey('baseline')
         mappingFile.eachEntry { cols, lineNum ->
             String fileName = cols[0]
             FileParsingInfo parsingInfo = mappings[fileName]
@@ -119,6 +122,9 @@ class ClinicalDataMapping {
                             variableType: variableType,
                             validationRules: validationRules
                     )
+                    if (hasBaselineColumn) {
+                        entry.baseline = cols[columnMapping['baseline']]
+                    }
                     if (entry.CATEGORY_CD.length() > colsMetaSize.CATEGORY_CD) {
                         mappingErrors.add("CATEGORY_CD is too long (${entry.CATEGORY_CD.length()} > ${colsMetaSize.CATEGORY_CD}) for row [$lineNum]: ${cols}")
                         return
@@ -148,6 +154,16 @@ class ClinicalDataMapping {
                         entry.DATA_LABEL = dataLabel
                     }
                     curMapping._DATA.add(entry)
+                }
+            }
+        }
+
+        if (hasBaselineColumn) {
+            for (def entry : mappings.entrySet()) {
+                entry.value.fileMapping._DATA.each { e ->
+                    e.baselineColumn = entry.value.fileMapping._DATA.find {
+                        it.DATA_LABEL == e.baseline
+                    }?.COLUMN ?: -1
                 }
             }
         }

@@ -389,6 +389,3 @@ BEGIN
 END;
  
 $$;
-
-ALTER FUNCTION i2b2_rbm_zscore_calc_new(character varying, character varying, character varying, numeric, character varying, bigint, character varying, bigint, character varying)
-	OWNER TO postgres;

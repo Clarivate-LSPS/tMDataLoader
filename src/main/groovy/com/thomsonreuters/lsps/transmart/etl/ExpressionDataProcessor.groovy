@@ -64,8 +64,8 @@ class ExpressionDataProcessor extends AbstractDataProcessor {
     }
 
     @Override
-    public boolean runStoredProcedures(Object jobId, Sql sql, Object studyInfo) {
-        def studyId = studyInfo['id']?.toUpperCase()
+    boolean runStoredProcedures(Object jobId, Sql sql, Object studyInfo) {
+        def studyId = studyInfo['id']
         def studyNode = studyInfo['node']
         def studyDataType = studyInfo['datatype']
 
@@ -91,7 +91,7 @@ class ExpressionDataProcessor extends AbstractDataProcessor {
     }
 
     @Override
-    public String getProcedureName() {
+    String getProcedureName() {
         return "I2B2_PROCESS_MRNA_DATA";
     }
 
@@ -118,8 +118,9 @@ class ExpressionDataProcessor extends AbstractDataProcessor {
                     if (!(cols[2] && cols[3] && cols[4] && cols[8]))
                         throw new Exception("Incorrect mapping file: mandatory columns not defined")
 
+                    cols[0] = cols[0]?.toUpperCase()
                     platformList << cols[4]
-                    studyIdList << cols[0]?.toUpperCase()
+                    studyIdList << cols[0]
 
                     // Loading default value if tissue_type is empty
                     String tissueType = cols[5]
@@ -211,7 +212,7 @@ class ExpressionDataProcessor extends AbstractDataProcessor {
     }
 
     long processEachRow(Path f, studyInfo, Closure<List> processRow) {
-        def row = [studyInfo.id as String, null, null, null]
+        def row = [studyInfo.id, null, null, null]
         def lineNum = 0
         def dataFile = new CsvLikeFile(f)
         def header = dataFile.header

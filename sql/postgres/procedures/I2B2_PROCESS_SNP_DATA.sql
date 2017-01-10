@@ -407,5 +407,3 @@ $BODY$
   SET search_path FROM CURRENT
   COST 100;
 
-ALTER FUNCTION i2b2_process_snp_data(character varying, character varying, character varying, character varying, numeric, character varying, numeric)
-  OWNER TO postgres;

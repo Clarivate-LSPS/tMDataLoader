@@ -3,9 +3,12 @@ import com.thomsonreuters.lsps.transmart.Fixtures
 import com.thomsonreuters.lsps.transmart.fixtures.ClinicalData
 import com.thomsonreuters.lsps.transmart.fixtures.ExpressionData
 import com.thomsonreuters.lsps.transmart.fixtures.Study
+import com.thomsonreuters.lsps.transmart.fixtures.StudyInfo
 import spock.lang.Specification
 
+import static org.hamcrest.CoreMatchers.equalTo
 import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertThat
 /**
  * Created by Alexander Omelchenko on 15.12.2015.
  */
@@ -14,6 +17,9 @@ class DataProcessorTest extends Specification implements ConfigAwareTestCase {
     ClinicalData secondClinicalData = clinicalData.copyAttachedToStudy(clinicalData.studyInfo.withSuffixForId("_2"))
     ClinicalData thirdClinicalData = clinicalData.copyWithSuffix('THD')
     ClinicalData fourthClinicalData = clinicalData.copyWithSuffix('FTH')
+
+    ClinicalData lowLetterCD = Fixtures.clinicalData.copyWithSuffixCS('Letter', 'Letter')
+    ClinicalData bigLetterCD = Fixtures.clinicalDataForCaseSensitive
 
     String rootName = 'Test Studies'
     String studyName = clinicalData.studyName
@@ -57,7 +63,7 @@ class DataProcessorTest extends Specification implements ConfigAwareTestCase {
         ex.message == "Other study with same id found by different path: \\Test Studies\\Test Study DP\\" as String
     }
 
-    void 'Reupload by same path, different studyId without replace study option Clinical data'() {
+    void 'Reupload by the same path, different studyId without replace study option Clinical data'() {
         setup:
         cleanAll()
 
@@ -65,14 +71,23 @@ class DataProcessorTest extends Specification implements ConfigAwareTestCase {
         clinicalData.load(config)
 
         when:
+        def clinicalDataWithLowerId = clinicalData.copyAttachedToStudy(
+                new StudyInfo(clinicalData.studyId.toLowerCase(), clinicalData.studyName),
+                "TestStudy_DP_WithLowerCaseStudyId")
+        def loaded = clinicalDataWithLowerId.load(config)
+
+        then:
+        loaded
+
+        when:
         secondClinicalData.load(config)
 
         then:
         def ex = thrown(DataProcessingException)
-        ex.message == "Other study by same path found with different studyId: \\Test Studies\\Test Study DP\\" as String
+        ex.message == "Other study by the same path found with different studyId: old = 'GSE0DP', new = 'GSE0DP_2'" as String
     }
 
-    void 'Reupload by same path, different studyId without replace study option Expression data'() {
+    void 'Reupload by the same path, different studyId without replace study option Expression data'() {
         setup:
         cleanAll()
 
@@ -83,10 +98,10 @@ class DataProcessorTest extends Specification implements ConfigAwareTestCase {
 
         then:
         def ex = thrown(DataProcessingException)
-        ex.message == "Other study by same path found with different studyId: \\Test Studies\\Test Study\\" as String
+        ex.message == "Other study by the same path found with different studyId: old = 'GSE0', new = 'GSE0_2'" as String
     }
 
-    void 'Reupload by same path, different studyId with replace study option'() {
+    void 'Reupload by the same path, different studyId with replace study option'() {
         setup:
         cleanAll()
 

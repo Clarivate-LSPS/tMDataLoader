@@ -43,9 +43,11 @@ class CommandLineTool {
             t longOpt: 'use-t', 'Do not use Z datatype for T expression data (expert option)'
             s longOpt: 'stop-on-fail', 'Stop when upload is failed'
             m longOpt: 'move-study', args: 2, valueSeparator: ';', argName: 'old_path new_path', 'Move study'
+            _ longOpt: 'keep-security', 'Preserve security settings when moving a new study over an old one (only makes sense with --move-study)'
+            _ longOpt: 'copy-security-settings-from', args: 1, argName: 'study_id', 'Copy security configuration from exist study'
             _ longOpt: 'highlight-clinical-data', 'Highlight studies with clinical data'
             _ longOpt: 'alt-clinical-proc', args: 1, argName: 'proc_name', 'Name of alternative clinical stored procedure (expert option)'
-            _ longOpt: 'alt-control-schema', args: 1, argName: 'schema', 'Name of alternative control schema (TM_CZ) - expert option'
+            _ longOpt: 'alt-control-schema', args: 1, argName: 'schema', 'Name of alternative control schema (TM_DATALOADER) - expert option'
             _ longOpt: 'secure-study', 'Make study securable'
             _ longOpt: 'visit-name-first', 'Put VISIT_NAME before the data value'
             _ longOpt: 'always-set-visit-name', 'Add visit name to concept path even if only one visit found'
@@ -56,7 +58,7 @@ class CommandLineTool {
             _ longOpt: 'allow-non-unique-columns', 'Allow non-unique column names in clinical data files'
             _ longOpt: 'use-first-gene-id', 'When probe maps to multiple Entrez Gene IDs use only the first one'
             _ longOpt: 'check-duplicates', 'Check patient duplicates'
-            _ longOpt: 'replace-study', 'Upload study by same path'
+            _ longOpt: 'replace-study', 'Upload study by the same path'
         }
         // TODO: implement stop-on-fail mode!
         def opts = cli.parse(args)
@@ -72,6 +74,11 @@ class CommandLineTool {
         }
 
         def locker = ProcessLocker.get('tMDataLoader')
+        if (opts?.'force-start'){
+            if (locker.isLocked()){
+                locker.getLockFile().delete()
+            }
+        }
         if (!locker.tryLock()) {
             println "Probably another Transmart ETL tool instance is already running. This message may be result of previously incorrectly finished run. In this case, please, check manually if no other instances is running and if none remove ${locker.lockFile.absolutePath}"
             System.exit(-1)
@@ -147,7 +154,7 @@ class CommandLineTool {
         if (config.controlSchema) {
             println ">>> USING ALTERNATIVE CONTROL SCHEMA: ${config.controlSchema}"
         } else {
-            config.controlSchema = database.databaseType == DatabaseType.Postgres ? 'tm_dataloader' : 'tm_cz'
+            config.controlSchema = database.databaseType == DatabaseType.Postgres ? 'tm_dataloader' : 'tm_dataloader'
         }
 
         if (!config?.containsKey('visitNameFirst')) {
@@ -195,7 +202,12 @@ class CommandLineTool {
             config.moveStudyOldPath = opts.ms[0]
             config.moveStudyNewPath = opts.ms[1];
             config.mdOperation = true;
-            println ">>> MOVE STUDY from ${opts.ms[0]} to ${opts.ms[1]}"
+            def  msg = ">>> MOVE STUDY from ${opts.ms[0]} to ${opts.ms[1]}"
+            if (opts?.'keep-security'){
+                config.keepSecurity = true
+                msg += ' and preserve security configuration'
+            }
+            println msg
         }
 
         if (opts?.'allow-non-unique-columns') {
@@ -216,6 +228,13 @@ class CommandLineTool {
         if (opts?.'replace-study') {
             println ">>> Save SECURITY TOKEN"
             config.replaceStudy = true
+        }
+
+        if (opts?.'copy-security-settings-from'){
+            config.securitySymbol = 'Y'
+            config.copySecurityFrom = true
+            config.csStudyId = opts?.'copy-security-settings-from'
+            println ">>> Copy security configuration from ${config.csStudyId}"
         }
 
         def extra_args = opts.arguments()

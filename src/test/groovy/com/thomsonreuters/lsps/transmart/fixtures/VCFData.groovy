@@ -8,11 +8,11 @@ import com.thomsonreuters.lsps.transmart.etl.VCFDataProcessor;
  * Time: 13:57
  */
 public class VCFData extends AbstractData<VCFData> {
-    final String dataType = "VCDData";
+    final String dataType = "VCDData"
 
     @Override
     protected AbstractDataProcessor newDataProcessor(config) {
-        return new VCFDataProcessor(config);
+        return new VCFDataProcessor(config)
     }
 
     @Override

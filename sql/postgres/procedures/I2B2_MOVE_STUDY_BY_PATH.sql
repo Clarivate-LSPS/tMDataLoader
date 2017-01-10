@@ -4,6 +4,7 @@ CREATE OR REPLACE
 FUNCTION I2B2_MOVE_STUDY_BY_PATH
   (old_path_in  CHARACTER VARYING,
    new_path_in  CHARACTER VARYING,
+   saveSecurity CHARACTER VARYING,
    currentJobID NUMERIC DEFAULT -1
   )
   RETURNS INTEGER AS
@@ -25,6 +26,7 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
     genPath                 text;--VARCHAR(2000);
     rCount                  INTEGER ;
     trialId                 VARCHAR(2000);
+    trialId2                VARCHAR(2000);
 
     old_path                VARCHAR(2000);
     new_path                VARCHAR(2000);
@@ -33,6 +35,7 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
     new_root_node           VARCHAR(2000);
     new_root_node_name      VARCHAR(2000);
     new_path_last_node_name VARCHAR(2000);
+    new_study_path          VARCHAR(2000);
     rowsExists              INTEGER;
     counter                 INTEGER;
     substringPos            INTEGER;
@@ -48,7 +51,8 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
     new_paths               TEXT[];
     old_paths               TEXT[];
     is_sub_node							BOOLEAN;
-
+    accession_old           VARCHAR(50);
+    accession_new           VARCHAR(50);
   BEGIN
 
 --Audit JOB Initialization
@@ -134,10 +138,9 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
       return -16;
     END IF;
 
-    select distinct
-      first_value(c_fullname) over (partition by sourcesystem_cd order by c_fullname) into old_study_path
-    from i2b2metadata.i2b2
-    where sourcesystem_cd = trialId;
+    select min(c_fullname) into old_study_path
+      from i2b2metadata.i2b2
+     where sourcesystem_cd = trialId;
 
     is_sub_node := old_path <> old_study_path;
 
@@ -150,7 +153,66 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
       return -16;
     END IF;
 
--- check new path exists
+    IF (saveSecurity = 'Y') THEN
+      select sourcesystem_cd into trialId2 from i2b2demodata.concept_dimension
+       where concept_path = new_path;
+
+      IF trialId2 is not NULL THEN
+        select secure_obj_token INTO accession_new from i2b2metadata.i2b2_secure where c_fullname = new_path;
+        select secure_obj_token INTO accession_old from i2b2metadata.i2b2_secure where c_fullname = old_path;
+        accession_new := replace(accession_new, 'EXP:', '');
+        accession_old := replace(accession_old, 'EXP:', '');
+  
+        -- Deleted security configuration from first study
+        begin
+          DELETE FROM biomart.bio_experiment WHERE accession = accession_old;
+          DELETE FROM biomart.bio_data_uid WHERE unique_id = 'EXP:'||accession_old;
+          DELETE FROM searchapp.search_secure_object WHERE bio_data_unique_id = 'EXP:'||accession_old;
+  
+          get diagnostics rowCt := ROW_COUNT;
+          exception
+          when others then
+            errorNumber := SQLSTATE;
+            errorMessage := SQLERRM;
+            --Handle errors.
+            select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+            --End Proc
+            select cz_end_audit (jobID, 'FAIL') into rtnCd;
+            return -16;
+        end;
+  
+        begin
+          --Changed accession to new path
+          UPDATE biomart.bio_experiment SET accession = accession_old WHERE accession = accession_new;
+          UPDATE biomart.bio_data_uid SET unique_id = 'EXP:'||accession_old WHERE unique_id = 'EXP:'||accession_new;
+          UPDATE searchapp.search_secure_object SET bio_data_unique_id = 'EXP:'||accession_old WHERE bio_data_unique_id = 'EXP:'||accession_new;
+  
+          get diagnostics rowCt := ROW_COUNT;
+          exception
+          when others then
+            errorNumber := SQLSTATE;
+            errorMessage := SQLERRM;
+            --Handle errors.
+            select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+            --End Proc
+            select cz_end_audit (jobID, 'FAIL') into rtnCd;
+            return -16;
+        end;
+  
+        stepCt := stepCt + 1;
+        select cz_write_audit(jobId,databaseName,procedureName,'Security configuration changed',0,stepCt,'Done') into rtnCd;
+  
+        select I2B2_DELETE_ALL_DATA(null, new_path, jobID) into rtnCd;
+  
+        stepCt := stepCt + 1;
+        select cz_write_audit(jobId,databaseName,procedureName,'Study '|| new_path || ' deleted!',0,stepCt,'Done') into rtnCd;
+      ELSE
+        stepCt := stepCt + 1;
+        select cz_write_audit(jobId,databaseName,procedureName,'No study found with path '||new_path||'. Ignoring save security settings option.',0,stepCt,'Done') into rtnCd;
+      END IF;
+    END IF;
+
+    -- check new path exists
     SELECT
       count(*)
     INTO rowsExists
@@ -540,5 +602,3 @@ LANGUAGE plpgsql VOLATILE SECURITY DEFINER
 SET search_path FROM CURRENT
 COST 100;
 
-ALTER FUNCTION i2b2_move_study_by_path( CHARACTER VARYING, CHARACTER VARYING, NUMERIC )
-OWNER TO postgres;

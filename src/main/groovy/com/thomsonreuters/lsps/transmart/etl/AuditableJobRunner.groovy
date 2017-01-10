@@ -3,6 +3,7 @@ package com.thomsonreuters.lsps.transmart.etl
 import com.thomsonreuters.lsps.db.core.Database
 import com.thomsonreuters.lsps.db.core.DatabaseType
 import groovy.sql.Sql
+import sun.rmi.runtime.Log
 
 import java.sql.SQLException
 import java.sql.SQLWarning
@@ -91,7 +92,8 @@ class AuditableJobRunner {
         void printNewMessages(Sql sql) {
             def queryText = "SELECT * FROM cz_job_audit WHERE job_id=${jobId} and seq_id>${lastSeqId} order by seq_id"
             sql.eachRow(queryText) { row ->
-                getLogger().log(LogType.DEBUG, "-- ${row.step_desc} [${row.step_status} / ${row.records_manipulated} recs / ${row.time_elapsed_secs}s]")
+                def logType = row.step_status in ['ERROR', 'FAIL'] ? LogType.ERROR : LogType.DEBUG
+                getLogger().log(logType, "-- ${row.step_desc} [${row.step_status} / ${row.records_manipulated} recs / ${row.time_elapsed_secs}s]")
                 lastSeqId = row.seq_id
             }
         }

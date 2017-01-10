@@ -21,7 +21,7 @@ class OperationProcessor {
 
         try {
             def data = dataOperationProcessor.processData()
-            res = dataOperationProcessor.process(data);
+            res = dataOperationProcessor.process(data)
         }
         catch (Exception e) {
             config.logger.log(LogType.ERROR, "Exception: ${e}")

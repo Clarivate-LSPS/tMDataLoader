@@ -8,13 +8,13 @@ import groovy.sql.Sql
 
 import java.nio.file.Path
 
-public class MetabolomicsDataProcessor extends AbstractDataProcessor {
-    public MetabolomicsDataProcessor(Object conf) {
-        super(conf);
+class MetabolomicsDataProcessor extends AbstractDataProcessor {
+    MetabolomicsDataProcessor(Object conf) {
+        super(conf)
     }
 
     @Override
-    public boolean processFiles(Path dir, Sql sql, studyInfo) {
+    boolean processFiles(Path dir, Sql sql, studyInfo) {
         database.truncateTable(sql, 'lt_src_metabolomic_map')
         database.truncateTable(sql, 'lt_src_metabolomic_data')
 
@@ -37,11 +37,11 @@ public class MetabolomicsDataProcessor extends AbstractDataProcessor {
             throw new Exception("No platforms defined")
         }
 
-        return true;
+        return true
     }
 
     @Override
-    public boolean runStoredProcedures(Object jobId, Sql sql, Object studyInfo) {
+    boolean runStoredProcedures(Object jobId, Sql sql, Object studyInfo) {
         def studyId = studyInfo['id']
         def studyNode = studyInfo['node']
         def studyDataType = studyInfo['datatype']
@@ -62,17 +62,17 @@ public class MetabolomicsDataProcessor extends AbstractDataProcessor {
                     [studyId, studyNode, studyDataType, jobId, Sql.NUMERIC]) {}
         } else {
             config.logger.log(LogType.ERROR, "Study ID or Node or DataType not defined!")
-            return false;
+            return false
         }
-        return true;
+        return true
     }
 
     @Override
-    public String getProcedureName() {
-        return "I2B2_PROCESS_METABOLOMIC_DATA";
+    String getProcedureName() {
+        return "I2B2_PROCESS_METABOLOMIC_DATA"
     }
 
-    private List processMappingFile(Path f, Sql sql, studyInfo) {
+    protected List processMappingFile(Path f, Sql sql, studyInfo) {
         def platformList = [] as Set
         def studyIdList = [] as Set
 
@@ -95,8 +95,9 @@ public class MetabolomicsDataProcessor extends AbstractDataProcessor {
                     if (!(cols[2] && cols[3] && cols[4] && cols[8]))
                         throw new Exception("Incorrect mapping file: mandatory columns not defined")
 
+                    cols[0] = cols[0]?.toUpperCase()
                     platformList << cols[4]
-                    studyIdList << cols[0]?.toUpperCase()
+                    studyIdList << cols[0]
 
                     stmt.addBatch(cols)
                 }
@@ -132,7 +133,7 @@ public class MetabolomicsDataProcessor extends AbstractDataProcessor {
         }
     }
 
-    private void processMetabolomicsFile(Path f, Sql sql, studyInfo) {
+    protected void processMetabolomicsFile(Path f, Sql sql, studyInfo) {
         config.logger.log("Processing ${f.fileName}")
 
         // retrieve data type
@@ -181,8 +182,8 @@ public class MetabolomicsDataProcessor extends AbstractDataProcessor {
         config.logger.log("Processed ${lineNum} rows")
     }
 
-    private long processEachRow(Path f, studyInfo, Closure<List> processRow) {
-        def row = [studyInfo.id as String, null, null, null]
+    protected long processEachRow(Path f, studyInfo, Closure<List> processRow) {
+        def row = [studyInfo.id, null, null, null]
         def lineNum = 0
         def dataFile = new CsvLikeFile(f)
         def header = dataFile.header
@@ -190,7 +191,7 @@ public class MetabolomicsDataProcessor extends AbstractDataProcessor {
             throw new Exception("Incorrect metabolomics data file")
         }
         dataFile.eachEntry { cols ->
-            lineNum++;
+            lineNum++
 
             config.logger.log(LogType.PROGRESS, "[${lineNum}]")
             row[1] = cols[1]

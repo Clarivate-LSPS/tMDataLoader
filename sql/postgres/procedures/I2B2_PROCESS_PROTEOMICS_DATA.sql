@@ -941,6 +941,7 @@ BEGIN
 	,subject_id
 	,trial_name
 	,assay_id
+	,platform
 	)
 	select
 		md.peptide
@@ -949,6 +950,7 @@ BEGIN
     ,ssm.subject_id
 		,TrialId
 		,ssm.assay_id
+		,ssm.gpl_id
 	from
 		deapp.de_subject_sample_mapping ssm
 			inner join lt_src_proteomics_sub_sam_map psm
@@ -966,7 +968,7 @@ BEGIN
 	 -- and sd.gpl_id = gs.id_ref
 	--  and md.peptide =p.peptide-- gs.mirna_id
 	 and CASE WHEN dataType = 'R' THEN sign(md.intensity_value::numeric) ELSE 1 END <> -1   --UAT 154 changes done on 19/03/2014
-	group by md.peptide, ssm.subject_id, ssm.patient_id, ssm.assay_id;
+	group by md.peptide, ssm.subject_id, ssm.patient_id, ssm.assay_id, ssm.gpl_id;
 
 	exception
 	when others then
@@ -1017,7 +1019,8 @@ BEGIN
 		from WT_SUBJECT_PROTEOMICS_PROBESET  m
                 ,DEAPP.DE_PROTEIN_ANNOTATION d
 		where trial_name = TrialID
-                 and d.peptide=m.probeset;
+                 and d.peptide=m.probeset
+                 and d.gpl_id=m.platform;
         exception
 	when others then
 		perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);

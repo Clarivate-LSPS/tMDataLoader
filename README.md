@@ -1,6 +1,8 @@
 tMDataLoader
 ============
 
+[![Build Status](https://travis-ci.org/ThomsonReuters-LSPS/tMDataLoader.svg?branch=master)](https://travis-ci.org/ThomsonReuters-LSPS/tMDataLoader)
+
 tm_etl.jar - Transmart ETL tool
 Contributed by Thomson Reuters
 
@@ -8,8 +10,9 @@ src folder contains all sources
 sample_data folder contains sample public datasets from GEO
 
 WARNING: Since version 1.0.0 tMDataLoader working with own schema tm_dataloader for PostgreSQL version (it also uses
-its own user tm_dataloader and you should update you connection string). It still shares
-tm_cz schema for Oracle version thought. If you are switching from earlier version be sure you run scripts
+its own user tm_dataloader and you should update you connection string).
+Since version 1.2.4-96 it also has own schema for Oracle.
+If you are switching from earlier version be sure you run scripts
 from sql/postgresql folder and remove controlSchema option from Config file and --alt-control-schema from command line
 arguments if any. The option still takes effect, but it was intended as hack to avoid tm_cz schema conflicts and you
 shouldn't worry about it anymore.
@@ -24,29 +27,30 @@ Run following command to produce tm_etl.jar from sources:
 
 Gradle will create tm_etl.jar in root directory with all necessary dependencies.
 
-Then, just copy tm_etl.jar to any directory on the server. It can be on the same machine as Transmart or any other one that has direct access to TM_CZ database schema used by tranSMART.
+Then, just copy tm_etl.jar to any directory on the server. It can be on the same machine as Transmart or any other one that has direct access to TM_DATALOADER database schema used by tranSMART.
 
 Then, edit Config.groovy file and put it in your ~/.tm_etl directory.
 Please make sure you edit the configuration file before using the tool.
 
-For Oracle
-==========
+### For Oracle
 
-From `sql/oracle/` run following scripts using SQLDeveloper or sqlplus with DB user as specified:
-  
-    run_as_dba.sql
-    run_as_tm_cz.sql
+From `sql/oracle/` run following scripts using SQLDeveloper or sqlplus: 
+  As dba:
+    @migrations.sql
+  As tm_dataloader:
+    @run_as_tm_dataloader.sql
 
-For PostgreSQL
-==============
+### For PostgreSQL
 
-From `sql/postgres` directory run following commands (you may need to add credentials and/or host/port information):
+From `sql/postgres` directory run following commands (you may need to add host/port information or change "postgres" to your database's superuser name):
 				
-	psql -d transmart -f migrations.sql
-	psql -d transmart -f permissions.sql
-	psql -d transmart -f procedures.sql
+	psql -d transmart -U postgres -f migrations.sql
+	psql -d transmart -U postgres -f permissions.sql
+	psql -d transmart -U tm_dataloader -f procedures.sql
+
+### Notes	
 	
-You should connect to database with user `tm_dataloader` (default password is `tm_dataloader` as well, but it is highly recommended to change the default password). You can use any other user as well, but you should care about permissions.
+You should connect to database with user `tm_dataloader` (default password is `tm_dataloader` as well, but it is highly recommended to change the default password).
 
 PREPARING DATA FOR UPLOAD
 =========================
@@ -118,7 +122,7 @@ You can run it with "-h" option to get a list of all available options:
                                                stored procedure (expert       
                                                option)                        
         --alt-control-schema <schema>          Name of alternative control    
-                                               schema (TM_CZ) - expert option
+                                               schema (TM_DATALOADER) - expert option
          --always-set-visit-name               Add visit name to concept path
                                                even if only one visit found
      -c,--config <config>                      Configuration filename         

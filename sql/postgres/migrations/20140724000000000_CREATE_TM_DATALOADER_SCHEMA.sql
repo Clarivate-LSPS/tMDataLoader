@@ -13,4 +13,10 @@ BEGIN
     RAISE WARNING 'tm_dataloader was created with default password. Please, change it to more secure';
   END IF;
 END
-$body$
+$body$;
+
+alter schema tm_dataloader owner to tm_dataloader;
+
+alter user tm_dataloader set search_path= "$user", tm_cz, tm_lz, tm_wz, i2b2demodata, i2b2metadata, deapp, public;
+
+grant amapp, biomart, biomart_stage, biomart_user, deapp, fmapp, galaxy, i2b2demodata, i2b2metadata, searchapp, tm_cz, tm_lz, tm_wz to tm_dataloader;

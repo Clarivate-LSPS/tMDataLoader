@@ -80,7 +80,38 @@ class SNPDataProcessor extends AbstractDataProcessor {
             throw new Exception("No platforms defined")
         }
 
-        return true;
+        return true
+    }
+
+    private void parallerCall(fileList, Closure uploadFunction) {
+        ExecutorService executorService = Executors.newFixedThreadPool(THREAD_COUNT)
+        List<Callable<Object>> tasks = new ArrayList<>();
+        try {
+            fileList.each { String name ->
+                tasks.add(new Callable<Object>() {
+                    @Override
+                    Object call() throws Exception {
+                        Sql threadSql = database.newSql()
+                        threadSql.connection.autoCommit = false
+                        try {
+                            uploadFunction(name, threadSql)
+                            threadSql.commit()
+                        }
+                        finally {
+                            threadSql.connection.close()
+                        }
+                        return null;
+                    }
+                });
+            }
+            List<Future<Object>> invokeAll = executorService.invokeAll(tasks);
+        }
+        catch (InterruptedException e) {
+            config.logger.log(LogType.ERROR, "Data wasn't upload")
+        }
+        finally {
+            executorService.shutdown()
+        }
     }
 
     private void parallerCall(fileList, Closure uploadFunction) {
@@ -135,7 +166,7 @@ class SNPDataProcessor extends AbstractDataProcessor {
     }
 
     @Override
-    public boolean runStoredProcedures(Object jobId, Sql sql, Object studyInfo) {
+    boolean runStoredProcedures(Object jobId, Sql sql, Object studyInfo) {
         def studyId = studyInfo['id']
         def studyNode = studyInfo['node']
         def studyDataType = studyInfo['datatype']
@@ -156,14 +187,14 @@ class SNPDataProcessor extends AbstractDataProcessor {
                     [studyId, studyNode, studyDataType, jobId, Sql.NUMERIC]) {}
         } else {
             config.logger.log(LogType.ERROR, "Study ID or Node or DataType not defined!")
-            return false;
+            return false
         }
-        return true;
+        return true
     }
 
     @Override
-    public String getProcedureName() {
-        return "I2B2_PROCESS_SNP_DATA";
+    String getProcedureName() {
+        return "I2B2_PROCESS_SNP_DATA"
     }
 
     private List processMappingFile(Path f, Sql sql, studyInfo) {
@@ -203,8 +234,9 @@ class SNPDataProcessor extends AbstractDataProcessor {
                             if (cols[1]) {
                                 copyNumberFileList << cols[1]
                             }
+                            cols[2] = cols[2]?.toUpperCase()
                             platformList << cols[6]
-                            studyIdList << cols[2]?.toUpperCase()
+                            studyIdList << cols[2]
 
                             stmt.addBatch(cols[2..-1])
                         }

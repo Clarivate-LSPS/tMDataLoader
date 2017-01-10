@@ -4,33 +4,33 @@ import groovy.sql.Sql
 
 class DeleteDataProcessor extends DataOperationProcessor {
 
-    public DeleteDataProcessor(Object conf) {
-        super(conf);
+    DeleteDataProcessor(Object conf) {
+        super(conf)
     }
 
     @Override
-    public def processData() {
-        def data = ['id': (config.deleteStudyByIdValue ?: null),
-                'path': (config.deleteStudyByPathValue ?: null)
+    def processData() {
+        def data = ['id'  : (config.deleteStudyByIdValue?.toString()?.toUpperCase() ?: null),
+                    'path': (config.deleteStudyByPathValue ?: null)
         ]
-        return data;
+        return data
     }
 
     @Override
-    public boolean runStoredProcedures(jobId, Sql sql, data) {
-        def trialId = data.id?.toString()?.toUpperCase()
+    boolean runStoredProcedures(jobId, Sql sql, data) {
+        def trialId = data.id?.toUpperCase()
         def path = data.path?.toString()
         if (trialId || path) {
             sql.call("{call " + config.controlSchema + "." + getProcedureName() + "(?,?,?)}", [trialId, path, jobId])
         } else {
             config.logger.log(LogType.ERROR, "Study ID or Node not defined!")
-            return false;
+            return false
         }
 
-        return true;
+        return true
     }
 
-    public String getProcedureName() {
+    String getProcedureName() {
         return config.altDeleteProcName ?: "I2B2_DELETE_ALL_DATA"
     }
 }

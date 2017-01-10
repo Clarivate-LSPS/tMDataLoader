@@ -10,6 +10,7 @@ enum VariableType {
     Numerical,
     Timepoint,
     Date,
+    Timestamp,
     Tag;
 
     public static VariableType tryParse(String variableType, VariableType defaultType) {

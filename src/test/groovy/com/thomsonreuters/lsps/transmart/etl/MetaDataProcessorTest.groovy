@@ -22,7 +22,7 @@ class MetaDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCas
         Study.deleteById(config, studyId)
         Study.deleteStudyMetaDataById(studyId, sql)
         Fixtures.clinicalData.load(config)
-        runScript('i2b2_load_study_metadata.sql')
+        runScript('I2B2_LOAD_STUDY_METADATA.sql')
     }
 
     MetaDataProcessor getProcessor() {
@@ -36,7 +36,7 @@ class MetaDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCas
         }
 
         use(SqlMethods) {
-            def studyMetaData = db.findRecord('tm_lz.lt_src_study_metadata',
+            def studyMetaData = db.findRecord('lt_src_study_metadata',
                     study_id: studyId)
 
             def experimentId = db.findRecord('biomart.bio_experiment',

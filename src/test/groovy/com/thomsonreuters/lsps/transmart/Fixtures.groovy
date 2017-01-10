@@ -2,6 +2,7 @@ package com.thomsonreuters.lsps.transmart
 
 import com.thomsonreuters.lsps.transmart.fixtures.ClinicalData
 import com.thomsonreuters.lsps.transmart.fixtures.ExpressionData
+import com.thomsonreuters.lsps.transmart.fixtures.GWASPlinkData
 import com.thomsonreuters.lsps.transmart.fixtures.ProteinData
 import com.thomsonreuters.lsps.transmart.fixtures.StudyInfo
 import com.thomsonreuters.lsps.transmart.fixtures.VCFData
@@ -33,6 +34,10 @@ class Fixtures {
 
         ProteinData getProteinData(String proteinDataFolder = 'ProteinDataToUpload') {
             return new ProteinData(studyInfo: studyInfo, dir: new File(this, proteinDataFolder))
+        }
+
+        GWASPlinkData getGWASPlinkData(String gwasPlinkDataFolder = 'GWASPlinkDataToUpload') {
+            return new GWASPlinkData(studyInfo: studyInfo, dir: new File(this, gwasPlinkDataFolder))
         }
     }
 
@@ -122,12 +127,20 @@ class Fixtures {
         return studiesDir.studyDir('Test Study With Data Value In Path', 'GSE0DVINPATH').clinicalData
     }
 
+    static ClinicalData getClinicalDataForCaseSensitive() {
+        return studiesDir.studyDir('Test Study', 'GSE0LETTER').clinicalData
+    }
+
     static ClinicalData getClinicalDataWithSingleVisitName() {
         return studiesDir.studyDir('Test Study With Single Visit Name', 'GSE0SINGLEVN').clinicalData
     }
 
     static ClinicalData getClinicalDataWithDuplicatedPatientId() {
         return studiesDir.studyDir('Test Study With Duplicated Patient ID', 'GSE0DUPPID').clinicalData
+    }
+
+    static ClinicalData getClinicalDataWithExtraLevel() {
+        return studiesDir.studyDir('Test Study Deeper in the Tree', 'GSE0EL').clinicalData
     }
 
     static ProteinData getProteinData() {
@@ -140,6 +153,10 @@ class Fixtures {
 
     static ProteinData getProteinDataWithoutPeptide() {
         return studiesDir.studyDir('Test Protein Study 2', 'GSE374251').proteinData
+    }
+
+    static ProteinData getProteinDataWithoutPeptide3() {
+        return studiesDir.studyDir('Test Protein Study 3', 'GSE374253').proteinData
     }
 
     public static class FilePathBuilder {

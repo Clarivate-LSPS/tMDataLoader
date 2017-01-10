@@ -31,7 +31,10 @@ import com.thomsonreuters.lsps.transmart.files.CsvLikeFile
 import com.thomsonreuters.lsps.transmart.files.MetaInfoHeader
 import groovy.sql.Sql
 import groovy.transform.CompileStatic
+import org.apache.commons.csv.CSVFormat
+import org.apache.commons.csv.CSVPrinter
 
+import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
 import java.sql.SQLException
@@ -42,8 +45,8 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
     def usedStudyId = ''
     int THREAD_COUNT = 4
 
-    public ClinicalDataProcessor(Object conf) {
-        super(conf);
+    ClinicalDataProcessor(Object conf) {
+        super(conf)
     }
 
     @CompileStatic
@@ -52,7 +55,7 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
         def _DATA = fMappings._DATA
         //Custom tags
         def tagReplacer = TagReplacer.fromFileMapping(fMappings)
-        CsvLikeFile csvFile = new CsvLikeFile(f, '# ', config.allowNonUniqueColumnNames.asBoolean())
+        CsvLikeFile csvFile = new CsvLikeFile(f, '# ', !!config.allowNonUniqueColumnNames)
         statistic.collectForTable(f.fileName.toString()) { table ->
             addStatisticVariables(table, csvFile, fMappings)
             csvFile.eachEntry { it, lineNumber ->
@@ -63,7 +66,8 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
 
                 processedCount++
 
-                if (cols[fMappings.STUDY_ID]) {
+                def studyId = cols[fMappings.STUDY_ID]?.toUpperCase()
+                if (studyId) {
                     // the line shouldn't be empty
 
                     if (!cols[fMappings.SUBJ_ID]) {
@@ -71,15 +75,15 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
                     }
 
                     if (!usedStudyId) {
-                        usedStudyId = cols[fMappings.STUDY_ID]
+                        usedStudyId = studyId
                     }
 
-                    if (usedStudyId != cols[fMappings.STUDY_ID]) {
+                    if (usedStudyId != studyId) {
                         throw new DataProcessingException("STUDY_ID differs from previous in ${lineNumber} line in ${csvFile.file.fileName} file.")
                     }
 
                     Map<String, String> output = [
-                            study_id       : cols[fMappings.STUDY_ID],
+                            study_id       : studyId,
                             site_id        : cols[fMappings.SITE_ID],
                             subj_id        : cols[fMappings.SUBJ_ID],
                             visit_name     : cols[fMappings.VISIT_NAME],
@@ -89,6 +93,7 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
                             category_cd    : '', // CATEGORY_CD
                             ctrl_vocab_code: '', // CTRL_VOCAB_CODE - unused
                             valuetype_cd   : (String) null,
+                            baseline_value : (String) null
                     ]
 
                     if (_DATA) {
@@ -103,7 +108,7 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
                             if (v['CATEGORY_CD'] != '') {
                                 def out = output.clone()
                                 out['data_value'] = fixColumn(value)
-                                if (v.variableType == VariableType.Timepoint) {
+                                if (v.variableType == VariableType.Timepoint || v.variableType == VariableType.Timestamp) {
                                     out['valuetype_cd'] = v.variableType.name().toUpperCase()
                                 }
                                 def cat_cd = v.CATEGORY_CD
@@ -141,6 +146,10 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
 
                                 out['category_cd'] = cat_cd
 
+                                if (v.baseline) {
+                                    out['baseline_value'] = cols[v.baselineColumn]
+                                }
+
                                 processRow(out, lineNumber)
                             }
                         }
@@ -157,7 +166,7 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
     }
 
     @Override
-    public boolean processFiles(Path dir, Sql sql, studyInfo) {
+    boolean processFiles(Path dir, Sql sql, studyInfo) {
         // read mapping file first
         // then parse files that are specified there (to allow multiple files per study)
         def mappingFileFound = false
@@ -251,11 +260,11 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
     private void processFile(Path f, ClinicalDataMapping.FileMapping fileMapping) {
         DataLoader.start(database, "lt_src_clinical_data", ['STUDY_ID', 'SITE_ID', 'SUBJECT_ID', 'VISIT_NAME',
                                                             'DATA_LABEL', 'DATA_VALUE', 'CATEGORY_CD', 'SAMPLE_CD',
-                                                            'VALUETYPE_CD']) { st ->
+                                                            'VALUETYPE_CD', 'BASELINE_VALUE']) { st ->
             long rowsCount = processEachRow(f, fileMapping) { row, lineNumber ->
                 try {
                     st.addBatch([row.study_id, row.site_id, row.subj_id, row.visit_name, row.data_label,
-                                 row.data_value, row.category_cd, row.sample_cd, row.valuetype_cd])
+                                 row.data_value, row.category_cd, row.sample_cd, row.valuetype_cd, row.baseline_value])
                 } catch (SQLException e) {
                     throw new DataProcessingException("Wrong data close to ${lineNumber} line.\n ${e.getLocalizedMessage()}")
                 }
@@ -291,13 +300,13 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
     }
 
     @Override
-    public String getProcedureName() {
+    String getProcedureName() {
         return config.altClinicalProcName ?: "I2B2_LOAD_CLINICAL_DATA"
     }
 
     @Override
-    public boolean runStoredProcedures(jobId, Sql sql, studyInfo) {
-        def studyId = studyInfo['id']
+    boolean runStoredProcedures(jobId, Sql sql, studyInfo) {
+        String studyId = studyInfo['id']
         def studyNode = studyInfo['node']
         if (studyId && studyNode) {
             config.logger.log("Study ID=${studyId}; Node=${studyNode}")
@@ -306,10 +315,44 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
             sql.call("{call " + config.controlSchema + "." + getProcedureName() + "(?,?,?,?,?,?,?)}", [studyId, studyNode, config.securitySymbol, highlightFlag, alwaysSetVisitName, jobId, mergeMode.name()])
         } else {
             config.logger.log(LogType.ERROR, "Study ID or Node not defined!")
-            return false;
+            return false
         }
 
-        return true;
+        return true
+    }
+
+    @Override
+    boolean process(Path dir, Object studyInfo) {
+        boolean res = super.process(dir, studyInfo)
+        if ((config?.checkDuplicates) && (!res)) {
+            database.withSql { sql ->
+                def rows = sql.rows("select * from wt_clinical_data_dups" as String)
+                CSVFormat csvFormat = CSVFormat.DEFAULT.withRecordSeparator('\n')
+                try {
+                    Files.newBufferedWriter(dir.resolve('duplicates.csv'), StandardCharsets.UTF_8).withWriter { fileWriter ->
+                        new CSVPrinter(fileWriter, csvFormat).withCloseable { CSVPrinter csvFilePrinter ->
+                            Object[] FILE_HEADER = ["site_id", "subject_id", "visit_name", "data_label", "category_cd", "modifier_cd", "link_value"]
+                            csvFilePrinter.printRecord(FILE_HEADER);
+                            rows.each {
+                                List csvRow = new ArrayList();
+                                csvRow.add(it.site_id ?: '')
+                                csvRow.add(it.subject_id ?: '')
+                                csvRow.add(it.visit_name ?: '')
+                                csvRow.add(it.data_label ?: '')
+                                csvRow.add(it.category_cd ?: '')
+                                csvRow.add(it.modifier_cd ?: '')
+                                csvRow.add(it.link_value ?: '')
+
+                                csvFilePrinter.printRecord(csvRow)
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    logger.log(LogType.ERROR, e)
+                }
+            }
+        }
+        return res
     }
 
     private String fixColumn(String s) {

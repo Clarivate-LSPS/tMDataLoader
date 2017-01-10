@@ -66,65 +66,15 @@ abstract class AbstractDataProcessor implements DataProcessor {
                     }
                 }
                 if (res) {
-                    postProcessData(studyInfo, sql)
-                }
-            }
-        }
-        if ((config?.checkDuplicates) && (!res)) {
-            database.withSql { sql ->
-                def rows = sql.rows("select * from wt_clinical_data_dups" as String)
-                CSVFormat csvFormat = CSVFormat.DEFAULT.withRecordSeparator('\n')
-                try {
-                    Files.newBufferedWriter(dir.resolve('duplicates.csv'), StandardCharsets.UTF_8).withWriter { fileWriter ->
-                        new CSVPrinter(fileWriter, csvFormat).withCloseable { CSVPrinter csvFilePrinter ->
-                            Object[] FILE_HEADER = ["site_id", "subject_id", "visit_name", "data_label", "category_cd", "modifier_cd", "link_value"]
-                            csvFilePrinter.printRecord(FILE_HEADER);
-                            rows.each {
-                                List csvRow = new ArrayList();
-                                csvRow.add(it.site_id ?: '')
-                                csvRow.add(it.subject_id ?: '')
-                                csvRow.add(it.visit_name ?: '')
-                                csvRow.add(it.data_label ?: '')
-                                csvRow.add(it.category_cd ?: '')
-                                csvRow.add(it.modifier_cd ?: '')
-                                csvRow.add(it.link_value ?: '')
-
-                                csvFilePrinter.printRecord(csvRow)
-                            }
-                        }
+                    res = new AuditableJobRunner(sql, config).runJob(procedureName) { jobId ->
+                        def postStudyProcessor = new PostStudyProcessor(config, sql, dir, studyInfo, jobId)
+                        postStudyProcessor.process()
                     }
-                } catch (Exception e) {
-                    logger.log(LogType.ERROR, e)
                 }
             }
         }
 
         return res
-    }
-
-    protected void postProcessData(studyInfo, Sql sql) {
-        if ((config?.replaceStudy) && (studyInfo.oldId) && studyInfo.id != studyInfo.oldId) {
-            String studyId = studyInfo.id.toUpperCase()
-            String oldStudyId = studyInfo.oldId.toUpperCase()
-            String newToken = "EXP:$studyId"
-            String oldToken = "EXP:$oldStudyId"
-
-            sql.execute("DELETE FROM biomart.bio_experiment WHERE accession = :studyId", [studyId: studyId])
-            sql.execute("DELETE FROM biomart.bio_data_uid WHERE unique_id = :newToken", [newToken: newToken])
-            sql.execute("DELETE FROM searchapp.search_secure_object WHERE bio_data_unique_id = :newToken",
-                    [newToken: newToken])
-
-            sql.executeUpdate("UPDATE biomart.bio_experiment SET accession = :studyId WHERE accession = :oldStudyId",
-                    [studyId: studyId,
-                     oldStudyId: oldStudyId])
-            sql.executeUpdate("UPDATE biomart.bio_data_uid SET unique_id = :newToken WHERE unique_id = :oldToken",
-                    [newToken: newToken,
-                     oldToken: oldToken])
-            sql.executeUpdate("""
-                UPDATE searchapp.search_secure_object SET bio_data_unique_id = :newToken
-                WHERE bio_data_unique_id = :oldToken
-            """, [newToken: newToken, oldToken: oldToken])
-        }
     }
 
     protected void checkStudiesBySamePath(studyInfo, sql) {
@@ -146,13 +96,13 @@ abstract class AbstractDataProcessor implements DataProcessor {
 
         if (studyInfo.oldId && (config?.replaceStudy)) {
             logger.log(LogType.MESSAGE, "Found another study by path: '${studyInfo.node}' with ID: ${studyInfo.oldId}. Removing...")
-            new DeleteDataProcessor(config).process('id': studyInfo.oldId, 'path': studyInfo.node);
+            new DeleteDataProcessor(config).process('id': studyInfo.oldId, 'path': studyInfo.node)
         }
     }
 
     void checkStudyExist(Sql sql, studyInfo) {
         if (studyInfo.oldId && !config.replaceStudy && studyInfo.oldId != studyInfo.id) {
-            throw new DataProcessingException("Other study by same path found with different studyId: ${studyInfo.node}"  as String)
+            throw new DataProcessingException("Other study by the same path found with different studyId: old = '${studyInfo.oldId}', new = '${studyInfo.id}'" as String)
         }
 
         def row = sql.firstRow("""
@@ -161,7 +111,7 @@ abstract class AbstractDataProcessor implements DataProcessor {
                 from i2b2metadata.i2b2
                 where sourcesystem_cd = UPPER(?)""",
                 [studyInfo.id])
-        if (row && row.c_fullname != studyInfo.node) {
+        if (row && (String)row.c_fullname != (String)studyInfo.node) {
             throw new DataProcessingException("Other study with same id found by different path: ${row.c_fullname}" as String)
         }
     }

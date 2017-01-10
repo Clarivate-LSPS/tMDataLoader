@@ -69,7 +69,7 @@ class VCFDataProcessor extends AbstractDataProcessor {
         }
         loadMappingFile(mappingFile, studyInfo)
 
-        String studyId = studyInfo.id as String
+        String studyId = studyInfo.id
         def samplesLoader = new SamplesLoader(studyId)
         studyInfo.sources = []
         def files = []
@@ -87,9 +87,11 @@ class VCFDataProcessor extends AbstractDataProcessor {
             cleanupVcfTrialData(sql, trialId, sourceCd)
             deleteDataSet(sql, dataSetId)
             logger.log(LogType.DEBUG, 'Loading study information into deapp.de_variant_dataset')
+            Calendar etlDate = Calendar.getInstance()
+            etlDate.clearTime()
             sql.insertRecord('deapp.de_variant_dataset',
                     dataset_id: dataSetId, etl_id: 'tMDataLoader', genome: 'hg19',
-                    etl_date: Calendar.getInstance())
+                    etl_date: etlDate)
             sql.commit()
             return dataSetId
         }

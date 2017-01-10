@@ -100,6 +100,3 @@ END;
 $BODY$
   LANGUAGE plpgsql VOLATILE SECURITY DEFINER
   SET search_path FROM CURRENT;
-
-ALTER FUNCTION I2B2_CREATE_FULL_TREE(character varying, numeric)
-  OWNER TO postgres;

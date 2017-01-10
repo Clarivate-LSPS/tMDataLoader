@@ -85,6 +85,7 @@ class ProteinDataProcessorTest extends GroovyTestCase implements ConfigAwareTest
         def studyIdWithoutPeptide = proteinDataWithoutPeptide.studyId
         def studyNameWithoutPeptide = proteinDataWithoutPeptide.studyName
         String platformIdWithoutPeptide = 'RBM888'
+        Study.deleteById(config, proteinDataWithoutPeptide.studyId)
         proteinDataWithoutPeptide.load(config)
 
         assertThat(db, hasSample(studyIdWithoutPeptide, 'P504401'))
@@ -105,5 +106,16 @@ class ProteinDataProcessorTest extends GroovyTestCase implements ConfigAwareTest
                 [component: 'P026471']))
 
         assertThatSampleIsPresent('P504401', ['O002311': 0.02146], studyIdWithoutPeptide, platformIdWithoutPeptide)
+    }
+
+    void testItLoadsDataWithoutDuplicates() {
+        String platformIdWithoutPeptide = 'RBM889'
+        def proteinDataWithoutPeptide = Fixtures.proteinDataWithoutPeptide3
+        Study.deleteById(config, proteinDataWithoutPeptide.studyId)
+        proteinDataWithoutPeptide.load(config)
+        def rows = sql.rows("select * from deapp.de_subject_protein_data d " +
+                "where d.trial_name = ? and d.gene_symbol = ?",
+                proteinDataWithoutPeptide.studyId, 'O002311')
+        assertThat(rows?.size(), equalTo(5))
     }
 }

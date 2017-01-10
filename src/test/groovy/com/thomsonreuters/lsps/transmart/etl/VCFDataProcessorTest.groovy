@@ -5,6 +5,7 @@ import com.thomsonreuters.lsps.transmart.fixtures.Study
 import com.thomsonreuters.lsps.transmart.fixtures.VCFData
 import com.thomsonreuters.lsps.db.sql.SqlMethods
 
+
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.*
 import static org.hamcrest.CoreMatchers.equalTo
 import static org.hamcrest.CoreMatchers.not
@@ -30,12 +31,7 @@ class VCFDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase
     }
 
     static Calendar today() {
-        Calendar cal = Calendar.getInstance()
-        cal.clear(Calendar.HOUR)
-        cal.clear(Calendar.MINUTE)
-        cal.clear(Calendar.SECOND)
-        cal.clear(Calendar.MILLISECOND)
-        cal
+        Calendar.instance.clearTime()
     }
 
     void assertSampleAssociated(String studyId, String gplId, String dataSetId, CharSequence sampleId, CharSequence probesetId) {
@@ -51,8 +47,8 @@ class VCFDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase
     void assertThatVcfDataForSubject1IsLoaded(String studyId, String gplId, String dataSetId) {
         // verify deapp.de_variant_dataset
         assertThat(db, hasRecord('deapp.de_variant_dataset',
-                dataset_id: dataSetId, etl_id: 'tMDataLoader', genome: 'hg19',
-                etl_date: today()))
+                [dataset_id: dataSetId],
+                [etl_id: 'tMDataLoader', genome: 'hg19', etl_date: today()]))
         // verify deapp.de_variant_subject_idx
         assertThat(db, hasRecord('deapp.de_variant_subject_idx', dataset_id: dataSetId, subject_id: 'VCF_TST001', position: 1))
 
@@ -83,27 +79,27 @@ class VCFDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase
                 [description: 'MLE Allele Frequency Accounting for LD', type: 'Float', number: '1']))
         // verify deapp.de_variant_population_data
         assertThat(db, not(hasRecord('deapp.de_variant_population_data',
-                [dataset_id: dataSetId, chr: '22', pos:  16050620, info_name: 'UNKNW', info_index: 0],
+                [dataset_id: dataSetId, chr: '22', pos: 16050620, info_name: 'UNKNW', info_index: 0],
                 [integer_value: 42, float_value: null, text_value: null])))
         assertThat(db, hasRecord('deapp.de_variant_population_data',
-                [dataset_id: dataSetId, chr: '22', pos:  16050624, info_name: 'TST_FLAG', info_index: 0],
+                [dataset_id: dataSetId, chr: '22', pos: 16050624, info_name: 'TST_FLAG', info_index: 0],
                 [integer_value: 0, float_value: null, text_value: null]))
         assertThat(db, hasRecord('deapp.de_variant_population_data',
-                [dataset_id: dataSetId, chr: '22', pos:  16050408, info_name: 'LDAF', info_index: 0],
+                [dataset_id: dataSetId, chr: '22', pos: 16050408, info_name: 'LDAF', info_index: 0],
                 [integer_value: null, float_value: 0.0649, text_value: null]))
         assertThat(db, hasRecord('deapp.de_variant_population_data',
-                [dataset_id: dataSetId, chr: '22', pos:  16050408, info_name: 'AN', info_index: 0],
+                [dataset_id: dataSetId, chr: '22', pos: 16050408, info_name: 'AN', info_index: 0],
                 [integer_value: 2184, float_value: null, text_value: null]))
         assertThat(db, hasRecord('deapp.de_variant_population_data',
-                [dataset_id: dataSetId, chr: '22', pos:  16050408, info_name: 'VT', info_index: 0],
+                [dataset_id: dataSetId, chr: '22', pos: 16050408, info_name: 'VT', info_index: 0],
                 [integer_value: null, float_value: null, text_value: 'SNP']))
     }
 
     void assertThatVcfDataForSubject2IsLoaded(String studyId, String gplId, String dataSetId, int position = 1) {
         // verify deapp.de_variant_dataset
         assertThat(db, hasRecord('deapp.de_variant_dataset',
-                dataset_id: dataSetId, etl_id: 'tMDataLoader', genome: 'hg19',
-                etl_date: today()))
+                [dataset_id: dataSetId],
+                [etl_id: 'tMDataLoader', genome: 'hg19', etl_date: today()]))
         // verify deapp.de_variant_subject_idx
         assertThat(db, hasRecord('deapp.de_variant_subject_idx', dataset_id: dataSetId, subject_id: 'VCF_TST002', position: position))
 
@@ -131,19 +127,19 @@ class VCFDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase
                 [description: 'MLE Allele Frequency Accounting for LD', type: 'Float', number: '1']))
         // verify deapp.de_variant_population_data
         assertThat(db, not(hasRecord('deapp.de_variant_population_data',
-                [dataset_id: dataSetId, chr: '22', pos:  16050620, info_name: 'UNKNW', info_index: 0],
+                [dataset_id: dataSetId, chr: '22', pos: 16050620, info_name: 'UNKNW', info_index: 0],
                 [integer_value: 42, float_value: null, text_value: null])))
         assertThat(db, hasRecord('deapp.de_variant_population_data',
-                [dataset_id: dataSetId, chr: '22', pos:  16050624, info_name: 'TST_FLAG', info_index: 0],
+                [dataset_id: dataSetId, chr: '22', pos: 16050624, info_name: 'TST_FLAG', info_index: 0],
                 [integer_value: 0, float_value: null, text_value: null]))
         assertThat(db, hasRecord('deapp.de_variant_population_data',
-                [dataset_id: dataSetId, chr: '22', pos:  16050408, info_name: 'LDAF', info_index: 0],
+                [dataset_id: dataSetId, chr: '22', pos: 16050408, info_name: 'LDAF', info_index: 0],
                 [integer_value: null, float_value: 0.0649, text_value: null]))
         assertThat(db, hasRecord('deapp.de_variant_population_data',
-                [dataset_id: dataSetId, chr: '22', pos:  16050408, info_name: 'AN', info_index: 0],
+                [dataset_id: dataSetId, chr: '22', pos: 16050408, info_name: 'AN', info_index: 0],
                 [integer_value: 2184, float_value: null, text_value: null]))
         assertThat(db, hasRecord('deapp.de_variant_population_data',
-                [dataset_id: dataSetId, chr: '22', pos:  16050408, info_name: 'VT', info_index: 0],
+                [dataset_id: dataSetId, chr: '22', pos: 16050408, info_name: 'VT', info_index: 0],
                 [integer_value: null, float_value: null, text_value: 'SNP']))
     }
 
@@ -165,20 +161,20 @@ class VCFDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase
 
         // Check info field without value
         assertThat(db, hasRecord('deapp.de_variant_population_data',
-                [dataset_id: dataSetId, chr: '22', pos:  16050624, info_name: 'DB', info_index: 0],
+                [dataset_id: dataSetId, chr: '22', pos: 16050624, info_name: 'DB', info_index: 0],
                 [integer_value: 1, float_value: null, text_value: null]))
 
         // verify deapp.de_variant_subject_detail
         assertThat(db, hasRecord('deapp.de_variant_subject_detail',
                 [dataset_id: dataSetId, chr: '22', pos: 16050408, rs_id: 'rs149201999'],
-                [ref: 'T', alt: 'C', qual: '100', filter: 'PASS',
-                 info: 'LDAF=0.0649;RSQ=0.8652;AN=2184;ERATE=0.0046;VT=SNP;AA=.;AVGPOST=0.9799;THETA=0.0149;SNPSOURCE=LOWCOV;AC=134;AF=0.06;ASN_AF=0.04;AMR_AF=0.05;AFR_AF=0.10;EUR_AF=0.06',
+                [ref   : 'T', alt: 'C', qual: '100', filter: 'PASS',
+                 info  : 'LDAF=0.0649;RSQ=0.8652;AN=2184;ERATE=0.0046;VT=SNP;AA=.;AVGPOST=0.9799;THETA=0.0149;SNPSOURCE=LOWCOV;AC=134;AF=0.06;ASN_AF=0.04;AMR_AF=0.05;AFR_AF=0.10;EUR_AF=0.06',
                  format: 'GT:DS:GL', variant_value: '0|0:0.050:-0.03,-1.17,-5.00\t0|1:0.900:-0.71,-0.09,-5.00']))
 
         assertThat(db, hasRecord('deapp.de_variant_subject_detail',
                 [dataset_id: dataSetId, chr: '22', pos: 16050620, rs_id: 'rs146752880'],
-                [ref: 'C', alt: 'G,T', qual: '100', filter: 'PASS',
-                 info: 'UNKNW=42;AC=184;RSQ=0.8228;AVGPOST=0.9640;AN=2184;ERATE=0.0031;VT=SNP;AA=.;THETA=0.0127;LDAF=0.0902;SNPSOURCE=LOWCOV;AF=0.08;ASN_AF=0.08;AMR_AF=0.14;AFR_AF=0.08;EUR_AF=0.07',
+                [ref   : 'C', alt: 'G,T', qual: '100', filter: 'PASS',
+                 info  : 'UNKNW=42;AC=184;RSQ=0.8228;AVGPOST=0.9640;AN=2184;ERATE=0.0031;VT=SNP;AA=.;THETA=0.0127;LDAF=0.0902;SNPSOURCE=LOWCOV;AF=0.08;ASN_AF=0.08;AMR_AF=0.14;AFR_AF=0.08;EUR_AF=0.07',
                  format: 'GT:DS:GL', variant_value: '2/1:1.000:-2.05,-0.01,-1.71\t./0:1.000:-0.86,-0.06,-5.00']))
 
         ['rs146752878', 'rs146752879'].each { rsId ->
@@ -209,20 +205,20 @@ class VCFDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase
         // verify deapp.de_variant_subject_detail
         assertThat(db, hasRecord('deapp.de_variant_subject_detail',
                 [dataset_id: dataSet1Id, chr: '22', pos: 16050408, rs_id: 'rs149201999'],
-                [ref: 'T', alt: 'C', qual: '100', filter: 'PASS',
-                 info: 'LDAF=0.0649;RSQ=0.8652;AN=2184;ERATE=0.0046;VT=SNP;AA=.;AVGPOST=0.9799;THETA=0.0149;SNPSOURCE=LOWCOV;AC=134;AF=0.06;ASN_AF=0.04;AMR_AF=0.05;AFR_AF=0.10;EUR_AF=0.06',
+                [ref   : 'T', alt: 'C', qual: '100', filter: 'PASS',
+                 info  : 'LDAF=0.0649;RSQ=0.8652;AN=2184;ERATE=0.0046;VT=SNP;AA=.;AVGPOST=0.9799;THETA=0.0149;SNPSOURCE=LOWCOV;AC=134;AF=0.06;ASN_AF=0.04;AMR_AF=0.05;AFR_AF=0.10;EUR_AF=0.06',
                  format: 'GT:DS:GL', variant_value: '0|0:0.050:-0.03,-1.17,-5.00']))
 
         assertThat(db, hasRecord('deapp.de_variant_subject_detail',
                 [dataset_id: dataSet1Id, chr: '22', pos: 16050620, rs_id: 'rs146752880'],
-                [ref: 'C', alt: 'G,T', qual: '100', filter: 'PASS',
-                 info: 'UNKNW=42;AC=184;RSQ=0.8228;AVGPOST=0.9640;AN=2184;ERATE=0.0031;VT=SNP;AA=.;THETA=0.0127;LDAF=0.0902;SNPSOURCE=LOWCOV;AF=0.08;ASN_AF=0.08;AMR_AF=0.14;AFR_AF=0.08;EUR_AF=0.07',
+                [ref   : 'C', alt: 'G,T', qual: '100', filter: 'PASS',
+                 info  : 'UNKNW=42;AC=184;RSQ=0.8228;AVGPOST=0.9640;AN=2184;ERATE=0.0031;VT=SNP;AA=.;THETA=0.0127;LDAF=0.0902;SNPSOURCE=LOWCOV;AF=0.08;ASN_AF=0.08;AMR_AF=0.14;AFR_AF=0.08;EUR_AF=0.07',
                  format: 'GT:DS:GL', variant_value: '2/1:1.000:-2.05,-0.01,-1.71']))
 
         assertThat(db, hasRecord('deapp.de_variant_subject_detail',
                 [dataset_id: dataSet1Id, chr: '22', pos: 16050624, rs_id: 'rs146752879'],
-                [ref: 'C', alt: 'G', qual: '100', filter: 'PASS',
-                 info: 'TST_FLAG=0;AC=184;RSQ=0.8228;AVGPOST=0.9640;AN=2184;ERATE=0.0031;VT=SNP;AA=.;THETA=0.0127;LDAF=0.0902;SNPSOURCE=LOWCOV;AF=0.08;ASN_AF=0.08;AMR_AF=0.14;AFR_AF=0.08;EUR_AF=0.07',
+                [ref   : 'C', alt: 'G', qual: '100', filter: 'PASS',
+                 info  : 'TST_FLAG=0;AC=184;RSQ=0.8228;AVGPOST=0.9640;AN=2184;ERATE=0.0031;VT=SNP;AA=.;THETA=0.0127;LDAF=0.0902;SNPSOURCE=LOWCOV;AF=0.08;ASN_AF=0.08;AMR_AF=0.14;AFR_AF=0.08;EUR_AF=0.07',
                  format: 'DS:GL', variant_value: '1.000:-2.05,-0.01,-1.71']))
 
 
@@ -232,20 +228,20 @@ class VCFDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase
         // verify deapp.de_variant_subject_detail
         assertThat(db, hasRecord('deapp.de_variant_subject_detail',
                 [dataset_id: dataSet2Id, chr: '22', pos: 16050408, rs_id: 'rs149201999'],
-                [ref: 'T', alt: 'C', qual: '100', filter: 'PASS',
-                 info: 'LDAF=0.0649;RSQ=0.8652;AN=2184;ERATE=0.0046;VT=SNP;AA=.;AVGPOST=0.9799;THETA=0.0149;SNPSOURCE=LOWCOV;AC=134;AF=0.06;ASN_AF=0.04;AMR_AF=0.05;AFR_AF=0.10;EUR_AF=0.06',
+                [ref   : 'T', alt: 'C', qual: '100', filter: 'PASS',
+                 info  : 'LDAF=0.0649;RSQ=0.8652;AN=2184;ERATE=0.0046;VT=SNP;AA=.;AVGPOST=0.9799;THETA=0.0149;SNPSOURCE=LOWCOV;AC=134;AF=0.06;ASN_AF=0.04;AMR_AF=0.05;AFR_AF=0.10;EUR_AF=0.06',
                  format: 'GT:DS:GL', variant_value: '0|1:0.900:-0.71,-0.09,-5.00']))
 
         assertThat(db, hasRecord('deapp.de_variant_subject_detail',
                 [dataset_id: dataSet2Id, chr: '22', pos: 16050620, rs_id: 'rs146752880'],
-                [ref: 'C', alt: 'G,T', qual: '100', filter: 'PASS',
-                 info: 'UNKNW=42;AC=184;RSQ=0.8228;AVGPOST=0.9640;AN=2184;ERATE=0.0031;VT=SNP;AA=.;THETA=0.0127;LDAF=0.0902;SNPSOURCE=LOWCOV;AF=0.08;ASN_AF=0.08;AMR_AF=0.14;AFR_AF=0.08;EUR_AF=0.07',
+                [ref   : 'C', alt: 'G,T', qual: '100', filter: 'PASS',
+                 info  : 'UNKNW=42;AC=184;RSQ=0.8228;AVGPOST=0.9640;AN=2184;ERATE=0.0031;VT=SNP;AA=.;THETA=0.0127;LDAF=0.0902;SNPSOURCE=LOWCOV;AF=0.08;ASN_AF=0.08;AMR_AF=0.14;AFR_AF=0.08;EUR_AF=0.07',
                  format: 'GT:DS:GL', variant_value: './0:1.000:-0.86,-0.06,-5.00']))
 
         assertThat(db, hasRecord('deapp.de_variant_subject_detail',
                 [dataset_id: dataSet2Id, chr: '22', pos: 16050624, rs_id: 'rs146752879'],
-                [ref: 'C', alt: 'G', qual: '100', filter: 'PASS',
-                 info: 'TST_FLAG=0;AC=184;RSQ=0.8228;AVGPOST=0.9640;AN=2184;ERATE=0.0031;VT=SNP;AA=.;THETA=0.0127;LDAF=0.0902;SNPSOURCE=LOWCOV;AF=0.08;ASN_AF=0.08;AMR_AF=0.14;AFR_AF=0.08;EUR_AF=0.07',
+                [ref   : 'C', alt: 'G', qual: '100', filter: 'PASS',
+                 info  : 'TST_FLAG=0;AC=184;RSQ=0.8228;AVGPOST=0.9640;AN=2184;ERATE=0.0031;VT=SNP;AA=.;THETA=0.0127;LDAF=0.0902;SNPSOURCE=LOWCOV;AF=0.08;ASN_AF=0.08;AMR_AF=0.14;AFR_AF=0.08;EUR_AF=0.07',
                  format: 'DS:GL', variant_value: '1.000:-0.86,-0.06,-5.00']))
     }
 
@@ -267,20 +263,20 @@ class VCFDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase
         // verify deapp.de_variant_subject_detail
         assertThat(db, hasRecord('deapp.de_variant_subject_detail',
                 [dataset_id: dataSet1Id, chr: '22', pos: 16050408, rs_id: 'rs149201999'],
-                [ref: 'T', alt: 'C', qual: '100', filter: 'PASS',
-                 info: 'LDAF=0.0649;RSQ=0.8652;AN=2184;ERATE=0.0046;VT=SNP;AA=.;AVGPOST=0.9799;THETA=0.0149;SNPSOURCE=LOWCOV;AC=134;AF=0.06;ASN_AF=0.04;AMR_AF=0.05;AFR_AF=0.10;EUR_AF=0.06',
+                [ref   : 'T', alt: 'C', qual: '100', filter: 'PASS',
+                 info  : 'LDAF=0.0649;RSQ=0.8652;AN=2184;ERATE=0.0046;VT=SNP;AA=.;AVGPOST=0.9799;THETA=0.0149;SNPSOURCE=LOWCOV;AC=134;AF=0.06;ASN_AF=0.04;AMR_AF=0.05;AFR_AF=0.10;EUR_AF=0.06',
                  format: 'GT:DS:GL', variant_value: '0|0:0.050:-0.03,-1.17,-5.00']))
 
         assertThat(db, hasRecord('deapp.de_variant_subject_detail',
                 [dataset_id: dataSet1Id, chr: '22', pos: 16050620, rs_id: 'rs146752880'],
-                [ref: 'C', alt: 'G,T', qual: '100', filter: 'PASS',
-                 info: 'UNKNW=42;AC=184;RSQ=0.8228;AVGPOST=0.9640;AN=2184;ERATE=0.0031;VT=SNP;AA=.;THETA=0.0127;LDAF=0.0902;SNPSOURCE=LOWCOV;AF=0.08;ASN_AF=0.08;AMR_AF=0.14;AFR_AF=0.08;EUR_AF=0.07',
+                [ref   : 'C', alt: 'G,T', qual: '100', filter: 'PASS',
+                 info  : 'UNKNW=42;AC=184;RSQ=0.8228;AVGPOST=0.9640;AN=2184;ERATE=0.0031;VT=SNP;AA=.;THETA=0.0127;LDAF=0.0902;SNPSOURCE=LOWCOV;AF=0.08;ASN_AF=0.08;AMR_AF=0.14;AFR_AF=0.08;EUR_AF=0.07',
                  format: 'GT:DS:GL', variant_value: '2/1:1.000:-2.05,-0.01,-1.71']))
 
         assertThat(db, hasRecord('deapp.de_variant_subject_detail',
                 [dataset_id: dataSet1Id, chr: '22', pos: 16050624, rs_id: 'rs146752879'],
-                [ref: 'C', alt: 'G', qual: '100', filter: 'PASS',
-                 info: 'TST_FLAG=0;AC=184;RSQ=0.8228;AVGPOST=0.9640;AN=2184;ERATE=0.0031;VT=SNP;AA=.;THETA=0.0127;LDAF=0.0902;SNPSOURCE=LOWCOV;AF=0.08;ASN_AF=0.08;AMR_AF=0.14;AFR_AF=0.08;EUR_AF=0.07',
+                [ref   : 'C', alt: 'G', qual: '100', filter: 'PASS',
+                 info  : 'TST_FLAG=0;AC=184;RSQ=0.8228;AVGPOST=0.9640;AN=2184;ERATE=0.0031;VT=SNP;AA=.;THETA=0.0127;LDAF=0.0902;SNPSOURCE=LOWCOV;AF=0.08;ASN_AF=0.08;AMR_AF=0.14;AFR_AF=0.08;EUR_AF=0.07',
                  format: 'DS:GL', variant_value: '1.000:-2.05,-0.01,-1.71']))
 
 
@@ -290,20 +286,20 @@ class VCFDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase
         // verify deapp.de_variant_subject_detail
         assertThat(db, hasRecord('deapp.de_variant_subject_detail',
                 [dataset_id: dataSet2Id, chr: '22', pos: 16050408, rs_id: 'rs149201999'],
-                [ref: 'T', alt: 'C', qual: '100', filter: 'PASS',
-                 info: 'LDAF=0.0649;RSQ=0.8652;AN=2184;ERATE=0.0046;VT=SNP;AA=.;AVGPOST=0.9799;THETA=0.0149;SNPSOURCE=LOWCOV;AC=134;AF=0.06;ASN_AF=0.04;AMR_AF=0.05;AFR_AF=0.10;EUR_AF=0.06',
+                [ref   : 'T', alt: 'C', qual: '100', filter: 'PASS',
+                 info  : 'LDAF=0.0649;RSQ=0.8652;AN=2184;ERATE=0.0046;VT=SNP;AA=.;AVGPOST=0.9799;THETA=0.0149;SNPSOURCE=LOWCOV;AC=134;AF=0.06;ASN_AF=0.04;AMR_AF=0.05;AFR_AF=0.10;EUR_AF=0.06',
                  format: 'GT:DS:GL', variant_value: '0|1:0.900:-0.71,-0.09,-5.00']))
 
         assertThat(db, hasRecord('deapp.de_variant_subject_detail',
                 [dataset_id: dataSet2Id, chr: '22', pos: 16050620, rs_id: 'rs146752880'],
-                [ref: 'C', alt: 'G,T', qual: '100', filter: 'PASS',
-                 info: 'UNKNW=42;AC=184;RSQ=0.8228;AVGPOST=0.9640;AN=2184;ERATE=0.0031;VT=SNP;AA=.;THETA=0.0127;LDAF=0.0902;SNPSOURCE=LOWCOV;AF=0.08;ASN_AF=0.08;AMR_AF=0.14;AFR_AF=0.08;EUR_AF=0.07',
+                [ref   : 'C', alt: 'G,T', qual: '100', filter: 'PASS',
+                 info  : 'UNKNW=42;AC=184;RSQ=0.8228;AVGPOST=0.9640;AN=2184;ERATE=0.0031;VT=SNP;AA=.;THETA=0.0127;LDAF=0.0902;SNPSOURCE=LOWCOV;AF=0.08;ASN_AF=0.08;AMR_AF=0.14;AFR_AF=0.08;EUR_AF=0.07',
                  format: 'GT:DS:GL', variant_value: './0:1.000:-0.86,-0.06,-5.00']))
 
         assertThat(db, hasRecord('deapp.de_variant_subject_detail',
                 [dataset_id: dataSet2Id, chr: '22', pos: 16050624, rs_id: 'rs146752879'],
-                [ref: 'C', alt: 'G', qual: '100', filter: 'PASS',
-                 info: 'TST_FLAG=0;AC=184;RSQ=0.8228;AVGPOST=0.9640;AN=2184;ERATE=0.0031;VT=SNP;AA=.;THETA=0.0127;LDAF=0.0902;SNPSOURCE=LOWCOV;AF=0.08;ASN_AF=0.08;AMR_AF=0.14;AFR_AF=0.08;EUR_AF=0.07',
+                [ref   : 'C', alt: 'G', qual: '100', filter: 'PASS',
+                 info  : 'TST_FLAG=0;AC=184;RSQ=0.8228;AVGPOST=0.9640;AN=2184;ERATE=0.0031;VT=SNP;AA=.;THETA=0.0127;LDAF=0.0902;SNPSOURCE=LOWCOV;AF=0.08;ASN_AF=0.08;AMR_AF=0.14;AFR_AF=0.08;EUR_AF=0.07',
                  format: 'DS:GL', variant_value: '1.000:-0.86,-0.06,-5.00']))
     }
 

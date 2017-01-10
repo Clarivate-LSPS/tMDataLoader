@@ -14,3 +14,5 @@
 \i migrations/1_2_4/20160404220000000_add_grant_for_delete_study.sql
 \i migrations/1_2_4/20160524172500000_change_async_job_alt_viewer_url.sql
 \i migrations/gwas_plink/migrations.sql
+\i migrations/20160805133000000_ADD_COLUMN_FOR_TIMESTAMP.sql
+\i migrations/20161218000000000_add_platform_for_protein_tables.sql

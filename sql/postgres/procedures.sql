@@ -45,9 +45,13 @@ $$;
 \i procedures/I2B2_RNA_SEQ_ANNOTATION.sql
 \i procedures/I2B2_DELETE_PARTITION.sql
 \i procedures/I2B2_ADD_PLATFORM.sql
-\i procedures/I2B2_PROCESS_SERIAL_HDD_DATA.sql
 \i procedures/I2B2_LOAD_CHROM_REGION.sql
 \i procedures/I2B2_PROCESS_ACGH_DATA.sql
 \i procedures/I2B2_LOAD_STUDY_METADATA.sql
-
-
+\i procedures/I2B2_PROCESS_GENERIC_SERIAL_HDDDATA.sql
+\i procedures/I2B2_PROCESS_GWAS_PLINK_DATA.sql
+\i procedures/TIMESTAMP_TO_TIMEPOINT.sql
+\i procedures/REPLACE_LAST_PATH_COMPONENT.sql
+\i procedures/GET_LAST_PATH_COMPONENT.sql
+\i procedures/COPY_SECURITY_FROM_OTHER_STUDY.sql
+\i procedures/i2b2_proteomics_zscore_calc.sql

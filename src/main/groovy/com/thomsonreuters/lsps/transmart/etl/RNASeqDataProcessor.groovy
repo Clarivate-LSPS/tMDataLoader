@@ -3,18 +3,18 @@ package com.thomsonreuters.lsps.transmart.etl
 import com.thomsonreuters.lsps.db.loader.DataLoader
 import com.thomsonreuters.lsps.transmart.etl.platforms.RNASeqPlatform
 import com.thomsonreuters.lsps.transmart.files.CsvLikeFile
-import com.thomsonreuters.lsps.db.core.DatabaseType;
+import com.thomsonreuters.lsps.db.core.DatabaseType
 import groovy.sql.Sql
 
 import java.nio.file.Path
 
-public class RNASeqDataProcessor extends AbstractDataProcessor {
-    public RNASeqDataProcessor(Object conf) {
-        super(conf);
+class RNASeqDataProcessor extends AbstractDataProcessor {
+    RNASeqDataProcessor(Object conf) {
+        super(conf)
     }
 
     @Override
-    public boolean processFiles(Path dir, Sql sql, studyInfo) {
+     boolean processFiles(Path dir, Sql sql, studyInfo) {
         database.truncateTable(sql, 'lt_src_rna_seq_subj_samp_map')
         database.truncateTable(sql, 'lt_src_rna_seq_data')
 
@@ -41,11 +41,11 @@ public class RNASeqDataProcessor extends AbstractDataProcessor {
             throw new DataProcessingException("No platforms defined")
         }
 
-        return true;
+        return true
     }
 
     @Override
-    public boolean runStoredProcedures(Object jobId, Sql sql, studyInfo) {
+     boolean runStoredProcedures(Object jobId, Sql sql, studyInfo) {
         def studyId = studyInfo['id']
         def studyNode = studyInfo['node']
         def studyDataType = studyInfo['datatype']
@@ -69,17 +69,17 @@ public class RNASeqDataProcessor extends AbstractDataProcessor {
             }
         } else {
             config.logger.log(LogType.ERROR, "Study ID or Node or DataType not defined!")
-            return false;
+            return false
         }
-        return true;
+        return true
     }
 
     @Override
-    public String getProcedureName() {
-        return "I2B2_PROCESS_RNA_SEQ_DATA";
+     String getProcedureName() {
+        return "I2B2_PROCESS_RNA_SEQ_DATA"
     }
 
-    private List processMappingFile(Path f, Sql sql, studyInfo) {
+    protected List processMappingFile(Path f, Sql sql, studyInfo) {
         def platformList = [] as Set
         def studyIdList = [] as Set
 
@@ -102,8 +102,9 @@ public class RNASeqDataProcessor extends AbstractDataProcessor {
                     if (!(cols[2] && cols[3] && cols[4] && cols[8]))
                         throw new Exception("Incorrect mapping file: mandatory columns not defined")
 
+                    cols[0] = cols[0]?.toUpperCase()
                     platformList << cols[4]
-                    studyIdList << cols[0]?.toUpperCase()
+                    studyIdList << cols[0]
 
                     stmt.addBatch(cols)
                 }
@@ -139,7 +140,7 @@ public class RNASeqDataProcessor extends AbstractDataProcessor {
         }
     }
 
-    private void processRNASeqFile(Path f, Sql sql, studyInfo) {
+    protected void processRNASeqFile(Path f, Sql sql, studyInfo) {
         config.logger.log("Processing ${f.fileName}")
 
         // retrieve data type
@@ -188,8 +189,8 @@ public class RNASeqDataProcessor extends AbstractDataProcessor {
         config.logger.log("Processed ${lineNum} rows")
     }
 
-    private long processEachRow(Path f, studyInfo, Closure<List> processRow) {
-        def row = [studyInfo.id as String, null, null, null]
+    protected long processEachRow(Path f, studyInfo, Closure<List> processRow) {
+        def row = [studyInfo.id, null, null, null]
         def lineNum = 0
         def dataFile = new CsvLikeFile(f)
         def header = dataFile.header
@@ -197,7 +198,7 @@ public class RNASeqDataProcessor extends AbstractDataProcessor {
             throw new Exception("Incorrect RNASeq data file")
         }
         dataFile.eachEntry { cols ->
-            lineNum++;
+            lineNum++
 
             config.logger.log(LogType.PROGRESS, "[${lineNum}]")
             row[1] = cols[0]
