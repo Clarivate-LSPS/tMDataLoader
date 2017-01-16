@@ -1061,24 +1061,31 @@ BEGIN
 			perform cz_error_handler (jobID, procedureName, errorNumber, errorMessage);
 			perform cz_end_audit (jobID, 'FAIL');
 			return -16;
-		end;	
-	elsif dataType = 'R' OR dataType = 'L' then
---	Calculate ZScores and insert data into de_subject_mirna_data.  The 'L' parameter indicates that the gene expression data will be selected from
---	wt_subject_mirna_probeset as part of a Load.
-		BEGIN
-			PERFORM i2b2_mirna_zscore_calc(TrialID, 'L', jobId, dataType, logBase, sourceCD);
+		end;
+	else
 
-			stepCt := stepCt + 1;
-			GET DIAGNOSTICS rowCt := ROW_COUNT;
-			PERFORM cz_write_audit(jobId, databaseName, procedureName, 'Calculate Z-Score', 0, stepCt, 'Done');
-		EXCEPTION
-		WHEN OTHERS THEN
-			errorNumber := SQLSTATE;
-			errorMessage := SQLERRM;
-			PERFORM cz_error_handler(jobID, procedureName, errorNumber, errorMessage);
-			PERFORM cz_end_audit(jobID, 'FAIL');
-			RETURN -16;
-		END;
+		--	Calculate ZScores and insert data into de_subject_mirna_data.  The 'L' parameter indicates that the gene expression data will be selected from
+		--	wt_subject_mirna_probeset as part of a Load.
+
+		if dataType = 'R' or dataType = 'L' then
+			begin
+				if mirna_type='MIRNA_QPCR' then
+					perform i2b2_mirna_zscore_calc(TrialID,'L',jobId,'R',logBase,sourceCD);----donot do log transform
+				else
+					perform i2b2_mirna_zscore_calc(TrialID,'L',jobId,'L',logBase,sourceCD);----do log transform
+				end if;
+				stepCt := stepCt + 1; get diagnostics rowCt := ROW_COUNT;
+				perform cz_write_audit(jobId,databaseName,procedureName,'Calculate Z-Score',0,stepCt,'Done');
+				exception
+				when others then
+					errorNumber := SQLSTATE;
+					errorMessage := SQLERRM;
+					perform cz_error_handler (jobID, procedureName, errorNumber, errorMessage);
+					perform cz_end_audit (jobID, 'FAIL');
+					return -16;
+			end;
+		end if;
+
 	end if;
 
     ---Cleanup OVERALL JOB if this proc is being run standalone
