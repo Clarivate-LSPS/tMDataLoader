@@ -63,7 +63,7 @@ class MIRNAQpcrDataProcessorTest extends GroovyTestCase implements ConfigAwareTe
         assertThat(db, hasRecord('deapp.de_subject_mirna_data',
                 [trial_source: studyId + ':STD', trial_name: studyId], null))
 
-        assertThatSampleIsPresent('S57023', ['1': [raw_intensity: 0.113408, log_intensity: -3.14040568077,
-                                                   zscore: -0.70711]])
+        assertThatSampleIsPresent('S57023', ['1': [raw_intensity: 0.113408, log_intensity: -0.113408,
+                                                   zscore: 0.70711]])
     }
 }

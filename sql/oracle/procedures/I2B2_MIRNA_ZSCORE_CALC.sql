@@ -167,7 +167,6 @@ BEGIN
            
 		--end if;
   elsif dataType = 'L' then
-                         --for MIRNA_QPCR
       insert into wt_subject_mirna_logs
 			(probeset_id
 			,intensity_value
@@ -187,6 +186,26 @@ BEGIN
 			from wt_subject_mirna_probeset
 			where trial_name = TrialId;
 --		end if;
+	elsif dataType = 'C' then
+		--for MIRNA_QPCR (dCt - intensity value is a -(log value))
+		insert into wt_subject_mirna_logs
+		(probeset_id
+			,intensity_value
+			,assay_id
+			,log_intensity
+			,patient_id
+		 --	,sample_cd
+		 --	,subject_id
+		)
+			select probeset_id
+				,intensity_value
+				,assay_id
+				,-(intensity_value)
+				,patient_id
+			--		  ,sample_cd
+			--		  ,subject_id
+			from wt_subject_mirna_probeset
+			where trial_name = TrialId;
 	else
 		insert into wt_subject_mirna_logs
 		(

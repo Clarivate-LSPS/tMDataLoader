@@ -1030,9 +1030,9 @@ AS
 
 			if dataType = 'R' or dataType = 'L' then
 				if mirna_type='MIRNA_QPCR' then
-					i2b2_mirna_zscore_calc(TrialID,'L',jobId,'R',logBase,sourceCD);----donot do log transform
+					i2b2_mirna_zscore_calc(TrialID,'L',jobId,'C',logBase,sourceCD);----donot do log transform
 				else
-					i2b2_mirna_zscore_calc(TrialID,'L',jobId,'L',logBase,sourceCD);----do log transform
+					i2b2_mirna_zscore_calc(TrialID,'L',jobId,dataType,logBase,sourceCD);----do log transform
 				end if;
 				stepCt := stepCt + 1;
 				cz_write_audit(jobId,databaseName,procedureName,'Calculate Z-Score',0,stepCt,'Done');
