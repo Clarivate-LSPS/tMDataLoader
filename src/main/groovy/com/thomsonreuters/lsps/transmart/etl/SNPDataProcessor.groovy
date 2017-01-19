@@ -114,37 +114,6 @@ class SNPDataProcessor extends AbstractDataProcessor {
         }
     }
 
-    private void parallerCall(fileList, Closure uploadFunction) {
-        ExecutorService executorService = Executors.newFixedThreadPool(THREAD_COUNT)
-        List<Callable<Object>> tasks = new ArrayList<>();
-        try {
-            fileList.each { String name ->
-                tasks.add(new Callable<Object>() {
-                    @Override
-                    Object call() throws Exception {
-                        Sql threadSql = database.newSql()
-                        threadSql.connection.autoCommit = false
-                        try {
-                            uploadFunction(name, threadSql)
-                            threadSql.commit()
-                        }
-                        finally {
-                            threadSql.connection.close()
-                        }
-                        return null;
-                    }
-                });
-            }
-            List<Future<Object>> invokeAll = executorService.invokeAll(tasks);
-        }
-        catch (InterruptedException e) {
-            config.logger.log(LogType.ERROR, "Data wasn't upload")
-        }
-        finally {
-            executorService.shutdown()
-        }
-    }
-
     private void processSnpCallsFile(Sql sql, Path f) {
         config.logger.log(LogType.MESSAGE, "Processing calls for ${f.getFileName()}")
         loadFileToTable(sql, f, "lt_snp_calls_by_gsm", ['GSM_NUM', 'SNP_NAME', 'SNP_CALLS'])
