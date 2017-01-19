@@ -156,6 +156,33 @@ BEGIN
 			perform cz_end_audit (jobID, 'FAIL');
 			return -16;
 		end;
+	elsif dataType = 'C' then
+		--for MIRNA_QPCR (dCt - intensity value is a -(log value))
+		begin
+			insert into WT_SUBJECT_MIRNA_LOGS
+			(probeset_id
+				,intensity_value
+				,assay_id
+				,log_intensity
+				,patient_id
+			 --	,sample_cd
+			 --	,subject_id
+			)
+				select probeset_id
+					,intensity_value ----UAT 154 changes done on 19/03/2014
+					,assay_id
+					,-(intensity_value)
+					,patient_id
+				--	  ,sample_cd
+				--	  ,subject_id
+				from WT_SUBJECT_MIRNA_PROBESET
+				where trial_name = TrialId;
+			exception
+			when others then
+				perform cz_error_handler (jobID, procedureName, SQLSTATE, SQLERRM);
+				perform cz_end_audit (jobID, 'FAIL');
+				return -16;
+		end;
 	else	
 		begin
       insert into WT_SUBJECT_MIRNA_LOGS
@@ -288,12 +315,12 @@ BEGIN
 	      ,m.assay_id
 	      ,cast(m.probeset_id AS INTEGER)
 		  ,case
-			 	when dataType in ('R', 'L') then m.intensity_value
+			 	when dataType in ('R', 'L', 'C') then m.intensity_value
 				else null
 			end as raw_intensity
 	    --  ,decode(dataType,'R',m.intensity_value,'L',power(logBase, m.log_intensity),null)
 		  ,case
-			 	when dataType in ('R', 'L')
+			 	when dataType in ('R', 'L', 'C')
 			 	then m.log_intensity
 				else null
 			end
