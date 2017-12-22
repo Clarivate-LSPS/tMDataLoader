@@ -151,7 +151,7 @@ select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into r
 			select probeset
 				  ,intensity_value
 				  ,assay_id
-				  ,CASE WHEN intensity_value <= 0 THEN log(2,(intensity_value + 0.001)) ELSE log(2,intensity_value) END
+				  ,CASE WHEN intensity_value <= 0 THEN log(2,(intensity_value + 0.001)::numeric) ELSE log(2,intensity_value::numeric) END
 				  ,patient_id
 				  ,subject_id
 			from WT_SUBJECT_MBOLOMICS_PROBESET
@@ -256,8 +256,8 @@ select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into r
 	',assay_id ,subject_id ,raw_intensity ,log_intensity ,zscore ,patient_id) ' ||
 	'select ' || partitioniD::text || ', ''' || TrialId || '''' ||
 		  ',''' || TrialId || ''',d.id ,m.assay_id ,m.subject_id ' ||
-           ',m.intensity_value ,round(m.log_intensity,4) ' ||
-            ',round(CASE WHEN m.zscore < -2.5 THEN -2.5 WHEN m.zscore >  2.5 THEN  2.5 ELSE round(m.zscore,5) END,5) ' ||
+           ',m.intensity_value ,round(m.log_intensity::numeric,4) ' ||
+            ',round(CASE WHEN m.zscore < -2.5 THEN -2.5 WHEN m.zscore >  2.5 THEN  2.5 ELSE round(m.zscore::numeric,5) END::numeric,5) ' ||
             ',m.patient_id ' ||
 			'from WT_SUBJECT_METABOLOMICS_MED m, ' ||
         '(select distinct mp.source_cd,mp.platform From LT_SRC_METABOLOMIC_MAP mp where mp.trial_name = ''' || TrialId || ''') as mpp ' ||
