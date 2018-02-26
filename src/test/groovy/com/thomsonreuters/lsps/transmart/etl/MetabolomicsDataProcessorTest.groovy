@@ -29,6 +29,8 @@ class MetabolomicsDataProcessorTest extends GroovyTestCase implements ConfigAwar
         if (database?.databaseType == DatabaseType.Postgres) {
             runScript('I2B2_LOAD_METABOLOMICS_ANNOT.sql')
             runScript('I2B2_PROCESS_METABOLOMIC_DATA.sql')
+        } else if (database?.databaseType == DatabaseType.Oracle) {
+            runScript('I2B2_PROCESS_METABOLOMIC_DATA.sql')
         }
     }
 

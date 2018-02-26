@@ -753,9 +753,23 @@ BEGIN
 	--cz_write_audit(jobId,databaseName,procedureName,'Recreate indexes on DEAPP de_subject_sample_mapping',0,stepCt,'Done');
 
 --	Insert records for patients and samples into observation_fact
+	select count(*) into sCount from i2b2demodata.modifier_dimension WHERE modifier_cd = 'TRANSMART:HIGHDIM:SNP';
+	if (sCount = 0) then
+		insert into i2b2demodata.modifier_dimension (
+			modifier_path,
+			modifier_cd,
+			name_char)
+		values (
+			'SNP',
+			'TRANSMART:HIGHDIM:SNP',
+			'SNP');
+		stepCt := stepCt + 1;
+		cz_write_audit(jobId,databaseName,procedureName,'Insert new modifier_dimension row',SQL%ROWCOUNT,stepCt,'Done');
+	END IF;
 
 	insert into observation_fact
-    (patient_num
+    ( encounter_num
+			,patient_num
 	,concept_cd
 	,modifier_cd
 	,valtype_cd
@@ -770,8 +784,10 @@ BEGIN
 
 	,UNITS_CD
   ,instance_num
+			,start_date
     )
     select distinct m.patient_id
+			,m.patient_id
 		  ,m.concept_code
 		  ,m.trial_name
 		  ,'T' -- Text data type
@@ -785,6 +801,7 @@ BEGIN
 		  ,'@'
 		  ,'' -- no units available
       ,1
+			,to_date('0001/01/01 00:00', 'YYYY/MM/DD HH24:mi')
     from  de_subject_sample_mapping m
     where m.trial_name = TrialID 
 	  and m.source_cd = sourceCD

@@ -233,6 +233,31 @@ order by c_fullname
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Inserted trial data into BIOMART bio_data_uid',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
+
+	INSERT INTO i2b2demodata.study (
+		study_num,
+		bio_experiment_id,
+		study_id,
+		secure_obj_token)
+		SELECT
+			t.bei,
+			i2b2demodata.study_num_seq.nextval,
+			t.si,
+			t.esi
+		FROM
+			(SELECT
+				 DISTINCT
+				 b.bio_experiment_id as bei,
+				 m.study_id as si,
+				 'EXP:' || m.study_id as esi
+			 FROM biomart.bio_experiment b
+				 , lt_src_study_metadata m
+			 WHERE m.study_id IS NOT NULL
+						 AND m.study_id = b.accession
+						 AND NOT exists
+			 (SELECT 1
+				FROM biomart.bio_data_uid x
+				WHERE x.unique_id = 'EXP:' || m.study_id)) t;
 	
 	-- Create study folder
 	for bio_experiment_rec in (select dat.unique_id, exp.title, exp.description, met.study_phase

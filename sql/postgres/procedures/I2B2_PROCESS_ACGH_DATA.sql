@@ -907,7 +907,7 @@ BEGIN
                   ,m.patient_id
 		  ,m.concept_code
 		  ,current_timestamp
-		  ,'@'
+		  ,'TRANSMART:HIGHDIM:CHROMOSOMAL'
 		  ,'T' -- Text data type
 		  ,'E'  --Stands for Equals for Text Types
 		  ,m.trial_name
@@ -916,7 +916,7 @@ BEGIN
 		  ,'@'
 		  ,'@'
 		  ,'' -- no units available
-		  , 0
+		  , 1
     from  deapp.de_subject_sample_mapping m
     where m.trial_name = TrialID
 	  and m.source_cd = sourceCD

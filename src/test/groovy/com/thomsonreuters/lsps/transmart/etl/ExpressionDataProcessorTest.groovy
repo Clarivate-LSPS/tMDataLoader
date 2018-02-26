@@ -1,5 +1,6 @@
 package com.thomsonreuters.lsps.transmart.etl
 
+import com.thomsonreuters.lsps.db.core.DatabaseType
 import com.thomsonreuters.lsps.transmart.Fixtures
 import com.thomsonreuters.lsps.transmart.fixtures.ExpressionData
 import com.thomsonreuters.lsps.transmart.fixtures.Study
@@ -31,6 +32,9 @@ class ExpressionDataProcessorTest extends GroovyTestCase implements ConfigAwareT
     void setUp() {
         ConfigAwareTestCase.super.setUp()
         runScript('I2B2_PROCESS_MRNA_DATA.sql')
+        if (database?.databaseType == DatabaseType.Postgres) {
+            runScript('I2B2_LOAD_SAMPLES.sql')
+        }
     }
 
     void assertThatSampleIsPresent(String sampleId, String gplId=platformId, sampleData) {

@@ -34,6 +34,7 @@ class RBMDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase
             runScript('I2B2_RBM_ZSCORE_CALC_NEW.sql')
         } else if (database?.databaseType == DatabaseType.Oracle) {
             runScript('I2B2_RBM_ZSCORE_CALC.sql')
+            runScript('I2B2_LOAD_RBM_DATA.sql')
         }
         clearAnnotation(platformId)
     }

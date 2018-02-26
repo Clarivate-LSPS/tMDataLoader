@@ -16,6 +16,7 @@ class ProteinSerialHDDDataProcessorTest extends Specification implements ConfigA
         ConfigAwareTestCase.super.setUp()
         Study.deleteById(config, studyId)
         sql.execute('delete from deapp.de_subject_sample_mapping where trial_name = ?', studyId)
+        runScript("I2B2_PROCESS_PROTEOMICS_DATA.sql")
     }
 
     def 'it should load serial hdd data'() {

@@ -743,7 +743,8 @@ BEGIN
 --	Insert records for patients and samples into observation_fact
 	begin
 	insert into observation_fact
-        (patient_num
+        ( encounter_num
+		,patient_num
 	,concept_cd
 	,modifier_cd
 	,valtype_cd
@@ -757,10 +758,12 @@ BEGIN
 	,units_cd
         ,sample_cd
         ,INSTANCE_NUM
+				,start_date
         )
-        select distinct m.patient_id
+        select distinct m.patient_id,
+					m.patient_id
 		  ,m.concept_code
-		  ,'@'
+		  ,'TRANSMART:HIGHDIM:MIRNA_QPCR'
 		  ,'T' -- Text data type
 		  ,'E'  --Stands for Equals for Text Types
 		  ,null::numeric	--	not numeric for qpcr_mirna
@@ -770,8 +773,9 @@ BEGIN
 		  ,'@'
 		  ,'@'
 		  ,'' -- no units available
-                   ,m.sample_cd
-                  ,1
+				  ,m.sample_cd
+					,1
+					,to_date('0001-01-01 00:00:00', 'YYYY-MM-DD HH24:MI:SS')
         from  de_subject_sample_mapping m
         where m.trial_name = TrialID 
         and m.source_cd = sourceCD

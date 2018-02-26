@@ -1,6 +1,7 @@
 package com.thomsonreuters.lsps.transmart.etl
 
 import com.thomsonreuters.lsps.transmart.Fixtures
+import com.thomsonreuters.lsps.transmart.fixtures.Study
 import com.thomsonreuters.lsps.transmart.fixtures.StudyInfo
 import com.thomsonreuters.lsps.db.core.DatabaseType
 import org.hamcrest.CoreMatchers
@@ -379,6 +380,7 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
     void testItDeletesRBMData() {
         def rbmStudyName = 'Test RBM Study'
         def rbmStudyId = 'TESTRBM'
+        Study.deleteByPath(config, "Test Studies\\${rbmStudyName}".toString())
 
         RBMDataProcessor.process(
                 new File("fixtures/Test Studies/${rbmStudyName}/RBMDataToUpload").toPath(),

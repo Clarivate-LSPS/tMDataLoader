@@ -744,7 +744,8 @@ dbms_output.put_line('1');
 --	Insert records for patients and samples into observation_fact
 
 	insert into observation_fact
-    (patient_num
+    (encounter_num
+	,patient_num
 	,concept_cd
 	,modifier_cd
 	,valtype_cd
@@ -758,10 +759,12 @@ dbms_output.put_line('1');
 	,units_cd
         ,sample_cd
         ,INSTANCE_NUM
+			,start_date
     )
     select distinct m.patient_id
+			,m.patient_id
 		  ,m.concept_code
-		  ,'@'
+		  ,'TRANSMART:HIGHDIM:RBM'
 		  ,'T' -- Text data type
 		  ,'E'  --Stands for Equals for Text Types
 		  ,null	--	not numeric for rbm
@@ -773,6 +776,7 @@ dbms_output.put_line('1');
 		  ,'' -- no units available
                   ,m.sample_cd
                   ,1
+			,to_date('0001/01/01 00:00', 'YYYY/MM/DD HH24:mi')
     from  de_subject_sample_mapping m
     where m.trial_name = TrialID 
 	  and m.source_cd = sourceCD

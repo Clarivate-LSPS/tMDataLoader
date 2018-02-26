@@ -255,6 +255,42 @@ BEGIN
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Added study to bio_data_uid',rowCt,stepCt,'Done') into rtnCd;
 
+	BEGIN
+		INSERT INTO i2b2demodata.study (
+			study_num,
+			bio_experiment_id,
+			study_id,
+			secure_obj_token)
+			SELECT
+				distinct b.bio_experiment_id,
+				nextval('i2b2demodata.study_num_seq'),
+				m.study_id,
+				'EXP:' || m.study_id
+			from biomart.bio_experiment b
+				,lt_src_study_metadata m
+			where m.study_id is not null
+						and m.study_id = b.accession
+						and not exists
+			(select 1 from biomart.bio_data_uid x
+					where x.unique_id = 'EXP:' || m.study_id);
+		GET DIAGNOSTICS rowCt := ROW_COUNT;
+		EXCEPTION
+		WHEN OTHERS
+			THEN
+				errorNumber := SQLSTATE;
+				errorMessage := SQLERRM;
+				--Handle errors.
+				SELECT cz_error_handler(jobID, procedureName, errorNumber, errorMessage)
+				INTO rtnCd;
+				--End Proc
+				SELECT cz_end_audit(jobID, 'FAIL')
+				INTO rtnCd;
+				RETURN -16;
+	END;
+	stepCt := stepCt + 1;
+	SELECT
+		cz_write_audit(jobId, databaseName, procedureName, 'Add study to STUDY table', rowCt, stepCt, 'Done')
+	INTO rtnCd;
 	-- Create study folder
 	begin
 		for bio_experiment_rec in (select dat.unique_id, exp.title, exp.description, met.study_phase
@@ -287,7 +323,7 @@ BEGIN
 
 				if (lcount = 0) then
 					insert into amapp.am_tag_association (subject_uid, object_uid, object_type, tag_item_id)
-					   	 values ('FOL:' || study_folder_id, 
+					   	 values ('FOL:' || study_folder_id,
 								'STUDY_PHASE:' || upper(regexp_replace(bio_experiment_rec.study_phase, ' ', '_', 'g')),
 								'BIO_CONCEPT_CODE', study_phase_tag_item_id);
 				else

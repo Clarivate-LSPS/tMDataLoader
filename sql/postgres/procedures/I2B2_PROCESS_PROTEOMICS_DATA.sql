@@ -718,7 +718,8 @@ BEGIN
 
 	begin
 	insert into observation_fact
-    (patient_num
+    ( encounter_num
+	,patient_num
 	,concept_cd
 	,modifier_cd
 	,valtype_cd
@@ -732,9 +733,10 @@ BEGIN
 	,units_cd
          ,sample_cd
         ,INSTANCE_NUM
-        
+			,start_date
     )
-    select distinct m.patient_id
+    select distinct m.patient_id as encounter_num
+			,m.patient_id
 		  ,m.concept_code
 		  ,'@'
 		  ,'T' -- Text data type
@@ -746,8 +748,9 @@ BEGIN
 		  ,'@'
 		  ,'@'
 		  ,'' -- no units available
-                   ,m.sample_cd
-                   ,1
+		  ,m.sample_cd
+		  ,1
+			,to_date('0001-01-01 00:00:00', 'YYYY-MM-DD HH24:MI:SS')
     from  de_subject_sample_mapping m
     where m.trial_name = TrialID 
 	  and m.source_cd = sourceCD
@@ -766,7 +769,8 @@ BEGIN
 
 	begin
 	insert into observation_fact
-    (patient_num
+    (encounter_num
+	,patient_num
 	,concept_cd
 	,modifier_cd
 	,valtype_cd
@@ -782,8 +786,9 @@ BEGIN
         ,INSTANCE_NUM
     )
     select distinct m.sample_id
+			,m.sample_id
 		  ,m.concept_code
-		  ,m.trial_name
+		  ,'TRANSMART:HIGHDIM:PROTEOMICS'
 		  ,'T' -- Text data type
 		  ,'E'  --Stands for Equals for Text Types
 		  ,null::numeric	--	not numeric for miRNA

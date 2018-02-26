@@ -91,6 +91,8 @@ BEGIN
 
 	sourceCd := upper(coalesce(source_cd,'STD'));
 
+	select cz_write_audit(jobId,databaseName,procedureName,'Technical info: TrialId: ' || TrialID || ' sourceCD: '|| sourceCd || ' platform_type: ' || platform_type,0,stepCt,'Done') into rtnCd;
+
 	--	Get count of records in lt_src_mrna_subj_samp_map
 
 	select count(*) into sCount
@@ -838,8 +840,36 @@ BEGIN
 	end if;
 	--	Insert records for subjects into observation_fact
 	begin
+		select count(*) into scount from i2b2demodata.modifier_dimension WHERE modifier_cd = 'TRANSMART:HIGHDIM:'||upper(platform_type);
+		if (scount = 0) then
+			insert into i2b2demodata.modifier_dimension (
+				modifier_path,
+				modifier_cd,
+				name_char)
+			values (
+				platform_type,
+				'TRANSMART:HIGHDIM:'||upper(platform_type),
+				platform_type);
+		END IF;
+		get diagnostics rowCt := ROW_COUNT;
+		exception
+		when others then
+			errorNumber := SQLSTATE;
+			errorMessage := SQLERRM;
+			--Handle errors.
+			select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+			--End Proc
+			select cz_end_audit (jobID, 'FAIL') into rtnCd;
+			return -16;
+	END;
+	stepCt := stepCt + 1;
+	select cz_write_audit(jobId,databaseName,procedureName,'Insert new modifier_dimension row',0,stepCt,'Done') into rtnCd;
+
+	begin
 	insert into i2b2demodata.observation_fact
-    (patient_num
+    (
+			encounter_num
+			,patient_num
 	,concept_cd
 	,modifier_cd
 	,valtype_cd
@@ -850,22 +880,37 @@ BEGIN
 	,provider_id
 	,location_cd
 	,units_cd
-    )
-    select distinct m.patient_id
-		  ,m.concept_code
-		  ,m.trial_name
-		  ,'T' -- Text data type
-		  ,'E'  --Stands for Equals for Text Types
-		  ,m.trial_name
-		  ,current_timestamp
-		  ,'@'
-		  ,'@'
-		  ,'@'
-		  ,'' -- no units available
-    from  deapp.de_subject_sample_mapping m
-    where m.trial_name = TrialID
-	  and m.source_cd = sourceCD
-      and m.platform = platform_type;
+	,start_date
+	,instance_num
+		)
+		select
+			 a.patient_id as encount_num
+			,a.patient_id as patient_num
+			,a.concept_code
+			,'TRANSMART:HIGHDIM:'||upper(platform_type) -- a.concept_cd   -- modifier_cd
+			,'T' -- Text data type
+			,'E'  --Stands for Equals for Text Types
+			,a.sourcesystem_cd
+			,current_timestamp
+			,'@'
+			,'@'
+			,'@'
+			,'' -- no units available
+			,to_date('0001-01-01 00:00:00', 'YYYY-MM-DD HH24:MI:SS')
+			,1
+		FROM (
+					 select
+						 distinct m.patient_id as patient_id
+						 ,m.concept_code
+						 ,m.trial_name as concept_cd
+						 ,'T' as valtype_cd -- Text data type
+						 ,'E' as tval_char --Stands for Equals for Text Types
+						 ,m.trial_name as sourcesystem_cd
+					 from  deapp.de_subject_sample_mapping m
+					 where m.trial_name = TrialID
+								 and m.source_cd = sourceCD
+								 and m.platform = platform_type
+				 ) a;
 	get diagnostics rowCt := ROW_COUNT;
 	exception
 	when others then

@@ -68,7 +68,8 @@ BEGIN
 	commit;
 
 	insert into i2b2demodata.observation_fact
-    (patient_num
+    (encounter_num,
+		 patient_num
 	,concept_cd
 	,provider_id
 	,modifier_cd
@@ -81,8 +82,10 @@ BEGIN
 	,import_date
 	,sourcesystem_cd
 	,instance_num
+	,start_date
 	)
 	select distinct patient_num
+			,patient_num
 		  ,'SECURITY'
 		  ,'@'
 		  ,'@'
@@ -95,6 +98,7 @@ BEGIN
 		  ,sysdate
 		  ,TrialId
 		  ,1
+			,to_date('0001/01/01 00:00', 'YYYY/MM/DD HH24:mi')
 	from patient_dimension
 	where sourcesystem_cd like TrialID || ':%';
 	stepCt := stepCt + 1;

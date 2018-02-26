@@ -355,7 +355,10 @@ BEGIN
 
 --	add indexes, if indexes were not dropped, procedure will not try and recreate
         --added for UAT 207 on 06/03/2014
-	i2b2_mrna_index_maint('ADD', null, jobId, TrialId||':'||sourceCD);
+	cz_write_audit(jobId,databaseName,procedureName,'WORK',0,stepCt,'Done');
+	if nbrRecs > 10000000 then
+		i2b2_mrna_index_maint('ADD', null, jobId, TrialId||':'||sourceCD);
+	end if;
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Add indexes on DEAPP de_subject_microarray_data',0,stepCt,'Done');
 

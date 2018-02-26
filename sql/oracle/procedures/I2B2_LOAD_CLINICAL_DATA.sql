@@ -116,7 +116,7 @@ AS
 		    and sm.concept_code = m.c_basecode
 			and m.c_visualattributes like 'L%' AND m.c_fullname = l.c_fullname);
 BEGIN
-
+	EXECUTE IMMEDIATE 'alter session set NLS_NUMERIC_CHARACTERS=".,"';
 	TrialID := upper(trial_id);
 	secureStudy := upper(secure_study);
 	
@@ -221,7 +221,10 @@ BEGIN
 	,subject_id
 	,visit_name
 	,data_label
+	,modifier_cd
 	,data_value
+	,units_cd
+	,date_timestamp
 	,category_cd
 	,ctrl_vocab_code
   ,category_path
@@ -235,7 +238,10 @@ BEGIN
 		  ,subject_id
 		  ,visit_name
 		  ,data_label
-		  ,data_value
+			,modifier_cd
+			,data_value
+			,units_cd
+			,date_timestamp
 		  ,category_cd
 		  ,ctrl_vocab_code
 		  -- All tag values prefixed with $$, so we should remove prefixes in category_path
@@ -1197,8 +1203,10 @@ BEGIN
     --Insert into observation_fact
 	--22 July 2013. Performace fix by TR. Set nologging.
 	insert /*+ APPEND */ into observation_fact nologging
-	(patient_num,
+	(encounter_num,
+	 	patient_num,
      concept_cd,
+	 	 start_date,
      modifier_cd,
      valtype_cd,
      tval_char,
@@ -1211,7 +1219,9 @@ BEGIN
      instance_num
 	)
        select /*+opt_param('_optimizer_cartesian_enabled','false')*/ distinct c.patient_num,
+			 c.patient_num,
 		   i.c_basecode,
+			 to_date(coalesce(a.visit_date,'0001/01/01 00:00'),'YYYY/MM/DD HH24:mi'),
 		   a.study_id,
 		   a.data_type,
 		   case when a.data_type = 'T' then a.data_value

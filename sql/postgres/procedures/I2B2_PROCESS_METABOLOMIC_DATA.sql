@@ -755,7 +755,8 @@ category_cd,'PLATFORM',title),'ATTR1',coalesce(attribute_1,'')),'ATTR2',coalesce
 --	Insert records for patients and samples into observation_fact
 	begin
 	insert into observation_fact
-    (patient_num
+    ( encounter_num
+	,patient_num
 	,concept_cd
 	,modifier_cd
 	,valtype_cd
@@ -766,11 +767,13 @@ category_cd,'PLATFORM',title),'ATTR1',coalesce(attribute_1,'')),'ATTR2',coalesce
 	,provider_id
 	,location_cd
 	,units_cd
-        ,INSTANCE_NUM
+      ,INSTANCE_NUM
+			,start_date
     )
     select distinct m.patient_id
+			,m.patient_id
 		  ,m.concept_code
-		  ,'@'
+		  ,'TRANSMART:HIGHDIM:METABOLOMICS'
 		  ,'T' -- Text data type
 		  ,'E'  --Stands for Equals for Text Types
 		  ,m.trial_name
@@ -779,7 +782,8 @@ category_cd,'PLATFORM',title),'ATTR1',coalesce(attribute_1,'')),'ATTR2',coalesce
 		  ,'@'
 		  ,'@'
 		  ,'' -- no units available
-                  ,1
+      ,1,to_date('0001-01-01 00:00:00', 'YYYY-MM-DD HH24:MI:SS')
+
     from  de_subject_sample_mapping m
     where m.trial_name = TrialID 
 	  and m.source_cd = sourceCD

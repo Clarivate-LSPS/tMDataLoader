@@ -105,7 +105,7 @@ BEGIN
 
 	stepCt := 0;
 	stepCt := stepCt + 1;
-	tText := 'Start i2b2_load_clinical_data for ' || TrialId;
+	tText := 'Start i2b2_load_clinical_data for ' || TrialId || ' topNode = ' || topNode;
 	select cz_write_audit(jobId,databaseName,procedureName,tText,0,stepCt,'Done') into rtnCd;
 
 	if (secureStudy not in ('Y','N') ) then
@@ -140,7 +140,10 @@ BEGIN
 	,subject_id
 	,visit_name
 	,data_label
+	,modifier_cd
 	,data_value
+	,units_cd
+	,date_timestamp
 	,category_cd
 	,ctrl_vocab_code
 	,sample_cd
@@ -152,7 +155,10 @@ BEGIN
 		  ,subject_id
 		  ,visit_name
 		  ,data_label
+			,modifier_cd
 		  ,data_value
+			,units_cd
+			,date_timestamp
 		  ,category_cd
 		  ,ctrl_vocab_code
 		  ,sample_cd
@@ -1310,28 +1316,31 @@ BEGIN
 	analyze wrk_clinical_data;
 	analyze wt_trial_nodes;
 
+	
+
 	begin
+
 	set enable_mergejoin=f;
 	create temporary table tmp_observation_facts without oids as
 	select distinct c.patient_num as encounter_num,
 		  c.patient_num,
-		  i.c_basecode,
-		  current_timestamp as start_date,
-		  a.study_id,
-		  a.data_type,
+		  i.c_basecode as concept_cd,
+			coalesce(a.date_timestamp, 'infinity') as start_date,
+			a.study_id as modifier_cd,
+		  a.data_type as valtype_cd,
 		  case when a.data_type = 'T' then a.data_value
 				else 'E'  --Stands for Equals for numeric types
 				end as tval_char,
 		  case when a.data_type = 'N' then a.data_value::numeric
 				else null --Null for text types
 				end as nval_num,
+			a.units_cd,
 		  a.study_id as sourcesystem_cd,
 		  current_timestamp as import_date,
 		  '@' as valueflag_cd,
-		  '@' as provider_cd,
+		  '@' as provider_id,
 		  '@' as location_cd,
-			0 as instance_num,
-			sample_cd as sample_cd
+			1 as instance_num
 	from wrk_clinical_data a
 		,i2b2demodata.patient_dimension c
 		,wt_trial_nodes t
@@ -1393,13 +1402,13 @@ BEGIN
      valtype_cd,
      tval_char,
      nval_num,
+	   units_cd,
      sourcesystem_cd,
      import_date,
      valueflag_cd,
      provider_id,
      location_cd,
-     instance_num,
-     sample_cd
+     instance_num
 	)
 	select * from tmp_observation_facts;
 

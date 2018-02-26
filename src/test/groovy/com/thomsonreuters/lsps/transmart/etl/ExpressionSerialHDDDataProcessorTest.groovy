@@ -1,6 +1,7 @@
 package com.thomsonreuters.lsps.transmart.etl
 
 import com.thomsonreuters.lsps.db.core.DatabaseType
+import com.thomsonreuters.lsps.transmart.fixtures.Study
 
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.*
 import static org.hamcrest.CoreMatchers.equalTo
@@ -27,6 +28,8 @@ class ExpressionSerialHDDDataProcessorTest extends GroovyTestCase implements Con
         runScript('I2B2_PROCESS_SERIAL_HDD_DATA.sql')
         if (database?.databaseType == DatabaseType.Postgres) {
             runScript('I2B2_LOAD_SAMPLES.sql')
+        } else if (database?.databaseType == DatabaseType.Oracle) {
+            runScript('i2b2_mrna_zscore_calc.sql')
         }
     }
 
@@ -59,6 +62,7 @@ class ExpressionSerialHDDDataProcessorTest extends GroovyTestCase implements Con
     }
 
     void testItLoadsData() {
+        Study.deleteByPath(config, "\\Test Studies\\${studyName}".toString())
         processor.process(
                 new File("fixtures/Test Studies/${studyName}/ExpressionSerialHDDDataToUpload").toPath(),
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])

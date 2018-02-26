@@ -19,13 +19,10 @@
  ******************************************************************/
 
 package com.thomsonreuters.lsps.transmart.etl
+
 import com.thomsonreuters.lsps.db.core.Database
 import groovy.sql.Sql
-import org.apache.commons.csv.CSVFormat
-import org.apache.commons.csv.CSVPrinter
 
-import java.nio.charset.StandardCharsets
-import java.nio.file.Files
 import java.nio.file.Path
 
 abstract class AbstractDataProcessor implements DataProcessor {

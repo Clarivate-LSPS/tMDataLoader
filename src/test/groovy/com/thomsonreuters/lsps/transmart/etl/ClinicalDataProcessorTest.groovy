@@ -1,5 +1,6 @@
 package com.thomsonreuters.lsps.transmart.etl
 
+import com.thomsonreuters.lsps.db.core.DatabaseType
 import com.thomsonreuters.lsps.transmart.Fixtures
 import com.thomsonreuters.lsps.transmart.etl.statistic.VariableType
 import com.thomsonreuters.lsps.transmart.fixtures.ClinicalData
@@ -27,6 +28,10 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
     void setup() {
         ConfigAwareTestCase.super.setUp()
         runScript('I2B2_LOAD_CLINICAL_DATA.sql')
+        runScript('I2B2_DELETE_ALL_DATA.sql')
+        if (database?.databaseType == DatabaseType.Oracle) {
+            runScript('i2b2_create_security_for_trial.sql')
+        }
     }
 
     ClinicalDataProcessor getProcessor() {
@@ -36,6 +41,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
     void testItLoadsAge() {
         setup:
         Study.deleteById(config, clinicalData.studyId)
+        Study.deleteByPath(config, "\\Test Studies\\$clinicalData.studyName")
 
         def result = clinicalData.load(config)
 
@@ -48,6 +54,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
     def 'it should produce SummaryStatistic.txt'() {
         when:
         Study.deleteById(config, clinicalData.studyId)
+        Study.deleteByPath(config, "\\Test Studies\\$clinicalData.studyName")
 
         def expectedFile = new File(clinicalData.dir, 'ExpectedSummaryStatistic.txt')
         def actualFile = new File(clinicalData.dir, 'SummaryStatistic.txt')
@@ -132,7 +139,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
     void testItLoadsData() {
         expect:
         String conceptPath = "\\Test Studies\\${studyName}\\"
-        Study.deleteById(config, conceptPath)
+        Study.deleteByPath(config, conceptPath)
         String conceptPathForPatient = conceptPath + "Biomarker Data\\Mutations\\TST001 (Entrez ID: 1956)\\AA mutation\\"
 
         processor.process(
@@ -170,6 +177,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         String conceptPath = "\\Test Studies\\${studyName}\\"
         String conceptPathForPatient = conceptPath + "Biomarker Data\\Mutations\\TST001 (Entrez ID: 1956)\\AA mutation\\"
         String subjId = 'HCC2935'
+        Study.deleteByPath(config, conceptPath)
 
         processor.process(
                 new File(studyDir(studyName, studyId), "ClinicalDataToUpload").toPath(),
@@ -483,6 +491,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
 
     def "it should load different values for different patients in same node"() {
         given:
+        Study.deleteById(config, 'DIFVALDIFPATSN')
         def clinicalData = ClinicalData.build('DIFVALDIFPATSN', 'Dif Values for Dif Patients in Same Node') {
             dataFile('TST.txt', ['Visit', 'Duplicates_Cat', 'Duplicates_Num_No_Data_Value', 'Duplicates_Cat_No_Data_Value']) {
                 forSubject('TST01') {
@@ -1101,7 +1110,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
             dataFile('TEST.txt', ['Days', 'Timestamp St.1', 'Race', 'Baseline']) {
                 forSubject('SUBJ1') {
                     row '5', period1, 'One', '2000-12-31 12:00'
-                    row '7',period3, 'One', '2000-12-31 12:00'
+                    row '7', period3, 'One', '2000-12-31 12:00'
                     row '2', period2, 'One', '2000-12-31 12:00'
                     row '4', period4, 'One', '2000-12-31 12:00'
                 }
@@ -1169,7 +1178,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
             dataFile('TEST.txt', ['Days', 'Timestamp', 'Sex', 'Baseline']) {
                 forSubject('SUBJ1') {
                     row '5', period1, 'Male', '2000-12-31 12:00'
-                    row '7',period3, 'Male', '2000-12-31 12:00'
+                    row '7', period3, 'Male', '2000-12-31 12:00'
                     row '2', period2, 'Male', '2000-12-31 12:00'
                     row '4', period4, 'Male', '2000-12-31 12:00'
                 }
@@ -1245,7 +1254,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
             dataFile('TEST.txt', ['Days', 'Timestamp St.1', 'Sex', 'Baseline']) {
                 forSubject('SUBJ1') {
                     row '5', period1, 'Male', '2000-12-31 12:00'
-                    row '7',period3, 'Male', '2000-12-31 12:00'
+                    row '7', period3, 'Male', '2000-12-31 12:00'
                     row '2', period2, 'Male', '2000-12-31 12:00'
                     row '4', period4, 'Male', '2000-12-31 12:00'
                 }
@@ -1334,15 +1343,15 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
             }
             dataFile('TEST.txt', ['Days', 'Timestamp', 'Sex', 'Baseline', 'Count', 'Timestamp2', 'Baseline2']) {
                 forSubject('SUBJ1') {
-                    row '0', '2000-12-31 12:00', 'Female', '2000-12-31 12:00', '1', '2000-12-31 14:00','2000-12-31 13:00'
-                    row '10', '2000-12-31 12:01', 'Female', '2000-12-31 12:00', '2', '2000-12-31 14:01','2000-12-31 13:00'
-                    row '12', '2000-12-31 12:02', 'Female', '2000-12-31 12:00', '3', '2000-12-31 14:02','2000-12-31 13:00'
-                    row '10', '2000-12-31 12:05', 'Female', '2000-12-31 12:00', '4', '2000-12-31 14:03','2000-12-31 13:00'
+                    row '0', '2000-12-31 12:00', 'Female', '2000-12-31 12:00', '1', '2000-12-31 14:00', '2000-12-31 13:00'
+                    row '10', '2000-12-31 12:01', 'Female', '2000-12-31 12:00', '2', '2000-12-31 14:01', '2000-12-31 13:00'
+                    row '12', '2000-12-31 12:02', 'Female', '2000-12-31 12:00', '3', '2000-12-31 14:02', '2000-12-31 13:00'
+                    row '10', '2000-12-31 12:05', 'Female', '2000-12-31 12:00', '4', '2000-12-31 14:03', '2000-12-31 13:00'
                 }
                 forSubject('SUBJ2') {
-                    row '5', '2000-12-31 12:00', 'Male', '2000-12-31 12:00', '1', '2000-12-31 14:00','2000-12-31 13:00'
-                    row '13', '2000-12-31 12:02', 'Male', '2000-12-31 12:00', '10', '2000-12-31 14:01','2000-12-31 13:00'
-                    row '15', '2000-12-31 12:05', 'Male', '2000-12-31 12:00', '100', '2000-12-31 14:02','2000-12-31 13:00'
+                    row '5', '2000-12-31 12:00', 'Male', '2000-12-31 12:00', '1', '2000-12-31 14:00', '2000-12-31 13:00'
+                    row '13', '2000-12-31 12:02', 'Male', '2000-12-31 12:00', '10', '2000-12-31 14:01', '2000-12-31 13:00'
+                    row '15', '2000-12-31 12:05', 'Male', '2000-12-31 12:00', '100', '2000-12-31 14:02', '2000-12-31 13:00'
                 }
             }
         }
@@ -1376,5 +1385,9 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
                     true
                 }
         ])
+    }
+
+    def 'It should load data into transmart 17.1 new tables'(){
+        
     }
 }

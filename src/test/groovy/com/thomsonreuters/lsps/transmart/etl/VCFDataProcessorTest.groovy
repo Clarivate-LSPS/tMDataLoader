@@ -191,6 +191,8 @@ class VCFDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase
         VCFData vcfData = Fixtures.multipleVcfData.copyWithSuffix('MultiVCF')
         def studyName = vcfData.studyName
         def studyId = vcfData.studyId
+
+        Study.deleteById(config, studyId)
         assertTrue(vcfData.load(config))
         assertThat(db, hasPlatform(gplId, gplId, 'VCF', organism: 'Homo Sapiens'))
         assertThat(db, hasNode("\\Test Studies\\${studyName}\\VCF\\VCFTest1\\").withPatientCount(1))
@@ -248,6 +250,7 @@ class VCFDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase
     void testItLoadsMultipleVcfFilesWithConfiguredPaths() {
         def gplId = 'VCF'
         VCFData vcfData = Fixtures.multipleVcfDataWithConfiguredPaths.copyWithSuffix('MultiVCFWithPaths')
+        Study.deleteById(config, vcfData.studyId)
         assertTrue(vcfData.load(config))
         assertThat(db, hasPlatform(gplId, gplId, 'VCF', organism: 'Homo Sapiens'))
         assertThat(db, hasNode("\\Test Studies\\${vcfData.studyName}\\VCF\\Subjects\\Subject0\\").withPatientCount(1))
