@@ -165,6 +165,7 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
   
         -- Deleted security configuration from first study
         begin
+          DELETE FROM i2b2demodata.study WHERE study_id = accession_old;
           DELETE FROM biomart.bio_experiment WHERE accession = accession_old;
           DELETE FROM biomart.bio_data_uid WHERE unique_id = 'EXP:'||accession_old;
           DELETE FROM searchapp.search_secure_object WHERE bio_data_unique_id = 'EXP:'||accession_old;

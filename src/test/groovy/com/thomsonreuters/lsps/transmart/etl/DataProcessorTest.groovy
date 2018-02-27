@@ -1,4 +1,5 @@
 package com.thomsonreuters.lsps.transmart.etl
+
 import com.thomsonreuters.lsps.transmart.Fixtures
 import com.thomsonreuters.lsps.transmart.fixtures.ClinicalData
 import com.thomsonreuters.lsps.transmart.fixtures.ExpressionData
@@ -6,9 +7,7 @@ import com.thomsonreuters.lsps.transmart.fixtures.Study
 import com.thomsonreuters.lsps.transmart.fixtures.StudyInfo
 import spock.lang.Specification
 
-import static org.hamcrest.CoreMatchers.equalTo
 import static org.junit.Assert.assertEquals
-import static org.junit.Assert.assertThat
 /**
  * Created by Alexander Omelchenko on 15.12.2015.
  */
@@ -34,6 +33,8 @@ class DataProcessorTest extends Specification implements ConfigAwareTestCase {
 
     void setup() {
         ConfigAwareTestCase.super.setUp()
+        runScript('I2B2_DELETE_ALL_DATA.sql')
+        runScript('I2B2_MOVE_STUDY_BY_PATH.sql')
     }
 
     def 'it should upload data with SECURITY'() {

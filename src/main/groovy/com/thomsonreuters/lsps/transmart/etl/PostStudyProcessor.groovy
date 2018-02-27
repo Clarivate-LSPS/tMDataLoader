@@ -47,6 +47,7 @@ class PostStudyProcessor{
         String newToken = "EXP:$studyId"
         String oldToken = "EXP:$oldStudyId"
 
+        sql.execute("delete from i2b2demodata.study where study_id = :studyId", [studyId: studyId])
         sql.execute("DELETE FROM biomart.bio_experiment WHERE accession = :studyId", [studyId: studyId])
         sql.execute("DELETE FROM biomart.bio_data_uid WHERE unique_id = :newToken", [newToken: newToken])
         sql.execute("DELETE FROM searchapp.search_secure_object WHERE bio_data_unique_id = :newToken",

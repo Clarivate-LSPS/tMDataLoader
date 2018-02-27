@@ -384,6 +384,8 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
     void testMoveStudyWithSaveSecurity() {
         Study.deleteById(config, clinicalData.studyId)
         Study.deleteById(config, otherClinicalData.studyId)
+        sql.executeUpdate("delete from i2b2demodata.study where study_id = ?", clinicalData.studyId)
+        sql.executeUpdate("delete from i2b2demodata.study where study_id = ?", otherClinicalData.studyId)
         sql.executeUpdate("DELETE FROM biomart.bio_experiment WHERE accession = ?", clinicalData.studyId)
         sql.executeUpdate("DELETE FROM biomart.bio_experiment WHERE accession = ? ", otherClinicalData.studyId)
         sql.executeUpdate("DELETE FROM biomart.bio_data_uid WHERE unique_id = ? ", (String) "EXP:${clinicalData.studyId}")

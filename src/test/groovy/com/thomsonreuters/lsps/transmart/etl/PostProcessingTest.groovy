@@ -80,6 +80,7 @@ class PostProcessingTest extends Specification implements ConfigAwareTestCase {
     private void cleanOldData(remStudyId) {
         remStudyId = remStudyId.toUpperCase()
         def tables = [
+                ['table': 'i2b2demodata.study', 'value': remStudyId, 'column': 'study_id'],
                 ['table': 'biomart.bio_experiment', 'value': remStudyId, 'column': 'accession'],
                 ['table': 'biomart.bio_data_uid', 'value': "EXP:$remStudyId", 'column': 'unique_id'],
                 ['table': 'searchapp.search_secure_object', 'value': "EXP:$remStudyId", 'column': 'bio_data_unique_id']

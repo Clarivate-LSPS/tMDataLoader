@@ -318,6 +318,9 @@ BEGIN
 		cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from DE_SUBJECT_SNP_DATASET',SQL%ROWCOUNT,stepCt,'Done');
 		commit;
 
+    delete from i2b2demodata.study where study_id = TrialId;
+    cz_write_audit(jobId,databaseName,procedureName,'Delete study row from study table',SQL%ROWCOUNT,stepCt,'Done');
+
 	end if;
 
     ---Cleanup OVERALL JOB if this proc is being run standalone
