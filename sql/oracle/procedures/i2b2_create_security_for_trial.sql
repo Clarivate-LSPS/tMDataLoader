@@ -190,7 +190,37 @@ BEGIN
 			commit;
 		end if;		
 	end if;
-     
+
+	SELECT count(*)
+	INTO pExists
+	FROM i2b2demodata.study
+	WHERE study_id = TrialId;
+
+	IF pExists = 0
+	THEN
+		select bio_experiment_id into v_bio_experiment_id
+		from biomart.bio_experiment
+		where accession = TrialId;
+
+		INSERT INTO i2b2demodata.study (
+			study_num,
+			bio_experiment_id,
+			study_id,
+			secure_obj_token)
+		VALUES (
+			i2b2demodata.study_num_seq.nextval,
+			v_bio_experiment_id,
+			TrialId,
+			CASE WHEN securedStudy = 'N'
+				THEN 'EXP:PUBLIC'
+			ELSE 'EXP:' || TrialId
+			END);
+
+		stepCt := stepCt + 1;
+		cz_write_audit(jobId, databaseName, procedureName, 'Add study to STUDY table', SQL%ROWCOUNT, stepCt, 'Done');
+		commit;
+	END IF;
+
     ---Cleanup OVERALL JOB if this proc is being run standalone
   IF newJobFlag = 1
   THEN

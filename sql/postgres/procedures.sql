@@ -55,3 +55,4 @@ $$;
 \i procedures/GET_LAST_PATH_COMPONENT.sql
 \i procedures/COPY_SECURITY_FROM_OTHER_STUDY.sql
 \i procedures/i2b2_proteomics_zscore_calc.sql
+\i procedures/I2B2_CREATE_SECURITY_FOR_TRIAL.sql

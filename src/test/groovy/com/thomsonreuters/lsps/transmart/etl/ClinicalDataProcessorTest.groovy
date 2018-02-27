@@ -1,6 +1,5 @@
 package com.thomsonreuters.lsps.transmart.etl
 
-import com.thomsonreuters.lsps.db.core.DatabaseType
 import com.thomsonreuters.lsps.transmart.Fixtures
 import com.thomsonreuters.lsps.transmart.etl.statistic.VariableType
 import com.thomsonreuters.lsps.transmart.fixtures.ClinicalData
@@ -29,9 +28,9 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         ConfigAwareTestCase.super.setUp()
         runScript('I2B2_LOAD_CLINICAL_DATA.sql')
         runScript('I2B2_DELETE_ALL_DATA.sql')
-        if (database?.databaseType == DatabaseType.Oracle) {
+//        if (database?.databaseType == DatabaseType.Oracle) {
             runScript('i2b2_create_security_for_trial.sql')
-        }
+//        }
     }
 
     ClinicalDataProcessor getProcessor() {
@@ -1388,6 +1387,19 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
     }
 
     def 'It should load data into transmart 17.1 new tables'(){
-        
+        given:
+        Study.deleteById(config, studyId)
+        config.securitySymbol = 'Y'
+
+        when:
+        processor.process(
+                new File(studyDir(studyName, studyId), "ClinicalDataToUpload").toPath(),
+                [name: studyName, node: "Test Studies\\${studyName}".toString()])
+
+        then:
+        assertThat(db, hasRecord('i2b2metadata.i2b2_secure',
+                ['sourcesystem_cd': "${studyId}"], [secure_obj_token: "EXP:${studyId}"]))
+        assertThat(db, hasRecord('i2b2demodata.study',
+                ['study_id': "${studyId}"], [secure_obj_token: "EXP:${studyId}"]))
     }
 }
