@@ -24,6 +24,7 @@ DECLARE
   datasetId		varchar(160);
 
   res numeric;
+  i record;
 BEGIN
   TrialID := upper(trial_id);
   sourceCd := 'STD';
@@ -53,6 +54,12 @@ BEGIN
   if res < 0 then
     return res;
   end if;
+
+  for i in select bed, bim, fam from gwas_plink.plink_data where study_id=trial_id loop
+    execute 'grant select on large object '||i.bed||' to biomart_user';
+    execute 'grant select on large object '||i.bim||' to biomart_user';
+    execute 'grant select on large object '||i.fam||' to biomart_user';
+  end loop;
 
   stepCt := stepCt + 1;
   select cz_write_audit(jobId,databaseName,procedureName,'End ' || procedureName,0,stepCt,'Done') into rtnCd;

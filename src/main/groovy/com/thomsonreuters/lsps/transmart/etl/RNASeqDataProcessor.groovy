@@ -103,6 +103,7 @@ class RNASeqDataProcessor extends AbstractDataProcessor {
                         throw new Exception("Incorrect mapping file: mandatory columns not defined")
 
                     cols[0] = cols[0]?.toUpperCase()
+                    cols[9] = cols[9] ?: 'STD'
                     platformList << cols[4]
                     studyIdList << cols[0]
 

@@ -48,7 +48,7 @@ abstract class GenePlatform implements PrepareIfRequired {
 
     protected Map fetchPlatformInfo() {
         config.logger.log("Fetching platform description from GEO")
-        def txt = "http://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=${id}".toURL().getText()
+        def txt = "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=${id}".toURL().getText()
 
         String title, organism
         def m = txt =~ /Title\<\/td\>\s*?\<td.*?\>(?:\[.+?\]\s*)*(.+?)\<\/td\>/
