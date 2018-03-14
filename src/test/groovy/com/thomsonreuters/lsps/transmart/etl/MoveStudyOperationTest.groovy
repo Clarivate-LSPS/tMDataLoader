@@ -28,6 +28,7 @@ class MoveStudyOperationTest extends GroovyTestCase implements ConfigAwareTestCa
     public void setUp() {
         ConfigAwareTestCase.super.setUp()
         runScript('I2B2_MOVE_STUDY_BY_PATH.sql')
+        runScript('I2B2_DELETE_ALL_DATA.sql')
         Study.deleteById(config, clinicalData.studyId)
         Study.deleteById(config, otherClinicalData.studyId)
         clinicalData.load(config, rootName)

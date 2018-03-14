@@ -19,11 +19,13 @@ class GWASPlinkDataProcessorTest extends Specification implements ConfigAwareTes
     void setup() {
         ConfigAwareTestCase.super.setUp()
         runScript('I2B2_PROCESS_GWAS_PLINK_DATA.sql')
+        runScript('I2B2_DELETE_ALL_DATA.sql')
         Study.deleteById(config, studyId)
     }
 
     def "it should upload GWAS Plink data"() {
         setup:
+        Study.deleteById(config, studyId)
         def gwasPlinkData = Fixtures.studiesDir.studyDir(studyName, studyId).getGWASPlinkData()
 
         when:

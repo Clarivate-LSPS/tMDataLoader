@@ -37,6 +37,7 @@ AS
   path_not_found exception;
   arg_not_valid exception;
 	res	number;
+  studyNum NUMBER(18,0);
 
 BEGIN
   --Set Audit Parameters
@@ -318,6 +319,14 @@ BEGIN
 		cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from DE_SUBJECT_SNP_DATASET',SQL%ROWCOUNT,stepCt,'Done');
 		commit;
 
+    select count(*) into rowsExists from i2b2demodata.study where study_id = TrialId;
+    if rowsExists > 0 THEN
+      select study_num into studyNum from i2b2demodata.study where study_id = TrialId;
+      delete from i2b2metadata.study_dimension_descriptions WHERE study_id = studyNum;
+      stepCt := stepCt + 1;
+      cz_write_audit(jobId,databaseName,procedureName,'Delete data from study_dimension_descriptions',SQL%ROWCOUNT,stepCt,'Done');
+      COMMIT;
+    END IF;
     delete from i2b2demodata.study where study_id = TrialId;
     cz_write_audit(jobId,databaseName,procedureName,'Delete study row from study table',SQL%ROWCOUNT,stepCt,'Done');
 

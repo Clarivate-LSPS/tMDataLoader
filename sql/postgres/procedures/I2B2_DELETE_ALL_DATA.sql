@@ -12,6 +12,9 @@ Declare
   TrialType 	VARCHAR(250);
   sourceCD  	VARCHAR(250);
 
+  rowsExists INTEGER;
+  studyNum NUMERIC(18,0);
+
   -- vcf datasets
   vcfDataSetId varchar(100);
   vcfDataSets CURSOR(trialId VARCHAR) IS
@@ -312,6 +315,23 @@ BEGIN
   get diagnostics rowCt := ROW_COUNT;
   select cz_write_audit(jobId,databaseName,procedureName,'Delete data from DE_SUBJECT_ACGH_DATA',rowCt,stepCt,'Done') into rtnCd;
 
+  select count(*) into rowsExists from i2b2demodata.study where study_id = TrialId;
+  IF rowsExists > 0
+  THEN
+    SELECT study_num
+    INTO studyNum
+    FROM i2b2demodata.study
+    WHERE study_id = TrialId;
+    DELETE FROM i2b2metadata.study_dimension_descriptions
+    WHERE study_id = studyNum;
+
+    stepCt := stepCt + 1;
+    GET DIAGNOSTICS rowCt := ROW_COUNT;
+    SELECT
+      cz_write_audit(jobId, databaseName, procedureName, 'Delete data from study_dimension_descriptions', rowCt, stepCt,
+                     'Done')
+    INTO rtnCd;
+  END IF;
   delete from i2b2demodata.study where study_id = TrialID;
   select cz_write_audit(jobId,databaseName,procedureName,'Delete study row from study table',rowCt,stepCt,'Done') into rtnCd;
 

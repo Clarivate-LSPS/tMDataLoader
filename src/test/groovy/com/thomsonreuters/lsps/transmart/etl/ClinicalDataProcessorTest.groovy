@@ -28,9 +28,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         ConfigAwareTestCase.super.setUp()
         runScript('I2B2_LOAD_CLINICAL_DATA.sql')
         runScript('I2B2_DELETE_ALL_DATA.sql')
-//        if (database?.databaseType == DatabaseType.Oracle) {
-            runScript('i2b2_create_security_for_trial.sql')
-//        }
+        runScript('i2b2_create_security_for_trial.sql')
     }
 
     ClinicalDataProcessor getProcessor() {
@@ -1397,9 +1395,15 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
                 [name: studyName, node: "Test Studies\\${studyName}".toString()])
 
         then:
+        def studyNum
+        sql.execute("select study_num from i2b2demodata.study where study_id = ? ", [studyId as String],
+                {isResultSet, row -> studyNum = row.study_num})
+        assertThat(db, hasRecord(['study_id': studyNum[0]], 'i2b2metadata.study_dimension_descriptions'))
+
         assertThat(db, hasRecord('i2b2metadata.i2b2_secure',
                 ['sourcesystem_cd': "${studyId}"], [secure_obj_token: "EXP:${studyId}"]))
         assertThat(db, hasRecord('i2b2demodata.study',
                 ['study_id': "${studyId}"], [secure_obj_token: "EXP:${studyId}"]))
+
     }
 }

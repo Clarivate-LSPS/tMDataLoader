@@ -27,6 +27,7 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
     rCount                  INTEGER ;
     trialId                 VARCHAR(2000);
     trialId2                VARCHAR(2000);
+    studyNum                NUMERIC(18,0);
 
     old_path                VARCHAR(2000);
     new_path                VARCHAR(2000);
@@ -165,6 +166,21 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
   
         -- Deleted security configuration from first study
         begin
+          select count(*) into rowsExists from i2b2demodata.study where study_id = TrialId;
+          IF rowsExists > 0
+          THEN
+            SELECT study_num
+            INTO studyNum
+            FROM i2b2demodata.study
+            WHERE study_id = accession_old;
+
+            DELETE FROM i2b2metadata.study_dimension_descriptions
+            WHERE study_id = studyNum;
+
+            stepCt := stepCt + 1;
+            GET DIAGNOSTICS rowCt := ROW_COUNT;
+            select cz_write_audit(jobId,databaseName,procedureName,'Delete data from study_dimension_descriptions',rowCt,stepCt,'Done') into rtnCd;
+          END IF;
           DELETE FROM i2b2demodata.study WHERE study_id = accession_old;
           DELETE FROM biomart.bio_experiment WHERE accession = accession_old;
           DELETE FROM biomart.bio_data_uid WHERE unique_id = 'EXP:'||accession_old;

@@ -26,20 +26,21 @@ $BODY$
 Declare
 
   --Audit variables
-  newJobFlag		integer;
-  databaseName 	VARCHAR(100);
-  procedureName 	VARCHAR(100);
-  jobID 			numeric(18,0);
-  stepCt 			numeric(18,0);
-  rowCt			numeric(18,0);
-  errorNumber		character varying;
-  errorMessage	character varying;
-  rtnCd			numeric;
+  newJobFlag          INTEGER;
+  databaseName        VARCHAR(100);
+  procedureName       VARCHAR(100);
+  jobID               NUMERIC(18, 0);
+  stepCt              NUMERIC(18, 0);
+  rowCt               NUMERIC(18, 0);
+  errorNumber         CHARACTER VARYING;
+  errorMessage        CHARACTER VARYING;
+  rtnCd               NUMERIC;
+  studyNum            NUMERIC(18, 0);
 
-  TrialID varchar(100);
-  securedStudy varchar(5);
-  pExists			integer;
-  v_bio_experiment_id	numeric(18,0);
+  TrialID             VARCHAR(100);
+  securedStudy        VARCHAR(5);
+  pExists             INTEGER;
+  v_bio_experiment_id NUMERIC(18, 0);
 
 BEGIN
   TrialID := trial_id;
@@ -174,7 +175,34 @@ BEGIN
   stepCt := stepCt + 1;
   select cz_write_audit(jobId,databaseName,procedureName,'Insert data for trial into I2B2DEMODATA patient_trial',rowCt,stepCt,'Done') into rtnCd;
 
-  --	if secure study, then create bio_experiment record if needed and insert to search_secured_object
+  --	We always create bio_experiment record, because we need add relationship between study and dimenstion_description
+  -- if secure study, then insert to search_secured_object
+
+  select count(*) into pExists
+  from biomart.bio_experiment
+  where accession = TrialId;
+
+  if pExists = 0 then
+    begin
+      insert into biomart.bio_experiment
+      (title, accession, etl_id)
+        select 'Metadata not available'
+          ,TrialId
+          ,'METADATA:' || TrialId;
+      get diagnostics rowCt := ROW_COUNT;
+      exception
+      when others then
+        errorNumber := SQLSTATE;
+        errorMessage := SQLERRM;
+        --Handle errors.
+        select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+        --End Proc
+        select cz_end_audit (jobID, 'FAIL') into rtnCd;
+        return -16;
+    end;
+    stepCt := stepCt + 1;
+    select cz_write_audit(jobId,databaseName,procedureName,'Insert trial/study into biomart.bio_experiment',rowCt,stepCt,'Done') into rtnCd;
+  end if;
 
   select count(*) into pExists
   from searchapp.search_secure_object sso
@@ -183,31 +211,6 @@ BEGIN
   if pExists = 0 then
     --	if securedStudy = Y, add trial to searchapp.search_secured_object
     if securedStudy = 'Y' then
-      select count(*) into pExists
-      from biomart.bio_experiment
-      where accession = TrialId;
-
-      if pExists = 0 then
-        begin
-          insert into biomart.bio_experiment
-          (title, accession, etl_id)
-            select 'Metadata not available'
-              ,TrialId
-              ,'METADATA:' || TrialId;
-          get diagnostics rowCt := ROW_COUNT;
-          exception
-          when others then
-            errorNumber := SQLSTATE;
-            errorMessage := SQLERRM;
-            --Handle errors.
-            select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
-            --End Proc
-            select cz_end_audit (jobID, 'FAIL') into rtnCd;
-            return -16;
-        end;
-        stepCt := stepCt + 1;
-        select cz_write_audit(jobId,databaseName,procedureName,'Insert trial/study into biomart.bio_experiment',rowCt,stepCt,'Done') into rtnCd;
-      end if;
 
       select bio_experiment_id into v_bio_experiment_id
       from biomart.bio_experiment
@@ -275,27 +278,89 @@ BEGIN
 
   IF pExists = 0
   THEN
-    select bio_experiment_id into v_bio_experiment_id
-    from biomart.bio_experiment
-    where accession = TrialId;
+    BEGIN
+      select bio_experiment_id into v_bio_experiment_id
+      from biomart.bio_experiment
+      where accession = TrialId;
 
-    INSERT INTO i2b2demodata.study (
-      study_num,
-      bio_experiment_id,
-      study_id,
-      secure_obj_token)
-    VALUES (
-      nextval('i2b2demodata.study_num_seq'),
-      v_bio_experiment_id,
-      TrialId,
-      CASE WHEN securedStudy = 'N'
-        THEN 'EXP:PUBLIC'
-      ELSE 'EXP:' || TrialId
-      END);
+      INSERT INTO i2b2demodata.study (
+        study_num,
+        bio_experiment_id,
+        study_id,
+        secure_obj_token)
+      VALUES (
+        nextval('i2b2demodata.study_num_seq'),
+        v_bio_experiment_id,
+        TrialId,
+        CASE WHEN securedStudy = 'N'
+          THEN 'EXP:PUBLIC'
+        ELSE 'EXP:' || TrialId
+        END);
+
+      stepCt := stepCt + 1;
+      SELECT cz_write_audit(jobId, databaseName, procedureName, 'Add study to STUDY table', rowCt, stepCt, 'Done')
+      INTO rtnCd;
+      get diagnostics rowCt := ROW_COUNT;
+      exception
+      when others then
+        errorNumber := SQLSTATE;
+        errorMessage := SQLERRM;
+        --Handle errors.
+        select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+        --End Proc
+        select cz_end_audit (jobID, 'FAIL') into rtnCd;
+        return -16;
+    end;
+  END IF;
+
+  SELECT count(*)
+  INTO pExists
+  FROM i2b2demodata.study s, i2b2metadata.study_dimension_descriptions sdd
+  WHERE
+    s.study_num = sdd.study_id AND
+    s.study_id = TrialId;
+
+  stepCt := stepCt + 1;
+  select cz_write_audit(jobId, databaseName, procedureName, 'Add study dimension? ' || pExists, 0, stepCt, 'Done') into rtnCd;
+
+  IF pExists = 0
+  THEN
+    BEGIN
+        select study_num into studyNum
+        from i2b2demodata.study
+        where study_id = TrialId;
+
+        INSERT INTO i2b2metadata.study_dimension_descriptions (
+          dimension_description_id,
+          study_id)
+          SELECT id, studyNum FROM i2b2metadata.dimension_description
+          WHERE
+            name in ('study',
+              'concept',
+              'patient',
+              'visit',
+              'start time',
+              'end time',
+              'location',
+              'trial visit',
+              'provider',
+              'biomarker',
+              'assay',
+              'projection');
+      get diagnostics rowCt := ROW_COUNT;
+      exception
+      when others then
+        errorNumber := SQLSTATE;
+        errorMessage := SQLERRM;
+        --Handle errors.
+        select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+        --End Proc
+        select cz_end_audit (jobID, 'FAIL') into rtnCd;
+        return -16;
+    END;
 
     stepCt := stepCt + 1;
-    SELECT cz_write_audit(jobId, databaseName, procedureName, 'Add study to STUDY table', rowCt, stepCt, 'Done')
-    INTO rtnCd;
+    select cz_write_audit(jobId, databaseName, procedureName, 'Add study dimension', rowCt, stepCt, 'Done') into rtnCd;
   END IF;
 
   ---Cleanup OVERALL JOB if this proc is being run standalone

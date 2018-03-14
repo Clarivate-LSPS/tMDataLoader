@@ -35,6 +35,7 @@ AS
 	procedureName VARCHAR(100);
 	jobID number(18,0);
 	stepCt number(18,0);
+	studyNum NUMBER(18,0);
 
 BEGIN
 	TrialID := trial_id;
@@ -129,7 +130,24 @@ BEGIN
 	cz_write_audit(jobId,databaseName,procedureName,'Insert data for trial into I2B2DEMODATA patient_trial',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
 	
-	--	if secure study, then create bio_experiment record if needed and insert to search_secured_object
+	--	We always create bio_experiment record, because we need add relationship between study and dimenstion_description
+	-- if secure study, then insert to search_secured_object
+
+	select count(*) into pExists
+	from biomart.bio_experiment
+	where accession = TrialId;
+
+	if pExists = 0 then
+		insert into biomart.bio_experiment
+		(title, accession, etl_id)
+			select 'Metadata not available'
+				,TrialId
+				,'METADATA:' || TrialId
+			from dual;
+		stepCt := stepCt + 1;
+		cz_write_audit(jobId,databaseName,procedureName,'Insert trial/study into biomart.bio_experiment',SQL%ROWCOUNT,stepCt,'Done');
+		commit;
+	end if;
 	
 	select count(*) into pExists
 	from searchapp.search_secure_object sso
@@ -138,21 +156,6 @@ BEGIN
 	if pExists = 0 then
 		--	if securedStudy = Y, add trial to searchapp.search_secured_object
 		if securedStudy = 'Y' then
-			select count(*) into pExists
-			from biomart.bio_experiment
-			where accession = TrialId;
-			
-			if pExists = 0 then
-				insert into biomart.bio_experiment
-				(title, accession, etl_id)
-				select 'Metadata not available'
-					  ,TrialId
-					  ,'METADATA:' || TrialId
-				from dual;
-				stepCt := stepCt + 1;
-				cz_write_audit(jobId,databaseName,procedureName,'Insert trial/study into biomart.bio_experiment',SQL%ROWCOUNT,stepCt,'Done');
-				commit;
-			end if;
 			
 			select bio_experiment_id into v_bio_experiment_id
 			from biomart.bio_experiment
@@ -202,6 +205,9 @@ BEGIN
 		from biomart.bio_experiment
 		where accession = TrialId;
 
+		stepCt := stepCt + 1;
+		cz_write_audit(jobId,databaseName,procedureName,'HERE',SQL%ROWCOUNT,stepCt,'Done');
+
 		INSERT INTO i2b2demodata.study (
 			study_num,
 			bio_experiment_id,
@@ -221,7 +227,45 @@ BEGIN
 		commit;
 	END IF;
 
-    ---Cleanup OVERALL JOB if this proc is being run standalone
+	SELECT count(*)
+	INTO pExists
+	FROM i2b2demodata.study s, i2b2metadata.study_dimension_descriptions sdd
+	WHERE
+		s.study_num = sdd.study_id AND
+		s.study_id = TrialId;
+
+	stepCt := stepCt + 1;
+	cz_write_audit(jobId, databaseName, procedureName, 'Add study dimension? ' || pExists, SQL%ROWCOUNT, stepCt, 'Done');
+
+	IF pExists = 0
+	THEN
+		select study_num into studyNum
+		from i2b2demodata.study
+		where study_id = TrialId;
+
+		INSERT INTO i2b2metadata.study_dimension_descriptions (
+			dimension_description_id,
+			study_id)
+			SELECT id, studyNum FROM i2b2metadata.dimension_description
+			WHERE
+				name in ('study',
+					'concept',
+					'patient',
+					'visit',
+					'start time',
+					'end time',
+					'location',
+					'trial visit',
+					'provider',
+					'biomarker',
+					'assay',
+				  'projection');
+
+		stepCt := stepCt + 1;
+		cz_write_audit(jobId, databaseName, procedureName, 'Add study dimension', SQL%ROWCOUNT, stepCt, 'Done');
+		commit;
+	END IF;
+	  ---Cleanup OVERALL JOB if this proc is being run standalone
   IF newJobFlag = 1
   THEN
     cz_end_audit (jobID, 'SUCCESS');

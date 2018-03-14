@@ -31,12 +31,13 @@ AS
   rowsExists              INT;
   counter                 INT;
   substringPos            INT;
-  substringPos2         INT;
+  substringPos2           INT;
   lvl_num_to_remove       INT;
   old_level_num           INT;
   new_level_num           INT;
   is_sub_node							BOOLEAN;
   tmp                     VARCHAR2(700 BYTE);
+  studyNum                NUMBER(18,0);
 
 	old_study_missed EXCEPTION;
 	empty_paths EXCEPTION;
@@ -155,6 +156,21 @@ AS
             accession_old := replace(accession_old, 'EXP:', '');
 
             -- Deleted security configuration from first study
+            select count(*) into rowsExists from i2b2demodata.study where study_id = TrialId;
+            IF rowsExists > 0
+            THEN
+              SELECT study_num
+              INTO studyNum
+              FROM i2b2demodata.study
+              WHERE study_id = accession_old;
+              
+              DELETE FROM i2b2metadata.study_dimension_descriptions
+              WHERE study_id = studyNum;
+
+              stepCt := stepCt + 1;
+              cz_write_audit(jobId,databaseName,procedureName,'Delete data from study_dimension_descriptions',SQL%ROWCOUNT,stepCt,'Done');
+              COMMIT;
+            END IF;
             DELETE FROM i2b2demodata.study WHERE study_id = accession_old;
             DELETE FROM biomart.bio_experiment WHERE accession = accession_old;
             DELETE FROM biomart.bio_data_uid WHERE unique_id = 'EXP:'||accession_old;
