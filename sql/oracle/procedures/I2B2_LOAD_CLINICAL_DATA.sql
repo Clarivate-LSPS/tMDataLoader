@@ -68,8 +68,10 @@ AS
   tText			varchar2(2000);
 	pathRegexp VARCHAR2(2000);
 	updatedPath VARCHAR2(2000);
-  
-    --Audit variables
+	trialVisitNum NUMERIC(18, 0);
+	studyNum      NUMERIC(18, 0);
+
+	--Audit variables
   newJobFlag INTEGER(1);
   databaseName VARCHAR(100);
   procedureName VARCHAR(100);
@@ -782,6 +784,15 @@ BEGIN
 	
 	--	Delete dropped subjects from patient_dimension if they do not exist in de_subject_sample_mapping
 	if (merge_mode = 'REPLACE') then
+		DELETE FROM i2b2demodata.visit_dimension
+		WHERE patient_num IN (
+			SELECT patient_num
+			FROM i2b2demodata.patient_dimension
+			WHERE sourcesystem_cd LIKE TrialId || ':%'
+		);
+		stepCt := stepCt + 1;
+		cz_write_audit(jobId,databaseName,procedureName,'Delete dropped subjects from visit_dimension',SQL%ROWCOUNT,stepCt,'Done');
+
 		delete /*+ parallel(patient_dimension, 8) */ patient_dimension
 		where sourcesystem_cd in
 			 (select distinct pd.sourcesystem_cd from patient_dimension pd
@@ -852,7 +863,31 @@ BEGIN
 	cz_write_audit(jobId,databaseName,procedureName,'Insert new subjects into patient_dimension',SQL%ROWCOUNT,stepCt,'Done');
 	
 	commit;
-		
+
+	insert_additional_data(TrialID, 'Default', jobID, trialVisitNum);
+
+	select study_num into studyNum
+	from i2b2demodata.study
+	where study_id = TrialId;
+
+	INSERT INTO i2b2demodata.visit_dimension
+		(
+		encounter_num,
+		patient_num,
+		start_date
+		)
+		SELECT
+		tm_dataloader.visit_dimension_seq.nextval,
+		pd.patient_num,
+		current_timestamp
+		FROM i2b2demodata.patient_dimension pd
+		WHERE pd.sourcesystem_cd LIKE TrialId || ':%'
+						 AND pd.patient_num NOT IN (SELECT patient_num
+																				FROM i2b2demodata.visit_dimension vd);
+	stepCt := stepCt + 1;
+	cz_write_audit(jobId,databaseName,procedureName,'Insert new visit into visit_dimension',SQL%ROWCOUNT,stepCt,'Done');
+
+
 	--	delete leaf nodes that will not be reused, if any
 	if (merge_mode = 'REPLACE') then
 		FOR r_delUnusedLeaf in delUnusedLeaf Loop
@@ -1009,8 +1044,9 @@ BEGIN
 	--	delete from observation_fact all concept_cds for trial that are clinical data, exclude concept_cds from biomarker data
 	if (merge_mode = 'REPLACE') then
 		delete /*+ parallel(observation_fact, 4) */ from OBSERVATION_FACT F
-		where f.modifier_cd = TrialId
-			and F.CONCEPT_CD not in
+		where --f.modifier_cd = TrialId
+		--	and
+			F.CONCEPT_CD not in
 			 (select /*+ parallel(de_subject_sample_mapping, 4) */ distinct concept_code as concept_cd from de_subject_sample_mapping
 				where trial_name = TrialId
 					and concept_code is not null
@@ -1043,8 +1079,10 @@ BEGIN
 	-- delete old fact records for updated data
 	if (merge_mode = 'UPDATE') then
 		delete from observation_fact f
-		 where f.modifier_cd = TrialId
-		   and f.patient_num in (select pat.patient_num
+		 where
+-- 			 f.modifier_cd = TrialId
+-- 		   and
+			 f.patient_num in (select pat.patient_num
 								   from tmp_subject_info si, patient_dimension pat
 								  where si.usubjid = pat.sourcesystem_cd)
 			 and f.CONCEPT_CD not in
@@ -1100,8 +1138,10 @@ BEGIN
 
 				if (updatedPath is not null) then
 					delete from observation_fact f
-					where f.modifier_cd = TrialId
-								and f.patient_num = x.patient_num
+					where
+-- 							f.modifier_cd = TrialId
+-- 								and
+							f.patient_num = x.patient_num
 								and f.CONCEPT_CD in (select cd.concept_cd
 																		 from concept_dimension cd
 																		 where cd.concept_path like updatedPath || '%' )
@@ -1137,8 +1177,10 @@ BEGIN
 			else
 				pathRegexp := regexp_replace(topNode || replace(replace(x.category_path,'DATALABEL',x.data_label),'VISITNAME',x.visit_name) || '\','(\\){2,}', '\');
 				delete from observation_fact f
-				where f.modifier_cd = TrialId
-							and f.patient_num = x.patient_num
+				where
+-- 					f.modifier_cd = TrialId
+-- 							and
+						f.patient_num = x.patient_num
 							and f.CONCEPT_CD in (select cd.concept_cd
 																	 from concept_dimension cd
 																	 where cd.concept_path = pathRegexp)
@@ -1176,8 +1218,10 @@ BEGIN
 
 	if (merge_mode = 'APPEND') then
 		delete from observation_fact f
-		 where f.modifier_cd = TrialId
-		   and f.valtype_cd = 'N'
+		 where
+-- 			 f.modifier_cd = TrialId
+-- 		   and
+			 f.valtype_cd = 'N'
 		   and f.patient_num in (select pat.patient_num
 								   from tmp_subject_info si, patient_dimension pat
 								  where si.usubjid = pat.sourcesystem_cd)
@@ -1216,13 +1260,15 @@ BEGIN
      valueflag_cd,
      PROVIDER_ID,
      location_cd,
-     instance_num
+     instance_num,
+		 trial_visit_num
 	)
-       select /*+opt_param('_optimizer_cartesian_enabled','false')*/ distinct c.patient_num,
+       select /*+opt_param('_optimizer_cartesian_enabled','false')*/ distinct
+				 vd.encounter_num as encounter_num,
 			 c.patient_num,
 		   i.c_basecode,
 			 to_date(coalesce(a.visit_date,'0001/01/01 00:00'),'YYYY/MM/DD HH24:mi'),
-		   a.study_id,
+		   '@',
 		   a.data_type,
 		   case when a.data_type = 'T' then a.data_value
 				else 'E'  --Stands for Equals for numeric types
@@ -1235,11 +1281,13 @@ BEGIN
 		   '@',
 		   '@',
 		   '@',
-       1
+       1,
+			trialVisitNum
 	from wrk_clinical_data a
 		,patient_dimension c
 		,wt_trial_nodes t
 		,i2b2 i
+		,visit_dimension vd
 	where a.usubjid = c.sourcesystem_cd
 	  and nvl(a.category_cd,'@') = nvl(t.category_cd,'@')
 	  and nvl(a.data_label,'**NULL**') = nvl(t.data_label,'**NULL**')
@@ -1247,6 +1295,7 @@ BEGIN
 		and nvl(a.baseline_value,'**NULL**') = nvl(t.baseline_value,'**NULL**')
 	  and decode(a.data_type,'T',a.data_value,'**NULL**') = nvl(t.data_value,'**NULL**')
 	  and t.leaf_node = i.c_fullname
+		and c.patient_num = vd.patient_num
 	  and not exists		-- don't insert if lower level node exists
 		 (select 1 from wt_trial_nodes x
 		  --where x.leaf_node like t.leaf_node || '%_'

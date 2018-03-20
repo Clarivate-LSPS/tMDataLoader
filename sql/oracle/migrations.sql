@@ -21,3 +21,4 @@
 @@migrations/issue_87.sql
 @@migrations/20160805133000000_ADD_COLUMN_FOR_TIMESTAMP.sql
 @@migrations/20161218000000000_add_platform_for_protein_tables.sql
+@@migrations/17_1/20170319100000000_CREATE_VISIT_DIMENSION_SEQUENCE.sql

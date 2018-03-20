@@ -36,6 +36,7 @@ Declare
   errorMessage        CHARACTER VARYING;
   rtnCd               NUMERIC;
   studyNum            NUMERIC(18, 0);
+  trialVisitNum       NUMERIC(18, 0);
 
   TrialID             VARCHAR(100);
   securedStudy        VARCHAR(5);
@@ -293,7 +294,7 @@ BEGIN
         v_bio_experiment_id,
         TrialId,
         CASE WHEN securedStudy = 'N'
-          THEN 'EXP:PUBLIC'
+          THEN 'PUBLIC'
         ELSE 'EXP:' || TrialId
         END);
 
@@ -320,16 +321,13 @@ BEGIN
     s.study_num = sdd.study_id AND
     s.study_id = TrialId;
 
-  stepCt := stepCt + 1;
-  select cz_write_audit(jobId, databaseName, procedureName, 'Add study dimension? ' || pExists, 0, stepCt, 'Done') into rtnCd;
-
   IF pExists = 0
   THEN
-    BEGIN
-        select study_num into studyNum
-        from i2b2demodata.study
-        where study_id = TrialId;
+    select study_num into studyNum
+    from i2b2demodata.study
+    where study_id = TrialId;
 
+    BEGIN
         INSERT INTO i2b2metadata.study_dimension_descriptions (
           dimension_description_id,
           study_id)

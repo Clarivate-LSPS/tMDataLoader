@@ -249,6 +249,24 @@ BEGIN
       commit;
       end loop;
     end if;
+
+    DELETE FROM i2b2demodata.visit_dimension
+    WHERE patient_num IN
+          (SELECT patient_num
+           FROM i2b2demodata.patient_dimension
+           WHERE sourcesystem_cd LIKE trialId || ':%');
+    stepCt := stepCt + 1;
+    cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from I2B2DEMODATA visit_dimension',SQL%ROWCOUNT,stepCt,'Done');
+
+    DELETE FROM i2b2demodata.observation_fact
+    WHERE patient_num IN
+          (SELECT patient_num
+           FROM i2b2demodata.patient_dimension
+           WHERE sourcesystem_cd LIKE trialId || ':%');
+    stepCt := stepCt + 1;
+    cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from I2B2DEMODATA observation_fact',SQL%ROWCOUNT,stepCt,'Done');
+    commit;
+    
 		--	delete patient data
 
 		delete from patient_dimension
@@ -325,6 +343,11 @@ BEGIN
       delete from i2b2metadata.study_dimension_descriptions WHERE study_id = studyNum;
       stepCt := stepCt + 1;
       cz_write_audit(jobId,databaseName,procedureName,'Delete data from study_dimension_descriptions',SQL%ROWCOUNT,stepCt,'Done');
+      COMMIT;
+      DELETE FROM i2b2demodata.trial_visit_dimension
+      WHERE study_num = studyNum;
+      stepCt := stepCt + 1;
+      cz_write_audit(jobId,databaseName,procedureName,'Delete data from trial_visit_dimension',SQL%ROWCOUNT,stepCt,'Done');
       COMMIT;
     END IF;
     delete from i2b2demodata.study where study_id = TrialId;

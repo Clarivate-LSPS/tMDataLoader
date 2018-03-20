@@ -29,6 +29,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         runScript('I2B2_LOAD_CLINICAL_DATA.sql')
         runScript('I2B2_DELETE_ALL_DATA.sql')
         runScript('i2b2_create_security_for_trial.sql')
+        runScript('INSERT_ADDITIONAL_DATA.sql')
     }
 
     ClinicalDataProcessor getProcessor() {
@@ -1399,6 +1400,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         sql.execute("select study_num from i2b2demodata.study where study_id = ? ", [studyId as String],
                 {isResultSet, row -> studyNum = row.study_num})
         assertThat(db, hasRecord(['study_id': studyNum[0]], 'i2b2metadata.study_dimension_descriptions'))
+        assertThat(db, hasRecord(['study_num': studyNum[0]], 'i2b2demodata.trial_visit_dimension'))
 
         assertThat(db, hasRecord('i2b2metadata.i2b2_secure',
                 ['sourcesystem_cd': "${studyId}"], [secure_obj_token: "EXP:${studyId}"]))

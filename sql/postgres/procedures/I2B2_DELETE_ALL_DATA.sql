@@ -208,6 +208,23 @@ BEGIN
 		select cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from deapp de_subject_microarray_data',rowCt,stepCt,'Done') into rtnCd;
 		/*commit;*/
 
+    DELETE FROM i2b2demodata.visit_dimension
+    WHERE patient_num IN
+          (SELECT patient_num
+           FROM i2b2demodata.patient_dimension
+           WHERE sourcesystem_cd LIKE trialId || ':%');
+    stepCt := stepCt + 1;
+    get diagnostics rowCt := ROW_COUNT;
+    select cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from I2B2DEMODATA visit_dimension',rowCt,stepCt,'Done') into rtnCd;
+    
+    DELETE FROM i2b2demodata.observation_fact
+    WHERE patient_num IN
+          (SELECT patient_num
+           FROM i2b2demodata.patient_dimension
+           WHERE sourcesystem_cd LIKE trialId || ':%');
+    stepCt := stepCt + 1;
+    get diagnostics rowCt := ROW_COUNT;
+    select cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from I2B2DEMODATA observation_fact',rowCt,stepCt,'Done') into rtnCd;
 		--	delete patient data
 
 		delete from i2b2demodata.patient_dimension
@@ -331,8 +348,25 @@ BEGIN
       cz_write_audit(jobId, databaseName, procedureName, 'Delete data from study_dimension_descriptions', rowCt, stepCt,
                      'Done')
     INTO rtnCd;
+
+    DELETE FROM i2b2demodata.trial_visit_dimension
+    WHERE study_num = studyNum;
+    
+    stepCt := stepCt + 1;
+    GET DIAGNOSTICS rowCt := ROW_COUNT;
+    SELECT
+      cz_write_audit(jobId, databaseName, procedureName, 'Delete data from trial_visit_dimension', rowCt, stepCt,
+                     'Done')
+    INTO rtnCd;
   END IF;
-  delete from i2b2demodata.study where study_id = TrialID;
+  DELETE FROM i2b2demodata.study
+  WHERE study_id = trialid;
+  stepCt := stepCt + 1;
+  GET DIAGNOSTICS rowCt := ROW_COUNT;
+  SELECT
+    cz_write_audit(jobId, databaseName, procedureName, 'Delete data from study_dimension_descriptions', rowCt, stepCt,
+                   'Done')
+  INTO rtnCd;
   select cz_write_audit(jobId,databaseName,procedureName,'Delete study row from study table',rowCt,stepCt,'Done') into rtnCd;
 
   /*Check and delete top node, if removed node is last*/

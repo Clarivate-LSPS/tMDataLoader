@@ -60,6 +60,8 @@ Declare
 	updatedPath varchar(2000);
   cur_row RECORD;
 	pathCount integer;
+	trialVisitNum NUMERIC(18, 0);
+	studyNum      NUMERIC(18, 0);
 
 	addNodes CURSOR is
 	select DISTINCT leaf_node, node_name
@@ -852,14 +854,37 @@ BEGIN
 	--	Delete dropped subjects from patient_dimension if they do not exist in de_subject_sample_mapping
 	if (merge_mode = 'REPLACE') then
 		begin
-		delete from i2b2demodata.patient_dimension
-		where sourcesystem_cd in
-			 (select distinct pd.sourcesystem_cd from i2b2demodata.patient_dimension pd
-				where pd.sourcesystem_cd like TrialId || ':%'
-				except
-				select distinct cd.usubjid from wrk_clinical_data cd)
-			and patient_num not in
-				(select distinct sm.patient_id from deapp.de_subject_sample_mapping sm);
+			DELETE FROM i2b2demodata.visit_dimension
+			WHERE patient_num IN (
+				SELECT patient_num
+				FROM i2b2demodata.patient_dimension
+				WHERE sourcesystem_cd LIKE TrialId || ':%'
+							 );
+			get diagnostics rowCt := ROW_COUNT;
+			exception
+			when others then
+				errorNumber := SQLSTATE;
+				errorMessage := SQLERRM;
+				--Handle errors.
+				select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+				--End Proc
+				select cz_end_audit (jobID, 'FAIL') into rtnCd;
+				return -16;
+		end;
+		stepCt := stepCt + 1;
+		select cz_write_audit(jobId,databaseName,procedureName,'Delete dropped subjects from visit_dimension',rowCt,stepCt,'Done') into rtnCd;
+		BEGIN
+			DELETE FROM i2b2demodata.patient_dimension
+			WHERE sourcesystem_cd IN
+						(SELECT DISTINCT pd.sourcesystem_cd
+						 FROM i2b2demodata.patient_dimension pd
+						 WHERE pd.sourcesystem_cd LIKE TrialId || ':%'
+						 EXCEPT
+						 SELECT DISTINCT cd.usubjid
+						 FROM wrk_clinical_data cd)
+						AND patient_num NOT IN
+								(SELECT DISTINCT sm.patient_id
+								 FROM deapp.de_subject_sample_mapping sm);
 		get diagnostics rowCt := ROW_COUNT;
 		exception
 		when others then
@@ -938,6 +963,42 @@ BEGIN
 	end;
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Insert new subjects into patient_dimension',rowCt,stepCt,'Done') into rtnCd;
+
+	select insert_additional_data(TrialID, 'Default', jobID) into trialVisitNum;
+
+	select study_num into studyNum
+	from i2b2demodata.study
+	where study_id = TrialId;
+
+	BEGIN
+		INSERT INTO i2b2demodata.visit_dimension
+			(
+				encounter_num,
+			 	patient_num,
+			 	start_date
+			)
+			SELECT
+				nextval('tm_dataloader.visit_dimension_seq'),
+				pd.patient_num,
+				current_timestamp
+			FROM i2b2demodata.patient_dimension pd
+			WHERE pd.sourcesystem_cd LIKE TrialId || ':%'
+						AND pd.patient_num NOT IN (SELECT patient_num
+																			 FROM i2b2demodata.visit_dimension vd);
+		get diagnostics rowCt := ROW_COUNT;
+		exception
+		when others then
+			errorNumber := SQLSTATE;
+			errorMessage := SQLERRM;
+			--Handle errors.
+			select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+			--End Proc
+			select cz_end_audit (jobID, 'FAIL') into rtnCd;
+			return -16;
+	END;
+	stepCt := stepCt + 1;
+	select cz_write_audit(jobId,databaseName,procedureName,'Insert new visit into visit_dimension',rowCt,stepCt,'Done') into rtnCd;
+
 
 	--	delete leaf nodes that will not be reused, if any
 	if (merge_mode = 'REPLACE') then
@@ -1086,8 +1147,10 @@ BEGIN
 	if (merge_mode = 'REPLACE') then
 		begin
 		delete from i2b2demodata.observation_fact f
-		where f.modifier_cd = TrialId
-			and f.concept_cd not in
+		where
+-- 			f.modifier_cd = TrialId
+-- 			and
+					f.concept_cd not in
 			 (select distinct concept_code as concept_cd from deapp.de_subject_sample_mapping
 				where trial_name = TrialId
 					and concept_code is not null
@@ -1130,8 +1193,10 @@ BEGIN
 	if (merge_mode = 'UPDATE') then
     begin
     delete from observation_fact f
-		  where f.modifier_cd = TrialId
-            and f.patient_num = any(updated_patient_nums)
+		  where
+-- 				f.modifier_cd = TrialId
+--             and
+				f.patient_num = any(updated_patient_nums)
 						and f.concept_cd not in
 								(select distinct concept_code as concept_cd from deapp.de_subject_sample_mapping
 								where trial_name = TrialId
@@ -1197,8 +1262,9 @@ BEGIN
                 and fact.patient_num = cur_row.patient_num;
 
           delete from observation_fact f
-          where f.modifier_cd = TrialId
-                and f.patient_num = cur_row.patient_num
+          where --f.modifier_cd = TrialId
+--                 and
+						f.patient_num = cur_row.patient_num
                 and f.concept_cd in (select cd.concept_cd
                                      from concept_dimension cd
                                      where cd.concept_path like updatedPath || '%' escape '`')
@@ -1241,8 +1307,10 @@ BEGIN
       else
 				updatedPath := regexp_replace(topNode || replace(replace(coalesce(cur_row.category_path, ''),'DATALABEL',coalesce(cur_row.data_label, '')),'VISITNAME',coalesce(cur_row.visit_name, '')) || '\','(\\){2,}', '\', 'g');
         delete from observation_fact f
-        where f.modifier_cd = TrialId
-              and f.patient_num = cur_row.patient_num
+        where
+-- 					f.modifier_cd = TrialId
+--               and
+					f.patient_num = cur_row.patient_num
               and f.concept_cd in (select cd.concept_cd
                                    from concept_dimension cd
                                    where cd.concept_path = updatedPath)
@@ -1290,8 +1358,10 @@ BEGIN
 	if (merge_mode = 'APPEND') then
     begin
 		delete from observation_fact f
-		 where f.modifier_cd = TrialId
-		   and f.valtype_cd = 'N'
+		 where
+-- 			 f.modifier_cd = TrialId
+-- 		   and
+		f.valtype_cd = 'N'
 		   and f.patient_num = any(updated_patient_nums)
 		   and f.concept_cd in (select cd.concept_cd
 								  from observation_fact fact, concept_dimension cd, wt_trial_nodes node
@@ -1315,18 +1385,16 @@ BEGIN
 
 	analyze wrk_clinical_data;
 	analyze wt_trial_nodes;
-
-	
-
 	begin
 
 	set enable_mergejoin=f;
 	create temporary table tmp_observation_facts without oids as
-	select distinct c.patient_num as encounter_num,
+	select distinct
+			vd.encounter_num as encounter_num,
 		  c.patient_num,
 		  i.c_basecode as concept_cd,
 			coalesce(a.date_timestamp, 'infinity') as start_date,
-			a.study_id as modifier_cd,
+			'@' as modifier_cd, 			--a.study_id as modifier_cd,
 		  a.data_type as valtype_cd,
 		  case when a.data_type = 'T' then a.data_value
 				else 'E'  --Stands for Equals for numeric types
@@ -1340,11 +1408,13 @@ BEGIN
 		  '@' as valueflag_cd,
 		  '@' as provider_id,
 		  '@' as location_cd,
-			1 as instance_num
+			1 as instance_num,
+			trialVisitNum as trial_visit_num
 	from wrk_clinical_data a
 		,i2b2demodata.patient_dimension c
 		,wt_trial_nodes t
 		,i2b2metadata.i2b2 i
+		,i2b2demodata.visit_dimension vd
 	where a.usubjid = c.sourcesystem_cd
 	  and coalesce(a.category_cd,'@') = coalesce(t.category_cd,'@')
 	  and coalesce(a.data_label,'**NULL**') = coalesce(t.data_label,'**NULL**')
@@ -1352,6 +1422,7 @@ BEGIN
 	  and coalesce(a.baseline_value,'**NULL**') = coalesce(t.baseline_value,'**NULL**')
 	  and case when a.data_type = 'T' then a.data_value else '**NULL**' end = coalesce(t.data_value,'**NULL**')
 	  and t.leaf_node = i.c_fullname
+		and c.patient_num = vd.patient_num
 --	  and not exists		-- don't insert if lower level node exists
 --		 (select 1 from wt_trial_nodes x
 --		  where x.leaf_node like t.leaf_node || '%_' escape '`')
@@ -1408,7 +1479,8 @@ BEGIN
      valueflag_cd,
      provider_id,
      location_cd,
-     instance_num
+     instance_num,
+	 	 trial_visit_num
 	)
 	select * from tmp_observation_facts;
 

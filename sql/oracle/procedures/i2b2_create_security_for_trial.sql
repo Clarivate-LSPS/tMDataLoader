@@ -218,7 +218,7 @@ BEGIN
 			v_bio_experiment_id,
 			TrialId,
 			CASE WHEN securedStudy = 'N'
-				THEN 'EXP:PUBLIC'
+				THEN 'PUBLIC'
 			ELSE 'EXP:' || TrialId
 			END);
 
