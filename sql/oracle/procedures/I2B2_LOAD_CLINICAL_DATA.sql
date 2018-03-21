@@ -874,12 +874,14 @@ BEGIN
 		(
 		encounter_num,
 		patient_num,
-		start_date
+		start_date,
+		sourcesystem_cd
 		)
 		SELECT
 		tm_dataloader.visit_dimension_seq.nextval,
 		pd.patient_num,
-		current_timestamp
+		current_timestamp,
+			TrialID
 		FROM i2b2demodata.patient_dimension pd
 		WHERE pd.sourcesystem_cd LIKE TrialId || ':%'
 						 AND pd.patient_num NOT IN (SELECT patient_num

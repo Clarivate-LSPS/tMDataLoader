@@ -81,6 +81,8 @@ class PostProcessingTest extends Specification implements ConfigAwareTestCase {
         remStudyId = remStudyId.toUpperCase()
         sql.execute("delete from i2b2metadata.study_dimension_descriptions WHERE study_id in (" +
                 "select study_num from i2b2demodata.study where study_id = ? )", [remStudyId as String])
+        sql.execute("delete from i2b2demodata.trial_visit_dimension WHERE study_num in (" +
+                "select study_num from i2b2demodata.study where study_id = ? )", [remStudyId as String])
         def tables = [
                 ['table': 'i2b2demodata.study', 'value': remStudyId, 'column': 'study_id'],
                 ['table': 'biomart.bio_experiment', 'value': remStudyId, 'column': 'accession'],

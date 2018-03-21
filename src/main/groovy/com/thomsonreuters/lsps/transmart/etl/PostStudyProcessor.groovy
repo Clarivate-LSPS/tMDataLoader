@@ -47,6 +47,16 @@ class PostStudyProcessor{
         String newToken = "EXP:$studyId"
         String oldToken = "EXP:$oldStudyId"
 
+        sql.execute("delete from i2b2metadata.study_dimension_descriptions WHERE study_id in (" +
+                "select study_num from i2b2demodata.study where study_id = ? )", [studyId as String])
+        sql.execute("""
+            UPDATE i2b2demodata.observation_fact set trial_visit_num = NULL WHERE trial_visit_num in (
+            select trial_visit_num from i2b2demodata.trial_visit_dimension WHERE study_num in (
+                select study_num from i2b2demodata.study where study_id = ? )
+            )
+        """, [studyId as String])
+        sql.execute("delete from i2b2demodata.trial_visit_dimension WHERE study_num in (" +
+                "select study_num from i2b2demodata.study where study_id = ? )", [studyId as String])
         sql.execute("delete from i2b2demodata.study where study_id = :studyId", [studyId: studyId])
         sql.execute("DELETE FROM biomart.bio_experiment WHERE accession = :studyId", [studyId: studyId])
         sql.execute("DELETE FROM biomart.bio_data_uid WHERE unique_id = :newToken", [newToken: newToken])
