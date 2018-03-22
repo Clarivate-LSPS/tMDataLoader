@@ -1150,8 +1150,12 @@ BEGIN
 		begin
 		delete from i2b2demodata.observation_fact f
 		where
--- 			f.modifier_cd = TrialId
--- 			and
+			trial_visit_num in (
+				select trial_visit_num from trial_visit_dimension where study_num in (
+					select study_num from i2b2demodata.study where study_id = TrialID
+				)
+			)
+			and
 					f.concept_cd not in
 			 (select distinct concept_code as concept_cd from deapp.de_subject_sample_mapping
 				where trial_name = TrialId
@@ -1196,8 +1200,12 @@ BEGIN
     begin
     delete from observation_fact f
 		  where
--- 				f.modifier_cd = TrialId
---             and
+				trial_visit_num in (
+					select trial_visit_num from trial_visit_dimension where study_num in (
+						select study_num from i2b2demodata.study where study_id = TrialID
+					)
+				)
+				and
 				f.patient_num = any(updated_patient_nums)
 						and f.concept_cd not in
 								(select distinct concept_code as concept_cd from deapp.de_subject_sample_mapping
@@ -1264,8 +1272,13 @@ BEGIN
                 and fact.patient_num = cur_row.patient_num;
 
           delete from observation_fact f
-          where --f.modifier_cd = TrialId
---                 and
+          where
+						trial_visit_num in (
+						select trial_visit_num from trial_visit_dimension where study_num in (
+							select study_num from i2b2demodata.study where study_id = TrialID
+						)
+					)
+								and
 						f.patient_num = cur_row.patient_num
                 and f.concept_cd in (select cd.concept_cd
                                      from concept_dimension cd
@@ -1310,8 +1323,12 @@ BEGIN
 				updatedPath := regexp_replace(topNode || replace(replace(coalesce(cur_row.category_path, ''),'DATALABEL',coalesce(cur_row.data_label, '')),'VISITNAME',coalesce(cur_row.visit_name, '')) || '\','(\\){2,}', '\', 'g');
         delete from observation_fact f
         where
--- 					f.modifier_cd = TrialId
---               and
+					trial_visit_num in (
+						select trial_visit_num from trial_visit_dimension where study_num in (
+							select study_num from i2b2demodata.study where study_id = TrialID
+						)
+					)
+					and
 					f.patient_num = cur_row.patient_num
               and f.concept_cd in (select cd.concept_cd
                                    from concept_dimension cd
@@ -1361,8 +1378,12 @@ BEGIN
     begin
 		delete from observation_fact f
 		 where
--- 			 f.modifier_cd = TrialId
--- 		   and
+			 trial_visit_num in (
+				 select trial_visit_num from trial_visit_dimension where study_num in (
+					 select study_num from i2b2demodata.study where study_id = TrialID
+				 )
+			 )
+			 and
 		f.valtype_cd = 'N'
 		   and f.patient_num = any(updated_patient_nums)
 		   and f.concept_cd in (select cd.concept_cd

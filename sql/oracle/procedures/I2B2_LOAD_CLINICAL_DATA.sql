@@ -1046,8 +1046,12 @@ BEGIN
 	--	delete from observation_fact all concept_cds for trial that are clinical data, exclude concept_cds from biomarker data
 	if (merge_mode = 'REPLACE') then
 		delete /*+ parallel(observation_fact, 4) */ from OBSERVATION_FACT F
-		where --f.modifier_cd = TrialId
-		--	and
+		where trial_visit_num in (
+			select trial_visit_num from trial_visit_dimension where study_num in (
+				select study_num from i2b2demodata.study where study_id = TrialID
+			)
+		)
+					and
 			F.CONCEPT_CD not in
 			 (select /*+ parallel(de_subject_sample_mapping, 4) */ distinct concept_code as concept_cd from de_subject_sample_mapping
 				where trial_name = TrialId
@@ -1082,8 +1086,12 @@ BEGIN
 	if (merge_mode = 'UPDATE') then
 		delete from observation_fact f
 		 where
--- 			 f.modifier_cd = TrialId
--- 		   and
+			 trial_visit_num in (
+				 select trial_visit_num from trial_visit_dimension where study_num in (
+					 select study_num from i2b2demodata.study where study_id = TrialID
+				 )
+			 )
+			 and
 			 f.patient_num in (select pat.patient_num
 								   from tmp_subject_info si, patient_dimension pat
 								  where si.usubjid = pat.sourcesystem_cd)
@@ -1141,9 +1149,12 @@ BEGIN
 				if (updatedPath is not null) then
 					delete from observation_fact f
 					where
--- 							f.modifier_cd = TrialId
--- 								and
-							f.patient_num = x.patient_num
+						trial_visit_num in (
+							select trial_visit_num from trial_visit_dimension where study_num in (
+								select study_num from i2b2demodata.study where study_id = TrialID
+							)
+						)
+						and							f.patient_num = x.patient_num
 								and f.CONCEPT_CD in (select cd.concept_cd
 																		 from concept_dimension cd
 																		 where cd.concept_path like updatedPath || '%' )
@@ -1180,9 +1191,12 @@ BEGIN
 				pathRegexp := regexp_replace(topNode || replace(replace(x.category_path,'DATALABEL',x.data_label),'VISITNAME',x.visit_name) || '\','(\\){2,}', '\');
 				delete from observation_fact f
 				where
--- 					f.modifier_cd = TrialId
--- 							and
-						f.patient_num = x.patient_num
+					trial_visit_num in (
+						select trial_visit_num from trial_visit_dimension where study_num in (
+							select study_num from i2b2demodata.study where study_id = TrialID
+						)
+					)
+					and						f.patient_num = x.patient_num
 							and f.CONCEPT_CD in (select cd.concept_cd
 																	 from concept_dimension cd
 																	 where cd.concept_path = pathRegexp)
@@ -1221,9 +1235,12 @@ BEGIN
 	if (merge_mode = 'APPEND') then
 		delete from observation_fact f
 		 where
--- 			 f.modifier_cd = TrialId
--- 		   and
-			 f.valtype_cd = 'N'
+			 trial_visit_num in (
+				 select trial_visit_num from trial_visit_dimension where study_num in (
+					 select study_num from i2b2demodata.study where study_id = TrialID
+				 )
+			 )
+			 and			 f.valtype_cd = 'N'
 		   and f.patient_num in (select pat.patient_num
 								   from tmp_subject_info si, patient_dimension pat
 								  where si.usubjid = pat.sourcesystem_cd)
