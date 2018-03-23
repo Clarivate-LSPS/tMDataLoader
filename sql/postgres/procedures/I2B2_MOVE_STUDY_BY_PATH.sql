@@ -28,6 +28,7 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
     trialId                 VARCHAR(2000);
     trialId2                VARCHAR(2000);
     studyNum                NUMERIC(18,0);
+    studyNumNew             NUMERIC(18,0);
 
     old_path                VARCHAR(2000);
     new_path                VARCHAR(2000);
@@ -174,6 +175,19 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
             FROM i2b2demodata.study
             WHERE study_id = accession_old;
 
+            SELECT study_num
+            INTO studyNumNew
+            FROM i2b2demodata.study
+            WHERE study_id = accession_new;
+
+            update i2b2demodata.trial_visit_dimension
+              SET study_num = studyNumNew
+            WHERE study_num = studyNum;
+
+            stepCt := stepCt + 1;
+            GET DIAGNOSTICS rowCt := ROW_COUNT;
+            select cz_write_audit(jobId,databaseName,procedureName,'Delete data from trial_visit_dimension',rowCt,stepCt,'Done') into rtnCd;
+
             DELETE FROM i2b2metadata.study_dimension_descriptions
             WHERE study_id = studyNum;
 
@@ -200,6 +214,11 @@ FUNCTION I2B2_MOVE_STUDY_BY_PATH
   
         begin
           --Changed accession to new path
+          UPDATE i2b2demodata.study
+          SET
+            study_id          = accession_old
+          WHERE study_id = accession_new;
+
           UPDATE biomart.bio_experiment SET accession = accession_old WHERE accession = accession_new;
           UPDATE biomart.bio_data_uid SET unique_id = 'EXP:'||accession_old WHERE unique_id = 'EXP:'||accession_new;
           UPDATE searchapp.search_secure_object SET bio_data_unique_id = 'EXP:'||accession_old WHERE bio_data_unique_id = 'EXP:'||accession_new;
