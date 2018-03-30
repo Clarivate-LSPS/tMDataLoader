@@ -60,4 +60,8 @@ class SqlMatchers {
     public static RowMatcher matchesRow(Map<String, Object> valueAttrs) {
         return new RowMatcher(valueAttrs)
     }
+
+    public static HasFactAttribute hasFactDate(String sourcesystemCd, String conceptPath, Integer instanceNum, Map<String, Object> valueAttrs) {
+        return new HasFactAttribute(sourcesystemCd, conceptPath, instanceNum, valueAttrs)
+    }
 }

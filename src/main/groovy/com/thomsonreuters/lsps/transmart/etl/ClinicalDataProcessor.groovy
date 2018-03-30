@@ -38,6 +38,8 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
 import java.sql.SQLException
+import java.sql.Timestamp
+import java.time.LocalDate
 
 class ClinicalDataProcessor extends AbstractDataProcessor {
     StatisticCollector statistic = new StatisticCollector()
@@ -91,7 +93,10 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
                             category_cd    : '', // CATEGORY_CD
                             ctrl_vocab_code: '', // CTRL_VOCAB_CODE - unused
                             valuetype_cd   : (String) null,
-                            baseline_value : (String) null
+                            baseline_value : (String) null,
+                            end_date       : cols[fMappings.END_DATE]?Timestamp.valueOf(LocalDate.parse(cols[fMappings.END_DATE]).atStartOfDay()).toString():null,
+                            start_date     : cols[fMappings.START_DATE]?Timestamp.valueOf(LocalDate.parse(cols[fMappings.START_DATE]).atStartOfDay()).toString():null,
+                            instance_num   : cols[fMappings.INSTANCE_NUM]
                     ]
 
                     if (_DATA) {
@@ -237,11 +242,15 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
     private void processFile(Path f, ClinicalDataMapping.FileMapping fileMapping) {
         DataLoader.start(database, "lt_src_clinical_data", ['STUDY_ID', 'SITE_ID', 'SUBJECT_ID', 'VISIT_NAME',
                                                             'DATA_LABEL', 'DATA_VALUE', 'CATEGORY_CD', 'SAMPLE_CD',
-                                                            'VALUETYPE_CD', 'BASELINE_VALUE']) { st ->
+                                                            'VALUETYPE_CD', 'BASELINE_VALUE',
+                                                            'START_DATE', 'END_DATE', 'INSTANCE_NUM'
+        ]) { st ->
             long rowsCount = processEachRow(f, fileMapping) { row, lineNumber ->
                 try {
                     st.addBatch([row.study_id, row.site_id, row.subj_id, row.visit_name, row.data_label,
-                                 row.data_value, row.category_cd, row.sample_cd, row.valuetype_cd, row.baseline_value])
+                                 row.data_value, row.category_cd, row.sample_cd, row.valuetype_cd, row.baseline_value,
+                                 row.start_date, row.end_date, row.instance_num
+                    ])
                 } catch (SQLException e) {
                     throw new DataProcessingException("Wrong data close to ${lineNumber} line.\n ${e.getLocalizedMessage()}")
                 }

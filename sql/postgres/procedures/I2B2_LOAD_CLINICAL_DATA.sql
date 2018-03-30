@@ -151,6 +151,9 @@ BEGIN
 	,sample_cd
 	,valuetype_cd
 	,baseline_value
+	,end_date
+	,start_date
+	,instance_num
 	)
 	select study_id
 		  ,site_id
@@ -166,6 +169,9 @@ BEGIN
 		  ,sample_cd
 			,valuetype_cd
 			,baseline_value
+			,end_date
+			,start_date
+			,instance_num
 	from lt_src_clinical_data;
 	exception
 	when others then
@@ -668,7 +674,10 @@ BEGIN
 	,visit_name
 	,data_label
 	,category_cd)
-	select w.site_id, w.subject_id, w.visit_name, w.data_label, w.category_cd
+	select w.site_id,
+		case when w.instance_num is null then w.subject_id
+		else w.subject_id||'|'||coalesce(w.instance_num,'') end,
+		w.visit_name, w.data_label, w.category_cd
 	from wrk_clinical_data w
 	where exists
 		 (select 1 from wt_num_data_types t
@@ -676,7 +685,7 @@ BEGIN
 		   and coalesce(w.data_label,'@') = coalesce(t.data_label,'@')
 		   and coalesce(w.visit_name,'@') = coalesce(t.visit_name,'@')
 		  )
-	group by w.site_id, w.subject_id, w.visit_name, w.data_label, w.category_cd
+	group by w.site_id, w.subject_id, w.visit_name, w.data_label, w.category_cd, w.instance_num
 	having count(*) > 1;
 	get diagnostics rowCt := ROW_COUNT;
 	exception
@@ -1416,7 +1425,9 @@ BEGIN
 			vd.encounter_num as encounter_num,
 		  c.patient_num,
 		  i.c_basecode as concept_cd,
-			coalesce(a.date_timestamp, 'infinity') as start_date,
+			case when a.start_date is null then 'infinity'
+				else to_timestamp(a.start_date,'YYYY-MM-DD HH24:MI:SS.MS') end
+				as start_date,
 			'@' as modifier_cd, 			--a.study_id as modifier_cd,
 		  a.data_type as valtype_cd,
 		  case when a.data_type = 'T' then a.data_value
@@ -1431,8 +1442,11 @@ BEGIN
 		  '@' as valueflag_cd,
 		  '@' as provider_id,
 		  '@' as location_cd,
-			1 as instance_num,
-			trialVisitNum as trial_visit_num
+			to_number(coalesce(a.instance_num, '1'),'9999') as instance_num,
+			trialVisitNum as trial_visit_num,
+			case when a.end_date is null then NULL
+				else to_timestamp(a.end_date,'YYYY-MM-DD HH24:MI:SS.MS') end
+				as end_date
 	from wrk_clinical_data a
 		,i2b2demodata.patient_dimension c
 		,wt_trial_nodes t
@@ -1503,7 +1517,8 @@ BEGIN
      provider_id,
      location_cd,
      instance_num,
-	 	 trial_visit_num
+	 	 trial_visit_num,
+	 	 end_date
 	)
 	select * from tmp_observation_facts;
 

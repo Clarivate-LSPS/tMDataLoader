@@ -9,13 +9,15 @@ import com.thomsonreuters.lsps.transmart.fixtures.StudyInfo
 import groovy.sql.Sql
 import spock.lang.Specification
 
+import java.sql.Timestamp
+import java.time.LocalDate
+
 import static com.thomsonreuters.lsps.transmart.Fixtures.*
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.*
 import static org.hamcrest.CoreMatchers.equalTo
 import static org.hamcrest.CoreMatchers.notNullValue
 import static org.hamcrest.core.IsNot.not
-import static org.junit.Assert.assertEquals
-import static org.junit.Assert.assertThat
+import static org.junit.Assert.*
 
 class ClinicalDataProcessorTest extends Specification implements ConfigAwareTestCase {
     ClinicalData clinicalData = Fixtures.clinicalData
@@ -1385,7 +1387,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         ])
     }
 
-    def 'It should load data into transmart 17.1 new tables'(){
+    def 'It should load data into transmart 17.1 new tables'() {
         given:
         Study.deleteById(config, studyId)
         config.securitySymbol = 'Y'
@@ -1398,7 +1400,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         then:
         def studyNum
         sql.execute("select study_num from i2b2demodata.study where study_id = ? ", [studyId as String],
-                {isResultSet, row -> studyNum = row.study_num})
+                { isResultSet, row -> studyNum = row.study_num })
         assertThat(db, hasRecord(['study_id': studyNum[0]], 'i2b2metadata.study_dimension_descriptions'))
         assertThat(db, hasRecord(['study_num': studyNum[0]], 'i2b2demodata.trial_visit_dimension'))
 
@@ -1407,5 +1409,77 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat(db, hasRecord('i2b2demodata.study',
                 ['study_id': "${studyId}"], [secure_obj_token: "EXP:${studyId}"]))
 
+    }
+
+    def 'It should return patients as API v2'() {
+        given:
+        Study.deleteById(config, studyId)
+
+        when:
+        processor.process(
+                new File(studyDir(studyName, studyId), "ClinicalDataToUpload").toPath(),
+                [name: studyName, node: "Test Studies\\${studyName}".toString()])
+        then:
+        def cnt
+        sql.execute("""
+                select count(*) as cnt from  
+                  i2b2demodata.observation_fact 
+                where trial_visit_num in (
+                  select trial_visit_num from i2b2demodata.trial_visit_dimension WHERE study_num in (
+                    select study_num from i2b2demodata.study where study_id = ?
+                  )
+                )
+            """, [studyId as String],
+                { isResultSet, row -> cnt = row[0].cnt })
+        assertTrue(cnt > 0)
+    }
+
+    def 'It should check observation as API v2'(){
+        given:
+        Study.deleteById(config, studyId)
+
+        when:
+        processor.process(
+                new File(studyDir(studyName, studyId), "ClinicalDataToUpload").toPath(),
+                [name: studyName, node: "Test Studies\\${studyName}".toString()])
+        then:
+        def cnt
+        sql.execute("""
+                select count(*) as cnt from 
+                  i2b2demodata.observation_fact this_ 
+                  inner join i2b2demodata.trial_visit_dimension trialvisit1_ on this_.trial_visit_num=trialvisit1_.trial_visit_num 
+                where 
+                    trialvisit1_.study_num in (
+                      select study_.study_num as y0_ from i2b2demodata.study study_ where study_.study_id= ?
+                    )
+            """, [studyId as String],
+                { isResultSet, row -> cnt = row[0].cnt })
+        assertTrue(cnt > 0)
+    }
+
+    def 'It should load study with start date, end date, instance and visit fields'(){
+        given:
+        def studyTr171Id = "TR171"
+        def studyTr171Name = 'Test Study For Transmart-17-1'
+        Study.deleteById(config, studyTr171Id )
+
+        when:
+        def load = processor.process(
+                new File(studyDir(studyTr171Name, studyTr171Id), "ClinicalDataToUpload").toPath(),
+                [name: studyTr171Name, node: "Test Studies\\${studyTr171Name}".toString()])
+        then:
+        assertTrue(load)
+
+        assertThat(db, hasFactDate('TR171:OBS336-201_01', '\\Test Studies\\Test Study For Transmart-17-1\\PKConc\\Timepoint Hrs.\\0\\', 1,
+                [
+                        'start_date': Timestamp.valueOf(LocalDate.parse("2016-03-02").atStartOfDay()),
+                        'end_date': Timestamp.valueOf(LocalDate.parse("2016-03-03").atStartOfDay())
+                ]
+        ))
+        assertThat(db, hasFactDate('TR171:OBS336-201_03', '\\Test Studies\\Test Study For Transmart-17-1\\Demography\\Sex\\F\\', 1,
+                [
+                        'start_date': Timestamp.valueOf(LocalDate.parse("2016-03-11").atStartOfDay())
+                ]
+        ))
     }
 }

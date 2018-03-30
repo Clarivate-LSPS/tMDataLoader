@@ -234,6 +234,9 @@ BEGIN
   ,data_type
 	,valuetype_cd
   ,baseline_value
+	,end_date
+	,start_date
+	,instance_num
 	)
 	select study_id
 		  ,site_id
@@ -252,6 +255,9 @@ BEGIN
       ,'T'
 			,valuetype_cd
 			,baseline_value
+			,end_date
+			,start_date
+			,instance_num
 	from lt_src_clinical_data
 	WHERE data_value is not null;
 	
@@ -651,7 +657,10 @@ BEGIN
 	,visit_name
 	,data_label
 	,category_cd)
-	select w.site_id, w.subject_id, w.visit_name, w.data_label, w.category_cd
+	select w.site_id,
+		case when w.instance_num is null then w.subject_id
+		else w.subject_id||'|'||coalesce(w.instance_num,'') end,
+		w.visit_name, w.data_label, w.category_cd
 	from wrk_clinical_data w
 	where exists
 		 (select 1 from wt_num_data_types t
@@ -659,7 +668,7 @@ BEGIN
 		   and coalesce(w.data_label,'@') = coalesce(t.data_label,'@')
 		   and coalesce(w.visit_name,'@') = coalesce(t.visit_name,'@')
 		  )
-	group by w.site_id, w.subject_id, w.visit_name, w.data_label, w.category_cd
+	group by w.site_id, w.subject_id, w.visit_name, w.data_label, w.category_cd, w.instance_num
 	having count(*) > 1;
 		  
 	pCount := SQL%ROWCOUNT;
@@ -1038,7 +1047,7 @@ BEGIN
       execute immediate('DROP INDEX "I2B2DEMODATA"."IDX_OB_FACT_PATIENT_NUMBER"');
         exception
           when index_not_exists then null;
-    end; 
+    end;
   end;
 
   --execute immediate('DROP INDEX "I2B2DEMODATA"."OF_CTX_BLOB"'); 
@@ -1265,68 +1274,80 @@ BEGIN
 	
     --Insert into observation_fact
 	--22 July 2013. Performace fix by TR. Set nologging.
-	insert /*+ APPEND */ into observation_fact nologging
+	INSERT /*+ APPEND */ INTO observation_fact nologging
 	(encounter_num,
-	 	patient_num,
-     concept_cd,
-	 	 start_date,
-     modifier_cd,
-     valtype_cd,
-     tval_char,
-     nval_num,
-     sourcesystem_cd,
-     import_date,
-     valueflag_cd,
-     PROVIDER_ID,
-     location_cd,
-     instance_num,
-		 trial_visit_num
+	 patient_num,
+	 concept_cd,
+	 start_date,
+	 modifier_cd,
+	 valtype_cd,
+	 tval_char,
+	 nval_num,
+	 units_cd,
+	 sourcesystem_cd,
+	 import_date,
+	 valueflag_cd,
+	 PROVIDER_ID,
+	 location_cd,
+	 instance_num,
+	 trial_visit_num,
+	 end_date
 	)
-       select /*+opt_param('_optimizer_cartesian_enabled','false')*/ distinct
-				 vd.encounter_num as encounter_num,
-			 c.patient_num,
-		   i.c_basecode,
-			 to_date(coalesce(a.visit_date,'0001/01/01 00:00'),'YYYY/MM/DD HH24:mi'),
-		   '@',
-		   a.data_type,
-		   case when a.data_type = 'T' then a.data_value
-				else 'E'  --Stands for Equals for numeric types
-				end,
-		   case when a.data_type = 'N' then a.data_value
-				else null --Null for text types
-				end,
-		   c.sourcesystem_cd, 
-		  sysdate, 
-		   '@',
-		   '@',
-		   '@',
-       1,
-			trialVisitNum
-	from wrk_clinical_data a
-		,patient_dimension c
-		,wt_trial_nodes t
-		,i2b2 i
-		,visit_dimension vd
-	where a.usubjid = c.sourcesystem_cd
-	  and nvl(a.category_cd,'@') = nvl(t.category_cd,'@')
-	  and nvl(a.data_label,'**NULL**') = nvl(t.data_label,'**NULL**')
-	  and nvl(a.visit_name,'**NULL**') = nvl(t.visit_name,'**NULL**')
-		and nvl(a.baseline_value,'**NULL**') = nvl(t.baseline_value,'**NULL**')
-	  and decode(a.data_type,'T',a.data_value,'**NULL**') = nvl(t.data_value,'**NULL**')
-	  and t.leaf_node = i.c_fullname
-		and c.patient_num = vd.patient_num
-	  and not exists		-- don't insert if lower level node exists
-		 (select 1 from wt_trial_nodes x
-		  --where x.leaf_node like t.leaf_node || '%_'
-		  --Jule 2013. Performance fix by TR. Find if any leaf parent node is current
-		   where (SUBSTR(x.leaf_node, 1, INSTR(x.leaf_node, '\', -2))) = t.leaf_node
-		  
-		  )
-	  and a.data_value is not null;  
-	  
-	  
+		SELECT
+			/*+opt_param('_optimizer_cartesian_enabled','false')*/ DISTINCT
+			vd.encounter_num                                 AS encounter_num,
+			c.patient_num,
+			i.c_basecode                                     AS concept_cd,
+			CAST(TO_TIMESTAMP(coalesce(a.start_date, '0001/01/01 00:00:00.00'), 'YYYY-MM-DD HH24:MI:SS.FF') AS
+					 DATE)                                       AS start_date,
+			'@'                                              AS modifier_cd,
+			a.data_type                                      AS valtype_cd,
+			CASE WHEN a.data_type = 'T'
+				THEN a.data_value
+			ELSE 'E' --Stands for Equals for numeric types
+			END                                              AS tval_char,
+			CASE WHEN a.data_type = 'N'
+				THEN a.data_value
+			ELSE NULL --Null for text types
+			END                                              AS nval_num,
+			a.units_cd,
+			a.study_id                                       AS sourcesystem_cd,
+			--c.sourcesystem_cd,
+			sysdate,
+			'@',
+			'@',
+			'@',
+			to_number(coalesce(a.instance_num, '1'), '9999') AS instance_num,
+			trialVisitNum                                    AS trial_visit_num,
+			CASE WHEN A.end_date IS NOT NULL
+				THEN
+					CAST(TO_TIMESTAMP(A.end_date, 'YYYY-MM-DD HH24:MI:SS.FF') AS DATE)
+			ELSE NULL END                                    AS end_date
+
+		FROM wrk_clinical_data a
+			, patient_dimension c
+			, wt_trial_nodes t
+			, i2b2 i
+			, visit_dimension vd
+		WHERE a.usubjid = c.sourcesystem_cd
+					AND nvl(a.category_cd, '@') = nvl(t.category_cd, '@')
+					AND nvl(a.data_label, '**NULL**') = nvl(t.data_label, '**NULL**')
+					AND nvl(a.visit_name, '**NULL**') = nvl(t.visit_name, '**NULL**')
+					AND nvl(a.baseline_value, '**NULL**') = nvl(t.baseline_value, '**NULL**')
+					AND decode(a.data_type, 'T', a.data_value, '**NULL**') = nvl(t.data_value, '**NULL**')
+					AND t.leaf_node = i.c_fullname
+					AND c.patient_num = vd.patient_num
+					AND NOT exists-- don't insert if lower level node exists
+		(SELECT 1
+		 FROM wt_trial_nodes x
+		 --where x.leaf_node like t.leaf_node || '%_'
+		 --Jule 2013. Performance fix by TR. Find if any leaf parent node is current
+		 WHERE (SUBSTR(x.leaf_node, 1, INSTR(x.leaf_node, '\', -2))) = t.leaf_node
+		)
+					AND a.data_value IS NOT NULL;
+	  	  
 	-- Performace fix. re create dropped index
-	execute immediate('CREATE UNIQUE INDEX "I2B2DEMODATA"."OB_FACT_PK" ON "I2B2DEMODATA"."OBSERVATION_FACT" ("ENCOUNTER_NUM", "PATIENT_NUM", "CONCEPT_CD", "PROVIDER_ID", "START_DATE", "MODIFIER_CD")');
+	execute immediate('CREATE UNIQUE INDEX "I2B2DEMODATA"."OB_FACT_PK" ON "I2B2DEMODATA"."OBSERVATION_FACT" ("ENCOUNTER_NUM", "PATIENT_NUM", "CONCEPT_CD", "PROVIDER_ID", "START_DATE", "MODIFIER_CD", "INSTANCE_NUM")');
 	execute immediate('CREATE INDEX "I2B2DEMODATA"."IDX_OB_FACT_1" ON "I2B2DEMODATA"."OBSERVATION_FACT" ( "CONCEPT_CD" )');
 	execute immediate('CREATE INDEX "I2B2DEMODATA"."IDX_OB_FACT_2" ON "I2B2DEMODATA"."OBSERVATION_FACT" ("CONCEPT_CD", "PATIENT_NUM", "ENCOUNTER_NUM")');
 	execute immediate('CREATE INDEX "I2B2DEMODATA"."IDX_OB_FACT_PATIENT_NUMBER" ON "I2B2DEMODATA"."OBSERVATION_FACT" ("PATIENT_NUM", "CONCEPT_CD")');

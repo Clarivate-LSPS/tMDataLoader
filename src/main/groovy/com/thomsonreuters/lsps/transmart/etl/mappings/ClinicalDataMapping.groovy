@@ -41,6 +41,12 @@ class ClinicalDataMapping {
         int VISIT_NAME
         int SAMPLE_ID
         List<Entry> _DATA = []
+        //Additional field for support transmart 17.1
+//        String VISIT_NAME
+        int TRIAL_VISIT_LABEL
+        int START_DATE
+        int END_DATE
+        int INSTANCE_NUM
     }
 
     ClinicalDataMapping(Map<String, FileMapping> mappings) {
@@ -66,7 +72,8 @@ class ClinicalDataMapping {
         int actualColumnsCount = -1
     }
 
-    private static Map<String, FileMapping> processMappingFile(CsvLikeFile mappingFile, Map<String, Integer> colsMetaSize) {
+    private
+    static Map<String, FileMapping> processMappingFile(CsvLikeFile mappingFile, Map<String, Integer> colsMetaSize) {
         Map<String, FileParsingInfo> mappings = [:]
 
         logger.log("Mapping file: ${mappingFile.file.fileName}")

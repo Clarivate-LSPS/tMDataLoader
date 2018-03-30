@@ -1,0 +1,35 @@
+filename	category_cd	col_nbr	data_label	data_label_source	variable_type	validation_rules
+OBS336-201_demog.txt	Demography	1	STUDY_ID
+OBS336-201_demog.txt	Demography	2	SUBJ_ID
+OBS336-201_demog.txt	Demography	3	VISIT_NAME
+OBS336-201_demog.txt	Demography	4	TRIAL_VISIT_LABEL
+OBS336-201_demog.txt	Demography	5	START_DATE
+OBS336-201_demog.txt	Demography	6	Sex
+OBS336-201_demog.txt	Demography	7	Race
+OBS336-201_demog.txt	Demography	8	YOB
+OBS336-201_vitals.txt	Vital Signs	1	STUDY_ID
+OBS336-201_vitals.txt	Vital Signs	2	SUBJ_ID
+OBS336-201_vitals.txt	Vital Signs	3	VISIT_NAME
+OBS336-201_vitals.txt	Vital Signs	4	TRIAL_VISIT_LABEL
+OBS336-201_vitals.txt	Vital Signs	5	START_DATE
+OBS336-201_vitals.txt	Vital Signs	6	Treatment
+OBS336-201_vitals.txt	Vital Signs	7	Height_CM
+OBS336-201_vitals.txt	Vital Signs	8	Weight_KG
+OBS336-201_labs.txt	Clinical Chemistry	1	STUDY_ID
+OBS336-201_labs.txt	Clinical Chemistry	2	SUBJ_ID
+OBS336-201_labs.txt	Clinical Chemistry	3	VISIT_NAME
+OBS336-201_labs.txt	Clinical Chemistry	4	TRIAL_VISIT_LABEL
+OBS336-201_labs.txt	Clinical Chemistry	5	START_DATE
+OBS336-201_labs.txt	Clinical Chemistry	6	Treatment
+OBS336-201_labs.txt	Clinical Chemistry	7	HDL mg/dl
+OBS336-201_labs.txt	Clinical Chemistry	8	LDL mg/dl
+OBS336-201_labs.txt	Clinical Chemistry	9	TRIG mg/dl
+OBS336-201_pk.txt	PKConc	1	STUDY_ID
+OBS336-201_pk.txt	PKConc	2	SUBJ_ID
+OBS336-201_pk.txt	PKConc	3	VISIT_NAME
+OBS336-201_pk.txt	PKConc	4	TRIAL_VISIT_LABEL
+OBS336-201_pk.txt	PKConc	5	START_DATE
+OBS336-201_pk.txt	PKConc	6	END_DATE
+OBS336-201_pk.txt	PKConc	7	INSTANCE_NUM
+OBS336-201_pk.txt	PKConc	8	Treatment
+OBS336-201_pk.txt	PKConc	9	Timepoint Hrs.
