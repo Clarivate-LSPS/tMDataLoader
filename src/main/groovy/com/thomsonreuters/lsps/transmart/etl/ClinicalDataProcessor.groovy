@@ -22,6 +22,7 @@ package com.thomsonreuters.lsps.transmart.etl
 
 import com.thomsonreuters.lsps.db.core.DatabaseType
 import com.thomsonreuters.lsps.db.loader.DataLoader
+import com.thomsonreuters.lsps.transmart.etl.helper.ETLHelper
 import com.thomsonreuters.lsps.transmart.etl.mappings.ClinicalDataMapping
 import com.thomsonreuters.lsps.transmart.etl.mappings.TagReplacer
 import com.thomsonreuters.lsps.transmart.etl.statistic.StatisticCollector
@@ -38,8 +39,6 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
 import java.sql.SQLException
-import java.sql.Timestamp
-import java.time.LocalDate
 
 class ClinicalDataProcessor extends AbstractDataProcessor {
     StatisticCollector statistic = new StatisticCollector()
@@ -94,8 +93,8 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
                             ctrl_vocab_code: '', // CTRL_VOCAB_CODE - unused
                             valuetype_cd   : (String) null,
                             baseline_value : (String) null,
-                            end_date       : cols[fMappings.END_DATE]?Timestamp.valueOf(LocalDate.parse(cols[fMappings.END_DATE]).atStartOfDay()).toString():null,
-                            start_date     : cols[fMappings.START_DATE]?Timestamp.valueOf(LocalDate.parse(cols[fMappings.START_DATE]).atStartOfDay()).toString():null,
+                            end_date       : cols[fMappings.END_DATE]? ETLHelper.toTimestampString(cols[fMappings.END_DATE]) : null,
+                            start_date     : cols[fMappings.START_DATE]?ETLHelper.toTimestampString(cols[fMappings.START_DATE]):null,
                             instance_num   : cols[fMappings.INSTANCE_NUM]
                     ]
 

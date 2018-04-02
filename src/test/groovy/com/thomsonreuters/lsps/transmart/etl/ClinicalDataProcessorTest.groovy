@@ -11,6 +11,7 @@ import spock.lang.Specification
 
 import java.sql.Timestamp
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 import static com.thomsonreuters.lsps.transmart.Fixtures.*
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.*
@@ -1479,6 +1480,18 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat(db, hasFactDate('TR171:OBS336-201_03', '\\Test Studies\\Test Study For Transmart-17-1\\Demography\\Sex\\F\\', 1,
                 [
                         'start_date': Timestamp.valueOf(LocalDate.parse("2016-03-11").atStartOfDay())
+                ]
+        ))
+        assertThat(db, hasFactDate('TR171:OBS336-201_02', '\\Test Studies\\Test Study For Transmart-17-1\\PKConc\\Timepoint Hrs.\\0\\', 1,
+                [
+                        'start_date': Timestamp.valueOf(java.time.LocalDateTime.parse("2016-03-02T08:13:00")),
+                        'end_date': Timestamp.valueOf(LocalDate.parse("2016-03-03").atStartOfDay())
+                ]
+        ))
+
+        assertThat(db, hasFactDate('TR171:OBS336-201_07', '\\Test Studies\\Test Study For Transmart-17-1\\PKConc\\Timepoint Hrs.\\0\\', 1,
+                [
+                        'end_date': Timestamp.valueOf(LocalDateTime.parse("2016-03-03T14:34:19"))
                 ]
         ))
     }

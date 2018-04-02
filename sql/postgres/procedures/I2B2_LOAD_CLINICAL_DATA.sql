@@ -667,37 +667,51 @@ BEGIN
 
 	execute ('truncate table wt_clinical_data_dups');
 
-	begin
-	insert into wt_clinical_data_dups
-	(site_id
-	,subject_id
-	,visit_name
-	,data_label
-	,category_cd)
-	select w.site_id,
-		case when w.instance_num is null then w.subject_id
-		else w.subject_id||'|'||coalesce(w.instance_num,'') end,
-		w.visit_name, w.data_label, w.category_cd
-	from wrk_clinical_data w
-	where exists
-		 (select 1 from wt_num_data_types t
-		 where coalesce(w.category_cd,'@') = coalesce(t.category_cd,'@')
-		   and coalesce(w.data_label,'@') = coalesce(t.data_label,'@')
-		   and coalesce(w.visit_name,'@') = coalesce(t.visit_name,'@')
-		  )
-	group by w.site_id, w.subject_id, w.visit_name, w.data_label, w.category_cd, w.instance_num
-	having count(*) > 1;
-	get diagnostics rowCt := ROW_COUNT;
-	exception
-	when others then
-		errorNumber := SQLSTATE;
-		errorMessage := SQLERRM;
-		--Handle errors.
-		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
-		--End Proc
-		select cz_end_audit (jobID, 'FAIL') into rtnCd;
-		return -16;
-	end;
+	BEGIN
+		INSERT INTO wt_clinical_data_dups
+		(site_id
+			, subject_id
+			, visit_name
+			, data_label
+			, category_cd)
+			SELECT
+				w.site_id,
+				CASE WHEN
+					w.instance_num IS NULL AND w.start_date IS NULL AND w.end_date IS NULL
+					THEN
+						w.subject_id
+				ELSE
+					w.subject_id || '|' || coalesce(w.instance_num, '') || '|' || coalesce(w.start_date, '') || '|' ||
+					coalesce(w.end_date, '')
+				END,
+				w.visit_name,
+				w.data_label,
+				w.category_cd
+			FROM tm_dataloader.wrk_clinical_data w
+			WHERE exists
+			(SELECT 1
+			 FROM tm_dataloader.wt_num_data_types t
+			 WHERE coalesce(w.category_cd, '@') = coalesce(t.category_cd, '@')
+						 AND coalesce(w.data_label, '@') = coalesce(t.data_label, '@')
+						 AND coalesce(w.visit_name, '@') = coalesce(t.visit_name, '@')
+			)
+			GROUP BY w.site_id, w.subject_id, w.visit_name, w.data_label, w.category_cd, w.instance_num, w.start_date,
+				w.end_date
+			HAVING count(*) > 1;
+		GET DIAGNOSTICS rowCt := ROW_COUNT;
+		EXCEPTION
+		WHEN OTHERS
+			THEN
+				errorNumber := SQLSTATE;
+				errorMessage := SQLERRM;
+				--Handle errors.
+				SELECT cz_error_handler(jobID, procedureName, errorNumber, errorMessage)
+				INTO rtnCd;
+				--End Proc
+				SELECT cz_end_audit(jobID, 'FAIL')
+				INTO rtnCd;
+				RETURN -16;
+	END;
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Check for duplicate key columns',rowCt,stepCt,'Done') into rtnCd;
 
