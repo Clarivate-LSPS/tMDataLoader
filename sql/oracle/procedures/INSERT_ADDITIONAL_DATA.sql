@@ -1,11 +1,11 @@
-create or replace PROCEDURE INSERT_ADDITIONAL_DATA
+create or replace FUNCTION INSERT_ADDITIONAL_DATA
   (
     trial_id       VARCHAR2,
     rel_time_label VARCHAR2,
-    currentjobid   NUMBER := 1,
-    trialVisitNum OUT NUMBER
+    secure_study VARCHAR2,
+    currentjobid   NUMBER := 1
   )
-AS
+RETURN VARCHAR2 IS
 
   --Audit variables
   newJobFlag          INTEGER;
@@ -15,6 +15,7 @@ AS
   errorNumber         NUMBER(18, 0);
   errorMessage        VARCHAR2(1000);
   studyNum            NUMBER(18, 0);
+  trialVisitNum       NUMBER(18,0);
 
   TrialID             VARCHAR2(100);
   securedStudy        VARCHAR2(5);
@@ -27,6 +28,7 @@ AS
   BEGIN
 
     TrialID := trial_id;
+    securedStudy := upper(secure_study);
     relTimeLabel := rel_time_label;
 
     --Set Audit Parameters
@@ -133,6 +135,8 @@ AS
       FROM i2b2demodata.trial_visit_dimension tvd
       WHERE tvd.study_num = studyNum AND tvd.rel_time_label = relTimeLabel;
     END IF;
+
+    RETURN trialVisitNum;
 
     EXCEPTION
     WHEN OTHERS THEN

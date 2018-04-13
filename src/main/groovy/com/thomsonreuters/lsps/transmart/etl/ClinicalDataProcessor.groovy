@@ -82,20 +82,21 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
                     }
 
                     Map<String, String> output = [
-                            study_id       : studyId,
-                            site_id        : cols[fMappings.SITE_ID],
-                            subj_id        : cols[fMappings.SUBJ_ID],
-                            visit_name     : cols[fMappings.VISIT_NAME],
-                            sample_cd      : cols[fMappings.SAMPLE_ID],
-                            data_label     : '', // DATA_LABEL
-                            data_value     : '', // DATA_VALUE
-                            category_cd    : '', // CATEGORY_CD
-                            ctrl_vocab_code: '', // CTRL_VOCAB_CODE - unused
-                            valuetype_cd   : (String) null,
-                            baseline_value : (String) null,
-                            end_date       : cols[fMappings.END_DATE]? ETLHelper.toTimestampString(cols[fMappings.END_DATE]) : null,
-                            start_date     : cols[fMappings.START_DATE]?ETLHelper.toTimestampString(cols[fMappings.START_DATE]):null,
-                            instance_num   : cols[fMappings.INSTANCE_NUM]
+                            study_id         : studyId,
+                            site_id          : cols[fMappings.SITE_ID],
+                            subj_id          : cols[fMappings.SUBJ_ID],
+                            visit_name       : cols[fMappings.VISIT_NAME],
+                            sample_cd        : cols[fMappings.SAMPLE_ID],
+                            data_label       : '', // DATA_LABEL
+                            data_value       : '', // DATA_VALUE
+                            category_cd      : '', // CATEGORY_CD
+                            ctrl_vocab_code  : '', // CTRL_VOCAB_CODE - unused
+                            valuetype_cd     : (String) null,
+                            baseline_value   : (String) null,
+                            end_date         : cols[fMappings.END_DATE] ? ETLHelper.toTimestampString(cols[fMappings.END_DATE]) : null,
+                            start_date       : cols[fMappings.START_DATE] ? ETLHelper.toTimestampString(cols[fMappings.START_DATE]) : null,
+                            instance_num     : cols[fMappings.INSTANCE_NUM],
+                            trial_visit_label: cols[fMappings.TRIAL_VISIT_LABEL]?:null
                     ]
 
                     if (_DATA) {
@@ -242,13 +243,14 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
         DataLoader.start(database, "lt_src_clinical_data", ['STUDY_ID', 'SITE_ID', 'SUBJECT_ID', 'VISIT_NAME',
                                                             'DATA_LABEL', 'DATA_VALUE', 'CATEGORY_CD', 'SAMPLE_CD',
                                                             'VALUETYPE_CD', 'BASELINE_VALUE',
-                                                            'START_DATE', 'END_DATE', 'INSTANCE_NUM'
+                                                            'START_DATE', 'END_DATE', 'INSTANCE_NUM',
+                                                            'TRIAL_VISIT_LABEL'
         ]) { st ->
             long rowsCount = processEachRow(f, fileMapping) { row, lineNumber ->
                 try {
                     st.addBatch([row.study_id, row.site_id, row.subj_id, row.visit_name, row.data_label,
                                  row.data_value, row.category_cd, row.sample_cd, row.valuetype_cd, row.baseline_value,
-                                 row.start_date, row.end_date, row.instance_num
+                                 row.start_date, row.end_date, row.instance_num, row.trial_visit_label
                     ])
                 } catch (SQLException e) {
                     throw new DataProcessingException("Wrong data close to ${lineNumber} line.\n ${e.getLocalizedMessage()}")

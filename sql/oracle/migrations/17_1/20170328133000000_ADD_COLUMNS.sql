@@ -29,6 +29,15 @@ BEGIN
   SELECT count(*)
   INTO cnt
   FROM dba_tab_cols c
+  WHERE c.table_name = 'LT_SRC_CLINICAL_DATA' AND c.column_name = 'TRIAL_VISIT_LABEL' and owner = 'TM_DATALOADER';
+  IF (cnt <> 1)
+  THEN
+    EXECUTE IMMEDIATE 'ALTER TABLE TM_DATALOADER.LT_SRC_CLINICAL_DATA ADD (TRIAL_VISIT_LABEL VARCHAR2 (250) )';
+  END IF;
+
+  SELECT count(*)
+  INTO cnt
+  FROM dba_tab_cols c
   WHERE c.table_name = 'WRK_CLINICAL_DATA' AND c.column_name = 'START_DATE' and owner = 'TM_DATALOADER';
   IF (cnt <> 1)
   THEN
@@ -44,6 +53,22 @@ BEGIN
     EXECUTE IMMEDIATE 'ALTER TABLE TM_DATALOADER.WRK_CLINICAL_DATA ADD (INSTANCE_NUM VARCHAR2 (250) )';
   END IF;
 
+  SELECT count(*)
+  INTO cnt
+  FROM dba_tab_cols c
+  WHERE c.table_name = 'WRK_CLINICAL_DATA' AND c.column_name = 'TRIAL_VISIT_LABEL' and owner = 'TM_DATALOADER';
+  IF (cnt <> 1)
+  THEN
+    EXECUTE IMMEDIATE 'ALTER TABLE TM_DATALOADER.WRK_CLINICAL_DATA ADD (TRIAL_VISIT_LABEL VARCHAR2 (250) )';
+  END IF;
+
+
+  EXECUTE IMMEDIATE 'CREATE TABLE tm_dataloader.concept_specific_trials
+			(
+				trial_visit_num NUMBER (38, 0),
+				c_fullname VARCHAR2 (700)
+			)
+			';
 END;
 
 /

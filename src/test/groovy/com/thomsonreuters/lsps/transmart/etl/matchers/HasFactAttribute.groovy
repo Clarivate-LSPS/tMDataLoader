@@ -13,7 +13,7 @@ class HasFactAttribute extends BaseMatcher<Sql> {
     private String conceptPath
     private String sourcesystemCd
     private Integer instanceNum
-    private Map<String, Object> valueAttrs
+    private Boolean hasFact = true
     private Matcher<? super GroovyRowResult> rowMatcher
 
     private def node
@@ -43,7 +43,14 @@ class HasFactAttribute extends BaseMatcher<Sql> {
         if (!facts)
             return false
 
-        return facts.size() == 1 && rowMatcher.matches(facts[0])
+        if (facts.size() == 0) return false
+
+        for (def fact : facts) {
+            if (rowMatcher.matches(fact)) return true
+        }
+
+        hasFact = false
+        return false
     }
 
     @Override
@@ -51,14 +58,14 @@ class HasFactAttribute extends BaseMatcher<Sql> {
         description.appendText('fact by path ').appendValue(conceptPath)
                 .appendText(' for sourcesystem_cd ').appendValue(sourcesystemCd)
                 .appendText(' with instance_num ').appendValue(instanceNum)
-                .appendText(' exist')
+                .appendText(' exists')
     }
 
     @Override
     void describeMismatch(Object item, Description description) {
-        if (facts.size() > 1)
-            description.appendText('more than one fact was found: ').appendValue(facts.size())
-        else if (facts.size() == 0)
+        if (facts.size() == 0)
             description.appendText('fact wasn\'t found')
+        else if (!hasFact)
+            description.appendText('fact with the parameters doesn\'t found')
     }
 }

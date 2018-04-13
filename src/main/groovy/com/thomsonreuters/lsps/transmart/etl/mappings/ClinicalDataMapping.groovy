@@ -42,7 +42,6 @@ class ClinicalDataMapping {
         int SAMPLE_ID
         List<Entry> _DATA = []
         //Additional field for support transmart 17.1
-//        String VISIT_NAME
         int TRIAL_VISIT_LABEL
         int START_DATE
         int END_DATE

@@ -69,6 +69,8 @@ AS
 	pathRegexp VARCHAR2(2000);
 	updatedPath VARCHAR2(2000);
 	trialVisitNum NUMERIC(18, 0);
+	type NumberArray is table of number index by binary_integer;
+	trialVisitNumArray NumberArray;
 	studyNum      NUMERIC(18, 0);
 
 	--Audit variables
@@ -83,6 +85,12 @@ AS
   MULTIPLE_VISIT_NAMES	EXCEPTION;
   INDEX_NOT_EXISTS EXCEPTION;
   PRAGMA EXCEPTION_INIT(index_not_exists, -1418);
+
+	CURSOR trialVisitLabels IS
+		SELECT DISTINCT
+			trial_visit_label,
+			visit_name
+		FROM tm_dataloader.wrk_clinical_data;
   
   CURSOR addNodes is
   select DISTINCT 
@@ -237,6 +245,7 @@ BEGIN
 	,end_date
 	,start_date
 	,instance_num
+	,trial_visit_label
 	)
 	select study_id
 		  ,site_id
@@ -258,15 +267,26 @@ BEGIN
 			,end_date
 			,start_date
 			,instance_num
+			,trial_visit_label
 	from lt_src_clinical_data
 	WHERE data_value is not null;
 	
-	execute immediate('CREATE INDEX TM_DATALOADER.IDX_WRK_CD ON TM_DATALOADER.WRK_CLINICAL_DATA (DATA_TYPE ASC, DATA_VALUE ASC, VISIT_NAME ASC, DATA_LABEL ASC, CATEGORY_CD ASC, USUBJID ASC)');
-	
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Load lt_src_clinical_data to work table',SQL%ROWCOUNT,stepCt,'Done');
-	
-	commit;  	
+
+	execute immediate('CREATE INDEX TM_DATALOADER.IDX_WRK_CD ON TM_DATALOADER.WRK_CLINICAL_DATA (DATA_TYPE ASC, DATA_VALUE ASC, VISIT_NAME ASC, DATA_LABEL ASC, CATEGORY_CD ASC, USUBJID ASC)');
+
+	commit;
+
+	-- Update trial_visit_label field
+	UPDATE wrk_clinical_data SET
+		trial_visit_label = 'Default'
+	WHERE trial_visit_label is null;
+
+	stepCt := stepCt + 1;
+	cz_write_audit(jobId,databaseName,procedureName,'Update trial_visit_label into WRK_CLINICAL_DATA',SQL%ROWCOUNT,stepCt,'Done');
+
+	COMMIT ;
 
 	-- Get root_node from topNode
   
@@ -303,12 +323,6 @@ BEGIN
 		i2b2_fill_in_tree(null, tPath, jobId);
 	end if;
 	
-/*	Don't delete existing data, concept_cds will be reused
-	--	delete any existing data
-	
-	i2b2_delete_all_nodes(topNode, jobId);
-*/
-
 	select count(*) into pExists
 	from i2b2
 	where c_fullname = topNode;
@@ -320,7 +334,7 @@ BEGIN
 	end if;
   
   stepCt := stepCt + 1;
-  cz_write_audit(jobId,databaseName,procedureName,'add top node for study',SQL%ROWCOUNT,stepCt,'Done');
+  cz_write_audit(jobId,databaseName,procedureName,'Add top node for study',SQL%ROWCOUNT,stepCt,'Done');
   commit;
 	--	Set data_type, category_path, and usubjid 
   
@@ -347,17 +361,16 @@ BEGIN
 --  WHERE site_id IS NOT NULL;
   
 	 
-	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Set columns in wrk_clinical_data',SQL%ROWCOUNT,stepCt,'Done');
-	
-	commit;
+-- 	stepCt := stepCt + 1;
+-- 	cz_write_audit(jobId,databaseName,procedureName,'Set columns in wrk_clinical_data',SQL%ROWCOUNT,stepCt,'Done');
+--
+-- 	commit;
   
 	--	Delete rows where data_value is null
     -- we simply do not insert data_value null values
 	delete from wrk_clinical_data
 	where data_value is null;
-	
-	
+
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Delete null data_values in wrk_clinical_data',SQL%ROWCOUNT,stepCt,'Done');
 	
@@ -512,9 +525,10 @@ BEGIN
 
 	-- set visit_name and data_label to null if it is not in path. Avoids duplicates for wt_trial_nodes
 	-- we should clear these field before detecting data type
-	update wrk_clinical_data t
-	set visit_name=null
-	where category_path like '%\$' and category_path not like '%VISITNAME%';
+	UPDATE wrk_clinical_data t
+	SET visit_name = NULL
+	WHERE (category_path LIKE '%\$' AND category_path NOT LIKE '%VISITNAME%')
+				OR (start_date IS NOT NULL OR instance_num IS NOT NULL);
 
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Set visit_name to null if VISITNAME not in category_path',SQL%ROWCOUNT,stepCt,'Done');
@@ -635,7 +649,7 @@ BEGIN
  		select rid
  		from (
  			select rowid rid, row_number() over (
-				partition by subject_id, visit_name, data_label, category_cd, data_value order by rowid
+				partition by subject_id, visit_name, data_label, category_cd, data_value, start_date, instance_num order by rowid
 			) rn
 			from wrk_clinical_data
  		) where rn <> 1
@@ -883,7 +897,11 @@ BEGIN
 	
 	commit;
 
-	insert_additional_data(TrialID, 'Default', jobID, trialVisitNum);
+	EXECUTE IMMEDIATE 'TRUNCATE TABLE concept_specific_trials';
+	
+	FOR trialVisitLabel IN trialVisitLabels LOOP
+		trialVisitNum := insert_additional_data(TrialID, trialVisitLabel.trial_visit_label, secureStudy, jobID);
+	END LOOP;
 
 	select study_num into studyNum
 	from i2b2demodata.study
@@ -931,10 +949,10 @@ BEGIN
 	where exists (select /*+ parallel(x, 4) */ 1 from wt_trial_nodes x
 				  where cd.concept_path = x.leaf_node
 				    and cd.name_char != x.node_name);
-		  
+
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Update name_char in concept_dimension for changed names',SQL%ROWCOUNT,stepCt,'Done');
-	
+
 	commit;
 							
 	
@@ -967,7 +985,7 @@ BEGIN
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Inserted new leaf nodes into I2B2DEMODATA concept_dimension',SQL%ROWCOUNT,stepCt,'Done');
     commit;
-	
+
 	--	update i2b2 to pick up change in name, data_type for leaf nodes
 	merge /*+ parallel(i2b2, 8) */ into i2b2 b
 	using (
@@ -980,7 +998,7 @@ BEGIN
 		update set
 			c_name = c.name_char,
 			c_columndatatype = 'T',
-			c_metadataxml = I2B2_BUILD_METADATA_XML(c.name_char, c.data_type, c.valuetype_cd)
+			c_metadataxml = I2B2_BUILD_METADATA_XML(c.name_char, c.data_type, c.valuetype_cd, c.sourcesystem_cd, c.concept_path)
 	when not matched then
 		insert (
 			c_hlevel
@@ -1002,6 +1020,7 @@ BEGIN
 			,c_columndatatype
 			,c_comment
 			,i2b2_id
+			,m_applied_path
 			,c_metadataxml
 		)
 		values (
@@ -1024,7 +1043,8 @@ BEGIN
 			,'T'		-- if i2b2 gets fixed to respect c_columndatatype then change to t.data_type
 			,'trial:' || TrialID
 			,i2b2_id_seq.nextval
-			,I2B2_BUILD_METADATA_XML(c.name_char, c.data_type, c.valuetype_cd)
+			,'@'
+			,I2B2_BUILD_METADATA_XML(c.name_char, c.data_type, c.valuetype_cd, c.sourcesystem_cd, c.concept_path)
 		);
 
 	stepCt := stepCt + 1;
@@ -1066,9 +1086,7 @@ BEGIN
 	if (merge_mode = 'REPLACE') then
 		delete /*+ parallel(observation_fact, 4) */ from OBSERVATION_FACT F
 		where trial_visit_num in (
-			select trial_visit_num from trial_visit_dimension where study_num in (
-				select study_num from i2b2demodata.study where study_id = TrialID
-			)
+			select trial_visit_num from trial_visit_dimension where study_num = studyNum
 		)
 					and
 			F.CONCEPT_CD not in
@@ -1328,7 +1346,7 @@ BEGIN
 			'@',
 			'@',
 			to_number(coalesce(a.instance_num, '1'), '9999') AS instance_num,
-			trialVisitNum                                    AS trial_visit_num,
+			tvd.trial_visit_num															 AS trial_visit_num,
 			CASE WHEN A.end_date IS NOT NULL
 				THEN
 					CAST(TO_TIMESTAMP(A.end_date, 'YYYY-MM-DD HH24:MI:SS.FF') AS DATE)
@@ -1339,6 +1357,7 @@ BEGIN
 			, wt_trial_nodes t
 			, i2b2 i
 			, visit_dimension vd
+			, i2b2demodata.trial_visit_dimension tvd
 		WHERE a.usubjid = c.sourcesystem_cd
 					AND nvl(a.category_cd, '@') = nvl(t.category_cd, '@')
 					AND nvl(a.data_label, '**NULL**') = nvl(t.data_label, '**NULL**')
@@ -1347,6 +1366,8 @@ BEGIN
 					AND decode(a.data_type, 'T', a.data_value, '**NULL**') = nvl(t.data_value, '**NULL**')
 					AND t.leaf_node = i.c_fullname
 					AND c.patient_num = vd.patient_num
+					and tvd.study_num = studyNum
+					and tvd.rel_time_label = a.trial_visit_label
 					AND NOT exists-- don't insert if lower level node exists
 		(SELECT 1
 		 FROM wt_trial_nodes x
@@ -1368,7 +1389,26 @@ BEGIN
 	
 	commit;
 
-	
+	UPDATE I2B2DEMODATA.OBSERVATION_FACT obf
+	SET TRIAL_VISIT_NUM = (
+		SELECT cst.trial_visit_num
+		FROM
+			tm_dataloader.concept_specific_trials cst,
+			I2B2DEMODATA.CONCEPT_DIMENSION cd
+		WHERE cd.concept_path = Cst.C_Fullname
+					AND Obf.Concept_Cd = cd.concept_cd
+	)
+	WHERE obf.sourcesystem_cd = TrialID AND
+				obf.concept_cd IN (
+					SELECT concept_cd
+					FROM tm_dataloader.concept_specific_trials cst,
+						I2B2DEMODATA.CONCEPT_DIMENSION cd
+					WHERE cd.concept_path = Cst.C_Fullname);
+
+	stepCt := stepCt + 1;
+	cz_write_audit(jobId,databaseName,procedureName,'UPDATE trial_visit_num in observation_fact',SQL%ROWCOUNT,stepCt,'Done');
+	COMMIT;
+
 	
 	--July 2013. Performance fix by TR. Prepare precompute tree
 	

@@ -234,9 +234,6 @@ BEGIN
 		s.study_num = sdd.study_id AND
 		s.study_id = TrialId;
 
-	stepCt := stepCt + 1;
-	cz_write_audit(jobId, databaseName, procedureName, 'Add study dimension? ' || pExists, SQL%ROWCOUNT, stepCt, 'Done');
-
 	IF pExists = 0
 	THEN
 		select study_num into studyNum

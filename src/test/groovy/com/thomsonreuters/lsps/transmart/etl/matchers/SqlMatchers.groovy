@@ -64,4 +64,8 @@ class SqlMatchers {
     public static HasFactAttribute hasFactDate(String sourcesystemCd, String conceptPath, Integer instanceNum, Map<String, Object> valueAttrs) {
         return new HasFactAttribute(sourcesystemCd, conceptPath, instanceNum, valueAttrs)
     }
+
+    public static HasTrialVisitDimension hasTrialVisitDimension(String conceptPath, String sourcesystemCdAndPatientId, Map<String, Object> valueAttrs) {
+        return new HasTrialVisitDimension(conceptPath, sourcesystemCdAndPatientId, valueAttrs)
+    }
 }

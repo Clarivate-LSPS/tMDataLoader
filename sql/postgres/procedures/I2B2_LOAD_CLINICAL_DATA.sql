@@ -67,6 +67,12 @@ Declare
 	select DISTINCT leaf_node, node_name
 	from  wt_trial_nodes a;
 
+		trialVisitLabels CURSOR IS
+		SELECT DISTINCT
+			trial_visit_label,
+			visit_name
+		FROM tm_dataloader.wrk_clinical_data;
+
 	--	cursor to define the path for delete_one_node  this will delete any nodes that are hidden after i2b2_create_concept_counts
 
 	delNodes CURSOR is
@@ -107,14 +113,14 @@ BEGIN
 
 	stepCt := 0;
 	stepCt := stepCt + 1;
+	topNode := REGEXP_REPLACE('\' || top_node || '\','(\\){2,}', '\', 'g');
+	
 	tText := 'Start i2b2_load_clinical_data for ' || TrialId || ' topNode = ' || topNode;
 	select cz_write_audit(jobId,databaseName,procedureName,tText,0,stepCt,'Done') into rtnCd;
 
 	if (secureStudy not in ('Y','N') ) then
 		secureStudy := 'Y';
 	end if;
-
-	topNode := REGEXP_REPLACE('\' || top_node || '\','(\\){2,}', '\', 'g');
 
 	--	figure out how many nodes (folders) are at study name and above
 	--	\Public Studies\Clinical Studies\Pancreatic_Cancer_Smith_GSE22780\: topLevel = 4, so there are 3 nodes
@@ -135,57 +141,70 @@ BEGIN
 
 	--	insert data from lt_src_clinical_data to wrk_clinical_data
 
-	begin
-	insert into wrk_clinical_data
-	(study_id
-	,site_id
-	,subject_id
-	,visit_name
-	,data_label
-	,modifier_cd
-	,data_value
-	,units_cd
-	,date_timestamp
-	,category_cd
-	,ctrl_vocab_code
-	,sample_cd
-	,valuetype_cd
-	,baseline_value
-	,end_date
-	,start_date
-	,instance_num
-	)
-	select study_id
-		  ,site_id
-		  ,subject_id
-		  ,visit_name
-		  ,data_label
-			,modifier_cd
-		  ,data_value
-			,units_cd
-			,date_timestamp
-		  ,category_cd
-		  ,ctrl_vocab_code
-		  ,sample_cd
-			,valuetype_cd
-			,baseline_value
-			,end_date
-			,start_date
-			,instance_num
-	from lt_src_clinical_data;
-	exception
-	when others then
-		errorNumber := SQLSTATE;
-		errorMessage := SQLERRM;
-		--Handle errors.
-		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
-		--End Proc
-		select cz_end_audit (jobID, 'FAIL') into rtnCd;
-		return -16;
-	end;
-	get diagnostics rowCt := ROW_COUNT;
+	BEGIN
+		INSERT INTO wrk_clinical_data
+		(study_id
+			, site_id
+			, subject_id
+			, visit_name
+			, data_label
+			, modifier_cd
+			, data_value
+			, units_cd
+			, date_timestamp
+			, category_cd
+			, ctrl_vocab_code
+			, sample_cd
+			, valuetype_cd
+			, baseline_value
+			, end_date
+			, start_date
+			, instance_num
+			, trial_visit_label
+		)
+			SELECT
+				study_id,
+				site_id,
+				subject_id,
+				visit_name,
+				data_label,
+				modifier_cd,
+				data_value,
+				units_cd,
+				date_timestamp,
+				category_cd,
+				ctrl_vocab_code,
+				sample_cd,
+				valuetype_cd,
+				baseline_value,
+				end_date,
+				start_date,
+				instance_num,
+				trial_visit_label
+			FROM lt_src_clinical_data;
+		EXCEPTION
+		WHEN OTHERS
+			THEN
+				errorNumber := SQLSTATE;
+				errorMessage := SQLERRM;
+				--Handle errors.
+				SELECT cz_error_handler(jobID, procedureName, errorNumber, errorMessage)
+				INTO rtnCd;
+				--End Proc
+				SELECT cz_end_audit(jobID, 'FAIL')
+				INTO rtnCd;
+				RETURN -16;
+	END;
+	GET DIAGNOSTICS rowCt := ROW_COUNT;
 	stepCt := stepCt + 1;
-	select cz_write_audit(jobId,databaseName,procedureName,'Load lt_src_clinical_data to work table',rowCt,stepCt,'Done') into rtnCd;
+	SELECT
+		cz_write_audit(jobId, databaseName, procedureName, 'Load lt_src_clinical_data to work table', rowCt, stepCt, 'Done')
+	INTO rtnCd;
+
+	-- Update trial_visit_label field
+	UPDATE wrk_clinical_data SET
+		trial_visit_label = 'Default'
+	WHERE trial_visit_label is null;
 
 	-- Get root_node from topNode
 
@@ -489,9 +508,10 @@ BEGIN
 
 	-- set visit_name and data_label to NULL if not found in category_path. Avoids duplicates for wt_trial_nodes
 	-- we should clear visit_name and data_label before filling wt_num_data_types
-	update wrk_clinical_data t
-	set visit_name=null
-	where category_path like '%\$' and category_path not like '%VISITNAME%';
+	UPDATE wrk_clinical_data t
+	SET visit_name = NULL
+	WHERE (category_path LIKE '%\$' AND category_path NOT LIKE '%VISITNAME%')
+				OR (start_date IS NOT NULL OR instance_num IS NOT NULL);
 
 	get diagnostics rowCt := ROW_COUNT;
 	stepCt := stepCt + 1;
@@ -647,10 +667,10 @@ BEGIN
 
 	WITH duplicates AS (
 		DELETE FROM wrk_clinical_data
-		WHERE (subject_id, coalesce(visit_name, '**NULL**'), coalesce(data_label, '**NULL**'), category_cd, data_value) in (
-			SELECT subject_id, coalesce(visit_name, '**NULL**'), coalesce(data_label, '**NULL**'), category_cd, data_value
+		WHERE (subject_id, coalesce(visit_name, '**NULL**'), coalesce(data_label, '**NULL**'), category_cd, data_value, coalesce(start_date,'**NULL**'), coalesce(instance_num,'**NULL**')) in (
+			SELECT subject_id, coalesce(visit_name, '**NULL**'), coalesce(data_label, '**NULL**'), category_cd, data_value, coalesce(start_date,'**NULL**'), coalesce(instance_num,'**NULL**')
 			FROM wrk_clinical_data
-			GROUP BY subject_id, visit_name, data_label, category_cd, data_value
+			GROUP BY subject_id, visit_name, data_label, category_cd, data_value, start_date, instance_num
 			HAVING count(*) > 1)
 		RETURNING *
 	)
@@ -987,7 +1007,17 @@ BEGIN
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Insert new subjects into patient_dimension',rowCt,stepCt,'Done') into rtnCd;
 
-	select insert_additional_data(TrialID, 'Default', jobID) into trialVisitNum;
+
+	create temporary table concept_specific_trials
+	(
+		trial_visit_num numeric(38,0),
+		c_fullname character varying(700)
+	);
+
+	FOR trialVisitLabel IN trialVisitLabels LOOP
+		SELECT insert_additional_data(TrialID, trialVisitLabel.trial_visit_label, secureStudy, jobID)
+		INTO trialVisitNum;
+	END LOOP;
 
 	select study_num into studyNum
 	from i2b2demodata.study
@@ -1047,6 +1077,7 @@ BEGIN
 	,download_date
 	,import_date
 	,sourcesystem_cd
+	,table_name
 	)
     select nextval('i2b2demodata.concept_id')
 	     ,x.leaf_node
@@ -1055,6 +1086,7 @@ BEGIN
 		 ,current_timestamp
 		 ,current_timestamp
 		 ,TrialId
+		 ,'CONCEPT_DIMENSION'
 	from (select distinct c.leaf_node
 				,c.node_name::text as node_name
 		  from wt_trial_nodes c
@@ -1081,7 +1113,7 @@ BEGIN
 	update i2b2metadata.i2b2
 	set c_name=ncd.node_name
 	   ,c_columndatatype='T'
-	   ,c_metadataxml=i2b2_build_metadata_xml(ncd.node_name, ncd.data_type, ncd.valuetype_cd)
+	   ,c_metadataxml=i2b2_build_metadata_xml(ncd.node_name, ncd.data_type, ncd.valuetype_cd, TrialID, ncd.leaf_node)
 	from wt_trial_nodes ncd
 	where c_fullname = ncd.leaf_node;
 	get diagnostics rowCt := ROW_COUNT;
@@ -1140,7 +1172,7 @@ BEGIN
 		  , 'T' --t.data_type
 		  ,'trial:' || TrialID
 		  ,'@'
-		  ,i2b2_build_metadata_xml(c.name_char, t.data_type, t.valuetype_cd)
+		  ,i2b2_build_metadata_xml(c.name_char, t.data_type, t.valuetype_cd, c.sourcesystem_cd, c.concept_path)
     from i2b2demodata.concept_dimension c
 		,wt_trial_nodes t
     where c.concept_path = t.leaf_node
@@ -1161,7 +1193,6 @@ BEGIN
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Inserted leaf nodes into I2B2METADATA i2b2',rowCt,stepCt,'Done') into rtnCd;
 
-
 	--New place form fill_in_tree
 	select i2b2_fill_in_tree(TrialId, topNode, jobID) into rtnCd;
 	IF rtnCd <> 1 THEN
@@ -1174,9 +1205,7 @@ BEGIN
 		delete from i2b2demodata.observation_fact f
 		where
 			trial_visit_num in (
-				select trial_visit_num from trial_visit_dimension where study_num in (
-					select study_num from i2b2demodata.study where study_id = TrialID
-				)
+				select trial_visit_num from trial_visit_dimension where study_num = studyNum
 			)
 			and
 					f.concept_cd not in
@@ -1457,7 +1486,7 @@ BEGIN
 		  '@' as provider_id,
 		  '@' as location_cd,
 			to_number(coalesce(a.instance_num, '1'),'9999') as instance_num,
-			trialVisitNum as trial_visit_num,
+			tvd.trial_visit_num,
 			case when a.end_date is null then NULL
 				else to_timestamp(a.end_date,'YYYY-MM-DD HH24:MI:SS.MS') end
 				as end_date
@@ -1466,6 +1495,7 @@ BEGIN
 		,wt_trial_nodes t
 		,i2b2metadata.i2b2 i
 		,i2b2demodata.visit_dimension vd
+		,i2b2demodata.trial_visit_dimension tvd
 	where a.usubjid = c.sourcesystem_cd
 	  and coalesce(a.category_cd,'@') = coalesce(t.category_cd,'@')
 	  and coalesce(a.data_label,'**NULL**') = coalesce(t.data_label,'**NULL**')
@@ -1474,6 +1504,8 @@ BEGIN
 	  and case when a.data_type = 'T' then a.data_value else '**NULL**' end = coalesce(t.data_value,'**NULL**')
 	  and t.leaf_node = i.c_fullname
 		and c.patient_num = vd.patient_num
+		and tvd.study_num = studyNum
+		and tvd.rel_time_label = a.trial_visit_label
 --	  and not exists		-- don't insert if lower level node exists
 --		 (select 1 from wt_trial_nodes x
 --		  where x.leaf_node like t.leaf_node || '%_' escape '`')
@@ -1550,7 +1582,20 @@ BEGIN
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Insert trial into I2B2DEMODATA observation_fact',rowCt,stepCt,'Done') into rtnCd;
 
-	--July 2013. Performance fix by TR. Prepare precompute tree
+	UPDATE I2B2DEMODATA.OBSERVATION_FACT
+	SET TRIAL_VISIT_NUM = cst.trial_visit_num
+		FROM concept_specific_trials cst
+	WHERE concept_cd IN (SELECT cd.concept_cd
+											 FROM I2B2DEMODATA.CONCEPT_DIMENSION cd
+											 WHERE cd.CONCEPT_PATH = cst.c_fullname
+														 AND sourcesystem_cd = TrialID)
+				AND sourcesystem_cd = TrialID;
+	get diagnostics rowCt := ROW_COUNT;
+	stepCt := stepCt + 1;
+	select cz_write_audit(jobId,databaseName,procedureName,'UPDATE trial_visit_num in observation_fact',rowCt,stepCt,'Done') into rtnCd;
+
+
+--July 2013. Performance fix by TR. Prepare precompute tree
 	SELECT I2B2_CREATE_FULL_TREE(topNode, jobId) INTO rtnCd;
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Create i2b2 full tree', 0, stepCt,'Done') into rtnCd;

@@ -1,6 +1,7 @@
 CREATE OR REPLACE FUNCTION INSERT_ADDITIONAL_DATA(
   trial_id       CHARACTER VARYING,
   rel_time_label CHARACTER VARYING DEFAULT 'Default',
+  secure_study character varying DEFAULT 'N'::character varying,
   currentjobid   NUMERIC DEFAULT '-1' :: INTEGER)
   RETURNS NUMERIC AS
 $BODY$
@@ -28,6 +29,7 @@ DECLARE
 BEGIN
 
   TrialID := trial_id;
+  securedStudy := upper(secure_study);
   relTimeLabel := rel_time_label;
 
   --Set Audit Parameters
