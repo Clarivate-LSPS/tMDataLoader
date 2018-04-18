@@ -62,6 +62,7 @@ Declare
 	pathCount integer;
 	trialVisitNum NUMERIC(18, 0);
 	studyNum      NUMERIC(18, 0);
+	defaultTime  TIMESTAMP WITHOUT TIME ZONE;
 
 	addNodes CURSOR is
 	select DISTINCT leaf_node, node_name
@@ -71,7 +72,7 @@ Declare
 		SELECT DISTINCT
 			trial_visit_label,
 			visit_name
-		FROM tm_dataloader.wrk_clinical_data;
+		FROM wrk_clinical_data;
 
 	--	cursor to define the path for delete_one_node  this will delete any nodes that are hidden after i2b2_create_concept_counts
 
@@ -100,7 +101,7 @@ Declare
 			and m.c_visualattributes like 'L%');
 
 BEGIN
-
+	defaultTime := to_timestamp('0001-01-01T00:00:00', 'YYYY-MM-DD HH24:MI:SS.MS');
 	TrialID := upper(trial_id);
 	secureStudy := upper(secure_study);
 
@@ -707,10 +708,10 @@ BEGIN
 				w.visit_name,
 				w.data_label,
 				w.category_cd
-			FROM tm_dataloader.wrk_clinical_data w
+			FROM wrk_clinical_data w
 			WHERE exists
 			(SELECT 1
-			 FROM tm_dataloader.wt_num_data_types t
+			 FROM wt_num_data_types t
 			 WHERE coalesce(w.category_cd, '@') = coalesce(t.category_cd, '@')
 						 AND coalesce(w.data_label, '@') = coalesce(t.data_label, '@')
 						 AND coalesce(w.visit_name, '@') = coalesce(t.visit_name, '@')
@@ -1025,21 +1026,31 @@ BEGIN
 
 	BEGIN
 		INSERT INTO i2b2demodata.visit_dimension
-			(
-				encounter_num,
-			 	patient_num,
-			 	start_date,
-				sourcesystem_cd
-			)
+		(
+			encounter_num,
+			patient_num,
+			start_date,
+			end_date,
+			sourcesystem_cd,
+			import_date
+		)
 			SELECT
 				nextval('tm_dataloader.visit_dimension_seq'),
 				pd.patient_num,
-				current_timestamp,
-				TrialID
+				case when wcd.start_date is null then defaultTime
+				else to_timestamp(wcd.start_date,'YYYY-MM-DD HH24:MI:SS.MS') end
+					as start_date,
+				case when wcd.end_date is not null then to_timestamp(wcd.end_date,'YYYY-MM-DD HH24:MI:SS.MS') end
+					as end_date,
+				TrialID,
+				current_timestamp
 			FROM i2b2demodata.patient_dimension pd
+				LEFT JOIN
+				wrk_clinical_data wcd ON pd.sourcesystem_cd = wcd.usubjid
 			WHERE pd.sourcesystem_cd LIKE TrialId || ':%'
 						AND pd.patient_num NOT IN (SELECT patient_num
-																			 FROM i2b2demodata.visit_dimension vd);
+																			 FROM i2b2demodata.visit_dimension vd)
+			GROUP BY wcd.start_date, pd.patient_num, wcd.end_date;
 		get diagnostics rowCt := ROW_COUNT;
 		exception
 		when others then
@@ -1468,7 +1479,7 @@ BEGIN
 			vd.encounter_num as encounter_num,
 		  c.patient_num,
 		  i.c_basecode as concept_cd,
-			case when a.start_date is null then 'infinity'
+			case when a.start_date is null then defaultTime
 				else to_timestamp(a.start_date,'YYYY-MM-DD HH24:MI:SS.MS') end
 				as start_date,
 			'@' as modifier_cd, 			--a.study_id as modifier_cd,
@@ -1504,6 +1515,9 @@ BEGIN
 	  and case when a.data_type = 'T' then a.data_value else '**NULL**' end = coalesce(t.data_value,'**NULL**')
 	  and t.leaf_node = i.c_fullname
 		and c.patient_num = vd.patient_num
+		AND CASE WHEN a.start_date IS NOT NULL
+		THEN to_timestamp(a.start_date, 'YYYY-MM-DD HH24:MI:SS.MS')
+						ELSE defaultTime END = vd.start_date
 		and tvd.study_num = studyNum
 		and tvd.rel_time_label = a.trial_visit_label
 --	  and not exists		-- don't insert if lower level node exists

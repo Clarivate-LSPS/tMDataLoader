@@ -1475,6 +1475,9 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
                 { isResultSet, row -> studyNum = row.study_num })
         assertThat(db, hasRecord(['study_id': studyNum[0]], 'i2b2metadata.study_dimension_descriptions'))
         assertThat(db, hasRecord(['study_num': studyNum[0]], 'i2b2demodata.trial_visit_dimension'))
+        assertThat(db, hasRecord(['sourcesystem_cd': "${studyId}"], 'i2b2demodata.visit_dimension'))
+        assertThat(db, hasRecord('i2b2demodata.visit_dimension',
+                ['sourcesystem_cd': "${studyId}"], [start_date: Timestamp.valueOf(LocalDateTime.parse("0001-01-01T00:00:00"))]))
 
         assertThat(db, hasRecord('i2b2metadata.i2b2_secure',
                 ['sourcesystem_cd': "${studyId}"], [secure_obj_token: "EXP:${studyId}"]))
@@ -1542,28 +1545,45 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         then:
         assertTrue(load)
 
-        assertThat(db, hasFactDate('TR171:OBS336-201_01', '\\Test Studies\\Test Study For Transmart-17-1\\PKConc\\Timepoint Hrs.\\', 1,
+        assertThat(db, hasFactDate("${studyTr171Id}:OBS336-201_01", '\\Test Studies\\Test Study For Transmart-17-1\\PKConc\\Timepoint Hrs.\\', 1,
                 [
                         'start_date': Timestamp.valueOf(LocalDate.parse("2016-03-02").atStartOfDay()),
                         'end_date'  : Timestamp.valueOf(LocalDate.parse("2016-03-03").atStartOfDay())
                 ]
         ))
-        assertThat(db, hasFactDate('TR171:OBS336-201_03', '\\Test Studies\\Test Study For Transmart-17-1\\Demography\\Sex\\F\\', 1,
+        assertThat(db, hasFactDate("${studyTr171Id}:OBS336-201_03", '\\Test Studies\\Test Study For Transmart-17-1\\Demography\\Sex\\F\\', 1,
                 [
                         'start_date': Timestamp.valueOf(LocalDate.parse("2016-03-11").atStartOfDay())
                 ]
         ))
-        assertThat(db, hasFactDate('TR171:OBS336-201_02', '\\Test Studies\\Test Study For Transmart-17-1\\PKConc\\Timepoint Hrs.\\', 1,
+        assertThat(db, hasFactDate("${studyTr171Id}:OBS336-201_02", '\\Test Studies\\Test Study For Transmart-17-1\\PKConc\\Timepoint Hrs.\\', 1,
                 [
                         'start_date': Timestamp.valueOf(java.time.LocalDateTime.parse("2016-03-02T08:13:00")),
                         'end_date'  : Timestamp.valueOf(LocalDate.parse("2016-03-03").atStartOfDay())
                 ]
         ))
 
-        assertThat(db, hasFactDate('TR171:OBS336-201_07', '\\Test Studies\\Test Study For Transmart-17-1\\PKConc\\Timepoint Hrs.\\', 1,
+        assertThat(db, hasFactDate("${studyTr171Id}:OBS336-201_07", '\\Test Studies\\Test Study For Transmart-17-1\\PKConc\\Timepoint Hrs.\\', 1,
                 [
                         'end_date': Timestamp.valueOf(LocalDateTime.parse("2016-03-03T14:34:19"))
                 ]
         ))
+
+        assertThat(db, hasVisitDimension('OBS336-201_02', studyTr171Id,
+                 [start_date: Timestamp.valueOf(LocalDateTime.parse("2016-03-02T00:00"))]))
+    }
+
+    def 'Load sample data'() {
+        given:
+        def studyTr171Id = "CTRIAL"
+        def studyTr171Name = 'Test Don'
+        Study.deleteById(config, studyTr171Id)
+
+        when:
+        def load = processor.process(
+                new File(studyDir(studyTr171Name, studyTr171Id), "ClinicalDataToUpload").toPath(),
+                [name: studyTr171Name, node: "Test Studies\\${studyTr171Name}".toString()])
+        then:
+        assertTrue(load)
     }
 }

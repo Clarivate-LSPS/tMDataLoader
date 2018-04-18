@@ -68,4 +68,8 @@ class SqlMatchers {
     public static HasTrialVisitDimension hasTrialVisitDimension(String conceptPath, String sourcesystemCdAndPatientId, Map<String, Object> valueAttrs) {
         return new HasTrialVisitDimension(conceptPath, sourcesystemCdAndPatientId, valueAttrs)
     }
+
+    public static HasVisitDimension hasVisitDimension(String patientId, String sourcesystemCd, Map<String, Object> valueAttrs){
+        return new HasVisitDimension(patientId, sourcesystemCd, valueAttrs)
+    }
 }

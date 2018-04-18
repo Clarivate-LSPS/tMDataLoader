@@ -72,6 +72,7 @@ AS
 	type NumberArray is table of number index by binary_integer;
 	trialVisitNumArray NumberArray;
 	studyNum      NUMERIC(18, 0);
+	defaultTime  TIMESTAMP;
 
 	--Audit variables
   newJobFlag INTEGER(1);
@@ -90,7 +91,7 @@ AS
 		SELECT DISTINCT
 			trial_visit_label,
 			visit_name
-		FROM tm_dataloader.wrk_clinical_data;
+		FROM wrk_clinical_data;
   
   CURSOR addNodes is
   select DISTINCT 
@@ -127,6 +128,9 @@ AS
 			and m.c_visualattributes like 'L%' AND m.c_fullname = l.c_fullname);
 BEGIN
 	EXECUTE IMMEDIATE 'alter session set NLS_NUMERIC_CHARACTERS=".,"';
+
+	defaultTime := CAST(TO_TIMESTAMP('0001-01-01 00:00:00.00', 'YYYY-MM-DD HH24:MI:SS.FF') AS
+											DATE);
 	TrialID := upper(trial_id);
 	secureStudy := upper(secure_study);
 	
@@ -908,21 +912,38 @@ BEGIN
 	where study_id = TrialId;
 
 	INSERT INTO i2b2demodata.visit_dimension
-		(
+	(
 		encounter_num,
 		patient_num,
 		start_date,
-		sourcesystem_cd
-		)
+		end_date,
+		sourcesystem_cd,
+		import_date
+	)
 		SELECT
-		tm_dataloader.visit_dimension_seq.nextval,
-		pd.patient_num,
-		current_timestamp,
-			TrialID
-		FROM i2b2demodata.patient_dimension pd
-		WHERE pd.sourcesystem_cd LIKE TrialId || ':%'
-						 AND pd.patient_num NOT IN (SELECT patient_num
-																				FROM i2b2demodata.visit_dimension vd);
+			tm_dataloader.visit_dimension_seq.nextval,
+			t.patient_num,
+			t.start_date,
+			t.end_date,
+			TrialID,
+			sysdate
+		FROM (
+					 SELECT
+						 pd.patient_num,
+						 CASE WHEN wcd.start_date IS NULL
+							 THEN defaultTime
+						 ELSE to_timestamp(wcd.start_date, 'YYYY-MM-DD HH24:MI:SS.FF') END
+							 AS start_date,
+						 CASE WHEN wcd.end_date IS NOT NULL
+							 THEN to_timestamp(wcd.end_date, 'YYYY-MM-DD HH24:MI:SS.FF') END
+							 AS end_date
+					 FROM i2b2demodata.patient_dimension pd
+						 LEFT JOIN
+						 wrk_clinical_data wcd ON pd.sourcesystem_cd = wcd.usubjid
+					 WHERE pd.sourcesystem_cd LIKE TrialId || ':%'
+								 AND pd.patient_num NOT IN (SELECT patient_num
+																						FROM i2b2demodata.visit_dimension vd)
+					 GROUP BY wcd.start_date, pd.patient_num, wcd.end_date) t;
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Insert new visit into visit_dimension',SQL%ROWCOUNT,stepCt,'Done');
 
@@ -1326,7 +1347,7 @@ BEGIN
 			vd.encounter_num                                 AS encounter_num,
 			c.patient_num,
 			i.c_basecode                                     AS concept_cd,
-			CAST(TO_TIMESTAMP(coalesce(a.start_date, '0001/01/01 00:00:00.00'), 'YYYY-MM-DD HH24:MI:SS.FF') AS
+			CAST(TO_TIMESTAMP(coalesce(a.start_date, '0001-01-01 00:00:00.00'), 'YYYY-MM-DD HH24:MI:SS.FF') AS
 					 DATE)                                       AS start_date,
 			'@'                                              AS modifier_cd,
 			a.data_type                                      AS valtype_cd,
@@ -1366,6 +1387,9 @@ BEGIN
 					AND decode(a.data_type, 'T', a.data_value, '**NULL**') = nvl(t.data_value, '**NULL**')
 					AND t.leaf_node = i.c_fullname
 					AND c.patient_num = vd.patient_num
+					AND CASE WHEN a.start_date IS NOT NULL
+						THEN CAST(to_timestamp(a.start_date, 'YYYY-MM-DD HH24:MI:SS.FF') AS  DATE)
+							ELSE defaultTime END = vd.start_date
 					and tvd.study_num = studyNum
 					and tvd.rel_time_label = a.trial_visit_label
 					AND NOT exists-- don't insert if lower level node exists
@@ -1393,7 +1417,7 @@ BEGIN
 	SET TRIAL_VISIT_NUM = (
 		SELECT cst.trial_visit_num
 		FROM
-			tm_dataloader.concept_specific_trials cst,
+			concept_specific_trials cst,
 			I2B2DEMODATA.CONCEPT_DIMENSION cd
 		WHERE cd.concept_path = Cst.C_Fullname
 					AND Obf.Concept_Cd = cd.concept_cd
@@ -1401,7 +1425,7 @@ BEGIN
 	WHERE obf.sourcesystem_cd = TrialID AND
 				obf.concept_cd IN (
 					SELECT concept_cd
-					FROM tm_dataloader.concept_specific_trials cst,
+					FROM concept_specific_trials cst,
 						I2B2DEMODATA.CONCEPT_DIMENSION cd
 					WHERE cd.concept_path = Cst.C_Fullname);
 
