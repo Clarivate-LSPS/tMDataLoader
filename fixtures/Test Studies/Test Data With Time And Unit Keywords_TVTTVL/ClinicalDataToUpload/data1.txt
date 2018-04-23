@@ -1,0 +1,4 @@
+STUDY_ID	SUBJ_ID	Gender	Age	Race
+TVTTVL	-61	Male	26	Caucasian
+TVTTVL	-51	Male	24	Latino
+TVTTVL	-41	Female	20	Caucasian

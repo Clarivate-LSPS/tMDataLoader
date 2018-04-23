@@ -29,7 +29,27 @@ BEGIN
   IF (cnt = 0)
   THEN
     ALTER TABLE tm_dataloader.lt_src_clinical_data
-      ADD COLUMN trial_visit_label CHARACTER VARYING(250);
+      ADD COLUMN trial_visit_label CHARACTER VARYING(900);
+  END IF;
+
+  SELECT count(*)
+  INTO cnt
+  FROM information_schema.columns
+  WHERE table_name = 'lt_src_clinical_data' AND column_name = 'trial_visit_unit' and table_schema = 'tm_dataloader';
+  IF (cnt = 0)
+  THEN
+    ALTER TABLE tm_dataloader.lt_src_clinical_data
+      ADD COLUMN trial_visit_unit CHARACTER VARYING(250);
+  END IF;
+
+  SELECT count(*)
+  INTO cnt
+  FROM information_schema.columns
+  WHERE table_name = 'lt_src_clinical_data' AND column_name = 'trial_visit_time' and table_schema = 'tm_dataloader';
+  IF (cnt = 0)
+  THEN
+    ALTER TABLE tm_dataloader.lt_src_clinical_data
+      ADD COLUMN trial_visit_time CHARACTER VARYING(250);
   END IF;
 
   SELECT count(*)
@@ -59,7 +79,27 @@ BEGIN
   IF (cnt = 0)
   THEN
     ALTER TABLE tm_dataloader.wrk_clinical_data
-      ADD COLUMN trial_visit_label CHARACTER VARYING(250);
+      ADD COLUMN trial_visit_label CHARACTER VARYING(900);
+  END IF;
+
+  SELECT count(*)
+  INTO cnt
+  FROM information_schema.columns
+  WHERE table_name = 'wrk_clinical_data' AND column_name = 'trial_visit_time' and table_schema = 'tm_dataloader';
+  IF (cnt = 0)
+  THEN
+    ALTER TABLE tm_dataloader.wrk_clinical_data
+      ADD COLUMN trial_visit_time CHARACTER VARYING(250);
+  END IF;
+
+  SELECT count(*)
+  INTO cnt
+  FROM information_schema.columns
+  WHERE table_name = 'wrk_clinical_data' AND column_name = 'trial_visit_unit' and table_schema = 'tm_dataloader';
+  IF (cnt = 0)
+  THEN
+    ALTER TABLE tm_dataloader.wrk_clinical_data
+      ADD COLUMN trial_visit_unit CHARACTER VARYING(250);
   END IF;
 
 END $$;

@@ -339,6 +339,7 @@ BEGIN
     INTO studyNum
     FROM i2b2demodata.study
     WHERE study_id = TrialId;
+
     DELETE FROM i2b2metadata.study_dimension_descriptions
     WHERE study_id = studyNum;
 
@@ -359,12 +360,13 @@ BEGIN
                      'Done')
     INTO rtnCd;
   END IF;
+
   DELETE FROM i2b2demodata.study
   WHERE study_id = trialid;
   stepCt := stepCt + 1;
   GET DIAGNOSTICS rowCt := ROW_COUNT;
   SELECT
-    cz_write_audit(jobId, databaseName, procedureName, 'Delete data from study_dimension_descriptions', rowCt, stepCt,
+    cz_write_audit(jobId, databaseName, procedureName, 'Delete data from study table', rowCt, stepCt,
                    'Done')
   INTO rtnCd;
   select cz_write_audit(jobId,databaseName,procedureName,'Delete study row from study table',rowCt,stepCt,'Done') into rtnCd;

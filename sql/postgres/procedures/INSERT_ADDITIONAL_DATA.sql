@@ -1,7 +1,9 @@
 CREATE OR REPLACE FUNCTION INSERT_ADDITIONAL_DATA(
   trial_id       CHARACTER VARYING,
+  rel_time_unit  CHARACTER VARYING,
+  rel_time       CHARACTER VARYING,
   rel_time_label CHARACTER VARYING DEFAULT 'Default',
-  secure_study character varying DEFAULT 'N'::character varying,
+  secure_study   CHARACTER VARYING DEFAULT 'N' :: CHARACTER VARYING,
   currentjobid   NUMERIC DEFAULT '-1' :: INTEGER)
   RETURNS NUMERIC AS
 $BODY$
@@ -25,12 +27,16 @@ DECLARE
   pExists             INTEGER;
   v_bio_experiment_id NUMERIC(18, 0);
   relTimeLabel        VARCHAR(900);
+  relTimeUnit         VARCHAR(250);
+  relTime             NUMERIC(38, 0);
 
 BEGIN
 
   TrialID := trial_id;
   securedStudy := upper(secure_study);
   relTimeLabel := rel_time_label;
+  relTimeUnit := rel_time_unit;
+  relTime := to_number(rel_time, '9999999999999999999999999999999999999');
 
   --Set Audit Parameters
   newJobFlag := 0; -- False (Default)
@@ -139,7 +145,9 @@ BEGIN
   INTO pExists
   FROM i2b2demodata.trial_visit_dimension tvd
   WHERE
-    tvd.study_num = studyNum AND tvd.rel_time_label = relTimeLabel;
+    tvd.study_num = studyNum AND tvd.rel_time_label = relTimeLabel
+    AND coalesce(tvd.rel_time_num, -100) = coalesce(relTime, -100)
+    AND coalesce(tvd.rel_time_unit_cd, '**NULL**') = coalesce(relTimeUnit, '**NULL**');
 
   IF pExists = 0
   THEN
@@ -149,11 +157,16 @@ BEGIN
       INSERT INTO i2b2demodata.trial_visit_dimension (
         trial_visit_num,
         study_num,
-        rel_time_label)
+        rel_time_label,
+        rel_time_unit_cd,
+        rel_time_num
+      )
         SELECT
           trialVisitNum,
           studyNum,
-          relTimeLabel;
+          relTimeLabel,
+          relTimeUnit,
+          relTime;
       GET DIAGNOSTICS rowCt := ROW_COUNT;
       EXCEPTION
       WHEN OTHERS
@@ -176,7 +189,9 @@ BEGIN
     SELECT trial_visit_num
     INTO trialVisitNum
     FROM i2b2demodata.trial_visit_dimension tvd
-    WHERE tvd.study_num = studyNum AND tvd.rel_time_label = relTimeLabel;
+    WHERE tvd.study_num = studyNum AND tvd.rel_time_label = relTimeLabel
+          AND coalesce(tvd.rel_time_num, -100) = coalesce(relTime, -100)
+          AND coalesce(tvd.rel_time_unit_cd, '**NULL**') = coalesce(relTimeUnit, '**NULL**');
   END IF;
 
   RETURN trialVisitNum;

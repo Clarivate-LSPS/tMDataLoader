@@ -28,10 +28,10 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
 
     void setup() {
         ConfigAwareTestCase.super.setUp()
+        runScript('INSERT_ADDITIONAL_DATA.sql')
         runScript('I2B2_LOAD_CLINICAL_DATA.sql')
         runScript('I2B2_DELETE_ALL_DATA.sql')
         runScript('i2b2_create_security_for_trial.sql')
-        runScript('INSERT_ADDITIONAL_DATA.sql')
         runScript('I2B2_BUILD_METADATA_XML.sql')
         runScript('I2B2_CREATE_CONCEPT_COUNTS.sql')
     }
@@ -259,6 +259,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
 
     def 'it should load study with UPDATE VARIABLES merge mode'() {
         expect:
+        Study.deleteById(config, 'GSE0SINGLEVN')
         String subjId = 'HCC2935'
         String rootConcept = "\\Test Studies\\${studyName}\\"
 
@@ -310,6 +311,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         when:
         String studyName = 'Test Study With Duplicate Category Path'
         String studyId = 'GSE0WDCP'
+        Study.deleteById(config, studyId)
         String femaleConcept = '\\Test Studies\\Test Study With Duplicate Category Path\\DupclicateCD\\Female\\'
         def newProcessor = new ClinicalDataProcessor(config)
         newProcessor.process(new File(studyDir(studyName, studyId, studiesForMerge.first_load), "ClinicalDataToUpload").toPath(),
@@ -359,6 +361,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
 
     def 'it should load study with non-unique column names'() {
         when:
+        Study.deleteById(config, 'GSE0NQCN')
         def clinicalData = additionalStudiesDir.studyDir('Test Study With Non Unique Column Names', 'GSE0NQCN').clinicalData
         def successfullyLoaded = clinicalData.load(config + [allowNonUniqueColumnNames: true])
         then:
@@ -369,6 +372,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
     def 'it should load category_cd and data_label with plus sign'() {
         when:
         def clinicalData = Fixtures.clinicalDataWithPlusSign
+        Study.deleteById(config, clinicalData.studyId)
         def result = clinicalData.load(config)
         then:
         assertThat("Clinical data loading shouldn't fail", result, equalTo(true))
@@ -382,6 +386,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
     def 'it should load category_cd with terminator'() {
         when:
         def clinicalData = Fixtures.clinicalDataWithTerminator
+        Study.deleteById(config, clinicalData.studyId)
         def result = clinicalData.load(config)
         then:
         assertThat("Clinical data loading shouldn't fail", result, equalTo(true))
@@ -410,6 +415,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
     def 'it should load category_cd with data value'() {
         when:
         def clinicalData = Fixtures.clinicalDataWithDataValueInPath
+        Study.deleteById(config, clinicalData.studyId)
         def result = clinicalData.load(config)
         def demoPath = "\\Test Studies\\$clinicalData.studyName\\Subjects\\Demographics"
 
@@ -528,6 +534,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
 
     def "it should load multiple values for same data label"() {
         given:
+        Study.deleteById(config, 'GSE0DUPPATHS')
         def clinicalData = ClinicalData.build('GSE0DUPPATHS', 'Test Study With Duplicate Paths') {
             dataFile('AESTATUS.txt', ['System', 'Condition']) {
                 forSubject('50015') {
@@ -557,6 +564,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
 
     def "it should track missing column's value as blank for summary statistic"() {
         given:
+        Study.deleteById(config, 'GSE0SS')
         def clinicalData = ClinicalData.build('GSE0SS', 'Test Study Summary Statistic') {
             dataFile('TEST.txt', ['Column', 'Variable']) {
                 forSubject('TST1') { row 'Value 1' }
@@ -1327,6 +1335,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
 
     def 'it should load Serial LDD data with timestamp with two timestamp column'() {
         given:
+        Study.deleteById(config, 'GSE0SLDDW2TS')
         def clinicalData = ClinicalData.build('GSE0SLDDW2TS', 'Test Study With Serial LDD with timestamp with two column') {
             mappingFile {
                 forDataFile('TEST.txt') {
@@ -1366,7 +1375,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
 
         [["Baseline", 'SUBJ1', 0],
          ["5 minutes", 'SUBJ2', 5]]
-         .each {
+                .each {
             assertThat db, hasTrialVisitDimension("$timepointsPath\\${it[0]}\\", "GSE0SLDDW2TS:${it[1]}", [
                     'rel_time_unit_cd': 'minutes',
                     'rel_time_num'    : it[2],
@@ -1386,6 +1395,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
 
     def 'it should load Serial LDD data with timestamp with two timestamp and baseline'() {
         given:
+        Study.deleteById(config, 'GSE0SLDDW2TS2B')
         def clinicalData = ClinicalData.build('GSE0SLDDW2TS2B', 'Test Study With Serial LDD with two timestamp and baseline') {
             mappingFile {
                 forDataFile('TEST.txt') {
@@ -1545,45 +1555,49 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         then:
         assertTrue(load)
 
-        assertThat(db, hasFactDate("${studyTr171Id}:OBS336-201_01", '\\Test Studies\\Test Study For Transmart-17-1\\PKConc\\Timepoint Hrs.\\', 1,
+        assertThat(db, hasFactDate("${studyTr171Id}:OBS336-201_01", "\\Test Studies\\${studyTr171Name}\\PKConc\\Timepoint Hrs.\\", 1,
                 [
                         'start_date': Timestamp.valueOf(LocalDate.parse("2016-03-02").atStartOfDay()),
                         'end_date'  : Timestamp.valueOf(LocalDate.parse("2016-03-03").atStartOfDay())
                 ]
         ))
-        assertThat(db, hasFactDate("${studyTr171Id}:OBS336-201_03", '\\Test Studies\\Test Study For Transmart-17-1\\Demography\\Sex\\F\\', 1,
+        assertThat(db, hasFactDate("${studyTr171Id}:OBS336-201_03", "\\Test Studies\\${studyTr171Name}\\Demography\\Sex\\F\\", 1,
                 [
                         'start_date': Timestamp.valueOf(LocalDate.parse("2016-03-11").atStartOfDay())
                 ]
         ))
-        assertThat(db, hasFactDate("${studyTr171Id}:OBS336-201_02", '\\Test Studies\\Test Study For Transmart-17-1\\PKConc\\Timepoint Hrs.\\', 1,
+        assertThat(db, hasFactDate("${studyTr171Id}:OBS336-201_02", "\\Test Studies\\${studyTr171Name}\\PKConc\\Timepoint Hrs.\\", 1,
                 [
                         'start_date': Timestamp.valueOf(java.time.LocalDateTime.parse("2016-03-02T08:13:00")),
                         'end_date'  : Timestamp.valueOf(LocalDate.parse("2016-03-03").atStartOfDay())
                 ]
         ))
 
-        assertThat(db, hasFactDate("${studyTr171Id}:OBS336-201_07", '\\Test Studies\\Test Study For Transmart-17-1\\PKConc\\Timepoint Hrs.\\', 1,
+        assertThat(db, hasFactDate("${studyTr171Id}:OBS336-201_07", "\\Test Studies\\${studyTr171Name}\\PKConc\\Timepoint Hrs.\\", 1,
                 [
                         'end_date': Timestamp.valueOf(LocalDateTime.parse("2016-03-03T14:34:19"))
                 ]
         ))
 
         assertThat(db, hasVisitDimension('OBS336-201_02', studyTr171Id,
-                 [start_date: Timestamp.valueOf(LocalDateTime.parse("2016-03-02T00:00"))]))
+                [start_date: Timestamp.valueOf(LocalDateTime.parse("2016-03-02T00:00"))]))
     }
 
-    def 'Load sample data'() {
+    def 'Load sample data with TRIAL_VISIT_TIME and TRIAL_VISIT_UNIT'() {
         given:
-        def studyTr171Id = "CTRIAL"
-        def studyTr171Name = 'Test Don'
-        Study.deleteById(config, studyTr171Id)
+        def currentStudyId = "TVTTVL"
+        def currentStudyName = 'Test Data With Time And Unit Keywords'
+        Study.deleteById(config, currentStudyId)
 
         when:
         def load = processor.process(
-                new File(studyDir(studyTr171Name, studyTr171Id), "ClinicalDataToUpload").toPath(),
-                [name: studyTr171Name, node: "Test Studies\\${studyTr171Name}".toString()])
+                new File(studyDir(currentStudyName, currentStudyId), "ClinicalDataToUpload").toPath(),
+                [name: currentStudyName, node: "Test Studies\\${currentStudyName}".toString()])
         then:
         assertTrue(load)
+        assertThat(db, hasTrialVisitDimension("\\Test Studies\\${currentStudyName}\\Vital Signs\\Heart Rate\\",
+                "${currentStudyId}:-41", 'Week 1', ['rel_time_unit_cd': 'days', 'rel_time_num': 7]))
+        assertThat(db, hasTrialVisitDimension("\\Test Studies\\${currentStudyName}\\Vital Signs\\Heart Rate\\",
+                "${currentStudyId}:-51", 'Week 3', ['rel_time_unit_cd': 'days', 'rel_time_num': 21]))
     }
 }

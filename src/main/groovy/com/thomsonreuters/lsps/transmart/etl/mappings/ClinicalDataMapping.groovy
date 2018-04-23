@@ -43,6 +43,8 @@ class ClinicalDataMapping {
         List<Entry> _DATA = []
         //Additional field for support transmart 17.1
         int TRIAL_VISIT_LABEL
+        int TRIAL_VISIT_TIME
+        int TRIAL_VISIT_UNIT
         int START_DATE
         int END_DATE
         int INSTANCE_NUM

@@ -96,7 +96,9 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
                             end_date         : cols[fMappings.END_DATE] ? ETLHelper.toTimestampString(cols[fMappings.END_DATE]) : null,
                             start_date       : cols[fMappings.START_DATE] ? ETLHelper.toTimestampString(cols[fMappings.START_DATE]) : null,
                             instance_num     : cols[fMappings.INSTANCE_NUM],
-                            trial_visit_label: cols[fMappings.TRIAL_VISIT_LABEL]?:null
+                            trial_visit_label: cols[fMappings.TRIAL_VISIT_LABEL]?:null,
+                            trial_visit_time : cols[fMappings.TRIAL_VISIT_TIME],
+                            trial_visit_unit : cols[fMappings.TRIAL_VISIT_UNIT]
                     ]
 
                     if (_DATA) {
@@ -244,13 +246,14 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
                                                             'DATA_LABEL', 'DATA_VALUE', 'CATEGORY_CD', 'SAMPLE_CD',
                                                             'VALUETYPE_CD', 'BASELINE_VALUE',
                                                             'START_DATE', 'END_DATE', 'INSTANCE_NUM',
-                                                            'TRIAL_VISIT_LABEL'
+                                                            'TRIAL_VISIT_LABEL', 'TRIAL_VISIT_UNIT', 'TRIAL_VISIT_TIME'
         ]) { st ->
             long rowsCount = processEachRow(f, fileMapping) { row, lineNumber ->
                 try {
                     st.addBatch([row.study_id, row.site_id, row.subj_id, row.visit_name, row.data_label,
                                  row.data_value, row.category_cd, row.sample_cd, row.valuetype_cd, row.baseline_value,
-                                 row.start_date, row.end_date, row.instance_num, row.trial_visit_label
+                                 row.start_date, row.end_date, row.instance_num,
+                                 row.trial_visit_label, row.trial_visit_unit, row.trial_visit_time
                     ])
                 } catch (SQLException e) {
                     throw new DataProcessingException("Wrong data close to ${lineNumber} line.\n ${e.getLocalizedMessage()}")

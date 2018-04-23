@@ -90,6 +90,8 @@ AS
 	CURSOR trialVisitLabels IS
 		SELECT DISTINCT
 			trial_visit_label,
+			trial_visit_unit,
+			trial_visit_time,
 			visit_name
 		FROM wrk_clinical_data;
   
@@ -229,51 +231,60 @@ BEGIN
 	
 	--	insert data from lt_src_clinical_data to wrk_clinical_data
 	-- Optimization: do not insert null data_Value
-	insert /*+ APPEND */ into wrk_clinical_data nologging
+	INSERT /*+ APPEND */ INTO wrk_clinical_data nologging
 	(study_id
-	,site_id
-	,subject_id
-	,visit_name
-	,data_label
-	,modifier_cd
-	,data_value
-	,units_cd
-	,date_timestamp
-	,category_cd
-	,ctrl_vocab_code
-  ,category_path
-  ,usubjid
-  ,data_type
-	,valuetype_cd
-  ,baseline_value
-	,end_date
-	,start_date
-	,instance_num
-	,trial_visit_label
+		, site_id
+		, subject_id
+		, visit_name
+		, data_label
+		, modifier_cd
+		, data_value
+		, units_cd
+		, date_timestamp
+		, category_cd
+		, ctrl_vocab_code
+		, category_path
+		, usubjid
+		, data_type
+		, valuetype_cd
+		, baseline_value
+		, end_date
+		, start_date
+		, instance_num
+		, trial_visit_label
+		, trial_visit_unit
+		, trial_visit_time
 	)
-	select study_id
-		  ,site_id
-		  ,subject_id
-		  ,visit_name
-		  ,data_label
-			,modifier_cd
-			,data_value
-			,units_cd
-			,date_timestamp
-		  ,category_cd
-		  ,ctrl_vocab_code
-		  -- All tag values prefixed with $$, so we should remove prefixes in category_path
-      ,regexp_replace(regexp_replace(replace(replace(category_cd,'_',' '),'+','\'),'\$\$\d*[A-Z]\{([^}]+)\}','\1'),'\$\$\d*[A-Z]','')
-      ,(CASE WHEN site_id IS NOT NULL THEN TrialID || ':' || site_id || ':' || subject_id ELSE TrialID || ':' || subject_id END)
-      ,'T'
-			,valuetype_cd
-			,baseline_value
-			,end_date
-			,start_date
-			,instance_num
-			,trial_visit_label
-	from lt_src_clinical_data
-	WHERE data_value is not null;
+		SELECT
+			study_id,
+			site_id,
+			subject_id,
+			visit_name,
+			data_label,
+			modifier_cd,
+			data_value,
+			units_cd,
+			date_timestamp,
+			category_cd,
+			ctrl_vocab_code
+			-- All tag values prefixed with $$, so we should remove prefixes in category_path
+			,
+			regexp_replace(regexp_replace(replace(replace(category_cd, '_', ' '), '+', '\'), '\$\$\d*[A-Z]\{([^}]+)\}', '\1'),
+										 '\$\$\d*[A-Z]', ''),
+			(CASE WHEN site_id IS NOT NULL
+				THEN TrialID || ':' || site_id || ':' || subject_id
+			 ELSE TrialID || ':' || subject_id END),
+			'T',
+			valuetype_cd,
+			baseline_value,
+			end_date,
+			start_date,
+			instance_num,
+			trial_visit_label,
+			trial_visit_unit,
+			trial_visit_time
+		FROM lt_src_clinical_data
+		WHERE data_value IS NOT NULL;
 	
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Load lt_src_clinical_data to work table',SQL%ROWCOUNT,stepCt,'Done');
@@ -902,14 +913,16 @@ BEGIN
 	commit;
 
 	EXECUTE IMMEDIATE 'TRUNCATE TABLE concept_specific_trials';
-	
+
 	FOR trialVisitLabel IN trialVisitLabels LOOP
-		trialVisitNum := insert_additional_data(TrialID, trialVisitLabel.trial_visit_label, secureStudy, jobID);
+		trialVisitNum := insert_additional_data(TrialID, trialVisitLabel.trial_visit_unit, trialVisitLabel.trial_visit_time,
+																						trialVisitLabel.trial_visit_label, secureStudy, jobID);
 	END LOOP;
 
-	select study_num into studyNum
-	from i2b2demodata.study
-	where study_id = TrialId;
+	SELECT study_num
+	INTO studyNum
+	FROM i2b2demodata.study
+	WHERE study_id = TrialId;
 
 	INSERT INTO i2b2demodata.visit_dimension
 	(
@@ -1392,6 +1405,8 @@ BEGIN
 							ELSE defaultTime END = vd.start_date
 					and tvd.study_num = studyNum
 					and tvd.rel_time_label = a.trial_visit_label
+					and nvl(tvd.rel_time_unit_cd,'**NULL**') = nvl(a.trial_visit_unit,'**NULL**')
+					and nvl(tvd.rel_time_num,-100) = nvl(to_number(a.trial_visit_time,'9999999999999999999999999999999999999'),-100)
 					AND NOT exists-- don't insert if lower level node exists
 		(SELECT 1
 		 FROM wt_trial_nodes x

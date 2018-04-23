@@ -1,11 +1,13 @@
-create or replace FUNCTION INSERT_ADDITIONAL_DATA
+CREATE OR REPLACE FUNCTION INSERT_ADDITIONAL_DATA
   (
     trial_id       VARCHAR2,
+    rel_time_unit  VARCHAR2,
+    rel_time       VARCHAR2,
     rel_time_label VARCHAR2,
-    secure_study VARCHAR2,
+    secure_study   VARCHAR2,
     currentjobid   NUMBER := 1
   )
-RETURN VARCHAR2 IS
+  RETURN VARCHAR2 IS
 
   --Audit variables
   newJobFlag          INTEGER;
@@ -15,13 +17,16 @@ RETURN VARCHAR2 IS
   errorNumber         NUMBER(18, 0);
   errorMessage        VARCHAR2(1000);
   studyNum            NUMBER(18, 0);
-  trialVisitNum       NUMBER(18,0);
+  trialVisitNum       NUMBER(18, 0);
 
   TrialID             VARCHAR2(100);
   securedStudy        VARCHAR2(5);
   pExists             INTEGER;
   v_bio_experiment_id NUMBER(18, 0);
   relTimeLabel        VARCHAR2(900);
+  relTimeUnit         VARCHAR2(250);
+  relTime             NUMBER(38, 0);
+
   databaseName        VARCHAR(100);
   procedureName       VARCHAR(100);
 
@@ -30,6 +35,8 @@ RETURN VARCHAR2 IS
     TrialID := trial_id;
     securedStudy := upper(secure_study);
     relTimeLabel := rel_time_label;
+    relTimeUnit := rel_time_unit;
+    relTime := to_number(rel_time, '9999999999999999999999999999999999999');
 
     --Set Audit Parameters
     newJobFlag := 0; -- False (Default)
@@ -111,7 +118,9 @@ RETURN VARCHAR2 IS
     INTO pExists
     FROM i2b2demodata.trial_visit_dimension tvd
     WHERE
-      tvd.study_num = studyNum AND tvd.rel_time_label = relTimeLabel;
+      tvd.study_num = studyNum AND tvd.rel_time_label = relTimeLabel
+      AND nvl(tvd.rel_time_num, -100) = nvl(relTime, -100)
+      AND nvl(tvd.rel_time_unit_cd, '**NULL**') = nvl(relTimeUnit, '**NULL**');
 
     IF pExists = 0
     THEN
@@ -120,11 +129,15 @@ RETURN VARCHAR2 IS
       INSERT INTO i2b2demodata.trial_visit_dimension (
         trial_visit_num,
         study_num,
-        rel_time_label)
+        rel_time_label,
+        rel_time_unit_cd,
+        rel_time_num)
         SELECT
           trialVisitNum,
           studyNum,
-          relTimeLabel
+          relTimeLabel,
+          relTimeUnit,
+          relTime
         FROM dual;
 
       stepCt := stepCt + 1;
@@ -133,8 +146,12 @@ RETURN VARCHAR2 IS
       SELECT trial_visit_num
       INTO trialVisitNum
       FROM i2b2demodata.trial_visit_dimension tvd
-      WHERE tvd.study_num = studyNum AND tvd.rel_time_label = relTimeLabel;
+      WHERE tvd.study_num = studyNum AND tvd.rel_time_label = relTimeLabel
+            AND nvl(tvd.rel_time_num, -100) = nvl(relTime, -100)
+            AND nvl(tvd.rel_time_unit_cd, '**NULL**') = nvl(relTimeUnit, '**NULL**');
     END IF;
+
+    COMMIT;
 
     RETURN trialVisitNum;
 

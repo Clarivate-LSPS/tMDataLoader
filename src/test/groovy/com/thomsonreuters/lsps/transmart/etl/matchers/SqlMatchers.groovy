@@ -61,15 +61,23 @@ class SqlMatchers {
         return new RowMatcher(valueAttrs)
     }
 
-    public static HasFactAttribute hasFactDate(String sourcesystemCd, String conceptPath, Integer instanceNum, Map<String, Object> valueAttrs) {
+    public
+    static HasFactAttribute hasFactDate(String sourcesystemCd, String conceptPath, Integer instanceNum, Map<String, Object> valueAttrs) {
         return new HasFactAttribute(sourcesystemCd, conceptPath, instanceNum, valueAttrs)
     }
 
-    public static HasTrialVisitDimension hasTrialVisitDimension(String conceptPath, String sourcesystemCdAndPatientId, Map<String, Object> valueAttrs) {
+    public
+    static HasTrialVisitDimension hasTrialVisitDimension(String conceptPath, String sourcesystemCdAndPatientId, Map<String, Object> valueAttrs) {
         return new HasTrialVisitDimension(conceptPath, sourcesystemCdAndPatientId, valueAttrs)
     }
 
-    public static HasVisitDimension hasVisitDimension(String patientId, String sourcesystemCd, Map<String, Object> valueAttrs){
+    public
+    static HasTrialVisitDimension hasTrialVisitDimension(String conceptPath, String sourcesystemCdAndPatientId, String label, Map<String, Object> valueAttrs) {
+        return new HasTrialVisitDimension(conceptPath, sourcesystemCdAndPatientId, label, valueAttrs)
+    }
+
+    public
+    static HasVisitDimension hasVisitDimension(String patientId, String sourcesystemCd, Map<String, Object> valueAttrs) {
         return new HasVisitDimension(patientId, sourcesystemCd, valueAttrs)
     }
 }
