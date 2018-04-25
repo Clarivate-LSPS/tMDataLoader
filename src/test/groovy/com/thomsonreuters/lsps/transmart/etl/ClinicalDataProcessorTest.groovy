@@ -1600,4 +1600,40 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat(db, hasTrialVisitDimension("\\Test Studies\\${currentStudyName}\\Vital Signs\\Heart Rate\\",
                 "${currentStudyId}:-51", 'Week 3', ['rel_time_unit_cd': 'days', 'rel_time_num': 21]))
     }
+
+    def 'Load sample data with concept_cd'() {
+        given:
+        def studyConceptId = "GSECONCEPTCD"
+        def studyConceptName = 'Test Data With Concept_cd'
+        Study.deleteById(config, studyConceptId)
+
+        when:
+        def load = processor.process(
+                new File(studyDir(studyConceptName, studyConceptId), "ClinicalDataToUpload").toPath(),
+                [name: studyConceptName, node: "Test Studies\\${studyConceptName}".toString()])
+        then:
+        assertTrue(load)
+
+        assertThat(db, hasFactDate("${studyConceptId}:-61", "\\Test Studies\\${studyConceptName}\\Vital Signs\\Heart Rate\\", 1,
+                [
+                        'start_date': Timestamp.valueOf(java.time.LocalDateTime.parse("0001-01-01T00:00:00")),
+                        'concept_cd': ':VSIGN:HR'
+                ]
+        ))
+
+        assertThat(db, hasFactDate("${studyConceptId}:-61", "\\Test Studies\\${studyConceptName}\\Demographics\\Age\\", 1,
+                [
+                        'concept_cd': 'DM:AGE'
+                ]))
+
+        assertThat(db, hasFactDate("${studyConceptId}:-61", "\\Test Studies\\${studyConceptName}\\Demographics\\Race\\", 1, [
+                'concept_cd': 'DM:RACE'
+        ]))
+
+        assertThat(sql, hasNode("\\Test Studies\\${studyConceptName}\\Demographics\\Race\\").withPatientCount(3))
+        assertThat(sql, hasFact("\\Test Studies\\${studyConceptName}\\Demographics\\Race\\", '-61', 'Caucasian'))
+        assertThat(sql, hasFact("\\Test Studies\\${studyConceptName}\\Demographics\\Race\\", '-51', 'Latino'))
+        assertThat(sql, hasNode("\\Test Studies\\${studyConceptName}\\Demographics\\Gender\\Male\\").withPatientCount(2))
+        assertThat(sql, hasNode("\\Test Studies\\${studyConceptName}\\Demographics\\Gender\\Female\\").withPatientCount(1))
+    }
 }

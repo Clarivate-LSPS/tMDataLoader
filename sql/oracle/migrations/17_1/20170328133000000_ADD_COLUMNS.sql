@@ -56,6 +56,15 @@ BEGIN
   SELECT count(*)
   INTO cnt
   FROM dba_tab_cols c
+  WHERE c.table_name = 'LT_SRC_CLINICAL_DATA' AND c.column_name = 'CONCEPT_CD' and owner = 'TM_DATALOADER';
+  IF (cnt <> 1)
+  THEN
+    EXECUTE IMMEDIATE 'ALTER TABLE TM_DATALOADER.LT_SRC_CLINICAL_DATA ADD (CONCEPT_CD VARCHAR2 (250) )';
+  END IF;
+
+  SELECT count(*)
+  INTO cnt
+  FROM dba_tab_cols c
   WHERE c.table_name = 'WRK_CLINICAL_DATA' AND c.column_name = 'START_DATE' and owner = 'TM_DATALOADER';
   IF (cnt <> 1)
   THEN
@@ -96,6 +105,24 @@ BEGIN
   IF (cnt <> 1)
   THEN
     EXECUTE IMMEDIATE 'ALTER TABLE TM_DATALOADER.WRK_CLINICAL_DATA ADD (TRIAL_VISIT_UNIT VARCHAR2 (250) )';
+  END IF;
+
+  SELECT count(*)
+  INTO cnt
+  FROM dba_tab_cols c
+  WHERE c.table_name = 'WRK_CLINICAL_DATA' AND c.column_name = 'CONCEPT_CD' and owner = 'TM_DATALOADER';
+  IF (cnt <> 1)
+  THEN
+    EXECUTE IMMEDIATE 'ALTER TABLE TM_DATALOADER.WRK_CLINICAL_DATA ADD (CONCEPT_CD VARCHAR2 (250) )';
+  END IF;
+
+  SELECT count(*)
+  INTO cnt
+  FROM dba_tab_cols c
+  WHERE c.table_name = 'WT_TRIAL_NODES' AND c.column_name = 'CONCEPT_CD' and owner = 'TM_DATALOADER';
+  IF (cnt <> 1)
+  THEN
+    EXECUTE IMMEDIATE 'ALTER TABLE TM_DATALOADER.WT_TRIAL_NODES ADD (CONCEPT_CD VARCHAR2 (250) )';
   END IF;
 
 

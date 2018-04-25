@@ -254,6 +254,7 @@ BEGIN
 		, trial_visit_label
 		, trial_visit_unit
 		, trial_visit_time
+		, concept_cd
 	)
 		SELECT
 			study_id,
@@ -282,7 +283,8 @@ BEGIN
 			instance_num,
 			trial_visit_label,
 			trial_visit_unit,
-			trial_visit_time
+			trial_visit_time,
+			concept_cd
 		FROM lt_src_clinical_data
 		WHERE data_value IS NOT NULL;
 	
@@ -645,7 +647,7 @@ BEGIN
 					else ''
 				end ||
 				case
-					when data_type = 'T' and category_path not like '%DATAVALUE%' then '\DATAVALUE'
+					when data_type = 'T' and category_path not like '%DATAVALUE%' AND concept_cd IS NULL then '\DATAVALUE'
 					else ''
 				end ||
 				case
@@ -741,34 +743,41 @@ BEGIN
 	-- Build all needed leaf nodes in one pass for both numeric and text nodes
  
 	execute immediate('truncate table TM_DATALOADER.wt_trial_nodes');
-	
-	insert /*+ APPEND parallel(wt_trial_nodes, 4) */ into wt_trial_nodes nologging
+
+	INSERT /*+ APPEND parallel(wt_trial_nodes, 4) */ INTO wt_trial_nodes nologging
 	(leaf_node
-	,category_cd
-	,visit_name
-	,data_label
-	--,node_name
-	,data_value
-	,data_type
-	,valuetype_cd
-	,baseline_value
+		, category_cd
+		, visit_name
+		, data_label
+	 --,node_name
+		, data_value
+		, data_type
+		, valuetype_cd
+		, baseline_value
+		, concept_cd
 	)
-  select /*+ parallel(a, 4) */  DISTINCT
-		Case
+		SELECT
+			/*+ parallel(a, 4) */  DISTINCT
+			CASE
 			--	Text data_type (default node)
-			When a.data_type = 'T'
-			then regexp_replace(topNode || replace(replace(replace(a.category_path,'DATALABEL',a.data_label),'VISITNAME',a.visit_name), 'DATAVALUE',a.data_value)  || '\','(\\){2,}', '\')
+			WHEN a.data_type = 'T'
+				THEN regexp_replace(topNode || replace(
+						replace(replace(a.category_path, 'DATALABEL', a.data_label), 'VISITNAME', a.visit_name), 'DATAVALUE',
+						a.data_value) || '\', '(\\){2,}', '\')
 			--	else is numeric data_type and default_node
-			else regexp_replace(topNode || replace(replace(a.category_path,'DATALABEL',a.data_label),'VISITNAME',a.visit_name) || '\','(\\){2,}', '\')
-		end as leaf_node,
-    a.category_cd,
-    a.visit_name,
-		a.data_label,
-		decode(a.data_type,'T',a.data_value,null) as data_value
-    ,a.data_type
-		,a.valuetype_cd
-		,baseline_value
-	from  wrk_clinical_data a;
+			ELSE regexp_replace(
+					topNode || replace(replace(a.category_path, 'DATALABEL', a.data_label), 'VISITNAME', a.visit_name) || '\',
+					'(\\){2,}', '\')
+			END                                          AS leaf_node,
+			a.category_cd,
+			a.visit_name,
+			a.data_label,
+			decode(a.data_type, 'T', a.data_value, NULL) AS data_value,
+			a.data_type,
+			a.valuetype_cd,
+			baseline_value,
+			concept_cd
+		FROM wrk_clinical_data a;
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Create leaf nodes for trial',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
@@ -988,33 +997,40 @@ BEGIN
 	cz_write_audit(jobId,databaseName,procedureName,'Update name_char in concept_dimension for changed names',SQL%ROWCOUNT,stepCt,'Done');
 
 	commit;
-							
-	
-	insert /*+ parallel(concept_dimension, 8) */ into concept_dimension
-    (concept_cd
-	,concept_path
-	,name_char
-	,update_date
-	,download_date
-	,import_date
-	,sourcesystem_cd
-	,table_name
+
+
+	INSERT /*+ parallel(concept_dimension, 8) */ INTO concept_dimension
+	(concept_cd
+		, concept_path
+		, name_char
+		, update_date
+		, download_date
+		, import_date
+		, sourcesystem_cd
+		, table_name
 	)
-    select /*+ parallel(8) */ concept_id.nextval
-	     ,x.leaf_node
-		 ,x.node_name
-		 ,sysdate
-		 ,sysdate
-		 ,sysdate
-		 ,TrialId
-		 ,'CONCEPT_DIMENSION'
-	from (select distinct c.leaf_node
-				,to_char(c.node_name) as node_name
-		  from wt_trial_nodes c
-		  where not exists
-			(select 1 from concept_dimension x
-			where c.leaf_node = x.concept_path)
-		 ) x;
+		SELECT
+			/*+ parallel(8) */
+			CASE WHEN x.concept_cd IS NOT NULL
+				THEN x.concept_cd
+			ELSE trim(to_char(i2b2demodata.concept_id.nextval, '999999999999999999')) END,
+			x.leaf_node,
+			x.node_name,
+			sysdate,
+			sysdate,
+			sysdate,
+			TrialId,
+			'CONCEPT_DIMENSION'
+		FROM (SELECT DISTINCT
+						c.leaf_node,
+						to_char(c.node_name) AS node_name,
+						concept_cd
+					FROM wt_trial_nodes c
+					WHERE NOT exists
+					(SELECT 1
+					 FROM concept_dimension x
+					 WHERE c.leaf_node = x.concept_path)
+				 ) x;
 	
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Inserted new leaf nodes into I2B2DEMODATA concept_dimension',SQL%ROWCOUNT,stepCt,'Done');
@@ -1359,9 +1375,12 @@ BEGIN
 			/*+opt_param('_optimizer_cartesian_enabled','false')*/ DISTINCT
 			vd.encounter_num                                 AS encounter_num,
 			c.patient_num,
-			i.c_basecode                                     AS concept_cd,
-			CAST(TO_TIMESTAMP(coalesce(a.start_date, '0001-01-01 00:00:00.00'), 'YYYY-MM-DD HH24:MI:SS.FF') AS
-					 DATE)                                       AS start_date,
+			i.c_basecode         AS concept_cd,
+			CASE WHEN a.start_date IS NOT NULL
+				THEN
+					CAST(TO_TIMESTAMP(a.start_date, 'YYYY-MM-DD HH24:MI:SS.FF') AS
+							 DATE)
+			ELSE defaultTime END AS start_date,
 			'@'                                              AS modifier_cd,
 			a.data_type                                      AS valtype_cd,
 			CASE WHEN a.data_type = 'T'

@@ -98,7 +98,9 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
                             instance_num     : cols[fMappings.INSTANCE_NUM],
                             trial_visit_label: cols[fMappings.TRIAL_VISIT_LABEL]?:null,
                             trial_visit_time : cols[fMappings.TRIAL_VISIT_TIME],
-                            trial_visit_unit : cols[fMappings.TRIAL_VISIT_UNIT]
+                            trial_visit_unit : cols[fMappings.TRIAL_VISIT_UNIT],
+                            trial_visit_label: cols[fMappings.TRIAL_VISIT_LABEL] ?: null,
+                            concept_cd       : ''
                     ]
 
                     if (_DATA) {
@@ -150,6 +152,7 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
                                 }
 
                                 out['category_cd'] = cat_cd
+                                out['concept_cd'] = v.CONCEPT_CD
 
                                 if (v.baseline) {
                                     out['baseline_value'] = cols[v.baselineColumn]
@@ -246,14 +249,16 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
                                                             'DATA_LABEL', 'DATA_VALUE', 'CATEGORY_CD', 'SAMPLE_CD',
                                                             'VALUETYPE_CD', 'BASELINE_VALUE',
                                                             'START_DATE', 'END_DATE', 'INSTANCE_NUM',
-                                                            'TRIAL_VISIT_LABEL', 'TRIAL_VISIT_UNIT', 'TRIAL_VISIT_TIME'
+                                                            'TRIAL_VISIT_LABEL', 'TRIAL_VISIT_UNIT', 'TRIAL_VISIT_TIME',
+                                                            'CONCEPT_CD'
         ]) { st ->
             long rowsCount = processEachRow(f, fileMapping) { row, lineNumber ->
                 try {
                     st.addBatch([row.study_id, row.site_id, row.subj_id, row.visit_name, row.data_label,
                                  row.data_value, row.category_cd, row.sample_cd, row.valuetype_cd, row.baseline_value,
                                  row.start_date, row.end_date, row.instance_num,
-                                 row.trial_visit_label, row.trial_visit_unit, row.trial_visit_time
+                                 row.trial_visit_label, row.trial_visit_unit, row.trial_visit_time,
+                                 row.concept_cd
                     ])
                 } catch (SQLException e) {
                     throw new DataProcessingException("Wrong data close to ${lineNumber} line.\n ${e.getLocalizedMessage()}")

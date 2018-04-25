@@ -31,6 +31,7 @@ class ClinicalDataMapping {
         List<ValidationRule> validationRules
         String baseline
         int baselineColumn
+        String CONCEPT_CD
     }
 
     public static final class FileMapping {
@@ -87,6 +88,7 @@ class ClinicalDataMapping {
         int variableTypeIdx = columnMapping.variable_type ?: -1
         int validationRulesIdx = columnMapping.validation_rules ?: -1
         boolean hasBaselineColumn = columnMapping.containsKey('baseline')
+        boolean hasConceptCd = columnMapping.containsKey('concept_cd')
         mappingFile.eachEntry { cols, lineNum ->
             String fileName = cols[0]
             FileParsingInfo parsingInfo = mappings[fileName]
@@ -132,6 +134,9 @@ class ClinicalDataMapping {
                     )
                     if (hasBaselineColumn) {
                         entry.baseline = cols[columnMapping['baseline']]
+                    }
+                    if (hasConceptCd) {
+                        entry.CONCEPT_CD = cols[columnMapping['concept_cd']]
                     }
                     if (entry.CATEGORY_CD.length() > colsMetaSize.CATEGORY_CD) {
                         mappingErrors.add("CATEGORY_CD is too long (${entry.CATEGORY_CD.length()} > ${colsMetaSize.CATEGORY_CD}) for row [$lineNum]: ${cols}")

@@ -62,7 +62,7 @@ Declare
 	pathCount integer;
 	trialVisitNum NUMERIC(18, 0);
 	studyNum      NUMERIC(18, 0);
-	defaultTime  TIMESTAMP WITHOUT TIME ZONE;
+	defaultTime  TIMESTAMP ;
 
 	addNodes CURSOR is
 	select DISTINCT leaf_node, node_name
@@ -166,6 +166,7 @@ BEGIN
 			, trial_visit_label
 			, trial_visit_unit
 			, trial_visit_time
+			, concept_cd
 		)
 			SELECT
 				study_id,
@@ -188,6 +189,8 @@ BEGIN
 				trial_visit_label,
 				trial_visit_unit,
 				trial_visit_time
+				trial_visit_label,
+				concept_cd
 			FROM lt_src_clinical_data;
 		EXCEPTION
 		WHEN OTHERS
@@ -638,35 +641,40 @@ BEGIN
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Updated data_type flag for numeric data_types',rowCt,stepCt,'Done') into rtnCd;
 
-	update wrk_clinical_data
-	set category_path =
-	case
-		-- Path with terminator, don't change, just remove terminator
-		when category_path like '%\$'
-		then substr(category_path, 1, length(category_path) - 2)
-		-- Add missing fields to concept_path
-		else
-			case
-				when category_path like '%\VISITNFST' then replace(category_path, '\VISITNFST', '')
-				else category_path
-			end ||
-			case
-				when category_path not like '%DATALABEL%' then '\DATALABEL'
-				else ''
-			end ||
-			case
-				when category_path like '%\VISITNFST' then '\VISITNAME'
-				else ''
-			end ||
-			case
-				when data_type = 'T' and category_path not like '%DATAVALUE%' then '\DATAVALUE'
-				else ''
-			end ||
-			case
-				when category_path not like '%\VISITNFST' and category_path not like '%VISITNAME%' then '\VISITNAME'
-				else ''
-			end
-		end;
+	UPDATE wrk_clinical_data
+	SET category_path =
+	CASE
+	-- Path with terminator, don't change, just remove terminator
+	WHEN category_path LIKE '%\$'
+		THEN substr(category_path, 1, length(category_path) - 2)
+	-- Add missing fields to concept_path
+	ELSE
+		CASE
+		WHEN category_path LIKE '%\VISITNFST'
+			THEN replace(category_path, '\VISITNFST', '')
+		ELSE category_path
+		END ||
+		CASE
+		WHEN category_path NOT LIKE '%DATALABEL%'
+			THEN '\DATALABEL'
+		ELSE ''
+		END ||
+		CASE
+		WHEN category_path LIKE '%\VISITNFST'
+			THEN '\VISITNAME'
+		ELSE ''
+		END ||
+		CASE
+		WHEN data_type = 'T' AND category_path NOT LIKE '%DATAVALUE%' AND concept_cd IS NULL
+			THEN '\DATAVALUE'
+		ELSE ''
+		END ||
+		CASE
+		WHEN category_path NOT LIKE '%\VISITNFST' AND category_path NOT LIKE '%VISITNAME%'
+			THEN '\VISITNAME'
+		ELSE ''
+		END
+	END;
 
 	get diagnostics rowCt := ROW_COUNT;
 	stepCt := stepCt + 1;
@@ -786,6 +794,7 @@ BEGIN
 	,data_type
 	,valuetype_cd
 	,baseline_value
+	,concept_cd
 	)
   select DISTINCT
     Case
@@ -802,6 +811,7 @@ BEGIN
     ,a.data_type
 		,a.valuetype_cd
 		,baseline_value
+		,concept_cd
 	from  wrk_clinical_data a;
 	get diagnostics rowCt := ROW_COUNT;
 	exception
@@ -1087,43 +1097,52 @@ BEGIN
 		end loop;
 	end if;
 
-	begin
-	insert into i2b2demodata.concept_dimension
-    (concept_cd
-	,concept_path
-	,name_char
-	,update_date
-	,download_date
-	,import_date
-	,sourcesystem_cd
-	,table_name
-	)
-    select nextval('i2b2demodata.concept_id')
-	     ,x.leaf_node
-		 ,x.node_name
-		 ,current_timestamp
-		 ,current_timestamp
-		 ,current_timestamp
-		 ,TrialId
-		 ,'CONCEPT_DIMENSION'
-	from (select distinct c.leaf_node
-				,c.node_name::text as node_name
-		  from wt_trial_nodes c
-		  where not exists
-			(select 1 from i2b2demodata.concept_dimension x
-			where c.leaf_node = x.concept_path)
-		 ) x;
-	get diagnostics rowCt := ROW_COUNT;
-	exception
-	when others then
-		errorNumber := SQLSTATE;
-		errorMessage := SQLERRM;
-		--Handle errors.
-		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
-		--End Proc
-		select cz_end_audit (jobID, 'FAIL') into rtnCd;
-		return -16;
-	end;
+	BEGIN
+		INSERT INTO i2b2demodata.concept_dimension
+		(concept_cd
+			, concept_path
+			, name_char
+			, update_date
+			, download_date
+			, import_date
+			, sourcesystem_cd
+			, table_name
+		)
+			SELECT
+				CASE WHEN x.concept_cd IS NOT NULL
+					THEN x.concept_cd
+				ELSE trim(to_char(nextval('i2b2demodata.concept_id'),'999999999999999999')) END,
+				x.leaf_node,
+				x.node_name,
+				current_timestamp,
+				current_timestamp,
+				current_timestamp,
+				TrialId,
+				'CONCEPT_DIMENSION'
+			FROM (SELECT DISTINCT
+							c.leaf_node,
+							c.node_name :: TEXT AS node_name,
+							concept_cd
+						FROM wt_trial_nodes c
+						WHERE NOT exists
+						(SELECT 1
+						 FROM i2b2demodata.concept_dimension x
+						 WHERE c.leaf_node = x.concept_path)
+					 ) x;
+		GET DIAGNOSTICS rowCt := ROW_COUNT;
+		EXCEPTION
+		WHEN OTHERS
+			THEN
+				errorNumber := SQLSTATE;
+				errorMessage := SQLERRM;
+				--Handle errors.
+				SELECT cz_error_handler(jobID, procedureName, errorNumber, errorMessage)
+				INTO rtnCd;
+				--End Proc
+				SELECT cz_end_audit(jobID, 'FAIL')
+				INTO rtnCd;
+				RETURN -16;
+	END;
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Inserted new leaf nodes into I2B2DEMODATA concept_dimension',rowCt,stepCt,'Done') into rtnCd;
 
