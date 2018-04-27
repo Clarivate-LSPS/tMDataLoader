@@ -647,7 +647,15 @@ BEGIN
 					else ''
 				end ||
 				case
-					when data_type = 'T' and category_path not like '%DATAVALUE%' AND concept_cd IS NULL then '\DATAVALUE'
+					when data_type = 'T' and category_path not like '%DATAVALUE%' 
+							 AND (concept_cd IS NULL
+										OR (upper(data_label) = 'SEX'
+												OR
+												upper(data_label) LIKE '%(SEX)'
+												OR
+												upper(data_label) = 'GENDER'
+										))
+						then '\DATAVALUE'
 					else ''
 				end ||
 				case
@@ -659,6 +667,23 @@ BEGIN
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Add if missing DATALABEL, VISITNAME and DATAVALUE to category_path',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
+
+	UPDATE wrk_clinical_data
+	SET
+		concept_cd = concept_cd || ':' || CASE WHEN upper(data_value) = 'MALE'
+			THEN 'M'
+																			WHEN upper(data_value) = 'FEMALE'
+																				THEN 'F'
+																			ELSE upper(data_value)
+																			END
+	WHERE concept_cd is not null AND (upper(data_label) = 'SEX'
+				OR
+				upper(data_label) LIKE '%(SEX)'
+				OR
+				upper(data_label) = 'GENDER');
+
+	stepCt := stepCt + 1;
+	cz_write_audit(jobId,databaseName,procedureName,'Updated concept_cd for gender nodes',SQL%ROWCOUNT,stepCt,'Done');
 
 	-- Remove duplicates
 	delete from /*+ parallel(4) */ wrk_clinical_data

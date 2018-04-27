@@ -1,4 +1,5 @@
-STUDY_ID	SUBJ_ID	Gender	Age	Race
-GSECONCEPTCD	-61	Male	26	Caucasian
-GSECONCEPTCD	-51	Male	24	Latino
-GSECONCEPTCD	-41	Female	20	Caucasian
+STUDY_ID	SUBJ_ID	Gender	Age	Race	Node
+GSECONCEPTCD	-61	Male	26	Caucasian	One
+GSECONCEPTCD	-51	Male	24	Latino	One
+GSECONCEPTCD	-41	Female	20	Caucasian	Two
+GSECONCEPTCD	TESTME	Unknown	21	Caucasian	Two

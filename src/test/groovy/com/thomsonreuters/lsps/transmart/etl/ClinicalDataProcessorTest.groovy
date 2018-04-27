@@ -1555,25 +1555,25 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         then:
         assertTrue(load)
 
-        assertThat(db, hasFactDate("${studyTr171Id}:OBS336-201_01", "\\Test Studies\\${studyTr171Name}\\PKConc\\Timepoint Hrs.\\", 1,
+        assertThat(db, hasFactAttribute("${studyTr171Id}:OBS336-201_01", "\\Test Studies\\${studyTr171Name}\\PKConc\\Timepoint Hrs.\\", 1,
                 [
                         'start_date': Timestamp.valueOf(LocalDate.parse("2016-03-02").atStartOfDay()),
                         'end_date'  : Timestamp.valueOf(LocalDate.parse("2016-03-03").atStartOfDay())
                 ]
         ))
-        assertThat(db, hasFactDate("${studyTr171Id}:OBS336-201_03", "\\Test Studies\\${studyTr171Name}\\Demography\\Sex\\F\\", 1,
+        assertThat(db, hasFactAttribute("${studyTr171Id}:OBS336-201_03", "\\Test Studies\\${studyTr171Name}\\Demography\\Sex\\F\\", 1,
                 [
                         'start_date': Timestamp.valueOf(LocalDate.parse("2016-03-11").atStartOfDay())
                 ]
         ))
-        assertThat(db, hasFactDate("${studyTr171Id}:OBS336-201_02", "\\Test Studies\\${studyTr171Name}\\PKConc\\Timepoint Hrs.\\", 1,
+        assertThat(db, hasFactAttribute("${studyTr171Id}:OBS336-201_02", "\\Test Studies\\${studyTr171Name}\\PKConc\\Timepoint Hrs.\\", 1,
                 [
                         'start_date': Timestamp.valueOf(java.time.LocalDateTime.parse("2016-03-02T08:13:00")),
                         'end_date'  : Timestamp.valueOf(LocalDate.parse("2016-03-03").atStartOfDay())
                 ]
         ))
 
-        assertThat(db, hasFactDate("${studyTr171Id}:OBS336-201_07", "\\Test Studies\\${studyTr171Name}\\PKConc\\Timepoint Hrs.\\", 1,
+        assertThat(db, hasFactAttribute("${studyTr171Id}:OBS336-201_07", "\\Test Studies\\${studyTr171Name}\\PKConc\\Timepoint Hrs.\\", 1,
                 [
                         'end_date': Timestamp.valueOf(LocalDateTime.parse("2016-03-03T14:34:19"))
                 ]
@@ -1614,26 +1614,39 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         then:
         assertTrue(load)
 
-        assertThat(db, hasFactDate("${studyConceptId}:-61", "\\Test Studies\\${studyConceptName}\\Vital Signs\\Heart Rate\\", 1,
+        assertThat(db, hasFactAttribute("${studyConceptId}:-61", "\\Test Studies\\${studyConceptName}\\Vital Signs\\Heart Rate\\", 1,
                 [
                         'start_date': Timestamp.valueOf(java.time.LocalDateTime.parse("0001-01-01T00:00:00")),
                         'concept_cd': ':VSIGN:HR'
                 ]
         ))
 
-        assertThat(db, hasFactDate("${studyConceptId}:-61", "\\Test Studies\\${studyConceptName}\\Demographics\\Age\\", 1,
+        assertThat(db, hasFactAttribute("${studyConceptId}:-61", "\\Test Studies\\${studyConceptName}\\Demographics\\Age\\", 1,
                 [
                         'concept_cd': 'DM:AGE'
                 ]))
 
-        assertThat(db, hasFactDate("${studyConceptId}:-61", "\\Test Studies\\${studyConceptName}\\Demographics\\Race\\", 1, [
+        assertThat(db, hasFactAttribute("${studyConceptId}:-61", "\\Test Studies\\${studyConceptName}\\Demographics\\Race\\", 1, [
                 'concept_cd': 'DM:RACE'
         ]))
 
-        assertThat(sql, hasNode("\\Test Studies\\${studyConceptName}\\Demographics\\Race\\").withPatientCount(3))
+        assertThat(sql, hasNode("\\Test Studies\\${studyConceptName}\\Demographics\\Race\\").withPatientCount(4))
         assertThat(sql, hasFact("\\Test Studies\\${studyConceptName}\\Demographics\\Race\\", '-61', 'Caucasian'))
         assertThat(sql, hasFact("\\Test Studies\\${studyConceptName}\\Demographics\\Race\\", '-51', 'Latino'))
         assertThat(sql, hasNode("\\Test Studies\\${studyConceptName}\\Demographics\\Gender\\Male\\").withPatientCount(2))
         assertThat(sql, hasNode("\\Test Studies\\${studyConceptName}\\Demographics\\Gender\\Female\\").withPatientCount(1))
+        assertThat(sql, hasNode("\\Test Studies\\${studyConceptName}\\Demographics\\Gender\\Unknown\\").withPatientCount(1))
+
+        assertThat(sql, hasFactAttribute("${studyConceptId}:-51", "\\Test Studies\\${studyConceptName}\\Demographics\\Gender\\Male\\", 1, [
+                'concept_cd': 'DM:GENDER:M'
+        ]))
+
+        assertThat(sql, hasFactAttribute("${studyConceptId}:-41", "\\Test Studies\\${studyConceptName}\\Demographics\\Gender\\Female\\", 1, [
+                'concept_cd': 'DM:GENDER:F'
+        ]))
+
+        assertThat(sql, hasFactAttribute("${studyConceptId}:TESTME", "\\Test Studies\\${studyConceptName}\\Demographics\\Gender\\Unknown\\", 1, [
+                'concept_cd': 'DM:GENDER:UNKNOWN'
+        ]))
     }
 }

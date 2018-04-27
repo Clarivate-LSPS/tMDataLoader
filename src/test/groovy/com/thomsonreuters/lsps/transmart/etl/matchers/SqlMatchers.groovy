@@ -62,7 +62,7 @@ class SqlMatchers {
     }
 
     public
-    static HasFactAttribute hasFactDate(String sourcesystemCd, String conceptPath, Integer instanceNum, Map<String, Object> valueAttrs) {
+    static HasFactAttribute hasFactAttribute(String sourcesystemCd, String conceptPath, Integer instanceNum, Map<String, Object> valueAttrs) {
         return new HasFactAttribute(sourcesystemCd, conceptPath, instanceNum, valueAttrs)
     }
 
