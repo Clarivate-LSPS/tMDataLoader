@@ -369,7 +369,14 @@ BEGIN
     cz_write_audit(jobId, databaseName, procedureName, 'Delete data from study table', rowCt, stepCt,
                    'Done')
   INTO rtnCd;
-  select cz_write_audit(jobId,databaseName,procedureName,'Delete study row from study table',rowCt,stepCt,'Done') into rtnCd;
+
+  DELETE FROM i2b2demodata.concept_dimension
+  WHERE sourcesystem_cd = TrialID;
+  stepCt := stepCt + 1;
+  GET DIAGNOSTICS rowCt := ROW_COUNT;
+  SELECT cz_write_audit(jobId, databaseName, procedureName, 'Delete data from concept_dimension table', rowCt, stepCt,
+                        'Done')
+  INTO rtnCd;
 
   /*Check and delete top node, if removed node is last*/
     if (topNode is not null) then

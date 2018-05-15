@@ -353,6 +353,12 @@ BEGIN
     delete from i2b2demodata.study where study_id = TrialId;
     cz_write_audit(jobId,databaseName,procedureName,'Delete study row from study table',SQL%ROWCOUNT,stepCt,'Done');
 
+    DELETE FROM i2b2demodata.concept_dimension
+    WHERE sourcesystem_cd = TrialID;
+    stepCt := stepCt + 1;
+    cz_write_audit(jobId,databaseName,procedureName,'Delete data from concept_dimension',SQL%ROWCOUNT,stepCt,'Done');
+    COMMIT;
+
 	end if;
 
     ---Cleanup OVERALL JOB if this proc is being run standalone

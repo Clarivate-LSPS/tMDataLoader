@@ -1606,6 +1606,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         def studyConceptId = "GSECONCEPTCD"
         def studyConceptName = 'Test Data With Concept_cd'
         Study.deleteById(config, studyConceptId)
+        Study.deleteByPath(config, '\\Vital\\')
 
         when:
         def load = processor.process(
@@ -1614,19 +1615,20 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         then:
         assertTrue(load)
 
-        assertThat(db, hasFactAttribute("${studyConceptId}:-61", "\\Test Studies\\${studyConceptName}\\Vital Signs\\Heart Rate\\", 1,
+        assertThat(db, hasFactAttribute("${studyConceptId}:-61", "\\Test Studies\\${studyConceptName}\\Vital\\Flag\\",
                 [
                         'start_date': Timestamp.valueOf(java.time.LocalDateTime.parse("0001-01-01T00:00:00")),
-                        'concept_cd': ':VSIGN:HR'
+                        'concept_cd': 'VSIGN:FLAG'
                 ]
         ))
+        assertThat(sql, hasNode("\\Vital\\Flag\\"))
 
-        assertThat(db, hasFactAttribute("${studyConceptId}:-61", "\\Test Studies\\${studyConceptName}\\Demographics\\Age\\", 1,
+        assertThat(db, hasFactAttribute("${studyConceptId}:-61", "\\Test Studies\\${studyConceptName}\\Demographics\\Age\\",
                 [
                         'concept_cd': 'DM:AGE'
                 ]))
 
-        assertThat(db, hasFactAttribute("${studyConceptId}:-61", "\\Test Studies\\${studyConceptName}\\Demographics\\Race\\", 1, [
+        assertThat(db, hasFactAttribute("${studyConceptId}:-61", "\\Test Studies\\${studyConceptName}\\Demographics\\Race\\", [
                 'concept_cd': 'DM:RACE'
         ]))
 

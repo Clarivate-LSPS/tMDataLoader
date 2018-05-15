@@ -11,4 +11,4 @@ data2.txt		3	INSTANCE_NUM
 data2.txt		4	TRIAL_VISIT_TIME
 data2.txt		5	TRIAL_VISIT_UNIT
 data2.txt		6	TRIAL_VISIT_LABEL
-data2.txt	Vital Signs	7	Heart Rate			:VSIGN:HR
+data2.txt	Vital	7	Flag			:VSIGN:FLAG

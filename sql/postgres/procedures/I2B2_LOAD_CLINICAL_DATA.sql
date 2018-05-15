@@ -42,6 +42,7 @@ Declare
 	topNode			varchar(2000);
 	topLevel		numeric(10,0);
 	root_node		varchar(2000);
+	root_node_cross		varchar(2000);
 	root_level		integer;
 	study_name		varchar(2000);
 	TrialID			varchar(100);
@@ -75,6 +76,12 @@ Declare
 			trial_visit_time,
 			visit_name
 		FROM wrk_clinical_data;
+
+	crossPaths CURSOR IS
+		SELECT replace(x.leaf_node, topNode, '\') as leaf_node
+		FROM (
+			select DISTINCT leaf_node FROM
+		wt_trial_nodes WHERE concept_cd LIKE ':%') x;
 
 	--	cursor to define the path for delete_one_node  this will delete any nodes that are hidden after i2b2_create_concept_counts
 
@@ -1134,15 +1141,21 @@ BEGIN
 			, table_name
 		)
 			SELECT
-				CASE WHEN x.concept_cd IS NOT NULL
-					THEN x.concept_cd
-				ELSE trim(to_char(nextval('i2b2demodata.concept_id'),'999999999999999999')) END,
-				x.leaf_node,
-				x.node_name,
+				CASE WHEN r.concept_cd IS NOT NULL
+					THEN regexp_replace(r.concept_cd, '^(:)', '')
+				ELSE trim(to_char(nextval('i2b2demodata.concept_id'), '999999999999999999')) END,
+				CASE WHEN r.concept_cd LIKE ':%'
+					THEN
+						replace(r.leaf_node, topNode, '\')
+				ELSE
+					r.leaf_node END,
+				r.node_name,
 				current_timestamp,
 				current_timestamp,
 				current_timestamp,
-				TrialId,
+				CASE WHEN r.concept_cd LIKE ':%'
+					THEN ''
+				ELSE TrialId END,
 				'CONCEPT_DIMENSION'
 			FROM (SELECT DISTINCT
 							c.leaf_node,
@@ -1152,8 +1165,10 @@ BEGIN
 						WHERE NOT exists
 						(SELECT 1
 						 FROM i2b2demodata.concept_dimension x
-						 WHERE c.leaf_node = x.concept_path)
-					 ) x;
+						 WHERE c.leaf_node = x.concept_path
+							or (c.concept_cd like ':%' and replace(c.leaf_node, topNode,'\') = x.concept_path)
+						)
+					 ) r;
 		GET DIAGNOSTICS rowCt := ROW_COUNT;
 		EXCEPTION
 		WHEN OTHERS
@@ -1216,8 +1231,8 @@ BEGIN
 	,m_applied_path
 	,c_metadataxml
 	)
-    select distinct (length(c.concept_path) - coalesce(length(replace(c.concept_path, '\','')),0)) / length('\') - 2 + root_level
-		  ,c.concept_path
+    select distinct (length(t.leaf_node) - coalesce(length(replace(t.leaf_node, '\','')),0)) / length('\') - 2 + root_level
+		  ,t.leaf_node
 		  ,c.name_char
 		  ,'LA'
 		  ,'N'
@@ -1235,13 +1250,14 @@ BEGIN
 		  , 'T' --t.data_type
 		  ,'trial:' || TrialID
 		  ,'@'
-		  ,i2b2_build_metadata_xml(c.name_char, t.data_type, t.valuetype_cd, c.sourcesystem_cd, c.concept_path)
+		  ,i2b2_build_metadata_xml(c.name_char, t.data_type, t.valuetype_cd, c.sourcesystem_cd, t.leaf_node)
     from i2b2demodata.concept_dimension c
 		,wt_trial_nodes t
-    where c.concept_path = t.leaf_node
+    where (c.concept_path = t.leaf_node
+			or (t.concept_cd like ':%' and c.concept_path = replace(t.leaf_node, topNode, '\')))
 	  and not exists
 		 (select 1 from i2b2metadata.i2b2 x
-		  where c.concept_path = x.c_fullname);
+		  where t.leaf_node = x.c_fullname);
 	get diagnostics rowCt := ROW_COUNT;
 	exception
 	when others then
@@ -1255,6 +1271,105 @@ BEGIN
 	end;
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Inserted leaf nodes into I2B2METADATA i2b2',rowCt,stepCt,'Done') into rtnCd;
+
+	-- Additional insert cross nodes
+	BEGIN
+		INSERT INTO i2b2metadata.i2b2
+		(c_hlevel
+			, c_fullname
+			, c_name
+			, c_visualattributes
+			, c_synonym_cd
+			, c_facttablecolumn
+			, c_tablename
+			, c_columnname
+			, c_dimcode
+			, c_tooltip
+			, update_date
+			, download_date
+			, import_date
+			, sourcesystem_cd
+			, c_basecode
+			, c_operator
+			, c_columndatatype
+			, c_comment
+			, m_applied_path
+			, c_metadataxml
+		)
+			SELECT DISTINCT
+				(length(r.concept_path) - coalesce(length(replace(r.concept_path, '\', '')), 0)) / length('\') - 2,
+				r.concept_path,
+				r.name_char,
+				'LA',
+				'N',
+				'CONCEPT_CD',
+				'CONCEPT_DIMENSION',
+				'CONCEPT_PATH',
+				r.concept_path,
+				r.concept_path,
+				current_timestamp,
+				current_timestamp,
+				current_timestamp,
+				'',
+				r.concept_cd,
+				'LIKE'  --'T'
+				,
+				'T' --t.data_type
+				,
+				'trial:' || TrialID,
+				'@',
+				xml
+			FROM (
+						 SELECT
+							 c.concept_path,
+							 c.name_char,
+							 c.concept_cd,
+							 i2b2_build_metadata_xml(c.name_char, t.data_type, t.valuetype_cd, c.sourcesystem_cd,
+																			 c.concept_path)                                                              AS xml
+						 FROM i2b2demodata.concept_dimension c
+							 , wt_trial_nodes t
+						 WHERE
+									 t.concept_cd LIKE ':%' and c.concept_path = replace(t.leaf_node, topNode, '\')
+									 AND NOT exists
+						 (SELECT 1
+							FROM i2b2metadata.i2b2 x
+							WHERE c.concept_path = x.c_fullname)) r;
+		GET DIAGNOSTICS rowCt := ROW_COUNT;
+		EXCEPTION
+		WHEN OTHERS
+			THEN
+				errorNumber := SQLSTATE;
+				errorMessage := SQLERRM;
+				--Handle errors.
+				SELECT cz_error_handler(jobID, procedureName, errorNumber, errorMessage)
+				INTO rtnCd;
+				--End Proc
+				SELECT cz_end_audit(jobID, 'FAIL')
+				INTO rtnCd;
+				RETURN -16;
+	END;
+	stepCt := stepCt + 1;
+	select cz_write_audit(jobId,databaseName,procedureName,'Inserted cross leaf nodes into I2B2METADATA i2b2',rowCt,stepCt,'Done') into rtnCd;
+
+	IF (rowCt > 0)
+	THEN
+		FOR path IN crossPaths LOOP
+			root_node_cross := regexp_replace(path.leaf_node, '\\([\w ]*)\\.*', '\1');
+
+			select count(*) into pExists
+			from i2b2metadata.table_access
+			where c_name = root_node_cross;
+
+			select count(*) into pCount
+			from i2b2metadata.i2b2
+			where c_name = root_node_cross;
+
+			if pExists = 0 or pCount = 0 then
+				select i2b2_add_root_node(root_node_cross, jobId) into rtnCd;
+			end if;
+		END LOOP;
+	END IF;
+
 
 	--New place form fill_in_tree
 	select i2b2_fill_in_tree(TrialId, topNode, jobID) into rtnCd;

@@ -56,6 +56,7 @@ AS
   topNode		VARCHAR2(2000);
   topLevel		number(10,0);
   root_node		varchar2(2000);
+	root_node_cross		varchar2(2000);
   root_level	int;
   study_name	varchar2(2000);
   TrialID		varchar2(100);
@@ -128,6 +129,14 @@ AS
 		  where sm.trial_name = TrialId
 		    and sm.concept_code = m.c_basecode
 			and m.c_visualattributes like 'L%' AND m.c_fullname = l.c_fullname);
+
+	cursor crossPaths is
+		SELECT replace(x.leaf_node, topNode, '\') as leaf_node
+		FROM (
+					 select DISTINCT leaf_node
+					 FROM
+						 wt_trial_nodes
+					 WHERE concept_cd LIKE ':%') x;
 BEGIN
 	EXECUTE IMMEDIATE 'alter session set NLS_NUMERIC_CHARACTERS=".,"';
 
@@ -804,8 +813,8 @@ BEGIN
 			concept_cd
 		FROM wrk_clinical_data a;
 	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Create leaf nodes for trial',SQL%ROWCOUNT,stepCt,'Done');
-	commit;
+	cz_write_audit(jobId, databaseName, procedureName, 'Create leaf nodes for trial', SQL%ROWCOUNT, stepCt, 'Done');
+	COMMIT;
 
 	begin
 		update wt_trial_nodes
@@ -1036,15 +1045,21 @@ BEGIN
 	)
 		SELECT
 			/*+ parallel(8) */
-			CASE WHEN x.concept_cd IS NOT NULL
-				THEN x.concept_cd
+			CASE WHEN r.concept_cd IS NOT NULL
+				THEN regexp_replace(r.concept_cd, '^(:)', '')
 			ELSE trim(to_char(i2b2demodata.concept_id.nextval, '999999999999999999')) END,
-			x.leaf_node,
-			x.node_name,
+			CASE WHEN r.concept_cd LIKE ':%'
+				THEN
+					replace(r.leaf_node, topNode, '\')
+			ELSE
+				r.leaf_node END,
+			r.node_name,
 			sysdate,
 			sysdate,
 			sysdate,
-			TrialId,
+			CASE WHEN r.concept_cd LIKE ':%'
+				THEN ''
+			ELSE TrialId END,
 			'CONCEPT_DIMENSION'
 		FROM (SELECT DISTINCT
 						c.leaf_node,
@@ -1054,8 +1069,10 @@ BEGIN
 					WHERE NOT exists
 					(SELECT 1
 					 FROM concept_dimension x
-					 WHERE c.leaf_node = x.concept_path)
-				 ) x;
+					 WHERE c.leaf_node = x.concept_path
+								 or (c.concept_cd like ':%' and replace(c.leaf_node, topNode,'\') = x.concept_path)
+					)
+				 ) r;
 	
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Inserted new leaf nodes into I2B2DEMODATA concept_dimension',SQL%ROWCOUNT,stepCt,'Done');
@@ -1064,11 +1081,12 @@ BEGIN
 	--	update i2b2 to pick up change in name, data_type for leaf nodes
 	merge /*+ parallel(i2b2, 8) */ into i2b2 b
 	using (
-		select distinct c.concept_path, c.name_char, c.sourcesystem_cd, c.concept_cd, t.data_type, t.valuetype_cd
-		from concept_dimension c
-			,wt_trial_nodes t
-		where c.concept_path = t.leaf_node
-	) c on (b.c_fullname = c.concept_path)
+					select distinct c.concept_path, c.name_char, c.sourcesystem_cd, c.concept_cd, t.data_type, t.valuetype_cd, t.leaf_node
+					from concept_dimension c
+						,wt_trial_nodes t
+					where (c.concept_path = t.leaf_node
+								 or (t.concept_cd like ':%' and c.concept_path = replace(t.leaf_node, topNode, '\')))
+				) c on (b.c_fullname = c.concept_path)
 	when matched then
 		update set
 			c_name = c.name_char,
@@ -1099,8 +1117,8 @@ BEGIN
 			,c_metadataxml
 		)
 		values (
-			(length(c.concept_path) - nvl(length(replace(c.concept_path, '\')),0)) / length('\') - 2 + root_level
-			,c.concept_path
+			(length(c.leaf_node) - nvl(length(replace(c.leaf_node, '\')),0)) / length('\') - 2 + root_level
+			,c.leaf_node
 			,c.name_char
 			,'LA'
 			,'N'
@@ -1119,7 +1137,77 @@ BEGIN
 			,'trial:' || TrialID
 			,i2b2_id_seq.nextval
 			,'@'
-			,I2B2_BUILD_METADATA_XML(c.name_char, c.data_type, c.valuetype_cd, c.sourcesystem_cd, c.concept_path)
+			,I2B2_BUILD_METADATA_XML(c.name_char, c.data_type, c.valuetype_cd, c.sourcesystem_cd, c.leaf_node)
+		);
+
+	-- Additional insert cross nodes
+	merge /*+ parallel(i2b2, 8) */ into i2b2 b
+	using (
+					SELECT
+						c.concept_path,
+						c.name_char,
+						c.concept_cd,
+						c.sourcesystem_cd,
+						t.valuetype_cd,
+						t.data_type,
+						i2b2_build_metadata_xml(c.name_char, t.data_type, t.valuetype_cd, c.sourcesystem_cd,
+																		c.concept_path)                                                              AS xml
+					FROM i2b2demodata.concept_dimension c
+						, wt_trial_nodes t
+					WHERE
+						t.concept_cd LIKE ':%' and c.concept_path = replace(t.leaf_node, topNode, '\')
+				) r on (b.c_fullname = r.concept_path)
+	when matched then
+		update set
+			c_name = r.name_char,
+			c_columndatatype = 'T',
+			c_metadataxml = I2B2_BUILD_METADATA_XML(r.name_char, r.data_type, r.valuetype_cd, r.sourcesystem_cd, r.concept_path)
+	when not matched then
+		insert (
+			c_hlevel
+			,c_fullname
+			,c_name
+			,c_visualattributes
+			,c_synonym_cd
+			,c_facttablecolumn
+			,c_tablename
+			,c_columnname
+			,c_dimcode
+			,c_tooltip
+			,update_date
+			,download_date
+			,import_date
+			,sourcesystem_cd
+			,c_basecode
+			,c_operator
+			,c_columndatatype
+			,c_comment
+			,i2b2_id
+			,m_applied_path
+			,c_metadataxml
+		)
+		values (
+			(length(r.concept_path) - nvl(length(replace(r.concept_path, '\')),0)) / length('\') - 2 + root_level
+			,r.concept_path
+			,r.name_char
+			,'LA'
+			,'N'
+			,'CONCEPT_CD'
+			,'CONCEPT_DIMENSION'
+			,'CONCEPT_PATH'
+			,r.concept_path
+			,r.concept_path
+			,sysdate
+			,sysdate
+			,sysdate
+			,''
+			,r.concept_cd
+			,'LIKE'
+			,'T'		-- if i2b2 gets fixed to respect c_columndatatype then change to t.data_type
+			,'trial:' || TrialID
+			,i2b2_id_seq.nextval
+			,'@'
+			,r.xml
 		);
 
 	stepCt := stepCt + 1;

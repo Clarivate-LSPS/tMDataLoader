@@ -34,8 +34,8 @@ public trait ConfigAwareTestCase {
         if (databaseType == DatabaseType.Postgres) {
             dir = new File(dir, 'procedures')
         } else {
-		dir = new File(dir, 'procedures')
-	}
+            dir = new File(dir, 'procedures')
+        }
         return dir;
     }
 

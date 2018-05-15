@@ -27,6 +27,13 @@ class HasFactAttribute extends BaseMatcher<Sql> {
         this.rowMatcher = new RowMatcher(valueAttrs)
     }
 
+    HasFactAttribute(String sourcesystemCd, String conceptPath, Map<String, Object> valueAttrs) {
+        this.conceptPath = conceptPath
+        this.sourcesystemCd = sourcesystemCd
+        this.instanceNum = 1 // Set instance_num as default
+        this.rowMatcher = new RowMatcher(valueAttrs)
+    }
+
     @Override
     boolean matches(Object item) {
         def sql = item as Sql
@@ -36,7 +43,7 @@ class HasFactAttribute extends BaseMatcher<Sql> {
                     select patient_num from i2b2demodata.patient_dimension where sourcesystem_cd = ?)
             and
             concept_cd in (
-                    select concept_cd from i2b2demodata.concept_dimension where concept_path = ?
+                    select c_basecode from i2b2metadata.i2b2 where c_fullname = ?
             )
             and instance_num = ?
         """, [sourcesystemCd, conceptPath, instanceNum])

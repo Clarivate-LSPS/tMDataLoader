@@ -9,16 +9,16 @@ SET LINESIZE 180
 SELECT '20140724000004000_SNP_CREATE_TMP_TABLES.sql' FROM DUAL
 
 DECLARE
-rows int;
-drop_sql VARCHAR2(1000);
+	row_s int;
+	drop_sql VARCHAR2(1000);
 BEGIN
 	SELECT COUNT(*)
-	INTO rows
+	INTO row_s
 	FROM dba_tables
 	WHERE owner='TM_DATALOADER'
 	 and table_name = upper('lt_snp_calls_by_gsm');
  
- 	IF rows > 0
+ 	IF row_s > 0
  	THEN
 	 	drop_sql := 'DROP TABLE tm_dataloader.lt_snp_calls_by_gsm';
 		dbms_output.put_line(drop_sql);
@@ -37,16 +37,16 @@ CREATE TABLE tm_dataloader.lt_snp_calls_by_gsm
 ) NOLOGGING;
 
 DECLARE
-rows int;
+	row_s int;
 drop_sql VARCHAR2(1000);
 BEGIN
 	SELECT COUNT(*)
-	INTO rows
+	INTO row_s
 	FROM dba_tables
 	WHERE owner='TM_DATALOADER'
 	 and table_name = upper('lt_snp_copy_number');
  
- 	IF rows > 0
+ 	IF row_s > 0
  	THEN
 	 	drop_sql := 'DROP TABLE tm_dataloader.lt_snp_copy_number';
 		dbms_output.put_line(drop_sql);
@@ -67,16 +67,16 @@ CREATE TABLE tm_dataloader.lt_snp_copy_number
 ) NOLOGGING;
 
 DECLARE
-rows int;
+	row_s int;
 drop_sql VARCHAR2(1000);
 BEGIN
 	SELECT COUNT(*)
-	INTO rows
+	INTO row_s
 	FROM dba_tables
 	WHERE owner='TM_DATALOADER'
 	 and table_name = upper('lt_snp_gene_map');
  
- 	IF rows > 0
+ 	IF row_s > 0
  	THEN
 	 	drop_sql := 'DROP TABLE tm_dataloader.lt_snp_gene_map';
 		dbms_output.put_line(drop_sql);
