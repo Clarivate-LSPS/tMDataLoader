@@ -108,3 +108,10 @@ task updateSqlProcedures(type: JavaExec) {
 }
 
 apply from: 'tasks.gradle'
+
+test {
+    testLogging {
+        events "passed", "skipped", "failed"
+        exceptionFormat "full"
+    }
+}
