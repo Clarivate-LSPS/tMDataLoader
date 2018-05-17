@@ -18,7 +18,7 @@ services:
 
 before_install:
   - docker pull baroleg/trs
-  - docker run -d -p 5433:5432 --name transmart-postgres thomsonreuters/transmart-postgres
+  - docker run -d -p 5433:5432 --name transmart-postgres baroleg/trs
   - while ! PGPASSWORD=postgres psql --host 127.0.0.1 -p 5433 -U postgres -c "SELECT 1;"; do sleep 5; done
 
 before_script:
