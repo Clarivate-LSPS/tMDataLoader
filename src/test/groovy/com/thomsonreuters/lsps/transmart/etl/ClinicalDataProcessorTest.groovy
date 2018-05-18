@@ -1651,4 +1651,133 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
                 'concept_cd': 'DM:GENDER:UNKNOWN'
         ]))
     }
+
+    def 'Should check throw exception if time data is not valid: time is set, unit isn\'t'() {
+        given:
+        Study.deleteById(config, 'GSE0WTDU1')
+        def clinicalData = ClinicalData.build('GSE0WTDU1', 'Test Study With Wrong Setting Time Data') {
+            mappingFile {
+                forDataFile('TEST.txt') {
+                    map('Demography', 3, 'Demography')
+                    map('Demography', 4, 'TRIAL_VISIT_TIME')
+                    map('Demography', 5, 'TRIAL_VISIT_UNIT')
+                }
+            }
+            dataFile('TEST.txt', ['Demography', 'Time', 'Unit']) {
+                forSubject('SUBJ1') {
+                    row 'Male', '5', 'Days'
+                }
+                forSubject('SUBJ2') {
+                    row 'Female', '', 'Days'
+                }
+            }
+        }
+
+        when:
+        clinicalData.load(config)
+
+        then:
+        def ex = thrown(DataProcessingException)
+        ex.message == "Unit value is specified, but time value isn't. Please, check line 3 in TEST.txt file."
+
+    }
+
+    def 'Should check throw exception if time data is not valid: time isn\'t set, unit is set'() {
+        given:
+        Study.deleteById(config, 'GSE0WTDU2')
+        def clinicalData = ClinicalData.build('GSE0WTDU2', 'Test Study With Wrong Setting Time Data') {
+            mappingFile {
+                forDataFile('TEST.txt') {
+                    map('Demography', 3, 'Demography')
+                    map('Demography', 4, 'TRIAL_VISIT_TIME')
+                    map('Demography', 5, 'TRIAL_VISIT_UNIT')
+                }
+            }
+            dataFile('TEST.txt', ['Demography', 'Time', 'Unit']) {
+                forSubject('SUBJ1') {
+                    row 'Male', '5', 'Days'
+                }
+                forSubject('SUBJ2') {
+                    row 'Female', '3', ''
+                }
+            }
+        }
+
+        when:
+        clinicalData.load(config)
+
+        then:
+        def ex = thrown(DataProcessingException)
+        ex.message == "Time value is specified, but unit value isn't. Please, check line 3 in TEST.txt file."
+    }
+
+    def 'Should check throw exception if time data is not valid: same label diff time unit pair'() {
+        given:
+        Study.deleteById(config, 'GSE0WTDU3')
+        def clinicalData = ClinicalData.build('GSE0WTDU3', 'Test Study With Wrong Setting Time Data') {
+            mappingFile {
+                forDataFile('TEST.txt') {
+                    mapSpecial('INSTANCE_NUM', 3)
+                    mapSpecial('TRIAL_VISIT_TIME', 4)
+                    mapSpecial('TRIAL_VISIT_UNIT', 5)
+                    mapSpecial('TRIAL_VISIT_LABEL', 6)
+                    map('Demography', 7, 'Demography')
+                }
+            }
+            dataFile('TEST.txt', ['instance_num', 'Time', 'Unit', 'label', 'Demography']) {
+                forSubject('SUBJ1') {
+                    row '1', '0', 'Days', 'Baseline', 'Male'
+                    row '2', '1', 'Days', '1 Day', 'Male'
+                    row '3', '7', 'Days', '1 Week', 'Male'
+                }
+                forSubject('SUBJ2') {
+                    row '1', '0', 'Days', 'Baseline', 'Female'
+                    row '2', '1', 'Days', '1 Day', 'Female'
+                    row '3', '8', 'Days', '1 Week', 'Female'
+                }
+            }
+        }
+
+        when:
+        clinicalData.load(config)
+
+        then:
+        def ex = thrown(DataProcessingException)
+        ex.message == 'There was a previous row with the same LABEL (1 Week) but different (TIME, UNIT) [7, Days] not equal [8, Days]. Please, check line 7 in TEST.txt file.'
+    }
+
+    def 'Should check throw exception if time data is not valid: same time unit pair, but different label '() {
+        given:
+        Study.deleteById(config, 'GSE0WTDU3')
+        def clinicalData = ClinicalData.build('GSE0WTDU3', 'Test Study With Wrong Setting Time Data') {
+            mappingFile {
+                forDataFile('TEST.txt') {
+                    mapSpecial('INSTANCE_NUM', 3)
+                    mapSpecial('TRIAL_VISIT_TIME', 4)
+                    mapSpecial('TRIAL_VISIT_UNIT', 5)
+                    mapSpecial('TRIAL_VISIT_LABEL', 6)
+                    map('Demography', 7, 'Demography')
+                }
+            }
+            dataFile('TEST.txt', ['instance_num', 'Time', 'Unit', 'label', 'Demography']) {
+                forSubject('SUBJ1') {
+                    row '1', '0', 'Days', 'Baseline', 'Male'
+                    row '2', '1', 'Days', '1 Day', 'Male'
+                    row '3', '7', 'Days', '1 Week', 'Male'
+                }
+                forSubject('SUBJ2') {
+                    row '1', '0', 'Days', 'Baseline', 'Female'
+                    row '2', '1', 'Days', '1 Day', 'Female'
+                    row '3', '7', 'Days', '7 days', 'Female'
+                }
+            }
+        }
+
+        when:
+        clinicalData.load(config)
+
+        then:
+        def ex = thrown(DataProcessingException)
+        ex.message == 'There was a previous row with the same (TIME, UNIT) ([7, Days]) but different LABEL (1 Week) not equal (7 days). Please, check line 7 in TEST.txt file.'
+    }
 }

@@ -44,6 +44,9 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
     StatisticCollector statistic = new StatisticCollector()
     def usedStudyId = ''
 
+    Map<String, Object> previousVisitValuesByLabel = [:]
+    Map<Object, String> previousVisitValuesByPair = [:]
+
     ClinicalDataProcessor(Object conf) {
         super(conf)
     }
@@ -81,6 +84,32 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
                         throw new DataProcessingException("STUDY_ID differs from previous in ${lineNumber} line in ${csvFile.file.fileName} file.")
                     }
 
+                    def postfix = "Please, check line ${lineNumber} in ${csvFile.file.fileName} file."
+                    if (cols[fMappings.TRIAL_VISIT_TIME].empty && !cols[fMappings.TRIAL_VISIT_UNIT].empty) {
+                        throw new DataProcessingException("Unit value is specified, but time value isn't. ${postfix}")
+                    }
+                    if (!cols[fMappings.TRIAL_VISIT_TIME].empty && cols[fMappings.TRIAL_VISIT_UNIT].empty) {
+                        throw new DataProcessingException("Time value is specified, but unit value isn't. ${postfix}")
+                    }
+
+                    if (!cols[fMappings.TRIAL_VISIT_TIME].empty && !cols[fMappings.TRIAL_VISIT_UNIT].empty && !cols[fMappings.TRIAL_VISIT_LABEL].empty) {
+                        def pair = [cols[fMappings.TRIAL_VISIT_TIME], cols[fMappings.TRIAL_VISIT_UNIT]]
+                        if (previousVisitValuesByLabel.containsKey(cols[fMappings.TRIAL_VISIT_LABEL])) {
+                            if (previousVisitValuesByLabel.get(cols[fMappings.TRIAL_VISIT_LABEL]) != pair)
+                                throw new DataProcessingException("There was a previous row with the same LABEL " +
+                                        "(${cols[fMappings.TRIAL_VISIT_LABEL]}) but different (TIME, UNIT) " +
+                                        "${previousVisitValuesByLabel.get(cols[fMappings.TRIAL_VISIT_LABEL])} not equal ${pair}. ${postfix}")
+                        } else {
+                            if (previousVisitValuesByPair.containsKey(pair)) {
+                                throw new DataProcessingException("There was a previous row with the same (TIME, UNIT) " +
+                                        "(${pair}) but different LABEL " +
+                                        "(${previousVisitValuesByPair.get(pair)}) not equal (${cols[fMappings.TRIAL_VISIT_LABEL]}). ${postfix}")
+                            }
+                            previousVisitValuesByLabel.put(cols[fMappings.TRIAL_VISIT_LABEL], pair)
+                            previousVisitValuesByPair.put(pair, cols[fMappings.TRIAL_VISIT_LABEL])
+                        }
+                    }
+
                     Map<String, String> output = [
                             study_id         : studyId,
                             site_id          : cols[fMappings.SITE_ID],
@@ -96,7 +125,7 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
                             end_date         : cols[fMappings.END_DATE] ? ETLHelper.toTimestampString(cols[fMappings.END_DATE]) : null,
                             start_date       : cols[fMappings.START_DATE] ? ETLHelper.toTimestampString(cols[fMappings.START_DATE]) : null,
                             instance_num     : cols[fMappings.INSTANCE_NUM],
-                            trial_visit_label: cols[fMappings.TRIAL_VISIT_LABEL]?:null,
+                            trial_visit_label: cols[fMappings.TRIAL_VISIT_LABEL] ?: null,
                             trial_visit_time : cols[fMappings.TRIAL_VISIT_TIME],
                             trial_visit_unit : cols[fMappings.TRIAL_VISIT_UNIT],
                             trial_visit_label: cols[fMappings.TRIAL_VISIT_LABEL] ?: null,
