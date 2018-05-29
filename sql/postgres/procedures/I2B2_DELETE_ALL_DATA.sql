@@ -225,6 +225,18 @@ BEGIN
     stepCt := stepCt + 1;
     get diagnostics rowCt := ROW_COUNT;
     select cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from I2B2DEMODATA observation_fact',rowCt,stepCt,'Done') into rtnCd;
+
+    DELETE from i2b2demodata.observation_fact
+    where trial_visit_num in (
+      select trial_visit_num
+      from i2b2demodata.trial_visit_dimension
+      where study_num = (
+        select study_num
+        from i2b2demodata.study
+        where study_id = TrialID));
+    stepCt := stepCt + 1;
+    get diagnostics rowCt := ROW_COUNT;
+    select cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from I2B2DEMODATA observation_fact by trial_visit_num',rowCt,stepCt,'Done') into rtnCd;
 		--	delete patient data
 
 		delete from i2b2demodata.patient_dimension
