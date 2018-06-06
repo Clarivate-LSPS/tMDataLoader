@@ -1780,4 +1780,67 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         def ex = thrown(DataProcessingException)
         ex.message == 'There was a previous row with the same (TIME, UNIT) ([7, Days]) but different LABEL (1 Week) not equal (7 days). Please, check line 7 in TEST.txt file.'
     }
+
+    def 'Should check throw duplicate concept_cd but different path'() {
+        given:
+        def studyConceptId = "GSECONCEPTCD"
+        def studyConceptName = 'Test Data With Concept_cd'
+        Study.deleteById(config, studyConceptId)
+        Study.deleteById(config, studyConceptId + '2')
+        Study.deleteByPath(config, '\\Vital\\')
+        processor.process(
+                new File(studyDir(studyConceptName, studyConceptId), "ClinicalDataToUpload").toPath(),
+                [name: studyConceptName, node: "Test Studies\\${studyConceptName}".toString()])
+
+        when:
+        processor.usedStudyId = ''
+        def result = processor.process(
+                new File(studyDir(studyConceptName, studyConceptId+'2'), "ClinicalDataToUpload").toPath(),
+                [name: studyConceptName+ " Another", node: "Test Studies\\${studyConceptName} Another".toString()])
+
+        then:
+        assertThat("Should check throw duplicate concept_cd", result, equalTo(false))
+    }
+
+    def 'Should check throw duplicate path but different concept_cd'() {
+        given:
+        def studyConceptId = "GSECONCEPTCD"
+        def studyConceptName = 'Test Data With Concept_cd'
+        Study.deleteById(config, studyConceptId)
+        Study.deleteByPath(config, '\\Vital\\')
+        processor.process(
+                new File(studyDir(studyConceptName, studyConceptId), "ClinicalDataToUpload").toPath(),
+                [name: studyConceptName, node: "Test Studies\\${studyConceptName}".toString()])
+
+        when:
+        processor.usedStudyId = ''
+        def result = processor.process(
+                new File(studyDir(studyConceptName, studyConceptId, additionalStudiesDir), "ClinicalDataToUpload").toPath(),
+                [name: studyConceptName, node: "Test Studies\\${studyConceptName}".toString()])
+
+        then:
+        assertThat("Should check throw duplicate concept_cd", result, equalTo(false))
+    }
+
+    def 'Should check load cross study by exist another study path'(){
+        given:
+        def studyConceptId = "GSECONCEPTCD"
+        def studyConceptName = 'Test Data With ConceptCD'
+        def topFolder = 'Test Studies2'
+        Study.deleteById(config, studyConceptId)
+        Study.deleteById(config, 'GSECSSP')
+        Study.deleteByPath(config, '\\Vital\\')
+        processor.process(
+                new File(studyDir('Test Data With Concept_cd', studyConceptId), "ClinicalDataToUpload").toPath(),
+                [name: studyConceptName, node: "${topFolder}\\${studyConceptName}".toString()])
+
+        when:
+        processor.usedStudyId = ''
+        def result = processor.process(
+                new File(studyDir('Test Data With Cross Study By Same Path','GSECSSP',additionalStudiesDir), 'ClinicalDatatoUpload').toPath(),
+                [name:'Test Data With Cross Study By Same Path', node: "${topFolder}\\Test Data With Cross Study By Same Path".toString()]
+        )
+        then:
+        assertThat("Should check parent nodes", result, equalTo(false))
+    }
 }

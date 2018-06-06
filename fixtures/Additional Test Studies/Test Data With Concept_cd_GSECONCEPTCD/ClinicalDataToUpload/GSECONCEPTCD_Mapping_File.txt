@@ -1,0 +1,14 @@
+filename	category_cd	col_nbr	data_label	data_label_source 	variable_type	concept_cd
+data1.txt		1	STUDY_ID
+data1.txt		2	SUBJ_ID
+data1.txt	Demographics	3	Gender			DM:SEX
+data1.txt	Demographics	4	Age			DM:AGE
+data1.txt	Demographics	5	Race			DM:RACE
+data1.txt	Demographics	6	Node
+data2.txt		1	STUDY_ID
+data2.txt		2	SUBJ_ID
+data2.txt		3	INSTANCE_NUM
+data2.txt		4	TRIAL_VISIT_TIME
+data2.txt		5	TRIAL_VISIT_UNIT
+data2.txt		6	TRIAL_VISIT_LABEL
+data2.txt	Vital	7	Flag			:VSIGN:FLAG

@@ -75,6 +75,15 @@ AS
 	studyNum      NUMERIC(18, 0);
 	defaultTime  TIMESTAMP;
 
+	TYPE PATHS_HASH_T IS TABLE OF CHAR(1) INDEX BY VARCHAR2 (4000);
+	paths_hash          PATHS_HASH_T;
+	new_paths           STRING_TABLE_T;
+	escaped_path        VARCHAR2(4000);
+	node_path           VARCHAR2(4000);
+	existing_path       VARCHAR2(4000);
+	name_char           VARCHAR2(2000);
+	n_nodes             NUMBER;
+
 	--Audit variables
   newJobFlag INTEGER(1);
   databaseName VARCHAR(100);
@@ -83,6 +92,8 @@ AS
   stepCt number(18,0);
   
   duplicate_values	exception;
+	duplicate_conceptcd EXCEPTION ;
+	same_path_exp EXCEPTION ;
   invalid_topNode	exception;
   MULTIPLE_VISIT_NAMES	EXCEPTION;
   INDEX_NOT_EXISTS EXCEPTION;
@@ -832,8 +843,27 @@ BEGIN
 	set node_name=parse_nth_value(leaf_node,length(leaf_node)-length(replace(leaf_node,'\',null)),'\');
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Updated node name for leaf nodes',SQL%ROWCOUNT,stepCt,'Done');
-	commit;	
-	
+	commit;
+
+	-- Check concept_cd
+	SELECT count(*)
+	INTO pCount
+	FROM
+		tm_dataloader.wt_trial_nodes wtn,
+		i2b2metadata.i2b2 ib
+	WHERE
+		(wtn.leaf_node = ib.c_fullname
+		 AND regexp_replace(wtn.concept_cd, '^(:)', '') <> ib.c_basecode)
+		OR (
+			regexp_replace(wtn.concept_cd, '^(:)', '') = ib.c_basecode AND
+			wtn.leaf_node <> ib.c_fullname
+		);
+	stepCt := stepCt + 1;
+	cz_write_audit(jobId,databaseName,procedureName,'Count of duplicate concept_cd is ' || pCount,0,stepCt,'Done');
+
+	if pCount > 0 then
+		raise duplicate_conceptcd;
+	end if;
 	-- execute immediate('analyze table wt_trial_nodes compute statistics');
 	
 	--	insert subjects into patient_dimension if needed
@@ -1058,7 +1088,7 @@ BEGIN
 			sysdate,
 			sysdate,
 			CASE WHEN r.concept_cd LIKE ':%'
-				THEN ''
+				THEN NULL
 			ELSE TrialId END,
 			'CONCEPT_DIMENSION'
 		FROM (SELECT DISTINCT
@@ -1141,6 +1171,35 @@ BEGIN
 		);
 
 	-- Additional insert cross nodes
+	FOR cPath IN crossPaths LOOP
+		new_paths := string_table_t();
+		existing_path := cPath.leaf_node;
+
+		WHILE existing_path IS NOT NULL LOOP
+			node_path := existing_path;
+			LOOP
+				node_path := SUBSTR(node_path, 1, INSTR(node_path, '\', -2));
+
+				EXIT WHEN paths_hash.EXISTS(node_path) OR node_path IS NULL OR node_path = '\';
+				new_paths.EXTEND;
+				new_paths(new_paths.LAST) := node_path;
+				paths_hash(node_path) := NULL;
+
+				SELECT count(*)
+				INTO pExists
+				FROM i2b2demodata.concept_dimension
+				WHERE concept_path = node_path AND sourcesystem_cd IS NOT NULL;
+
+				IF pExists > 0
+				THEN
+					RAISE same_path_exp;
+				END IF;
+
+			END LOOP;
+			existing_path := paths_hash.NEXT(existing_path);
+		END LOOP;
+	END LOOP;
+
 	merge /*+ parallel(i2b2, 8) */ into i2b2 b
 	using (
 					SELECT
@@ -1200,7 +1259,7 @@ BEGIN
 			,sysdate
 			,sysdate
 			,sysdate
-			,''
+			,NULL
 			,r.concept_cd
 			,'LIKE'
 			,'T'		-- if i2b2 gets fixed to respect c_columndatatype then change to t.data_type
@@ -1697,7 +1756,19 @@ BEGIN
 		cz_write_audit(jobId,databaseName,procedureName,'Duplicate values found in key columns',0,stepCt,'Done');	
 		cz_error_handler (jobID, procedureName);
 		cz_end_audit (jobID, 'FAIL');
-		rtnCode := 16;		
+		rtnCode := 16;
+	when duplicate_conceptcd then
+		stepCt := stepCt + 1;
+		cz_write_audit(jobId,databaseName,procedureName,'Duplicate concept_cd found',0,stepCt,'Done');
+		cz_error_handler (jobID, procedureName);
+		cz_end_audit (jobID, 'FAIL');
+		rtnCode := 16;
+	when same_path_exp then
+		stepCt := stepCt + 1;
+		cz_write_audit(jobId,databaseName,procedureName,'Tried to insert cross node into exists study tree',0,stepCt,'Done');
+		cz_error_handler (jobID, procedureName);
+		cz_end_audit (jobID, 'FAIL');
+		rtnCode := 16;
 	when invalid_topNode then
 		stepCt := stepCt + 1;
 		cz_write_audit(jobId,databaseName,procedureName,'Path specified in top_node must contain at least 2 nodes',0,stepCt,'Done');	

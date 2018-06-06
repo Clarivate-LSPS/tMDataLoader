@@ -29,41 +29,43 @@ $BODY$
 ******************************************************************/
 Declare
 
-	--Audit variables
-	databaseName 	VARCHAR(100);
-	procedureName 	VARCHAR(100);
-	jobID 			numeric(18,0);
-	stepCt 			numeric(18,0);
-	rowCt			numeric(18,0);
-	errorNumber		character varying;
-	errorMessage	character varying;
-	rtnCd			integer;
+  --Audit variables
+  databaseName  VARCHAR(100);
+  procedureName VARCHAR(100);
+  jobID         NUMERIC(18, 0);
+  stepCt        NUMERIC(18, 0);
+  rowCt         NUMERIC(18, 0);
+  errorNumber   CHARACTER VARYING;
+  errorMessage  CHARACTER VARYING;
+  rtnCd         INTEGER;
 
-	topNode			varchar(2000);
-	topLevel		numeric(10,0);
-	root_node		varchar(2000);
-	root_node_cross		varchar(2000);
-	root_level		integer;
-	study_name		varchar(2000);
-	TrialID			varchar(100);
-	secureStudy		varchar(200);
-	etlDate			timestamp;
-	tPath			varchar(2000);
-	pCount			integer;
-	pExists			integer;
-	rtnCode			integer;
-	tText			varchar(2000);
-	recreateIndexes boolean;
-	recreateIndexesSql text;
-	leaf_fullname varchar(700);
-	updated_patient_nums integer[];
-	pathRegexp varchar(2000);
-	updatedPath varchar(2000);
-  cur_row RECORD;
-	pathCount integer;
-	trialVisitNum NUMERIC(18, 0);
-	studyNum      NUMERIC(18, 0);
-	defaultTime  TIMESTAMP ;
+  topNode       VARCHAR(2000);
+  topLevel      NUMERIC(10, 0);
+  root_node       VARCHAR(2000);
+  root_node_cross VARCHAR(2000);
+  root_level      INTEGER;
+  study_name      VARCHAR(2000);
+  TrialID         VARCHAR(100);
+  secureStudy     VARCHAR(200);
+  tPath           VARCHAR(2000);
+  pCount          INTEGER;
+  pExists         INTEGER;
+  tText                VARCHAR(2000);
+  recreateIndexes      BOOLEAN;
+  recreateIndexesSql   TEXT;
+  updated_patient_nums INTEGER [];
+  pathRegexp           VARCHAR(2000);
+  updatedPath          VARCHAR(2000);
+  cur_row              RECORD;
+  pathCount            INTEGER;
+  trialVisitNum NUMERIC(18, 0);
+  studyNum      NUMERIC(18, 0);
+  defaultTime   TIMESTAMP;
+
+  new_paths              varchar [];
+  array_len              numeric;
+  v_count numeric;
+  iPath   varchar;
 
 	addNodes CURSOR is
 	select DISTINCT leaf_node, node_name
@@ -124,7 +126,7 @@ BEGIN
 	stepCt := 0;
 	stepCt := stepCt + 1;
 	topNode := REGEXP_REPLACE('\' || top_node || '\','(\\){2,}', '\', 'g');
-	
+
 	tText := 'Start i2b2_load_clinical_data for ' || TrialId || ' topNode = ' || topNode;
 	select cz_write_audit(jobId,databaseName,procedureName,tText,0,stepCt,'Done') into rtnCd;
 
@@ -897,7 +899,39 @@ BEGIN
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Updated node name for leaf nodes',rowCt,stepCt,'Done') into rtnCd;
 
-	--	insert subjects into patient_dimension if needed
+  -- Check concept_cd
+  SELECT count(*)
+  INTO pCount
+  FROM
+    wt_trial_nodes wtn,
+    i2b2metadata.i2b2 ib
+  WHERE
+    (wtn.leaf_node = ib.c_fullname
+     AND regexp_replace(wtn.concept_cd, '^(:)', '') <> ib.c_basecode)
+    OR (
+      regexp_replace(wtn.concept_cd, '^(:)', '') = ib.c_basecode AND
+      wtn.leaf_node <> ib.c_fullname
+    );
+
+  stepCt := stepCt + 1;
+  SELECT
+    cz_write_audit(jobId, databaseName, procedureName, 'Count of duplicate concept_cd is ' || pCount, pCount, stepCt,
+                   'Done')
+  INTO rtnCd;
+
+  IF pCount > 0
+  THEN
+    stepCt := stepCt + 1;
+    SELECT cz_write_audit(jobId, databaseName, procedureName, 'Duplicate concept_cd found', 0, stepCt, 'Done')
+    INTO rtnCd;
+    SELECT cz_error_handler(jobID, procedureName, '-1', 'Application raised error')
+    INTO rtnCd;
+    SELECT cz_end_audit(jobID, 'FAIL')
+    INTO rtnCd;
+    RETURN -16;
+  END IF;
+
+  --	insert subjects into patient_dimension if needed
 
 	execute ('truncate table wt_subject_info');
 
@@ -1154,7 +1188,7 @@ BEGIN
 				current_timestamp,
 				current_timestamp,
 				CASE WHEN r.concept_cd LIKE ':%'
-					THEN ''
+					THEN NULL
 				ELSE TrialId END,
 				'CONCEPT_DIMENSION'
 			FROM (SELECT DISTINCT
@@ -1273,6 +1307,63 @@ BEGIN
 	select cz_write_audit(jobId,databaseName,procedureName,'Inserted leaf nodes into I2B2METADATA i2b2',rowCt,stepCt,'Done') into rtnCd;
 
 	-- Additional insert cross nodes
+  SELECT count(*)
+  INTO pCount
+  FROM wt_trial_nodes
+  WHERE concept_cd LIKE ':%';
+  IF (pCount > 0)
+  THEN
+    FOR path IN crossPaths LOOP
+      root_node_cross := regexp_replace(path.leaf_node, '\\([\w ]*)\\.*', '\1');
+
+      SELECT count(*)
+      INTO pExists
+      FROM i2b2metadata.table_access
+      WHERE c_name = root_node_cross;
+
+      SELECT count(*)
+      INTO pCount
+      FROM i2b2metadata.i2b2
+      WHERE c_name = root_node_cross;
+
+      IF pExists = 0 OR pCount = 0
+      THEN
+        SELECT i2b2_add_root_node(root_node_cross, jobId)
+        INTO rtnCd;
+      ELSE
+        -- check sourcesystem_cd if concept_dimension is has row with same path
+        -- if it is null then it's cross node
+        -- if it isn't then it's study tree, throw exception
+        new_paths := regexp_split_to_array(path.leaf_node, '\\');
+        array_len := array_length(new_paths, 1);
+        iPath := '';
+
+        FOR nPath IN 2..array_len - 1 LOOP
+          iPath := iPath || '\' || new_paths [nPath];
+
+          SELECT count(*)
+          INTO pExists
+          FROM i2b2demodata.concept_dimension
+          WHERE concept_path = iPath || '\' AND sourcesystem_cd IS NOT NULL;
+
+          IF pExists > 0
+          THEN
+            stepCt := stepCt + 1;
+            SELECT
+              cz_write_audit(jobId, databaseName, procedureName, 'Tried to insert cross node into exists study tree', 0,
+                             stepCt, 'Done')
+            INTO rtnCd;
+            SELECT cz_error_handler(jobID, procedureName, '-1', 'Application raised error')
+            INTO rtnCd;
+            SELECT cz_end_audit(jobID, 'FAIL')
+            INTO rtnCd;
+            RETURN -16;
+          END IF;
+        END LOOP;
+      END IF;
+    END LOOP;
+  END IF;
+
 	BEGIN
 		INSERT INTO i2b2metadata.i2b2
 		(c_hlevel
@@ -1310,15 +1401,13 @@ BEGIN
 				current_timestamp,
 				current_timestamp,
 				current_timestamp,
-				'',
+				null,
 				r.concept_cd,
-				'LIKE'  --'T'
-				,
-				'T' --t.data_type
-				,
+				'LIKE',  --'T'
+				'T', --t.data_type
 				'trial:' || TrialID,
 				'@',
-				xml
+				r.xml
 			FROM (
 						 SELECT
 							 c.concept_path,
@@ -1350,25 +1439,6 @@ BEGIN
 	END;
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Inserted cross leaf nodes into I2B2METADATA i2b2',rowCt,stepCt,'Done') into rtnCd;
-
-	IF (rowCt > 0)
-	THEN
-		FOR path IN crossPaths LOOP
-			root_node_cross := regexp_replace(path.leaf_node, '\\([\w ]*)\\.*', '\1');
-
-			select count(*) into pExists
-			from i2b2metadata.table_access
-			where c_name = root_node_cross;
-
-			select count(*) into pCount
-			from i2b2metadata.i2b2
-			where c_name = root_node_cross;
-
-			if pExists = 0 or pCount = 0 then
-				select i2b2_add_root_node(root_node_cross, jobId) into rtnCd;
-			end if;
-		END LOOP;
-	END IF;
 
 
 	--New place form fill_in_tree
