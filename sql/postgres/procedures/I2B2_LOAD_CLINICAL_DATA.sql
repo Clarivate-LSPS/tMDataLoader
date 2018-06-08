@@ -1330,37 +1330,39 @@ BEGIN
       THEN
         SELECT i2b2_add_root_node(root_node_cross, jobId)
         INTO rtnCd;
-      ELSE
-        -- check sourcesystem_cd if concept_dimension is has row with same path
-        -- if it is null then it's cross node
-        -- if it isn't then it's study tree, throw exception
-        new_paths := regexp_split_to_array(path.leaf_node, '\\');
-        array_len := array_length(new_paths, 1);
-        iPath := '';
-
-        FOR nPath IN 2..array_len - 1 LOOP
-          iPath := iPath || '\' || new_paths [nPath];
-
-          SELECT count(*)
-          INTO pExists
-          FROM i2b2demodata.concept_dimension
-          WHERE concept_path = iPath || '\' AND sourcesystem_cd IS NOT NULL;
-
-          IF pExists > 0
-          THEN
-            stepCt := stepCt + 1;
-            SELECT
-              cz_write_audit(jobId, databaseName, procedureName, 'Tried to insert cross node into exists study tree', 0,
-                             stepCt, 'Done')
-            INTO rtnCd;
-            SELECT cz_error_handler(jobID, procedureName, '-1', 'Application raised error')
-            INTO rtnCd;
-            SELECT cz_end_audit(jobID, 'FAIL')
-            INTO rtnCd;
-            RETURN -16;
-          END IF;
-        END LOOP;
       END IF;
+      -- check sourcesystem_cd if concept_dimension is has row with same path
+      -- if it is null then it's cross node
+      -- if it isn't then it's study tree, throw exception
+      new_paths := regexp_split_to_array(path.leaf_node, '\\');
+      array_len := array_length(new_paths, 1);
+      iPath := '';
+      -- -2 - exclude last element, because we will insert it before
+      FOR nPath IN 2..array_len - 2 LOOP
+        iPath := iPath || '\' || new_paths [nPath];
+
+        SELECT count(*)
+        INTO pExists
+        FROM i2b2demodata.concept_dimension
+        WHERE concept_path = iPath || '\' AND sourcesystem_cd IS NOT NULL;
+
+        IF pExists > 0
+        THEN
+          stepCt := stepCt + 1;
+          SELECT
+            cz_write_audit(jobId, databaseName, procedureName, 'Tried to insert cross node into exists study tree', 0,
+                           stepCt, 'Done')
+          INTO rtnCd;
+          SELECT cz_error_handler(jobID, procedureName, '-1', 'Application raised error')
+          INTO rtnCd;
+          SELECT cz_end_audit(jobID, 'FAIL')
+          INTO rtnCd;
+          RETURN -16;
+        ELSE
+          SELECT i2b2_add_node(NULL, iPath || '\', new_paths [nPath], jobID)
+          INTO rtnCd;
+        END IF;
+      END LOOP;
     END LOOP;
   END IF;
 

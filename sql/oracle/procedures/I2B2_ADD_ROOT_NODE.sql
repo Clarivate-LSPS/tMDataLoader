@@ -53,9 +53,9 @@ Begin
 		  ,null as c_totalnum
 		  ,null as c_basecode
 		  ,null as c_metadataxml
-		  ,'concept_cd' as c_facttablecolumn
-		  ,'concept_dimension' as c_dimtablename
-		  ,'concept_path' as c_columnname
+		  ,'CONCEPT_CD' as c_facttablecolumn
+		  ,'CONCEPT_DIMENSION' as c_dimtablename
+		  ,'CONCEPT_PATH' as c_columnname
 		  ,'T' as c_columndatatype
 		  ,'LIKE' as c_operator
 		  ,rootPath as c_dimcode

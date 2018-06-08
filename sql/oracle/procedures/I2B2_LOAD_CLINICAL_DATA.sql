@@ -1172,6 +1172,20 @@ BEGIN
 
 	-- Additional insert cross nodes
 	FOR cPath IN crossPaths LOOP
+    select parse_nth_value(cPath.leaf_node, 2, '\') into root_node_cross from dual;
+
+    select count(*) into pExists
+    from table_access
+    where c_name = root_node_cross;
+
+    select count(*) into pCount
+    from i2b2
+    where c_name = root_node_cross;
+
+    if pCount = 0 or pCount = pExists THEN
+      i2b2_add_root_node(root_node_cross, jobID);
+    END IF;
+
 		new_paths := string_table_t();
 		existing_path := cPath.leaf_node;
 
@@ -1185,6 +1199,9 @@ BEGIN
 				new_paths(new_paths.LAST) := node_path;
 				paths_hash(node_path) := NULL;
 
+        name_char := SUBSTR(node_path, INSTR(node_path, '\', -2) + 1);
+        name_char := SUBSTR(name_char, 1, LENGTH(name_char)-1);
+
 				SELECT count(*)
 				INTO pExists
 				FROM i2b2demodata.concept_dimension
@@ -1193,6 +1210,8 @@ BEGIN
 				IF pExists > 0
 				THEN
 					RAISE same_path_exp;
+        ELSE
+          i2b2_add_node(NULL, node_path, name_char, jobID);
 				END IF;
 
 			END LOOP;

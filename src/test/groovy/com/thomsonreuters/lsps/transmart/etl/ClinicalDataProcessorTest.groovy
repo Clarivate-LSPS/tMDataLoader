@@ -1613,15 +1613,16 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
                 new File(studyDir(studyConceptName, studyConceptId), "ClinicalDataToUpload").toPath(),
                 [name: studyConceptName, node: "Test Studies\\${studyConceptName}".toString()])
         then:
+        def crossNode = "Vital\\Node 1\\Node 2\\Flag\\"
         assertTrue(load)
 
-        assertThat(db, hasFactAttribute("${studyConceptId}:-61", "\\Test Studies\\${studyConceptName}\\Vital\\Flag\\",
+        assertThat(db, hasFactAttribute("${studyConceptId}:-61", "\\Test Studies\\${studyConceptName}\\${crossNode}",
                 [
                         'start_date': Timestamp.valueOf(java.time.LocalDateTime.parse("0001-01-01T00:00:00")),
                         'concept_cd': 'VSIGN:FLAG'
                 ]
         ))
-        assertThat(sql, hasNode("\\Vital\\Flag\\"))
+        assertThat(sql, hasNode("\\${crossNode}"))
 
         assertThat(db, hasFactAttribute("${studyConceptId}:-61", "\\Test Studies\\${studyConceptName}\\Demographics\\Age\\",
                 [
