@@ -849,21 +849,31 @@ BEGIN
 	SELECT count(*)
 	INTO pCount
 	FROM
-		tm_dataloader.wt_trial_nodes wtn,
-		i2b2metadata.i2b2 ib
+		wt_trial_nodes wtn,
+		i2b2demodata.concept_dimension cd
 	WHERE
-		(wtn.leaf_node = ib.c_fullname
-		 AND regexp_replace(wtn.concept_cd, '^(:)', '') <> ib.c_basecode)
-		OR (
-			regexp_replace(wtn.concept_cd, '^(:)', '') = ib.c_basecode AND
-			wtn.leaf_node <> ib.c_fullname
-		);
-	stepCt := stepCt + 1;
-	cz_write_audit(jobId,databaseName,procedureName,'Count of duplicate concept_cd is ' || pCount,0,stepCt,'Done');
+		REGEXP_LIKE(wtn.concept_cd, '(^:)')
+		AND TRIM(LEADING ':' FROM wtn.concept_cd) = cd.concept_cd
+		AND replace(wtn.leaf_node, topNode, '\') <> cd.concept_path;
 
 	if pCount > 0 then
 		raise duplicate_conceptcd;
 	end if;
+
+	SELECT count(*)
+	INTO pCount
+	FROM
+		wt_trial_nodes wtn,
+		i2b2demodata.concept_dimension cd
+	WHERE
+		NOT REGEXP_LIKE(wtn.concept_cd, '(^:)')
+		AND wtn.concept_cd = cd.concept_cd
+		AND wtn.leaf_node <> cd.concept_path;
+
+	IF pCount > 0
+	THEN
+		raise duplicate_conceptcd;
+	END IF;
 	-- execute immediate('analyze table wt_trial_nodes compute statistics');
 	
 	--	insert subjects into patient_dimension if needed
@@ -1076,7 +1086,7 @@ BEGIN
 		SELECT
 			/*+ parallel(8) */
 			CASE WHEN r.concept_cd IS NOT NULL
-				THEN regexp_replace(r.concept_cd, '^(:)', '')
+				THEN TRIM(LEADING ':' FROM r.concept_cd)
 			ELSE trim(to_char(i2b2demodata.concept_id.nextval, '999999999999999999')) END,
 			CASE WHEN r.concept_cd LIKE ':%'
 				THEN

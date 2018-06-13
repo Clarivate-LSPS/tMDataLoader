@@ -904,20 +904,37 @@ BEGIN
   INTO pCount
   FROM
     wt_trial_nodes wtn,
-    i2b2metadata.i2b2 ib
+    i2b2demodata.concept_dimension cd
   WHERE
-    (wtn.leaf_node = ib.c_fullname
-     AND regexp_replace(wtn.concept_cd, '^(:)', '') <> ib.c_basecode)
-    OR (
-      regexp_replace(wtn.concept_cd, '^(:)', '') = ib.c_basecode AND
-      wtn.leaf_node <> ib.c_fullname
-    );
+		wtn.concept_cd ~ '(^:)'
+		AND TRIM(LEADING ':' FROM wtn.concept_cd) = cd.concept_cd
+		AND replace(wtn.leaf_node, topNode, '\') <> cd.concept_path;
 
-  stepCt := stepCt + 1;
-  SELECT
-    cz_write_audit(jobId, databaseName, procedureName, 'Count of duplicate concept_cd is ' || pCount, pCount, stepCt,
-                   'Done')
-  INTO rtnCd;
+	stepCt := stepCt + 1;
+	select cz_write_audit(jobId,databaseName,procedureName,'topNode ' || topNode || ' pCount ' || pCount,rowCt,stepCt,'Done') into rtnCd;
+
+
+	IF pCount > 0
+  THEN
+    stepCt := stepCt + 1;
+    SELECT cz_write_audit(jobId, databaseName, procedureName, 'Duplicate concept_cd found in cross nodes', 0, stepCt, 'Done')
+    INTO rtnCd;
+    SELECT cz_error_handler(jobID, procedureName, '-1', 'Application raised error')
+    INTO rtnCd;
+    SELECT cz_end_audit(jobID, 'FAIL')
+    INTO rtnCd;
+    RETURN -16;
+  END IF;
+
+	SELECT count(*)
+  INTO pCount
+  FROM
+    wt_trial_nodes wtn,
+    i2b2demodata.concept_dimension cd
+  WHERE
+		wtn.concept_cd !~ '(^:)'
+		AND wtn.concept_cd = cd.concept_cd
+		AND wtn.leaf_node <> cd.concept_path;
 
   IF pCount > 0
   THEN
@@ -1176,7 +1193,7 @@ BEGIN
 		)
 			SELECT
 				CASE WHEN r.concept_cd IS NOT NULL
-					THEN regexp_replace(r.concept_cd, '^(:)', '')
+					THEN TRIM(LEADING ':' FROM r.concept_cd)
 				ELSE trim(to_char(nextval('i2b2demodata.concept_id'), '999999999999999999')) END,
 				CASE WHEN r.concept_cd LIKE ':%'
 					THEN
