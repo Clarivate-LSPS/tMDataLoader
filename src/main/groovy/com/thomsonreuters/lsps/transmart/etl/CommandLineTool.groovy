@@ -54,6 +54,8 @@ class CommandLineTool {
             _ longOpt: 'data-value-first', 'Put VISIT NAME after the data value (default behavior, use to override non-standard config)'
             _ longOpt: 'delete-study-by-id', args: 1, argName: 'delete_id', 'Delete study by id'
             _ longOpt: 'delete-study-by-path', args: 1, argName: 'delete_path', 'Delete study by path'
+            _ longOpt: 'delete-tree', args: 1, argName: 'delete_tree', 'Delete cross nodes tree from i2b2'
+            _ longOpt: 'delete-concepts', 'Delete cross nodes concepts'
             _ longOpt: 'force-start', 'Force TM Data Loader start (even if another instance is already running)'
             _ longOpt: 'allow-non-unique-columns', 'Allow non-unique column names in clinical data files'
             _ longOpt: 'use-first-gene-id', 'When probe maps to multiple Entrez Gene IDs use only the first one'
@@ -74,8 +76,8 @@ class CommandLineTool {
         }
 
         def locker = ProcessLocker.get('tMDataLoader')
-        if (opts?.'force-start'){
-            if (locker.isLocked()){
+        if (opts?.'force-start') {
+            if (locker.isLocked()) {
                 locker.getLockFile().delete()
             }
         }
@@ -175,7 +177,7 @@ class CommandLineTool {
             println '>>> FYI: using VISIT_NAME before DATA_VALUE as default behavior (per config or command line)'
         }
 
-        if (opts?.'always-set-visit-name'){
+        if (opts?.'always-set-visit-name') {
             config.alwaysSetVisitName = true
         }
 
@@ -197,13 +199,25 @@ class CommandLineTool {
             println ">>> DELETE DATA BY PATH ${opts?.'delete-study-by-path'}"
         }
 
+        if (opts.'delete-tree') {
+            config.isDeleteTree = true;
+            config.deleteTreePath = opts?.'delete-tree';
+            config.mdOperation = true;
+            def msg = ">> DELETE CROSS NODES FROM ${opts.'delete-tree'}"
+            if (opts.'delete-concepts') {
+                config.isDeleteConcepts = true
+                msg += " AND DELETE CONCEPTS"
+            }
+            println msg
+        }
+
         if (opts?.'move-study') {
             config.moveStudy = true;
             config.moveStudyOldPath = opts.ms[0]
             config.moveStudyNewPath = opts.ms[1];
             config.mdOperation = true;
-            def  msg = ">>> MOVE STUDY from ${opts.ms[0]} to ${opts.ms[1]}"
-            if (opts?.'keep-security'){
+            def msg = ">>> MOVE STUDY from ${opts.ms[0]} to ${opts.ms[1]}"
+            if (opts?.'keep-security') {
                 config.keepSecurity = true
                 msg += ' and preserve security configuration'
             }
@@ -230,7 +244,7 @@ class CommandLineTool {
             config.replaceStudy = true
         }
 
-        if (opts?.'copy-security-settings-from'){
+        if (opts?.'copy-security-settings-from') {
             config.securitySymbol = 'Y'
             config.copySecurityFrom = true
             config.csStudyId = opts?.'copy-security-settings-from'

@@ -72,4 +72,5 @@
 @@procedures/REPLACE_LAST_PATH_COMPONENT.sql
 @@procedures/GET_LAST_PATH_COMPONENT.sql
 @@procedures/COPY_SECURITY_FROM_OTHER_STUDY.sql
+@@procedures/I2B2_DELETE_CROSS_DATA.sql
 @show_invalid.sql -- compiles invalids, resolving them or highlighting problems

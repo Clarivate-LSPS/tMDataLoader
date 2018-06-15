@@ -35,7 +35,6 @@ AS
   stepCt number(18,0);
   more_trial exception;
   path_not_found exception;
-  arg_not_valid exception;
 	res	number;
   studyNum NUMBER(18,0);
 
@@ -60,7 +59,7 @@ BEGIN
   cz_write_audit(jobId, databaseName, procedureName,'Starting I2B2_DELETE_ALL_DATA', 0, stepCt, 'Done');
 
   if (path_string is null and trial_id is null) then
-    RAISE arg_not_valid;
+    RAISE path_not_found;
   end if;
 
   if (path_string is not null) then

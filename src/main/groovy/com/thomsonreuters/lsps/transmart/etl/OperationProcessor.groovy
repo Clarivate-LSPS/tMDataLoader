@@ -9,13 +9,14 @@ class OperationProcessor {
         config = conf
     }
 
-    boolean process(){
+    boolean process() {
         def res = false;
         //Delete data study
-        if ((config?.deleteStudyById)||(config?.deleteStudyByPath)){
+        if ((config?.deleteStudyById) || (config?.deleteStudyByPath)) {
             dataOperationProcessor = new DeleteDataProcessor(config)
-        }
-        else if (config?.moveStudy) {
+        } else if (config?.isDeleteTree) {
+            dataOperationProcessor = new DeleteCrossProcessor(config)
+        } else if (config?.moveStudy) {
             dataOperationProcessor = new MoveStudyProcessor(config)
         }
 
