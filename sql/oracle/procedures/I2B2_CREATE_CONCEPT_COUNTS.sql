@@ -144,13 +144,13 @@ END IF;
 		,I2B2_LOAD_TREE_FULL tree
 	where fa.c_fullname like path || '%'
 	  and substr(fa.c_visualattributes,2,1) != 'H'
-	  --and la.c_fullname like fa.c_fullname || '%'
 		and fa.rowid = tree.IDROOT 
 		and la.rowid = tree.IDCHILD
 	  and la.c_visualattributes like 'L%'
 	  and tpm.patient_num = p.patient_num
 	  and p.sourcesystem_cd not like '%:S:%'
-	  and la.c_basecode = tpm.concept_cd(+)
+    and la.c_basecode = tpm.concept_cd
+    and coalesce(la.sourcesystem_cd, tpm.sourcesystem_cd) = tpm.sourcesystem_cd
 	group by fa.c_fullname
 			,ltrim(SUBSTR(fa.c_fullname, 1,instr(fa.c_fullname, '\',-1,2)));
 			
