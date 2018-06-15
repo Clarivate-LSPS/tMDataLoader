@@ -83,6 +83,9 @@ AS
 	existing_path       VARCHAR2(4000);
 	name_char           VARCHAR2(2000);
 	n_nodes             NUMBER;
+	l_bad_concept_cd    VARCHAR2(4000);
+	l_bad_concept_cds   VARCHAR2(4000);
+	l_bad_concept_cds_max_len NUMBER;
 
 	--Audit variables
   newJobFlag INTEGER(1);
@@ -92,6 +95,7 @@ AS
   stepCt number(18,0);
   
   duplicate_values	exception;
+	forbidden_conceptcd EXCEPTION ;
 	duplicate_conceptcd EXCEPTION ;
 	same_path_exp EXCEPTION ;
   invalid_topNode	exception;
@@ -846,34 +850,88 @@ BEGIN
 	commit;
 
 	-- Check concept_cd
-	SELECT count(*)
-	INTO pCount
-	FROM
-		wt_trial_nodes wtn,
-		i2b2demodata.concept_dimension cd
-	WHERE
-		REGEXP_LIKE(wtn.concept_cd, '(^:)')
-		AND TRIM(LEADING ':' FROM wtn.concept_cd) = cd.concept_cd
-		AND replace(wtn.leaf_node, topNode, '\') <> cd.concept_path;
+	l_bad_concept_cds := '';
+	l_bad_concept_cds_max_len := 100;
 
-	if pCount > 0 then
-		raise duplicate_conceptcd;
-	end if;
+	FOR l_bad_concept_cd IN (
+	SELECT DISTINCT wtn.concept_cd as concept_cd
+	FROM wt_trial_nodes wtn
+	WHERE REGEXP_LIKE(wtn.concept_cd, '\A\d+\z')
+				OR wtn.concept_cd = 'SECURITY')
+	LOOP
+		IF length(l_bad_concept_cds) > 0
+		THEN
+			l_bad_concept_cds := l_bad_concept_cds || ',';
+		END IF;
+		l_bad_concept_cds := l_bad_concept_cds || l_bad_concept_cd.concept_cd;
+		IF length(l_bad_concept_cds) > l_bad_concept_cds_max_len
+		THEN
+			l_bad_concept_cds := l_bad_concept_cds || ',...';
+			EXIT;
+		END IF;
+	END LOOP;
 
-	SELECT count(*)
-	INTO pCount
-	FROM
-		wt_trial_nodes wtn,
-		i2b2demodata.concept_dimension cd
-	WHERE
-		NOT REGEXP_LIKE(wtn.concept_cd, '(^:)')
-		AND wtn.concept_cd = cd.concept_cd
-		AND wtn.leaf_node <> cd.concept_path;
+	stepCt := stepCt + 1;
+	cz_write_audit(jobId, databaseName, procedureName, 'Checked forbidden concepts', 0, stepCt, 'Done');
 
-	IF pCount > 0
+	IF length(l_bad_concept_cds) > 0
 	THEN
-		raise duplicate_conceptcd;
+		RAISE forbidden_conceptcd;
 	END IF;
+
+	FOR l_bad_concept_cd IN (
+	SELECT DISTINCT wtn.concept_cd as concept_cd
+	FROM wt_trial_nodes wtn
+		JOIN i2b2demodata.concept_dimension cd ON TRIM(LEADING ':' FROM wtn.concept_cd) = cd.concept_cd
+	WHERE substr(wtn.concept_cd, 1, 1) = ':'
+	AND REPLACE (wtn.leaf_node, topNode, '\') <> cd.concept_path)
+	LOOP
+		IF length(l_bad_concept_cds) > 0
+		THEN
+			l_bad_concept_cds := l_bad_concept_cds || ',';
+		END IF;
+		l_bad_concept_cds := l_bad_concept_cds || l_bad_concept_cd.concept_cd;
+		IF length(l_bad_concept_cds) > l_bad_concept_cds_max_len
+		THEN
+			l_bad_concept_cds := l_bad_concept_cds || ',...';
+			EXIT;
+		END IF;
+	END LOOP;
+
+	stepCt := stepCt + 1;
+	cz_write_audit(jobId, databaseName, procedureName, 'Checked existing paths for cross-study concepts', 0, stepCt,
+								 'Done');
+
+	IF length(l_bad_concept_cds) > 0
+	THEN
+		RAISE duplicate_conceptcd;
+	END IF;
+
+	FOR l_bad_concept_cd IN (
+	SELECT DISTINCT wtn.concept_cd as concept_cd
+	FROM wt_trial_nodes wtn
+		JOIN i2b2demodata.concept_dimension cd ON wtn.concept_cd = cd.concept_cd
+	WHERE substr(wtn.concept_cd, 1, 1) <> ':'
+				AND wtn.leaf_node <> cd.concept_path)
+	LOOP
+		IF length(l_bad_concept_cds) > 0
+		THEN
+			l_bad_concept_cds := l_bad_concept_cds || ',';
+		END IF;
+		l_bad_concept_cds := l_bad_concept_cds || l_bad_concept_cd.concept_cd;
+		IF length(l_bad_concept_cds) > l_bad_concept_cds_max_len
+		THEN
+			l_bad_concept_cds := l_bad_concept_cds || ',...';
+			EXIT;
+		END IF;
+	END LOOP;
+
+	IF length(l_bad_concept_cds) > 0
+	THEN
+		RAISE duplicate_conceptcd;
+	END IF;
+	-- /Check concept_cd
+
 	-- execute immediate('analyze table wt_trial_nodes compute statistics');
 	
 	--	insert subjects into patient_dimension if needed
@@ -1097,7 +1155,7 @@ BEGIN
 			sysdate,
 			sysdate,
 			sysdate,
-			CASE WHEN r.concept_cd LIKE ':%'
+			CASE WHEN substr(r.concept_cd, 1, 1) = ':'
 				THEN NULL
 			ELSE TrialId END,
 			'CONCEPT_DIMENSION'
@@ -1170,7 +1228,7 @@ BEGIN
 			,sysdate
 			,sysdate
 			,sysdate
-			,c.sourcesystem_cd
+			,TrialID
 			,c.concept_cd
 			,'LIKE'
 			,'T'		-- if i2b2 gets fixed to respect c_columndatatype then change to t.data_type
@@ -1786,9 +1844,15 @@ BEGIN
 		cz_error_handler (jobID, procedureName);
 		cz_end_audit (jobID, 'FAIL');
 		rtnCode := 16;
+	when forbidden_conceptcd then
+    stepCt := stepCt + 1;
+    cz_write_audit(jobId,databaseName,procedureName,'Concepts '||l_bad_concept_cds||' are not allowed',0,stepCt,'Done');
+    cz_error_handler (jobID, procedureName);
+    cz_end_audit (jobID, 'FAIL');
+    rtnCode := 16;
 	when duplicate_conceptcd then
 		stepCt := stepCt + 1;
-		cz_write_audit(jobId,databaseName,procedureName,'Duplicate concept_cd found',0,stepCt,'Done');
+  	cz_write_audit(jobId,databaseName,procedureName,'Incorrect paths specified for concepts '||l_bad_concept_cds,0,stepCt,'Done');
 		cz_error_handler (jobID, procedureName);
 		cz_end_audit (jobID, 'FAIL');
 		rtnCode := 16;

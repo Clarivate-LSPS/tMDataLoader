@@ -66,6 +66,9 @@ Declare
   array_len              numeric;
   v_count numeric;
   iPath   varchar;
+  l_bad_concept_cd varchar;
+  l_bad_concept_cds varchar;
+  l_bad_concept_cds_max_len numeric;
 
 	addNodes CURSOR is
 	select DISTINCT leaf_node, node_name
@@ -898,26 +901,34 @@ BEGIN
 	end;
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Updated node name for leaf nodes',rowCt,stepCt,'Done') into rtnCd;
-
+ 
   -- Check concept_cd
-  SELECT count(*)
-  INTO pCount
-  FROM
-    wt_trial_nodes wtn,
-    i2b2demodata.concept_dimension cd
-  WHERE
-		wtn.concept_cd ~ '(^:)'
-		AND TRIM(LEADING ':' FROM wtn.concept_cd) = cd.concept_cd
-		AND replace(wtn.leaf_node, topNode, '\') <> cd.concept_path;
+	l_bad_concept_cds := '';
+	l_bad_concept_cds_max_len := 100;
+
+	FOR l_bad_concept_cd IN
+	SELECT distinct wtn.concept_cd FROM wt_trial_nodes wtn
+	WHERE    wtn.concept_cd ~ '\A\d+\Z'
+					 OR wtn.concept_cd = 'SECURITY'
+	LOOP
+		IF length(l_bad_concept_cds) > 0 THEN
+			l_bad_concept_cds := l_bad_concept_cds || ',';
+		END IF;
+		l_bad_concept_cds := l_bad_concept_cds || l_bad_concept_cd;
+		IF length(l_bad_concept_cds) > l_bad_concept_cds_max_len THEN
+			l_bad_concept_cds := l_bad_concept_cds || ',...';
+			EXIT;
+		END IF;
+	END LOOP;
 
 	stepCt := stepCt + 1;
-	select cz_write_audit(jobId,databaseName,procedureName,'topNode ' || topNode || ' pCount ' || pCount,rowCt,stepCt,'Done') into rtnCd;
+	select cz_write_audit(jobId,databaseName,procedureName,'Checked forbidden concepts',rowCt,stepCt,'Done') into rtnCd;
 
 
-	IF pCount > 0
+	IF length(l_bad_concept_cds) > 0
   THEN
     stepCt := stepCt + 1;
-    SELECT cz_write_audit(jobId, databaseName, procedureName, 'Duplicate concept_cd found in cross nodes', 0, stepCt, 'Done')
+    SELECT cz_write_audit(jobId, databaseName, procedureName, 'Concepts ' || l_bad_concept_cds || ' are not allowed', 0, stepCt, 'Done')
     INTO rtnCd;
     SELECT cz_error_handler(jobID, procedureName, '-1', 'Application raised error')
     INTO rtnCd;
@@ -926,20 +937,31 @@ BEGIN
     RETURN -16;
   END IF;
 
-	SELECT count(*)
-  INTO pCount
-  FROM
-    wt_trial_nodes wtn,
-    i2b2demodata.concept_dimension cd
-  WHERE
-		wtn.concept_cd !~ '(^:)'
-		AND wtn.concept_cd = cd.concept_cd
-		AND wtn.leaf_node <> cd.concept_path;
+	FOR l_bad_concept_cd IN
+	SELECT distinct wtn.concept_cd
+	FROM      wt_trial_nodes wtn
+		JOIN i2b2demodata.concept_dimension cd ON TRIM(LEADING ':' FROM wtn.concept_cd) = cd.concept_cd
+	WHERE     left(wtn.concept_cd, 1) = ':'
+						AND replace(wtn.leaf_node, topNode, '\') <> cd.concept_path
+	LOOP
+		IF length(l_bad_concept_cds) > 0 THEN
+			l_bad_concept_cds := l_bad_concept_cds || ',';
+		END IF;
+		l_bad_concept_cds := l_bad_concept_cds || l_bad_concept_cd;
+		IF length(l_bad_concept_cds) > l_bad_concept_cds_max_len THEN
+			l_bad_concept_cds := l_bad_concept_cds || ',...';
+			EXIT;
+		END IF;
+	END LOOP;
 
-  IF pCount > 0
+	stepCt := stepCt + 1;
+	select cz_write_audit(jobId,databaseName,procedureName,'Checked existing paths for cross-study concepts',rowCt,stepCt,'Done') into rtnCd;
+
+
+	IF length(l_bad_concept_cds) > 0
   THEN
     stepCt := stepCt + 1;
-    SELECT cz_write_audit(jobId, databaseName, procedureName, 'Duplicate concept_cd found', 0, stepCt, 'Done')
+    SELECT cz_write_audit(jobId, databaseName, procedureName, 'Incorrect paths specified for cross-study concepts '||l_bad_concept_cds, 0, stepCt, 'Done')
     INTO rtnCd;
     SELECT cz_error_handler(jobID, procedureName, '-1', 'Application raised error')
     INTO rtnCd;
@@ -948,7 +970,42 @@ BEGIN
     RETURN -16;
   END IF;
 
-  --	insert subjects into patient_dimension if needed
+	FOR l_bad_concept_cd IN
+	SELECT DISTINCT wtn.concept_cd
+	FROM wt_trial_nodes wtn
+		JOIN i2b2demodata.concept_dimension cd ON wtn.concept_cd = cd.concept_cd
+	WHERE left(wtn.concept_cd, 1) <> ':'
+				AND wtn.leaf_node <> cd.concept_path
+	LOOP
+		IF length(l_bad_concept_cds) > 0
+		THEN
+			l_bad_concept_cds := l_bad_concept_cds || ',';
+		END IF;
+		l_bad_concept_cds := l_bad_concept_cds || l_bad_concept_cd;
+		IF length(l_bad_concept_cds) > l_bad_concept_cds_max_len
+		THEN
+			l_bad_concept_cds := l_bad_concept_cds || ',...';
+			EXIT;
+		END IF;
+	END LOOP;
+
+	stepCt := stepCt + 1;
+	select cz_write_audit(jobId,databaseName,procedureName,'Checked existing paths for study concepts',rowCt,stepCt,'Done') into rtnCd;
+
+	IF length(l_bad_concept_cds) > 0
+	THEN
+		stepCt := stepCt + 1;
+		SELECT cz_write_audit(jobId, databaseName, procedureName, 'Incorrect paths specified for study concepts '||l_bad_concept_cds, 0, stepCt, 'Done')
+		INTO rtnCd;
+		SELECT cz_error_handler(jobID, procedureName, '-1', 'Application raised error')
+		INTO rtnCd;
+		SELECT cz_end_audit(jobID, 'FAIL')
+		INTO rtnCd;
+		RETURN -16;
+	END IF;
+	-- /Check concept_cd
+
+	--	insert subjects into patient_dimension if needed
 
 	execute ('truncate table wt_subject_info');
 
@@ -1204,7 +1261,7 @@ BEGIN
 				current_timestamp,
 				current_timestamp,
 				current_timestamp,
-				CASE WHEN r.concept_cd LIKE ':%'
+				CASE WHEN left(r.concept_cd, 1) = ':'
 					THEN NULL
 				ELSE TrialId END,
 				'CONCEPT_DIMENSION'
@@ -1295,7 +1352,7 @@ BEGIN
 		  ,current_timestamp
 		  ,current_timestamp
 		  ,current_timestamp
-		  ,c.sourcesystem_cd
+		  ,TrialID
 		  ,c.concept_cd
 		  ,'LIKE'	--'T'
 		  , 'T' --t.data_type
