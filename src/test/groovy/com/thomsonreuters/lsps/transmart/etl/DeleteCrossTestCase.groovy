@@ -125,6 +125,49 @@ class DeleteCrossTestCase extends Specification implements ConfigAwareTestCase {
         assertThatConceptDelete(data.path + "Node 1\\Node 2\\Flag\\")
     }
 
+    def 'it should delete concepts after deleting tree and study'(){
+        given:
+        def studyConceptId = "GSECONCEPTCD"
+        def studyConceptName = 'Test Data With Concept_cd'
+
+        Study.deleteById(config, studyConceptId)
+        clinicalProcessor.process(
+                new File(studyDir(studyConceptName, studyConceptId), "ClinicalDataToUpload").toPath(),
+                [name: studyConceptName, node: "Test Studies\\${studyConceptName}".toString()])
+
+        // Remove study before removing cross node
+        deleteDataProcessor.process([id: studyConceptId])
+
+        // Remove cross tree
+        def data = [
+                path            : "\\Vital\\",
+                isDeleteConcepts: false
+        ]
+
+        deleteCrossProcessor.process(data)
+        assertThatConceptDelete(data.path, false)
+        assertThatConceptDelete(data.path + "Node 1\\Node 2\\Flag\\", false)
+
+        when:
+        // Remove cross tree
+        data = [
+                path            : "\\Vital\\",
+                isDeleteConcepts: true
+        ]
+        def operation = deleteCrossProcessor.process(data)
+
+        then:
+        assertTrue(operation)
+
+        assertThatCrossNodeDelete(data.path)
+        assertThatCrossNodeDelete(data.path + "Node 1\\Node 2\\Flag\\")
+        assertThatConceptDelete(data.path)
+        assertThatConceptDelete(data.path + "Node 1\\Node 2\\Flag\\")
+    }
+
+    def 'it should check throw exception then cross node delete by path'(){
+
+    }
 
     void assertThatCrossNodeDelete(String path, isDelete = true) {
         def i2b2Count = sql.firstRow('select count(*) from i2b2metadata.i2b2 where c_fullname = ?', path)
