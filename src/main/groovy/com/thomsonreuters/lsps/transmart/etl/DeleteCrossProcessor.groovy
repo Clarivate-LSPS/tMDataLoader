@@ -10,7 +10,7 @@ class DeleteCrossProcessor extends DataOperationProcessor {
     @Override
     boolean runStoredProcedures(Object jobId, Sql sql, data) {
         String path = data.path?.toString()
-        Boolean isDeleteConcepts = data.isDeleteConcepts ? 1 : 0
+        Integer isDeleteConcepts = data.isDeleteConcepts ? 1 : 0
         if (path) {
             sql.call("{call " + config.controlSchema + "." + getProcedureName() + "(?,?,?)}", [path, isDeleteConcepts, jobId])
         } else {
