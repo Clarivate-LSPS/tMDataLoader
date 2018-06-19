@@ -14,6 +14,8 @@ Declare
 
   rowsExists INTEGER;
   studyNum NUMERIC(18,0);
+  pCount           INTEGER;
+  cCount           INTEGER;
 
   -- vcf datasets
   vcfDataSetId varchar(100);
@@ -58,6 +60,22 @@ BEGIN
     INTO pathString
     FROM i2b2demodata.concept_dimension
     WHERE sourcesystem_cd = trial_id;
+
+    IF (pathString IS NULL)
+    THEN
+      stepCt := stepCt + 1;
+      SELECT
+        cz_write_audit(jobId, databasename, procedurename, 'Path did not find in concept_dimension', 1, stepCt, 'Warning')
+      INTO rtnCd;
+
+      SELECT DISTINCT first_value( c_fullname)
+      OVER (
+        PARTITION BY sourcesystem_cd
+        ORDER BY c_fullname )
+      INTO pathString
+      FROM i2b2metadata.i2b2
+      WHERE sourcesystem_cd = trial_id;
+    END IF;
   else
     pathString := path_string;
     pathString := REGEXP_REPLACE('\' || pathString || '\','(\\){2,}', '\','g');
@@ -74,6 +92,30 @@ BEGIN
 			where c_fullname like pathString || '%' ESCAPE '`';
     ELSIF ( trialCount = 0 ) THEN
       TrialId := null;
+      --Check facts
+      SELECT count(*)
+      INTO pCount
+      FROM i2b2demodata.observation_fact
+      WHERE concept_cd IN (
+        SELECT concept_cd
+        FROM i2b2demodata.concept_dimension
+        WHERE concept_path LIKE pathString || '%' ESCAPE '`');
+
+      --Check concept dimension
+      SELECT count(*) INTO cCount
+      FROM i2b2demodata.concept_dimension
+        WHERE concept_path = pathString AND sourcesystem_cd is null;
+      IF pCount > 0 and cCount > 0
+      THEN
+        stepCt := stepCt + 1;
+        SELECT cz_write_audit(jobId, databasename, procedurename, 'It is cross study', 1, stepCt, 'ERROR')
+        INTO rtnCd;
+        SELECT cz_error_handler(jobid, procedurename, '-1', 'Application raised error')
+        INTO rtnCd;
+        SELECT cz_end_audit(jobId, 'FAIL')
+        INTO rtnCd;
+        RETURN -16;
+      END IF;
     else
       stepCt := stepCt + 1;
       select cz_write_audit(jobId,databasename,procedurename,'Please select right path to study',1,stepCt,'ERROR') into rtnCd;

@@ -1,27 +1,20 @@
 package com.thomsonreuters.lsps.transmart.etl
 
-import com.thomsonreuters.lsps.db.core.DatabaseType
-import com.thomsonreuters.lsps.transmart.Fixtures
-import com.thomsonreuters.lsps.transmart.fixtures.ClinicalData
 import com.thomsonreuters.lsps.transmart.fixtures.Study
 import spock.lang.Specification
 
 import static com.thomsonreuters.lsps.transmart.Fixtures.studyDir
 import static org.hamcrest.CoreMatchers.equalTo
-import static org.junit.Assert.assertThat
-import static com.thomsonreuters.lsps.transmart.Fixtures.*
-import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.*
-import static org.hamcrest.CoreMatchers.equalTo
-import static org.hamcrest.CoreMatchers.is
-import static org.hamcrest.core.IsNot.not
 import static org.junit.Assert.*
-
 
 class DeleteCrossTestCase extends Specification implements ConfigAwareTestCase {
 
     private ClinicalDataProcessor _clinicalProcessor
     private DeleteCrossProcessor _deleteCrossProcessor
     private DeleteDataProcessor _deleteDataProcessor
+
+    def studyConceptId = "GSECONCEPTCD"
+    def studyConceptName = 'Test Data With Concept_cd'
 
     DeleteDataProcessor getDeleteDataProcessor() {
         _deleteDataProcessor ?: (_deleteDataProcessor = new DeleteDataProcessor(config))
@@ -38,14 +31,14 @@ class DeleteCrossTestCase extends Specification implements ConfigAwareTestCase {
     void setup() {
         ConfigAwareTestCase.super.setUp()
         runScript('I2B2_DELETE_CROSS_DATA.sql')
+        runScript('I2B2_DELETE_ALL_DATA.sql')
+        runScript('I2B2_DELETE_ALL_NODES.sql')
+
+        Study.deleteById(config, studyConceptId)
     }
 
     def 'it should not delete cross node from i2b2 schema'() {
         given:
-        def studyConceptId = "GSECONCEPTCD"
-        def studyConceptName = 'Test Data With Concept_cd'
-
-        Study.deleteById(config, studyConceptId)
         clinicalProcessor.process(
                 new File(studyDir(studyConceptName, studyConceptId), "ClinicalDataToUpload").toPath(),
                 [name: studyConceptName, node: "Test Studies\\${studyConceptName}".toString()])
@@ -59,7 +52,7 @@ class DeleteCrossTestCase extends Specification implements ConfigAwareTestCase {
         def operation = deleteCrossProcessor.process(data)
 
         then:
-        assertThat("Should check exists observation fact", operation, equalTo(false))
+        assertThat("Should check procedure result", operation, equalTo(false))
         assertThatCrossNodeDelete(data.path, false)
         assertThatConceptDelete(data.path, false)
         assertThatConceptDelete(data.path + "Node 1\\Node 2\\Flag\\", false)
@@ -67,10 +60,6 @@ class DeleteCrossTestCase extends Specification implements ConfigAwareTestCase {
 
     def 'it should delete cross node from i2b2 schema'() {
         given:
-        def studyConceptId = "GSECONCEPTCD"
-        def studyConceptName = 'Test Data With Concept_cd'
-
-        Study.deleteById(config, studyConceptId)
         clinicalProcessor.process(
                 new File(studyDir(studyConceptName, studyConceptId), "ClinicalDataToUpload").toPath(),
                 [name: studyConceptName, node: "Test Studies\\${studyConceptName}".toString()])
@@ -97,10 +86,6 @@ class DeleteCrossTestCase extends Specification implements ConfigAwareTestCase {
 
     def 'it should delete cross node from i2b2 schema and concept dimension'() {
         given:
-        def studyConceptId = "GSECONCEPTCD"
-        def studyConceptName = 'Test Data With Concept_cd'
-
-        Study.deleteById(config, studyConceptId)
         clinicalProcessor.process(
                 new File(studyDir(studyConceptName, studyConceptId), "ClinicalDataToUpload").toPath(),
                 [name: studyConceptName, node: "Test Studies\\${studyConceptName}".toString()])
@@ -127,10 +112,6 @@ class DeleteCrossTestCase extends Specification implements ConfigAwareTestCase {
 
     def 'it should delete concepts after deleting tree and study'(){
         given:
-        def studyConceptId = "GSECONCEPTCD"
-        def studyConceptName = 'Test Data With Concept_cd'
-
-        Study.deleteById(config, studyConceptId)
         clinicalProcessor.process(
                 new File(studyDir(studyConceptName, studyConceptId), "ClinicalDataToUpload").toPath(),
                 [name: studyConceptName, node: "Test Studies\\${studyConceptName}".toString()])
@@ -166,7 +147,22 @@ class DeleteCrossTestCase extends Specification implements ConfigAwareTestCase {
     }
 
     def 'it should check throw exception then cross node delete by path'(){
+        given:
+        clinicalProcessor.process(
+                new File(studyDir(studyConceptName, studyConceptId), "ClinicalDataToUpload").toPath(),
+                [name: studyConceptName, node: "Test Studies\\${studyConceptName}".toString()])
 
+        when:
+        def data = [path: '\\Vital\\']
+        def operation = deleteDataProcessor.process(data)
+
+        then:
+        assertFalse(operation)
+
+        assertThatCrossNodeDelete(data.path, false)
+        assertThatCrossNodeDelete(data.path + "Node 1\\Node 2\\Flag\\", false)
+        assertThatConceptDelete(data.path, false)
+        assertThatConceptDelete(data.path + "Node 1\\Node 2\\Flag\\", false)
     }
 
     void assertThatCrossNodeDelete(String path, isDelete = true) {

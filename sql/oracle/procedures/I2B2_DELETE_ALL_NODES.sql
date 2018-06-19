@@ -14,6 +14,8 @@ AS
   INDEX_NOT_EXISTS EXCEPTION;
   PRAGMA EXCEPTION_INIT(index_not_exists, -1418);
 
+  trialVisitNum INTEGER(8);
+  trialVisitNumN INTEGER(8);
 Begin
 
   --Set Audit Parameters
@@ -61,21 +63,45 @@ Begin
   
   if path != ''  or path != '%'
   then 
-    --I2B2
-    DELETE 
-      FROM OBSERVATION_FACT 
-    WHERE 
-      concept_cd IN (SELECT C_BASECODE FROM I2B2 WHERE C_FULLNAME LIKE PATH || '%');
-	  stepCt := stepCt + 1;
-	  cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from I2B2DEMODATA observation_fact',SQL%ROWCOUNT,stepCt,'Done');
-    COMMIT;
-	
+    --observation_fact
+    SELECT count(DISTINCT trial_visit_num)
+    INTO trialVisitNumN
+    FROM i2b2demodata.OBSERVATION_FACT
+    WHERE concept_cd IN (
+      SELECT concept_cd
+      FROM i2b2demodata.CONCEPT_DIMENSION
+      WHERE concept_path LIKE PATH || '%' AND sourcesystem_cd IS NOT NULL
+    );
+    stepCt := stepCt + 1;
+    cz_write_audit(jobId,databaseName,procedureName,'trialVisitNumN ' || trialVisitNumN,SQL%ROWCOUNT,stepCt,'Done');
+    IF (trialVisitNumN != 1)
+    THEN
+      stepCt := stepCt + 1;
+      cz_write_audit(jobId,databaseName,procedureName,'You can only specify a path for a single study.',SQL%ROWCOUNT,stepCt,'Done');
+    ELSE
+      SELECT DISTINCT trial_visit_num
+      INTO trialVisitNum
+      FROM i2b2demodata.OBSERVATION_FACT
+      WHERE concept_cd IN (
+        SELECT concept_cd
+        FROM i2b2demodata.CONCEPT_DIMENSION
+        WHERE concept_path LIKE PATH || '%' AND sourcesystem_cd IS NOT NULL
+      );
+      cz_write_audit(jobId, databaseName, procedureName, 'Found trial_visit_num', SQL%ROWCOUNT, stepCt, 'Done');
+      DELETE
+      FROM OBSERVATION_FACT
+      WHERE
+        concept_cd IN (SELECT C_BASECODE FROM I2B2 WHERE C_FULLNAME LIKE PATH || '%');
+      stepCt := stepCt + 1;
+      cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from I2B2DEMODATA observation_fact',SQL%ROWCOUNT,stepCt,'Done');
+      COMMIT;
+    END IF;
 
       --CONCEPT DIMENSION
     DELETE 
       FROM CONCEPT_DIMENSION
     WHERE 
-      CONCEPT_PATH LIKE path || '%';
+      CONCEPT_PATH LIKE path || '%' AND sourcesystem_cd IS NOT NULL;
 	  stepCt := stepCt + 1;
 	  cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from I2B2DEMODATA concept_dimension',SQL%ROWCOUNT,stepCt,'Done');
     COMMIT;
@@ -84,7 +110,7 @@ Begin
       DELETE
         FROM i2b2
       WHERE 
-        C_FULLNAME LIKE PATH || '%';
+        C_FULLNAME LIKE PATH || '%' AND sourcesystem_cd IS NOT NULL;
 	  stepCt := stepCt + 1;
 	  cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from I2B2METADATA i2b2',SQL%ROWCOUNT,stepCt,'Done');
     COMMIT;
@@ -113,7 +139,7 @@ Begin
       DELETE
         FROM i2b2_secure
       WHERE 
-        C_FULLNAME LIKE PATH || '%';
+        C_FULLNAME LIKE PATH || '%' AND sourcesystem_cd IS NOT NULL;
 	  stepCt := stepCt + 1;
 	  cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from I2B2METADATA i2b2_secure',SQL%ROWCOUNT,stepCt,'Done');
     COMMIT;

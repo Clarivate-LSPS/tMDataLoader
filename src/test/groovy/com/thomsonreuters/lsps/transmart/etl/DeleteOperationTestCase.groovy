@@ -62,6 +62,7 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
             runScript('I2B2_DELETE_PARTITION.sql')
         }
         runScript('I2B2_DELETE_ALL_DATA.sql')
+        runScript('I2B2_DELETE_ALL_NODES.sql')
         processorDelete.process(id: null, path: studyPath)
         processorDelete.process(id: studyId, path: null)
     }
@@ -238,10 +239,10 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
                 [name: studyName, node: "\\Test Studies\\${studyNameSNP}".toString()])
         def inpData = ['id'  : studyId,
                        'path': "\\Test Studies\\${studyNameSNP}\\SNP\\"];
-        processorDelete.process(inpData);
+        def status = processorDelete.process(inpData);
 
-
-        assertThatTopNodeDelete("\\Test Studies\\Test Studies_1\\", true);
+        assertTrue(status)
+        assertThatTopNodeDelete("\\Test Studies\\${studyNameSNP}\\", true);
     }
 
     void testItDeleteSubNode() {
@@ -324,8 +325,9 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
 
         def inpData = ['id'  : studyInfo.id,
                        'path': "\\Test Studies\\${studyInfo.name}\\"];
-        processorDelete.process(inpData);
+        def status = processorDelete.process(inpData);
 
+        assertTrue(status)
         assertThatTopNodeDelete("\\Test Studies\\${studyInfo.name}\\", true);
         assertRecordsWasDeleted('deapp.de_subject_protein_data', studyInfo.id);
     }

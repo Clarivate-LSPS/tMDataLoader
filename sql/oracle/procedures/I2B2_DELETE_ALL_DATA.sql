@@ -18,6 +18,8 @@ AS
   TrialType 	VARCHAR2(250);
   sourceCD  	sourceCDs;
   pathStrings tVarCh2;
+  pCount INTEGER(8);
+  cCount INTEGER(8);
 
   --Audit variables
   newJobFlag INTEGER(1);
@@ -38,6 +40,7 @@ AS
 	res	number;
   studyNum NUMBER(18,0);
 
+  cross_study EXCEPTION;
 BEGIN
   --Set Audit Parameters
   newJobFlag := 0; -- False (Default)
@@ -81,6 +84,25 @@ BEGIN
 		ELSIF (trialCount = 0)
 			THEN
 				TrialId := NULL;
+
+        SELECT count(*)
+        INTO pCount
+        FROM i2b2demodata.observation_fact
+        WHERE concept_cd IN (
+          SELECT concept_cd
+          FROM i2b2demodata.concept_dimension
+          WHERE concept_path LIKE pathString || '%');
+
+        --Check concept dimension
+        SELECT count(*)
+        INTO cCount
+        FROM i2b2demodata.concept_dimension
+        WHERE concept_path = pathString AND sourcesystem_cd IS NULL;
+
+        IF pCount > 0 AND cCount > 0
+        THEN
+          RAISE cross_study;
+        END IF;
 		ELSE
 			RAISE more_trial;
 		END IF;
@@ -375,7 +397,11 @@ BEGIN
 	cz_write_audit(jobId,databasename,procedurename,'Path was not found for this trial id',1,stepCt,'ERROR');
 	cz_error_handler(jobid,procedurename);
 	cz_end_audit (jobId,'FAIL');
-
+  WHEN cross_study
+  THEN
+    cz_write_audit(jobId, databasename, procedurename, 'It is cross study', 1, stepCt, 'ERROR');
+    cz_error_handler(jobid, procedurename);
+    cz_end_audit(jobId, 'FAIL');
   WHEN OTHERS THEN
     --Handle errors.
     cz_error_handler (jobID, procedureName);
