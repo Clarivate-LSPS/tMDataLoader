@@ -42,7 +42,7 @@ BEGIN
   newJobFlag := 0; -- False (Default)
   jobID := currentJobID;
 
-  databaseName := 'TM_CZ';
+  databaseName := current_schema();
   procedureName := 'I2B2_DELETE_ALL_NODES';
 
   --Audit JOB Initialization
@@ -87,7 +87,7 @@ BEGIN
         WHERE
           concept_cd IN (SELECT C_BASECODE
                          FROM i2b2metadata.I2B2
-                         WHERE C_FULLNAME LIKE PATH || '%' ESCAPE '`')
+                         WHERE C_FULLNAME LIKE PATH || '%' ESCAPE '`' AND sourcesystem_cd IS NOT NULL)
           AND trial_visit_num = trialVisitNum;
         GET DIAGNOSTICS rowCt := ROW_COUNT;
         EXCEPTION
@@ -112,8 +112,12 @@ BEGIN
 
     --CONCEPT DIMENSION
     BEGIN
-      DELETE FROM i2b2demodata.CONCEPT_DIMENSION
-      WHERE CONCEPT_PATH LIKE path || '%' ESCAPE '`' AND sourcesystem_cd IS NOT NULL;
+      DELETE FROM i2b2demodata.CONCEPT_DIMENSION cd
+      WHERE CONCEPT_PATH LIKE path || '%' ESCAPE '`' AND (cd.sourcesystem_cd IS NOT NULL
+                                                          OR exists(SELECT 1
+                                                                    FROM i2b2metadata.i2b2
+                                                                    WHERE c_fullname = cd.concept_path AND
+                                                                          char_length(c_visualattributes) > 2));
       GET DIAGNOSTICS rowCt := ROW_COUNT;
       EXCEPTION
       WHEN OTHERS
@@ -137,7 +141,7 @@ BEGIN
     --I2B2
     BEGIN
       DELETE FROM i2b2metadata.i2b2
-      WHERE C_FULLNAME LIKE PATH || '%' ESCAPE '`' AND sourcesystem_cd IS NOT NULL;
+      WHERE C_FULLNAME LIKE PATH || '%' ESCAPE '`';
       GET DIAGNOSTICS rowCt := ROW_COUNT;
       EXCEPTION
       WHEN OTHERS
@@ -161,7 +165,7 @@ BEGIN
     --i2b2_secure
     BEGIN
       DELETE FROM i2b2metadata.i2b2_secure
-      WHERE C_FULLNAME LIKE PATH || '%' ESCAPE '`' AND sourcesystem_cd IS NOT NULL;
+      WHERE C_FULLNAME LIKE PATH || '%' ESCAPE '`';
       GET DIAGNOSTICS rowCt := ROW_COUNT;
       EXCEPTION
       WHEN OTHERS

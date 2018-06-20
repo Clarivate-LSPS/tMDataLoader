@@ -108,7 +108,7 @@ BEGIN
       IF pCount > 0 and cCount > 0
       THEN
         stepCt := stepCt + 1;
-        SELECT cz_write_audit(jobId, databasename, procedurename, 'It is cross study', 1, stepCt, 'ERROR')
+        SELECT cz_write_audit(jobId, databasename, procedurename, 'You are trying to delete cross node.', 1, stepCt, 'ERROR')
         INTO rtnCd;
         SELECT cz_error_handler(jobid, procedurename, '-1', 'Application raised error')
         INTO rtnCd;

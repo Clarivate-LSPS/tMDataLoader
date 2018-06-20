@@ -159,6 +159,10 @@ class Fixtures {
         return studiesDir.studyDir('Test Protein Study 3', 'GSE374253').proteinData
     }
 
+    static ClinicalData getClinicalDataWithCrossNode(){
+        return studiesDir.studyDir('Test Data With Concept_cd', 'GSECONCEPTCD').clinicalData
+    }
+
     public static class FilePathBuilder {
         File file
 

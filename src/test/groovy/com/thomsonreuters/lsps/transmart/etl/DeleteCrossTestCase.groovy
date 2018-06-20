@@ -1,5 +1,6 @@
 package com.thomsonreuters.lsps.transmart.etl
 
+import com.thomsonreuters.lsps.transmart.Fixtures
 import com.thomsonreuters.lsps.transmart.fixtures.Study
 import spock.lang.Specification
 
@@ -39,9 +40,7 @@ class DeleteCrossTestCase extends Specification implements ConfigAwareTestCase {
 
     def 'it should not delete cross node from i2b2 schema'() {
         given:
-        clinicalProcessor.process(
-                new File(studyDir(studyConceptName, studyConceptId), "ClinicalDataToUpload").toPath(),
-                [name: studyConceptName, node: "Test Studies\\${studyConceptName}".toString()])
+        Fixtures.clinicalDataWithCrossNode.load(config, "Test Studies")
 
         when:
         def data = [
@@ -60,9 +59,7 @@ class DeleteCrossTestCase extends Specification implements ConfigAwareTestCase {
 
     def 'it should delete cross node from i2b2 schema'() {
         given:
-        clinicalProcessor.process(
-                new File(studyDir(studyConceptName, studyConceptId), "ClinicalDataToUpload").toPath(),
-                [name: studyConceptName, node: "Test Studies\\${studyConceptName}".toString()])
+        Fixtures.clinicalDataWithCrossNode.load(config, "Test Studies")
 
         when:
         // Remove study before removing cross node
@@ -86,9 +83,7 @@ class DeleteCrossTestCase extends Specification implements ConfigAwareTestCase {
 
     def 'it should delete cross node from i2b2 schema and concept dimension'() {
         given:
-        clinicalProcessor.process(
-                new File(studyDir(studyConceptName, studyConceptId), "ClinicalDataToUpload").toPath(),
-                [name: studyConceptName, node: "Test Studies\\${studyConceptName}".toString()])
+        Fixtures.clinicalDataWithCrossNode.load(config, "Test Studies")
 
         when:
         // Remove study before removing cross node
@@ -112,9 +107,7 @@ class DeleteCrossTestCase extends Specification implements ConfigAwareTestCase {
 
     def 'it should delete concepts after deleting tree and study'(){
         given:
-        clinicalProcessor.process(
-                new File(studyDir(studyConceptName, studyConceptId), "ClinicalDataToUpload").toPath(),
-                [name: studyConceptName, node: "Test Studies\\${studyConceptName}".toString()])
+        Fixtures.clinicalDataWithCrossNode.load(config, "Test Studies")
 
         // Remove study before removing cross node
         deleteDataProcessor.process([id: studyConceptId])
@@ -148,9 +141,7 @@ class DeleteCrossTestCase extends Specification implements ConfigAwareTestCase {
 
     def 'it should check throw exception then cross node delete by path'(){
         given:
-        clinicalProcessor.process(
-                new File(studyDir(studyConceptName, studyConceptId), "ClinicalDataToUpload").toPath(),
-                [name: studyConceptName, node: "Test Studies\\${studyConceptName}".toString()])
+        Fixtures.clinicalDataWithCrossNode.load(config, "Test Studies")
 
         when:
         def data = [path: '\\Vital\\']

@@ -73,14 +73,14 @@ BEGIN
 		SELECT count(DISTINCT sourcesystem_cd)
 		INTO trialCount
 		FROM i2b2metadata.i2b2
-		WHERE c_fullname LIKE pathString || '%' ESCAPE '`';
+		WHERE c_fullname LIKE pathString || '%';
 
 		IF (trialCount = 1)
 		THEN
 			SELECT DISTINCT sourcesystem_cd
 			INTO TrialId
 			FROM i2b2metadata.i2b2
-			WHERE c_fullname LIKE pathString || '%' ESCAPE '`';
+			WHERE c_fullname LIKE pathString || '%';
 		ELSIF (trialCount = 0)
 			THEN
 				TrialId := NULL;
@@ -399,7 +399,7 @@ BEGIN
 	cz_end_audit (jobId,'FAIL');
   WHEN cross_study
   THEN
-    cz_write_audit(jobId, databasename, procedurename, 'It is cross study', 1, stepCt, 'ERROR');
+    cz_write_audit(jobId, databasename, procedurename, 'You are trying to delete cross node', 1, stepCt, 'ERROR');
     cz_error_handler(jobid, procedurename);
     cz_end_audit(jobId, 'FAIL');
   WHEN OTHERS THEN

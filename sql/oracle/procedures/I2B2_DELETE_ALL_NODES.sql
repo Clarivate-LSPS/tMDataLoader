@@ -91,17 +91,23 @@ Begin
       DELETE
       FROM OBSERVATION_FACT
       WHERE
-        concept_cd IN (SELECT C_BASECODE FROM I2B2 WHERE C_FULLNAME LIKE PATH || '%');
+        concept_cd IN (SELECT C_BASECODE FROM I2B2 WHERE C_FULLNAME LIKE PATH || '%'  AND sourcesystem_cd IS NOT NULL)
+      AND trial_visit_num = trialVisitNum;
       stepCt := stepCt + 1;
       cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from I2B2DEMODATA observation_fact',SQL%ROWCOUNT,stepCt,'Done');
       COMMIT;
     END IF;
 
       --CONCEPT DIMENSION
-    DELETE 
-      FROM CONCEPT_DIMENSION
-    WHERE 
-      CONCEPT_PATH LIKE path || '%' AND sourcesystem_cd IS NOT NULL;
+    DELETE
+    FROM CONCEPT_DIMENSION cd
+    WHERE
+      CONCEPT_PATH LIKE path || '%' AND (sourcesystem_cd IS NOT NULL OR
+                                         exists(SELECT 1
+                                                FROM i2b2metadata.i2b2
+                                                WHERE c_fullname = cd.concept_path AND
+                                                      length(c_visualattributes) > 2)
+      );
 	  stepCt := stepCt + 1;
 	  cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from I2B2DEMODATA concept_dimension',SQL%ROWCOUNT,stepCt,'Done');
     COMMIT;

@@ -115,7 +115,7 @@ class DeleteOperationTestCase extends GroovyTestCase implements ConfigAwareTestC
         assertEquals(i2b2CountExpect, i2b2Count[0] as Integer)
 
         def i2b2SecureCount = sql.firstRow('select count(*) from i2b2metadata.i2b2_secure where c_fullname = ?', pathTopNode)
-        assertEquals(i2b2CountExpect, i2b2SecureCount[0] as Integer)
+        assertEquals("Top Node ${pathTopNode} removed", i2b2CountExpect, i2b2SecureCount[0] as Integer)
 
         def tableAccessCount = sql.firstRow('select count(*) from i2b2metadata.table_access where c_fullname = ?', pathTopNode)
         assertEquals(i2b2CountExpect, tableAccessCount[0] as Integer)

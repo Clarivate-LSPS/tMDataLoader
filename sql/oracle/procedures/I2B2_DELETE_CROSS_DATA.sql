@@ -59,7 +59,7 @@ AS
     WHERE concept_cd IN (
       SELECT concept_cd
       FROM i2b2demodata.concept_dimension
-      WHERE concept_path LIKE pathString || '%' ESCAPE '`');
+      WHERE concept_path LIKE pathString || '%');
 
     IF (pCount > 0)
     THEN
@@ -67,21 +67,21 @@ AS
     END IF;
 
     DELETE FROM i2b2metadata.i2b2
-    WHERE C_FULLNAME LIKE pathString || '%' ESCAPE '`';
+    WHERE C_FULLNAME LIKE pathString || '%';
     stepCt := stepCt + 1;
     cz_write_audit(jobId, databaseName, procedureName, 'Delete data for trial from I2B2METADATA i2b2', SQL%ROWCOUNT,
                    stepCt, 'Done');
     COMMIT;
 
     DELETE FROM i2b2metadata.i2b2_secure
-    WHERE C_FULLNAME LIKE pathString || '%' ESCAPE '`';
+    WHERE C_FULLNAME LIKE pathString || '%';
     stepCt := stepCt + 1;
     cz_write_audit(jobId, databaseName, procedureName, 'Delete data for trial from I2B2METADATA i2b2_secure',
                    SQL%ROWCOUNT, stepCt, 'Done');
     COMMIT;
 
     DELETE FROM i2b2metadata.table_access
-    WHERE C_FULLNAME LIKE pathString || '%' ESCAPE '`';
+    WHERE C_FULLNAME LIKE pathString || '%';
     stepCt := stepCt + 1;
     cz_write_audit(jobId, databaseName, procedureName, 'Delete data I2B2METADATA table_access', SQL%ROWCOUNT, stepCt,
                    'Done');
@@ -90,7 +90,7 @@ AS
     IF (isDeleteConcepts)
     THEN
       DELETE FROM i2b2demodata.CONCEPT_DIMENSION
-      WHERE CONCEPT_PATH LIKE pathString || '%' ESCAPE '`';
+      WHERE CONCEPT_PATH LIKE pathString || '%';
 
       stepCt := stepCt + 1;
       cz_write_audit(jobId, databaseName, procedureName, 'Delete data for trial from I2B2DEMODATA concept_dimension',
