@@ -1,0 +1,10 @@
+STUDY_ID	SUBJ_ID	instance_num	rel_time_num	rel_time_unit_cd	rel_time_label	heart rate
+GSECONCEPTCD3	-61	1	0	days	Baseline	80
+GSECONCEPTCD3	-61	2	7	days	Week 1	90
+GSECONCEPTCD3	-61	3	21	days	Week 3	88
+GSECONCEPTCD3	-51	1	0	days	Baseline	56
+GSECONCEPTCD3	-51	2	21	days	Week 3	57
+GSECONCEPTCD3	-41	1	0	days	Baseline	66
+GSECONCEPTCD3	-41	2	0	days	Baseline	68
+GSECONCEPTCD3	-41	3	7	days	Week 1	56
+GSECONCEPTCD3	-41	4	21	days	Week 3	88

@@ -163,6 +163,10 @@ class Fixtures {
         return studiesDir.studyDir('Test Data With Concept_cd', 'GSECONCEPTCD').clinicalData
     }
 
+    static ClinicalData getClinicalDataWithCrossNodeOnSomePath(){
+        return studiesDir.studyDir('Test Data With Concept_cd Some Path', 'GSECONCEPTCD3').clinicalData
+    }
+
     public static class FilePathBuilder {
         File file
 

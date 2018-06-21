@@ -156,6 +156,26 @@ class DeleteCrossTestCase extends Specification implements ConfigAwareTestCase {
         assertThatConceptDelete(data.path + "Node 1\\Node 2\\Flag\\", false)
     }
 
+    def 'it should check remove data from observation_fact table'(){
+        given:
+        def clinical = Fixtures.clinicalDataWithCrossNode
+        clinical.load(config, "Test Studies")
+        Fixtures.clinicalDataWithCrossNodeOnSomePath.load(config, "Test Studies")
+
+        when:
+        def operation = deleteDataProcessor.process([path: "\\Test Studies\\${clinical.studyName}\\"])
+
+        then:
+        assertTrue(operation)
+
+        def res = sql.firstRow('SELECT count(*) FROM i2b2demodata.observation_fact where sourcesystem_cd = ?', [clinical.studyId])
+        assertEquals(0, res[0])
+
+        cleanup:
+        deleteDataProcessor.process([id: Fixtures.clinicalDataWithCrossNodeOnSomePath.studyId])
+        deleteCrossProcessor.process([path: '\\Vital\\', isDeleteConcepts: true])
+    }
+
     void assertThatCrossNodeDelete(String path, isDelete = true) {
         def i2b2Count = sql.firstRow('select count(*) from i2b2metadata.i2b2 where c_fullname = ?', path)
         isDelete ?
