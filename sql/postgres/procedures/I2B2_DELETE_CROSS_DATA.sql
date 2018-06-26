@@ -52,6 +52,20 @@ BEGIN
                         'Starting ' || procedureName || ' for ''' || pathString || '''',
                         0, stepCt, 'Done')
   INTO rtnCd;
+  IF (is_delete_concepts = 1)
+  THEN
+    stepCt := stepCt + 1;
+    SELECT cz_write_audit(jobId, databaseName, procedureName,
+                          'Remove concept too',
+                          0, stepCt, 'Done')
+    INTO rtnCd;
+    ELSE
+      stepCt := stepCt + 1;
+      SELECT cz_write_audit(jobId, databaseName, procedureName,
+                            'Without remove concept ',
+                            0, stepCt, 'Done')
+      INTO rtnCd;
+  END IF;
 
   --Checking exists observation_fact
   SELECT count(*)
@@ -140,9 +154,8 @@ BEGIN
   END;
   stepCt := stepCt + 1;
   GET DIAGNOSTICS rowCt := ROW_COUNT;
-  SELECT
-    cz_write_audit(jobId, databaseName, procedureName, 'Delete data I2B2METADATA table_access', rowCt,
-                   stepCt, 'Done')
+  SELECT cz_write_audit(jobId, databaseName, procedureName, 'Delete data I2B2METADATA table_access', rowCt,
+                        stepCt, 'Done')
   INTO rtnCd;
 
   IF (isDeleteConcepts)

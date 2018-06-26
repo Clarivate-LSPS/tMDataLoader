@@ -53,6 +53,19 @@ AS
     cz_write_audit(jobId, databaseName, procedureName, 'Starting ' || procedureName || ' for ' || pathString, 0, stepCt,
                    'Done');
 
+    IF (is_delete_concepts = 1)
+    THEN
+      stepCt := stepCt + 1;
+      cz_write_audit(jobId, databaseName, procedureName,
+                            'Remove concept too',
+                            0, stepCt, 'Done');
+    ELSE
+      stepCt := stepCt + 1;
+      cz_write_audit(jobId, databaseName, procedureName,
+                            'Without remove concept ',
+                            0, stepCt, 'Done');
+    END IF;
+
     SELECT count(*)
     INTO pCount
     FROM i2b2demodata.observation_fact
