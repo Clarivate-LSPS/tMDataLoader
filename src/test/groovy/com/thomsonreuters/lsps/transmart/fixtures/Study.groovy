@@ -1,5 +1,6 @@
 package com.thomsonreuters.lsps.transmart.fixtures
 
+import com.thomsonreuters.lsps.transmart.etl.DeleteCrossProcessor
 import com.thomsonreuters.lsps.transmart.etl.DeleteDataProcessor
 import groovy.sql.Sql
 
@@ -16,6 +17,13 @@ class Study {
 
     static void deleteByPath(config, String path) {
         new DeleteDataProcessor(config).process(path: path)
+    }
+
+    static void deleteCross(config, String path) {
+        new DeleteCrossProcessor(config).process([
+                path            : path,
+                isDeleteConcepts: true
+        ])
     }
 
     Study withData(AbstractData data) {

@@ -167,6 +167,10 @@ class Fixtures {
         return studiesDir.studyDir('Test Data With Concept_cd Some Path', 'GSECONCEPTCD3').clinicalData
     }
 
+    static ClinicalData getClinicalDataWithCrossNodeOnAnotherConceptCD(){
+        return studiesDir.studyDir('Test Data With Another Concept_cd', 'GSECONCDANOTHER').clinicalData
+    }
+
     public static class FilePathBuilder {
         File file
 
