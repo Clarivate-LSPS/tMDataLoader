@@ -1272,14 +1272,25 @@ BEGIN
 
 				SELECT count(*)
 				INTO pExists
-				FROM i2b2demodata.concept_dimension
-				WHERE concept_path = node_path AND sourcesystem_cd IS NOT NULL;
+				FROM i2b2metadata.i2b2
+				WHERE c_fullname = node_path AND sourcesystem_cd IS NOT NULL;
 
 				IF pExists > 0
 				THEN
 					RAISE same_path_exp;
         ELSE
-          i2b2_add_node(NULL, node_path, name_char, jobID);
+					SELECT count(*)
+					INTO pCount
+					FROM i2b2metadata.i2b2
+					WHERE c_fullname = node_path;
+
+					IF (pCount = 0)
+					THEN
+						i2b2_add_node(NULL, node_path, name_char, jobID);
+						stepCt := stepCt + 1;
+						cz_write_audit(jobId, databaseName, procedureName, 'Add node ' || node_path, 1,
+																	stepCt, 'Done');
+					END IF;
 				END IF;
 
 			END LOOP;

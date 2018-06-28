@@ -34,6 +34,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         runScript('i2b2_create_security_for_trial.sql')
         runScript('I2B2_BUILD_METADATA_XML.sql')
         runScript('I2B2_CREATE_CONCEPT_COUNTS.sql')
+        runScript('I2B2_ADD_NODE.sql')
     }
 
     ClinicalDataProcessor getProcessor() {
@@ -1651,6 +1652,11 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat(sql, hasFactAttribute("${studyConceptId}:TESTME", "\\Test Studies\\${studyConceptName}\\Demographics\\Gender\\Unknown\\", 1, [
                 'concept_cd': 'DM:GENDER:UNKNOWN'
         ]))
+
+        assertThat(sql, hasRecord(['c_fullname': "\\Vital\\Node 1\\Node 2\\Flag\\"], "i2b2metadata.i2b2_secure"))
+        assertThat(sql, hasRecord(['c_fullname': "\\Vital\\Node 1\\Node 2\\"], "i2b2metadata.i2b2_secure"))
+        assertThat(sql, hasRecord(['c_fullname': "\\Vital\\Node 1\\"], "i2b2metadata.i2b2_secure"))
+        assertThat(sql, hasRecord(['c_fullname': "\\Vital\\"], "i2b2metadata.i2b2_secure"))
     }
 
     def 'Should check throw exception if time data is not valid: time is set, unit isn\'t'() {

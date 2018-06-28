@@ -135,6 +135,46 @@ BEGIN
     COMMIT;
 	  END IF;
       ---Cleanup OVERALL JOB if this proc is being run standalone
+
+  IF (TrialID IS NULL)
+  THEN
+    INSERT INTO I2B2_secure
+    (c_hlevel, C_FULLNAME, C_NAME, C_VISUALATTRIBUTES, c_synonym_cd, C_FACTTABLECOLUMN, C_TABLENAME, C_COLUMNNAME,
+     C_DIMCODE, C_TOOLTIP, UPDATE_DATE, DOWNLOAD_DATE, IMPORT_DATE, SOURCESYSTEM_CD, c_basecode, C_OPERATOR, c_columndatatype, c_comment,
+     m_applied_path, secure_obj_token)
+      SELECT
+        (length(concept_path) - coalesce(length(replace(concept_path, '\', '')), 0)) / length('\') - 2 +
+        root_level,
+        CONCEPT_PATH,
+        NAME_CHAR,
+        CASE WHEN ((length(concept_path) - coalesce(length(replace(concept_path, '\', '')), 0)) / length('\') - 2 +
+                   root_level) = 0
+          THEN 'CA'
+        ELSE 'FA' END,
+        'N',
+        'CONCEPT_CD',
+        'CONCEPT_DIMENSION',
+        'CONCEPT_PATH',
+        CONCEPT_PATH,
+        CONCEPT_PATH,
+        current_timestamp,
+        current_timestamp,
+        current_timestamp,
+        SOURCESYSTEM_CD,
+        CONCEPT_CD,
+        'LIKE',
+        'T',
+        NULL,
+        '@',
+        'EXP:PUBLIC'
+      FROM CONCEPT_DIMENSION
+      WHERE
+        CONCEPT_PATH = path
+    				AND NOT exists(SELECT 1
+    											 FROM i2b2metadata.i2b2_secure
+    											 WHERE c_fullname = path);
+  END IF;
+
   IF newJobFlag = 1
   THEN
     cz_end_audit (jobID, 'SUCCESS');

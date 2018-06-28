@@ -1417,8 +1417,8 @@ BEGIN
 
         SELECT count(*)
         INTO pExists
-        FROM i2b2demodata.concept_dimension
-        WHERE concept_path = iPath || '\' AND sourcesystem_cd IS NOT NULL;
+        FROM i2b2metadata.i2b2
+        WHERE c_fullname = iPath || '\' AND sourcesystem_cd IS NOT NULL;
 
         IF pExists > 0
         THEN
@@ -1433,8 +1433,20 @@ BEGIN
           INTO rtnCd;
           RETURN -16;
         ELSE
-          SELECT i2b2_add_node(NULL, iPath || '\', new_paths [nPath], jobID)
-          INTO rtnCd;
+          SELECT count(*)
+          INTO pCount
+          FROM i2b2metadata.i2b2
+          WHERE c_fullname = iPath || '\';
+
+          IF (pCount = 0)
+          THEN
+            SELECT i2b2_add_node(NULL, iPath || '\', new_paths [nPath], jobID)
+            INTO rtnCd;
+            stepCt := stepCt + 1;
+            SELECT cz_write_audit(jobId, databaseName, procedureName, 'Add node ' || iPath, 1,
+                                  stepCt, 'Done')
+            INTO rtnCd;
+          END IF;
         END IF;
       END LOOP;
     END LOOP;
@@ -1515,6 +1527,84 @@ BEGIN
 	END;
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Inserted cross leaf nodes into I2B2METADATA i2b2',rowCt,stepCt,'Done') into rtnCd;
+
+  BEGIN
+		INSERT INTO i2b2metadata.i2b2_secure
+		(c_hlevel
+			, c_fullname
+			, c_name
+			, c_visualattributes
+			, c_synonym_cd
+			, c_facttablecolumn
+			, c_tablename
+			, c_columnname
+			, c_dimcode
+			, c_tooltip
+			, update_date
+			, download_date
+			, import_date
+			, sourcesystem_cd
+			, c_basecode
+			, c_operator
+			, c_columndatatype
+			, c_comment
+			, m_applied_path
+			, c_metadataxml
+      , secure_obj_token
+		)
+			SELECT DISTINCT
+				(length(r.concept_path) - coalesce(length(replace(r.concept_path, '\', '')), 0)) / length('\') - 2,
+				r.concept_path,
+				r.name_char,
+				'LA',
+				'N',
+				'CONCEPT_CD',
+				'CONCEPT_DIMENSION',
+				'CONCEPT_PATH',
+				r.concept_path,
+				r.concept_path,
+				current_timestamp,
+				current_timestamp,
+				current_timestamp,
+				null,
+				r.concept_cd,
+				'LIKE',  --'T'
+				'T', --t.data_type
+				'trial:' || TrialID,
+				'@',
+				r.xml,
+        'EXP:PUBLIC'
+			FROM (
+						 SELECT
+							 c.concept_path,
+							 c.name_char,
+							 c.concept_cd,
+							 i2b2_build_metadata_xml(c.name_char, t.data_type, t.valuetype_cd, c.sourcesystem_cd,
+																			 c.concept_path)                                                              AS xml
+						 FROM i2b2demodata.concept_dimension c
+							 , wt_trial_nodes t
+						 WHERE
+									 t.concept_cd LIKE ':%' and c.concept_path = replace(t.leaf_node, topNode, '\')
+									 AND NOT exists
+						 (SELECT 1
+							FROM i2b2metadata.i2b2_secure x
+							WHERE c.concept_path = x.c_fullname)) r;
+		GET DIAGNOSTICS rowCt := ROW_COUNT;
+		EXCEPTION
+		WHEN OTHERS
+			THEN
+				errorNumber := SQLSTATE;
+				errorMessage := SQLERRM;
+				--Handle errors.
+				SELECT cz_error_handler(jobID, procedureName, errorNumber, errorMessage)
+				INTO rtnCd;
+				--End Proc
+				SELECT cz_end_audit(jobID, 'FAIL')
+				INTO rtnCd;
+				RETURN -16;
+	END;
+	stepCt := stepCt + 1;
+	select cz_write_audit(jobId,databaseName,procedureName,'Inserted cross leaf nodes into I2B2METADATA i2b2_secure',rowCt,stepCt,'Done') into rtnCd;
 
 
 	--New place form fill_in_tree
