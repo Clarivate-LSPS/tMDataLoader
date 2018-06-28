@@ -102,6 +102,11 @@ class CommandLineTool {
             config = new ConfigSlurper().parse(
                     new File(configFileName).toURI().toURL()
             )
+            // config.foo?.toString() will return '[:]' if 'foo' key does not exist:
+            // https://github.com/groovy/groovy-core/blob/master/src/main/groovy/util/ConfigObject.java#L92
+            def db = config.remove('db')
+            config = config.toProperties()
+            config.db = db
         }
         catch (e) {
             println "Error processing config: ${e}\n"
@@ -186,15 +191,13 @@ class CommandLineTool {
         }
 
         if (opts?.'delete-study-by-id') {
-            config.deleteStudyById = true;
-            config.deleteStudyByIdValue = opts?.'delete-study-by-id';
+            config.deleteStudyById = opts?.'delete-study-by-id';
             config.mdOperation = true;
             println ">>> DELETE DATA BY ID ${opts?.'delete-study-by-id'}"
         }
 
         if (opts?.'delete-study-by-path') {
-            config.deleteStudyByPath = true;
-            config.deleteStudyByPathValue = opts?.'delete-study-by-path';
+            config.deleteStudyByPath = opts?.'delete-study-by-path';
             config.mdOperation = true;
             println ">>> DELETE DATA BY PATH ${opts?.'delete-study-by-path'}"
         }

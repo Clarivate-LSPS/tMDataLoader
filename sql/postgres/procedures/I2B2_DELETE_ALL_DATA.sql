@@ -54,6 +54,32 @@ BEGIN
     return -16;
   end if;
 
+
+  IF (path_string IS NOT NULL AND trial_id IS NOT NULL)
+  THEN
+
+    SELECT count(sourcesystem_cd)
+    INTO pCount
+    FROM i2b2metadata.i2b2
+    WHERE
+      c_fullname LIKE path_string || '%' ESCAPE '`' AND sourcesystem_cd != TrialID;
+
+    IF pCount != 0
+    THEN
+      stepCt := stepCt + 1;
+      SELECT cz_write_audit(jobId, databasename, procedurename,
+                            'Both path string and study id were specified, but they are differ from existing', 1,
+                            stepCt,
+                            'ERROR')
+      INTO rtnCd;
+      SELECT cz_error_handler(jobid, procedurename, '-1', 'Application raised error')
+      INTO rtnCd;
+      SELECT cz_end_audit(jobId, 'FAIL')
+      INTO rtnCd;
+      RETURN -16;
+    END IF;
+  END IF;
+
   if (path_string is null) then
     SELECT DISTINCT
       first_value(concept_path) over (partition by sourcesystem_cd order by concept_path)

@@ -37,6 +37,7 @@ AS
   stepCt number(18,0);
   more_trial exception;
   path_not_found exception;
+  both_parameters_specified exception;
 	res	number;
   studyNum NUMBER(18,0);
 
@@ -64,6 +65,19 @@ BEGIN
   if (path_string is null and trial_id is null) then
     RAISE path_not_found;
   end if;
+
+  IF (path_string IS NOT NULL AND trial_id IS NOT NULL)
+  THEN
+    SELECT count(sourcesystem_cd)
+    INTO pCount
+    FROM i2b2metadata.i2b2
+    WHERE
+      c_fullname LIKE path_string || '%' ESCAPE '`' AND sourcesystem_cd != TrialID;
+    IF pCount != 0
+    THEN
+      RAISE both_parameters_specified;
+    END IF;
+  END IF;
 
   if (path_string is not null) then
 		pathString := REGEXP_REPLACE('\' || path_string || '\','(\\){2,}', '\');
@@ -397,6 +411,10 @@ BEGIN
 	cz_write_audit(jobId,databasename,procedurename,'Path was not found for this trial id',1,stepCt,'ERROR');
 	cz_error_handler(jobid,procedurename);
 	cz_end_audit (jobId,'FAIL');
+  WHEN both_parameters_specified then
+    cz_write_audit(jobId,databasename,procedurename,'Both path string and study id were specified, but they are differ from existing',1,stepCt,'ERROR');
+    cz_error_handler(jobid,procedurename);
+    cz_end_audit (jobId,'FAIL');
   WHEN cross_study
   THEN
     cz_write_audit(jobId, databasename, procedurename, 'You are trying to delete cross node', 1, stepCt, 'ERROR');
