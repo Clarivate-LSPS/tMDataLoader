@@ -7,9 +7,7 @@ create or replace function I2B2_DELETE_ALL_DATA
 $BODY$
 Declare
   TrialID   varchar(100);
-  bioexpid  bigint;
   pathString  VARCHAR(700);
-  TrialType 	VARCHAR(250);
   sourceCD  	VARCHAR(250);
 
   rowsExists INTEGER;
@@ -128,9 +126,17 @@ BEGIN
         WHERE concept_path LIKE pathString || '%' ESCAPE '`');
 
       --Check concept dimension
-      SELECT count(*) INTO cCount
+      SELECT count(*)
+      INTO cCount
       FROM i2b2demodata.concept_dimension
-        WHERE concept_path = pathString AND sourcesystem_cd is null;
+      WHERE concept_cd IN (
+        SELECT c_basecode
+        FROM
+          i2b2metadata.i2b2
+        WHERE c_fullname LIKE pathString || '%' ESCAPE '`' AND c_basecode IS NOT NULL
+
+        GROUP BY c_basecode) AND sourcesystem_cd IS NULL;
+
       IF pCount > 0 and cCount > 0
       THEN
         stepCt := stepCt + 1;

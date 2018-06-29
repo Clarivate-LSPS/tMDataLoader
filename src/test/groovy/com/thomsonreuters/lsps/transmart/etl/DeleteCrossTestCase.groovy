@@ -53,7 +53,8 @@ class DeleteCrossTestCase extends Specification implements ConfigAwareTestCase {
         then:
         assertThat("Should check procedure result", operation, equalTo(false))
         assertThatCrossNodeDelete(data.path, false)
-        assertThatConceptDelete(data.path, false)
+        assertThatCrossNodeDelete(data.path + "Node 1\\", false)
+        assertThatConceptDelete(data.path + "Node 1\\", false)
         assertThatConceptDelete(data.path + "Node 1\\Node 2\\Flag\\", false)
     }
 
@@ -77,7 +78,7 @@ class DeleteCrossTestCase extends Specification implements ConfigAwareTestCase {
 
         assertThatCrossNodeDelete(data.path)
         assertThatCrossNodeDelete(data.path + "Node 1\\Node 2\\Flag\\")
-        assertThatConceptDelete(data.path, false)
+        assertThatConceptDelete(data.path + "Node 1\\", false)
         assertThatConceptDelete(data.path + "Node 1\\Node 2\\Flag\\", false)
     }
 
@@ -101,11 +102,11 @@ class DeleteCrossTestCase extends Specification implements ConfigAwareTestCase {
 
         assertThatCrossNodeDelete(data.path)
         assertThatCrossNodeDelete(data.path + "Node 1\\Node 2\\Flag\\")
-        assertThatConceptDelete(data.path)
+        assertThatConceptDelete(data.path + "Node 1\\")
         assertThatConceptDelete(data.path + "Node 1\\Node 2\\Flag\\")
     }
 
-    def 'it should delete concepts after deleting tree and study'(){
+    def 'it should delete concepts after deleting tree and study'() {
         given:
         Fixtures.clinicalDataWithCrossNode.load(config, "Test Studies")
 
@@ -119,7 +120,7 @@ class DeleteCrossTestCase extends Specification implements ConfigAwareTestCase {
         ]
 
         deleteCrossProcessor.process(data)
-        assertThatConceptDelete(data.path, false)
+        assertThatConceptDelete(data.path + "Node 1\\", false)
         assertThatConceptDelete(data.path + "Node 1\\Node 2\\Flag\\", false)
 
         when:
@@ -135,11 +136,11 @@ class DeleteCrossTestCase extends Specification implements ConfigAwareTestCase {
 
         assertThatCrossNodeDelete(data.path)
         assertThatCrossNodeDelete(data.path + "Node 1\\Node 2\\Flag\\")
-        assertThatConceptDelete(data.path)
+        assertThatConceptDelete(data.path + "Node 1\\")
         assertThatConceptDelete(data.path + "Node 1\\Node 2\\Flag\\")
     }
 
-    def 'it should check throw exception then cross node delete by path'(){
+    def 'it should check throw exception then cross node delete by path'() {
         given:
         Fixtures.clinicalDataWithCrossNode.load(config, "Test Studies")
 
@@ -152,11 +153,11 @@ class DeleteCrossTestCase extends Specification implements ConfigAwareTestCase {
 
         assertThatCrossNodeDelete(data.path, false)
         assertThatCrossNodeDelete(data.path + "Node 1\\Node 2\\Flag\\", false)
-        assertThatConceptDelete(data.path, false)
+        assertThatConceptDelete(data.path + "Node 1\\", false)
         assertThatConceptDelete(data.path + "Node 1\\Node 2\\Flag\\", false)
     }
 
-    def 'it should check remove data from observation_fact table'(){
+    def 'it should check remove data from observation_fact table'() {
         given:
         def clinical = Fixtures.clinicalDataWithCrossNode
         clinical.load(config, "Test Studies")
@@ -169,7 +170,7 @@ class DeleteCrossTestCase extends Specification implements ConfigAwareTestCase {
         assertTrue(operation)
 
         def res = sql.firstRow('SELECT count(*) FROM i2b2demodata.observation_fact where sourcesystem_cd = ?', [clinical.studyId])
-        assertEquals(0, res[0])
+        assertEquals(0, (Integer) res[0])
 
         cleanup:
         deleteDataProcessor.process([id: Fixtures.clinicalDataWithCrossNodeOnSomePath.studyId])

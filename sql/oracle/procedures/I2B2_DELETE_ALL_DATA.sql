@@ -111,7 +111,13 @@ BEGIN
         SELECT count(*)
         INTO cCount
         FROM i2b2demodata.concept_dimension
-        WHERE concept_path = pathString AND sourcesystem_cd IS NULL;
+        WHERE concept_cd IN (
+          SELECT c_basecode
+          FROM
+            i2b2metadata.i2b2
+          WHERE c_fullname LIKE pathString || '%' ESCAPE '`' AND c_basecode IS NOT NULL
+
+          GROUP BY c_basecode) AND sourcesystem_cd IS NULL;
 
         IF pCount > 0 AND cCount > 0
         THEN
