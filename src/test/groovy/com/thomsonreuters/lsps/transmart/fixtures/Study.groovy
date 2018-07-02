@@ -26,6 +26,13 @@ class Study {
         ])
     }
 
+    static void deleteCrossByConceptCD(config, String conceptCD) {
+        new DeleteCrossProcessor(config).process([
+                conceptCD       : conceptCD,
+                isDeleteConcepts: true
+        ])
+    }
+
     Study withData(AbstractData data) {
         this.dataList.add(data)
         return this

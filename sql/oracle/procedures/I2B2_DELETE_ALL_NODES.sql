@@ -72,8 +72,7 @@ Begin
       FROM i2b2demodata.CONCEPT_DIMENSION
       WHERE concept_path LIKE PATH || '%' AND sourcesystem_cd IS NOT NULL
     );
-    stepCt := stepCt + 1;
-    cz_write_audit(jobId,databaseName,procedureName,'trialVisitNumN ' || trialVisitNumN,SQL%ROWCOUNT,stepCt,'Done');
+
     IF (trialVisitNumN != 1)
     THEN
       stepCt := stepCt + 1;

@@ -1398,7 +1398,7 @@ BEGIN
       SELECT count(*)
       INTO pCount
       FROM i2b2metadata.i2b2
-      WHERE c_name = root_node_cross;
+			WHERE c_name = root_node_cross AND sourcesystem_cd IS NULL;
 
       IF pExists = 0 OR pCount = 0
       THEN

@@ -14,8 +14,7 @@ class DeleteCrossTestCase extends Specification implements ConfigAwareTestCase {
     private DeleteCrossProcessor _deleteCrossProcessor
     private DeleteDataProcessor _deleteDataProcessor
 
-    def studyConceptId = "GSECONCEPTCD"
-    def studyConceptName = 'Test Data With Concept_cd'
+    def studyConceptId = Fixtures.clinicalDataWithCrossNode.studyId
 
     DeleteDataProcessor getDeleteDataProcessor() {
         _deleteDataProcessor ?: (_deleteDataProcessor = new DeleteDataProcessor(config))
@@ -36,6 +35,8 @@ class DeleteCrossTestCase extends Specification implements ConfigAwareTestCase {
         runScript('I2B2_DELETE_ALL_NODES.sql')
 
         Study.deleteById(config, studyConceptId)
+        Study.deleteById(config, Fixtures.clinicalDataWithDiffCrossLeafName.studyId)
+        Study.deleteCrossByConceptCD(config, 'VNEW:FLAG')
     }
 
     def 'it should not delete cross node from i2b2 schema'() {
@@ -175,6 +176,66 @@ class DeleteCrossTestCase extends Specification implements ConfigAwareTestCase {
         cleanup:
         deleteDataProcessor.process([id: Fixtures.clinicalDataWithCrossNodeOnSomePath.studyId])
         deleteCrossProcessor.process([path: '\\Vital\\', isDeleteConcepts: true])
+    }
+
+    def 'if should delete cross node by concept_cd from i2b2'() {
+        given:
+        Fixtures.clinicalDataWithCrossNode.load(config, "Test Studies")
+        def crossPathTop = '\\Vital\\'
+
+        when:
+        deleteDataProcessor.process([id: studyConceptId])
+        def data = [conceptCD: 'VSIGN:FLAG']
+        def operation = deleteCrossProcessor.process(data)
+
+        then:
+        assertTrue(operation)
+
+        assertThatCrossNodeDelete(crossPathTop)
+        assertThatCrossNodeDelete(crossPathTop + "Node 1\\Node 2\\Flag\\")
+        assertThatConceptDelete(crossPathTop + "Node 1\\", false)
+        assertThatConceptDelete(crossPathTop + "Node 1\\Node 2\\Flag\\", false)
+    }
+
+    def 'if should delete cross node by concept_cd with concepts'() {
+        given:
+        Fixtures.clinicalDataWithCrossNode.load(config, "Test Studies")
+        def crossPathTop = '\\Vital\\'
+
+        when:
+        deleteDataProcessor.process([id: studyConceptId])
+        def data = [conceptCD       : 'VSIGN:FLAG',
+                    isDeleteConcepts: true]
+        def operation = deleteCrossProcessor.process(data)
+
+        then:
+        assertTrue(operation)
+
+        assertThatCrossNodeDelete(crossPathTop)
+        assertThatCrossNodeDelete(crossPathTop + "Node 1\\Node 2\\Flag\\")
+        assertThatConceptDelete(crossPathTop + "Node 1\\")
+        assertThatConceptDelete(crossPathTop + "Node 1\\Node 2\\Flag\\")
+    }
+
+    def 'it should delete study, but not delete tree with child'() {
+        given:
+        Study.deleteById(config, Fixtures.clinicalDataWithDiffCrossLeafName.studyId)
+        Study.deleteCross(config, '\\Vital New\\')
+        Fixtures.clinicalDataWithCrossNode.load(config, "Test Studies")
+        Fixtures.clinicalDataWithDiffCrossLeafName.load(config, 'Test Studies')
+
+        when:
+        deleteDataProcessor.process([id: studyConceptId])
+        def data = [path: "\\Vital\\Node 1\\Node 2\\Flag\\"]
+        def operation = deleteCrossProcessor.process(data)
+
+        then:
+        assertTrue(operation)
+
+        assertThatCrossNodeDelete('\\Vital\\', false)
+        assertThatCrossNodeDelete("\\Vital\\Node 1\\Node 2\\Flag\\")
+        assertThatCrossNodeDelete("\\Vital\\Node 1\\Node 2\\Diff Flag\\", false)
+
     }
 
     void assertThatCrossNodeDelete(String path, isDelete = true) {

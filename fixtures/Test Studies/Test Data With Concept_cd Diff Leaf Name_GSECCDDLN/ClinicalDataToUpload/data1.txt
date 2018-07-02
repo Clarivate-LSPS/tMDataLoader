@@ -1,0 +1,5 @@
+STUDY_ID	SUBJ_ID	Gender	Age	Race	Node
+GSECCDDLN	-61	Male	26	Caucasian	One
+GSECCDDLN	-51	Male	24	Latino	One
+GSECCDDLN	-41	Female	20	Caucasian	Two
+GSECCDDLN	TESTME	Unknown	21	Caucasian	Two

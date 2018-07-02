@@ -11,10 +11,11 @@ class DeleteCrossProcessor extends DataOperationProcessor {
     boolean runStoredProcedures(Object jobId, Sql sql, data) {
         String path = data.path?.toString()
         Integer isDeleteConcepts = data.isDeleteConcepts ? 1 : 0
-        if (path) {
-            sql.call("{call " + config.controlSchema + "." + getProcedureName() + "(?,?,?)}", [path, isDeleteConcepts, jobId])
+        String conceptCD = data?.conceptCD
+        if (path || conceptCD) {
+            sql.call("{call " + config.controlSchema + "." + getProcedureName() + "(?,?,?,?)}", [path, conceptCD, isDeleteConcepts, jobId])
         } else {
-            config.logger.log(LogType.ERROR, "Path doesn't set")
+            config.logger.log(LogType.ERROR, "Path and concept_cd don't set")
             return false
         }
 
@@ -29,8 +30,9 @@ class DeleteCrossProcessor extends DataOperationProcessor {
     @Override
     def processData() {
         def data = [
-                path           : config.deleteTreePath,
-                isDeleteConcept: config?.isDeleteConcepts
+                path            : config?.deleteTreePath,
+                isDeleteConcepts: config?.isDeleteConcepts,
+                conceptCD       : config?.deleteConceptCD
         ]
         return data
     }

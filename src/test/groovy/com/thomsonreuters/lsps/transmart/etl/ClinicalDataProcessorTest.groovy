@@ -1607,7 +1607,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         def studyConceptId = "GSECONCEPTCD"
         def studyConceptName = 'Test Data With Concept_cd'
         Study.deleteById(config, studyConceptId)
-        Study.deleteByPath(config, '\\Vital\\')
+        Study.deleteCross(config, '\\Vital\\')
 
         when:
         def load = processor.process(

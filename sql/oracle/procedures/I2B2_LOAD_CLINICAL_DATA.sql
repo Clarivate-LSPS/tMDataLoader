@@ -1246,11 +1246,12 @@ BEGIN
     from table_access
     where c_name = root_node_cross;
 
-    select count(*) into pCount
-    from i2b2
-    where c_name = root_node_cross;
+		SELECT count(*)
+		INTO pCount
+		FROM i2b2
+		WHERE c_name = root_node_cross AND sourcesystem_cd IS NULL;
 
-    if pCount = 0 or pCount = pExists THEN
+		if pCount = 0 or pCount = pExists THEN
       i2b2_add_root_node(root_node_cross, jobID);
     END IF;
 

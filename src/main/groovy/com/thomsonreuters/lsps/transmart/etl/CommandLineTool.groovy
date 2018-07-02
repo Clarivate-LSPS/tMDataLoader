@@ -54,8 +54,9 @@ class CommandLineTool {
             _ longOpt: 'data-value-first', 'Put VISIT NAME after the data value (default behavior, use to override non-standard config)'
             _ longOpt: 'delete-study-by-id', args: 1, argName: 'delete_id', 'Delete study by id'
             _ longOpt: 'delete-study-by-path', args: 1, argName: 'delete_path', 'Delete study by path'
-            _ longOpt: 'delete-tree', args: 1, argName: 'delete_tree', 'Delete cross nodes tree from i2b2'
+            _ longOpt: 'delete-tree', args: 1, argName: 'delete_tree', 'Delete cross nodes tree from i2b2 by path'
             _ longOpt: 'delete-concepts', 'Delete cross nodes concepts'
+            _ longOpt: 'delete-tree-by-concept-cd', args: 1, argName: 'delete-tree-by-concept-cd', 'Delete cross nodes tree from i2b2 by concept_cd'
             _ longOpt: 'force-start', 'Force TM Data Loader start (even if another instance is already running)'
             _ longOpt: 'allow-non-unique-columns', 'Allow non-unique column names in clinical data files'
             _ longOpt: 'use-first-gene-id', 'When probe maps to multiple Entrez Gene IDs use only the first one'
@@ -207,6 +208,18 @@ class CommandLineTool {
             config.deleteTreePath = opts?.'delete-tree';
             config.mdOperation = true;
             def msg = ">> DELETE CROSS NODES FROM ${opts.'delete-tree'}"
+            if (opts.'delete-concepts') {
+                config.isDeleteConcepts = true
+                msg += " AND DELETE CONCEPTS"
+            }
+            println msg
+        }
+
+        if (opts.'delete-tree-by-concept-cd'){
+            config.isDeleteTree = true
+            config.deleteConceptCD = opts?.'delete-tree-by-concept-cd'
+            config.mdOperation = true
+            def msg = ">> DELETE CROSS NODES BY CONCEPT_CD ${config.deleteConceptCD}"
             if (opts.'delete-concepts') {
                 config.isDeleteConcepts = true
                 msg += " AND DELETE CONCEPTS"

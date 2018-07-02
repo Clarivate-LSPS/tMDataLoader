@@ -1,6 +1,7 @@
 CREATE OR REPLACE FUNCTION I2B2_DELETE_CROSS_DATA
   (
     path_string        VARCHAR,
+    concept_cd_inp     VARCHAR,
     is_delete_concepts INTEGER,
     currentJobID       NUMERIC DEFAULT -1
   )
@@ -10,6 +11,7 @@ DECLARE
   pathString       VARCHAR(700);
   pCount           INTEGER;
   isDeleteConcepts BOOLEAN;
+  upNode           VARCHAR(700);
 
   --Audit variables
   rowCt            NUMERIC(18, 0);
@@ -18,7 +20,7 @@ DECLARE
   jobID            NUMERIC(18, 0);
   stepCt           NUMERIC(18, 0);
   rtnCd            INTEGER;
-  errorNumber      CHARACTER VARYING;
+  errorNumber  CHARACTER VARYING;
   errorMessage CHARACTER VARYING;
 
 BEGIN
@@ -29,29 +31,54 @@ BEGIN
     THEN cz_start_audit(procedureName, databaseName)
          ELSE currentjobid END
   INTO jobId;
-  stepCt := 0;
+  stepCt := 1;
+
+  SELECT cz_write_audit(jobId, databaseName, procedureName,
+                        'Starting ' || procedureName || ' for ''' || coalesce(path_string, '<null>') ||
+                        ''' and concept_cd ''' || coalesce(concept_cd_inp, '<null>') || '''',
+                        0, stepCt, 'Done')
+  INTO rtnCd;
 
   IF (path_string IS NULL)
   THEN
-    stepCt := stepCt + 1;
-    SELECT cz_write_audit(jobId, databasename, procedurename, 'Path string and study id are null', 1, stepCt, 'ERROR')
-    INTO rtnCd;
-    SELECT cz_error_handler(jobid, procedurename, '-1', 'Application raised error')
-    INTO rtnCd;
-    SELECT cz_end_audit(jobId, 'FAIL')
-    INTO rtnCd;
-    RETURN -16;
+    IF concept_cd_inp IS NULL
+    THEN
+      stepCt := stepCt + 1;
+      SELECT
+        cz_write_audit(jobId, databasename, procedurename, 'Path string and concept_cd are null', 1, stepCt, 'ERROR')
+      INTO rtnCd;
+      SELECT cz_error_handler(jobid, procedurename, '-1', 'Application raised error')
+      INTO rtnCd;
+      SELECT cz_end_audit(jobId, 'FAIL')
+      INTO rtnCd;
+      RETURN -16;
+    ELSE
+      SELECT concept_path
+      INTO pathString
+      FROM i2b2demodata.concept_dimension
+      WHERE concept_cd = concept_cd_inp;
+
+      IF pathString IS NULL
+      THEN
+        stepCt := stepCt + 1;
+        SELECT cz_write_audit(jobId, databasename, procedurename,
+                              'Path for concept_cd ' || concept_cd_inp || ' does not find',
+                              1, stepCt, 'ERROR')
+        INTO rtnCd;
+        SELECT cz_error_handler(jobid, procedurename, '-1', 'Application raised error')
+        INTO rtnCd;
+        SELECT cz_end_audit(jobId, 'FAIL')
+        INTO rtnCd;
+        RETURN -16;
+      END IF;
+    END IF;
+  ELSE
+    pathString := path_string;
   END IF;
 
-  pathString := path_string;
   pathString := REGEXP_REPLACE('\' || pathString || '\', '(\\){2,}', '\', 'g');
   isDeleteConcepts := is_delete_concepts = 1;
 
-  stepCt := stepCt + 1;
-  SELECT cz_write_audit(jobId, databaseName, procedureName,
-                        'Starting ' || procedureName || ' for ''' || pathString || '''',
-                        0, stepCt, 'Done')
-  INTO rtnCd;
   IF (is_delete_concepts = 1)
   THEN
     stepCt := stepCt + 1;
@@ -59,12 +86,12 @@ BEGIN
                           'Remove concept too',
                           0, stepCt, 'Done')
     INTO rtnCd;
-    ELSE
-      stepCt := stepCt + 1;
-      SELECT cz_write_audit(jobId, databaseName, procedureName,
-                            'Without remove concept ',
-                            0, stepCt, 'Done')
-      INTO rtnCd;
+  ELSE
+    stepCt := stepCt + 1;
+    SELECT cz_write_audit(jobId, databaseName, procedureName,
+                          'Without remove concept ',
+                          0, stepCt, 'Done')
+    INTO rtnCd;
   END IF;
 
   --Checking exists observation_fact
@@ -183,6 +210,35 @@ BEGIN
                      rowCt, stepCt, 'Done')
     INTO rtnCd;
 
+  END IF;
+
+  upNode := substring(pathString FROM 1 FOR (length(pathString) - position('\' IN reverse(rtrim(pathString, '\')))));
+
+  IF isDeleteConcepts
+  THEN
+    SELECT count(*)
+    INTO pCount
+    FROM i2b2demodata.concept_dimension
+    WHERE concept_path like upNode || '%' escape '`';
+  ELSE
+    SELECT count(*)
+    INTO pCount
+    FROM i2b2metadata.i2b2
+    WHERE c_fullname like upNode || '%' escape '`';
+  END IF;
+
+  stepCt := stepCt + 1;
+  SELECT cz_write_audit(jobId, databaseName, procedureName,
+                        'Check if need to remove top node ' || upNode || CASE WHEN pCount = 1
+                          THEN ' YES'
+                                                                         ELSE ' NO' END,
+                        0, stepCt, 'Done')
+  INTO rtnCd;
+
+  IF pCount = 1
+  THEN
+    SELECT I2B2_DELETE_CROSS_DATA(upNode, NULL, is_delete_concepts, jobID)
+    INTO rtnCd;
   END IF;
 
   PERFORM cz_end_audit(jobID, 'SUCCESS')

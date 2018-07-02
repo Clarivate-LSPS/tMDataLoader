@@ -171,6 +171,10 @@ class Fixtures {
         return studiesDir.studyDir('Test Data With Another Concept_cd', 'GSECONCDANOTHER').clinicalData
     }
 
+    static ClinicalData getClinicalDataWithDiffCrossLeafName(){
+        return studiesDir.studyDir('Test Data With Concept_cd Diff Leaf Name','GSECCDDLN').clinicalData
+    }
+
     public static class FilePathBuilder {
         File file
 
