@@ -10,8 +10,8 @@ class DeleteDataProcessor extends DataOperationProcessor {
 
     @Override
     def processData() {
-        def data = ['id'  : (config.deleteStudyByIdValue?.toString()?.toUpperCase() ?: null),
-                    'path': (config.deleteStudyByPathValue ?: null)
+        def data = ['id'  : (config.deleteStudyById?.toString()?.toUpperCase() ?: null),
+                    'path': (config.deleteStudyByPath ?: null)
         ]
         return data
     }

@@ -12,7 +12,7 @@ class OperationProcessor {
     boolean process() {
         def res = false;
         //Delete data study
-        if ((config?.deleteStudyById) || (config?.deleteStudyByPath)) {
+        if (config?.containsKey('deleteStudyById') || config?.containsKey('deleteStudyByPath')) {
             dataOperationProcessor = new DeleteDataProcessor(config)
         } else if (config?.isDeleteTree) {
             dataOperationProcessor = new DeleteCrossProcessor(config)
