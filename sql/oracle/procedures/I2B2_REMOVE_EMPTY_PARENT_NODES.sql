@@ -84,9 +84,9 @@ AS
 
 			IF rowsExists = 1
 			THEN
-				i2b2_delete_1_node(current_path);
+				I2B2_DELETE_1_NODE(current_path, jobID);
 				cz_write_audit(jobId, databaseName, procedureName,
-											 'Remove empty level: ' || current_path, SQL%ROWCOUNT, stepCt,
+											 'Remove empty level: ' || current_path, 0, stepCt,
 											 'Done');
 				IF paths_tab(i).lvl = 1 THEN
 					delete from table_access where c_fullname = current_path;

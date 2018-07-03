@@ -236,6 +236,10 @@ class DeleteCrossTestCase extends Specification implements ConfigAwareTestCase {
         assertThatCrossNodeDelete("\\Vital\\Node 1\\Node 2\\Flag\\")
         assertThatCrossNodeDelete("\\Vital\\Node 1\\Node 2\\Diff Flag\\", false)
 
+        cleanup:
+        Study.deleteById(config, Fixtures.clinicalDataWithDiffCrossLeafName.studyId)
+        Study.deleteById(config, Fixtures.clinicalDataWithDiffCrossLeafName.studyId)
+        Study.deleteCross(config, '\\Vital\\Node 1\\Node 2\\Diff Flag\\')
     }
 
     void assertThatCrossNodeDelete(String path, isDelete = true) {

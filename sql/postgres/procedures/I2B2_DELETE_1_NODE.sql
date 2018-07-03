@@ -32,6 +32,8 @@ Declare
 	errorNumber		character varying;
 	errorMessage	character varying;
 	rtnCd			numeric;
+	trialId                 character varying;
+	srcSysCD                character varying;
 	
 BEGIN
 
@@ -53,29 +55,27 @@ BEGIN
 		select cz_write_audit(jobId,databaseName,procedureName,'Path missing, no action taken',0,stepCt,'Done') into rtnCd;
 		return 1;
 	end if;
-	
-    --I2B2
-	begin
-    delete from i2b2demodata.observation_fact 
-    where concept_cd in (select c_basecode from i2b2metadata.i2b2 where c_fullname = path);
-	exception
-	when others then
-		errorNumber := SQLSTATE;
-		errorMessage := SQLERRM;
-		--Handle errors.
-		select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
-		--End Proc
-		select cz_end_audit (jobID, 'FAIL') into rtnCd;
-		return -16;
-	get diagnostics rowCt := ROW_COUNT;	
-	end;
-	--stepCt := stepCt + 1;
-	--select cz_write_audit(jobId,databaseName,procedureName,'Delete data from observation_fact',rowCt,stepCt,'Done') into rtnCd;
 
-      --CONCEPT DIMENSION
+	SELECT sourcesystem_cd
+	INTO trialId
+	FROM i2b2metadata.i2b2
+	WHERE c_fullname = path;
+
 	begin
-    delete from i2b2demodata.concept_dimension
-    WHERE CONCEPT_PATH = path;
+        if(trialId is not null)
+        then
+            delete from i2b2demodata.observation_fact f
+            where f.concept_cd in (select c_basecode from i2b2metadata.i2b2 where c_fullname = path) and f.sourcesystem_cd=trialId;
+        else
+            select f.sourcesystem_cd into srcSysCD from i2b2demodata.observation_fact f
+            where f.concept_cd in (select c_basecode from i2b2metadata.i2b2 where c_fullname = path);
+            if(found)
+            then
+                       select cz_error_handler (jobID, procedureName, -1, 'Cross-trial node '||path||' has data from study '||coalesce(srcSysCD, 'null')) into rtnCd;
+                       select cz_end_audit (jobID, 'FAIL') into rtnCd;
+                       return -16;
+            end if;
+        end if;
 	exception
 	when others then
 		errorNumber := SQLSTATE;
@@ -89,11 +89,14 @@ BEGIN
 	end;
 	--stepCt := stepCt + 1;
 	--select cz_write_audit(jobId,databaseName,procedureName,'Delete data from concept_dimension',rowCt,stepCt,'Done') into rtnCd;
-    
-    --I2B2
+
+	--CONCEPT DIMENSION
 	begin
-    delete from i2b2metadata.i2b2
-    where c_fullname = path;
+		if(trialId is not null)
+		then
+			delete from i2b2demodata.concept_dimension c
+			WHERE c.CONCEPT_PATH = path and c.sourcesystem_cd = trialId;
+		end if;
 	exception
 	when others then
 		errorNumber := SQLSTATE;
@@ -106,7 +109,7 @@ BEGIN
 	get diagnostics rowCt := ROW_COUNT;	
 	end;
 	--stepCt := stepCt + 1;
-	--select cz_write_audit(jobId,databaseName,procedureName,'Delete data from i2b2',rowCt,stepCt,'Done') into rtnCd;
+	--select cz_write_audit(jobId,databaseName,procedureName,'Delete data from concept_dimension',rowCt,stepCt,'Done') into rtnCd;
 	
 	--i2b2_secure
 	begin
@@ -143,7 +146,23 @@ BEGIN
 	end;
 	--stepCt := stepCt + 1;
 	--select cz_write_audit(jobId,databaseName,procedureName,'Delete data from concept_counts',rowCt,stepCt,'Done') into rtnCd;
-		
+
+	--I2B2
+	begin
+		delete from i2b2metadata.i2b2
+		where c_fullname = path;
+		exception
+		when others then
+			errorNumber := SQLSTATE;
+			errorMessage := SQLERRM;
+			--Handle errors.
+			select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into rtnCd;
+			--End Proc
+			select cz_end_audit (jobID, 'FAIL') into rtnCd;
+			return -16;
+			get diagnostics rowCt := ROW_COUNT;
+	end;
+
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'End i2b2_delete_1_node',rowCt,stepCt,'Done') into rtnCd;
 	

@@ -163,7 +163,7 @@ BEGIN
 	  cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from I2B2METADATA i2b2_tags',SQL%ROWCOUNT,stepCt,'Done');
 	  commit;
 
-	  i2b2_remove_empty_parent_nodes(pathString, jobID);
+	  i2b2_remove_empty_parent_nodes(pathString, jobId);
 	end if;
 
 	--	delete clinical data

@@ -138,12 +138,21 @@ AS
       SELECT count(*)
       INTO pCount
       FROM i2b2demodata.concept_dimension
-      WHERE concept_path LIKE upNode || '%' ESCAPE '`';
+      WHERE concept_path LIKE upNode || '%';
+
+      -- Check i2b2 for remove top node, if necessary
+      IF pCount = 0
+      THEN
+        SELECT count(*)
+        INTO pCount
+        FROM i2b2metadata.i2b2
+        WHERE c_fullname LIKE upNode || '%' AND sourcesystem_cd IS NULL;
+      END IF;
     ELSE
       SELECT count(*)
       INTO pCount
       FROM i2b2metadata.i2b2
-      WHERE c_fullname LIKE upNode || '%' ESCAPE '`';
+      WHERE c_fullname LIKE upNode || '%';
     END IF;
 
     stepCt := stepCt + 1;
