@@ -1,13 +1,14 @@
 create or replace
 PROCEDURE                                                       "I2B2_LOAD_CLINICAL_DATA" 
 (
-	trial_id 			IN	VARCHAR2,
-  top_node			in  varchar2,
- 	secure_study		in varchar2 := 'N',
- 	highlight_study	in	varchar2 := 'N',
- 	alwaysSetVisitName in varchar2 := 'N',
- 	currentJobID		IN	NUMBER := null,
-	merge_mode	in varchar := 'REPLACE'
+	trial_id           IN VARCHAR2,
+	top_node           IN VARCHAR2,
+	secure_study       IN VARCHAR2 := 'N',
+	highlight_study    IN VARCHAR2 := 'N',
+	alwaysSetVisitName IN VARCHAR2 := 'N',
+	currentJobID       IN NUMBER := NULL,
+	merge_mode         IN VARCHAR := 'REPLACE',
+	shared_patients    IN VARCHAR := NULL
 )
 AS
 
@@ -297,8 +298,8 @@ BEGIN
 			regexp_replace(regexp_replace(replace(replace(category_cd, '_', ' '), '+', '\'), '\$\$\d*[A-Z]\{([^}]+)\}', '\1'),
 										 '\$\$\d*[A-Z]', ''),
 			(CASE WHEN site_id IS NOT NULL
-				THEN TrialID || ':' || site_id || ':' || subject_id
-			 ELSE TrialID || ':' || subject_id END),
+				THEN case WHEN shared_patients is null then TrialID else shared_patients end || ':' || site_id || ':' || subject_id
+			 ELSE case WHEN shared_patients is null then TrialID else shared_patients end || ':' || subject_id END),
 			'T',
 			valuetype_cd,
 			baseline_value,
@@ -1046,12 +1047,37 @@ BEGIN
 		 (select distinct cd.usubjid from tmp_subject_info cd
 		  minus
 		  select distinct pd.sourcesystem_cd from patient_dimension pd
-		  where pd.sourcesystem_cd like TrialId || '%');
+		  where pd.sourcesystem_cd like case WHEN shared_patients is null then TrialID else shared_patients end || ':%');
 		  
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Insert new subjects into patient_dimension',SQL%ROWCOUNT,stepCt,'Done');
 	
 	commit;
+
+	IF shared_patients IS NOT NULL
+	THEN
+
+		INSERT INTO i2b2demodata.patient_mapping (
+			patient_ide,
+			patient_ide_source,
+			patient_num,
+			patient_ide_status
+		) SELECT
+				sourcesystem_cd,
+				'SUBJ_ID',
+				patient_num,
+				'ACTIVE'
+			FROM i2b2demodata.patient_dimension pd
+			WHERE
+				sourcesystem_cd LIKE shared_patients || ':%'
+				AND NOT exists(SELECT 1
+											 FROM i2b2demodata.patient_mapping pd2
+											 WHERE pd.sourcesystem_cd = pd2.patient_ide);
+
+		stepCt := stepCt + 1;
+		cz_write_audit(jobId, databaseName, procedureName, 'Insert new subjects into patient_mapping', SQL%ROWCOUNT, stepCt,
+									 'Done');
+	END IF;
 
 	EXECUTE IMMEDIATE 'TRUNCATE TABLE concept_specific_trials';
 
@@ -1094,7 +1120,7 @@ BEGIN
 					 FROM i2b2demodata.patient_dimension pd
 						 LEFT JOIN
 						 wrk_clinical_data wcd ON pd.sourcesystem_cd = wcd.usubjid
-					 WHERE pd.sourcesystem_cd LIKE TrialId || ':%'
+					 WHERE pd.sourcesystem_cd LIKE case WHEN shared_patients is null then TrialID else shared_patients end || ':%'
 								 AND pd.patient_num NOT IN (SELECT patient_num
 																						FROM i2b2demodata.visit_dimension vd)
 					 GROUP BY wcd.start_date, pd.patient_num, wcd.end_date) t;

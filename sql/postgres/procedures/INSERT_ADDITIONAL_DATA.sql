@@ -115,11 +115,10 @@ BEGIN
           THEN 'PUBLIC'
         ELSE 'EXP:' || TrialId
         END);
-
+      GET DIAGNOSTICS rowCt := ROW_COUNT;
       stepCt := stepCt + 1;
       SELECT cz_write_audit(jobId, databaseName, procedureName, 'Add study to STUDY table', rowCt, stepCt, 'Done')
       INTO rtnCd;
-      GET DIAGNOSTICS rowCt := ROW_COUNT;
       EXCEPTION
       WHEN OTHERS
         THEN

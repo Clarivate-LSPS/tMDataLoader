@@ -9,7 +9,9 @@ CREATE OR REPLACE FUNCTION i2b2_load_clinical_data(
   highlight_study character varying DEFAULT 'N'::character varying,
   alwaysSetVisitName character varying DEFAULT 'N'::character varying,
   currentjobid numeric DEFAULT (-1),
-  merge_mode character varying DEFAULT 'REPLACE'::character varying)
+  merge_mode character varying DEFAULT 'REPLACE'::character varying,
+  shared_patients CHARACTER VARYING DEFAULT NULL
+)
   RETURNS numeric AS
 $BODY$
 /*************************************************************************
@@ -282,7 +284,7 @@ BEGIN
 	set data_type = 'T'
 		-- All tag values prefixed with $$, so we should remove prefixes in category_path
 		,category_path = regexp_replace(regexp_replace(replace(replace(category_cd,'_',' '),'+','\'), '\$\$\d*[A-Z]\{([^}]+)\}', '\1', 'g'), '\$\$\d*[A-Z]', '', 'g')
-	  ,usubjid = REGEXP_REPLACE(TrialID || ':' || coalesce(site_id,'') || ':' || subject_id,
+	  ,usubjid = REGEXP_REPLACE(case WHEN shared_patients is null then TrialID else shared_patients end || ':' || coalesce(site_id,'') || ':' || subject_id,
                    '(::){1,}', ':', 'g');
 	 get diagnostics rowCt := ROW_COUNT;
 	stepCt := stepCt + 1;
@@ -1149,7 +1151,7 @@ BEGIN
 		 (select distinct cd.usubjid from wt_subject_info cd
 		  except
 		  select distinct pd.sourcesystem_cd from i2b2demodata.patient_dimension pd
-		  where pd.sourcesystem_cd like TrialId || ':%');
+		  where pd.sourcesystem_cd like case when shared_patients is null then TrialId else shared_patients end || ':%');
 	get diagnostics rowCt := ROW_COUNT;
 	exception
 	when others then
@@ -1164,6 +1166,47 @@ BEGIN
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Insert new subjects into patient_dimension',rowCt,stepCt,'Done') into rtnCd;
 
+	IF shared_patients IS NOT NULL
+	THEN
+		BEGIN
+
+			INSERT INTO i2b2demodata.patient_mapping (
+				patient_ide,
+				patient_ide_source,
+				patient_num,
+				patient_ide_status
+			) SELECT
+					sourcesystem_cd,
+					'SUBJ_ID',
+					patient_num,
+					'ACTIVE'
+				FROM i2b2demodata.patient_dimension pd
+				WHERE
+					sourcesystem_cd LIKE shared_patients || ':%'
+					AND NOT exists(SELECT 1
+												 FROM i2b2demodata.patient_mapping pd2
+												 WHERE pd.sourcesystem_cd = pd2.patient_ide);
+
+			GET DIAGNOSTICS rowCt := ROW_COUNT;
+			EXCEPTION
+			WHEN OTHERS
+				THEN
+					errorNumber := SQLSTATE;
+					errorMessage := SQLERRM;
+					--Handle errors.
+					SELECT cz_error_handler(jobID, procedureName, errorNumber, errorMessage)
+					INTO rtnCd;
+					--End Proc
+					SELECT cz_end_audit(jobID, 'FAIL')
+					INTO rtnCd;
+					RETURN -16;
+		END;
+		stepCt := stepCt + 1;
+		SELECT
+			cz_write_audit(jobId, databaseName, procedureName, 'Insert new subjects into patient_mapping', rowCt, stepCt,
+										 'Done')
+		INTO rtnCd;
+	END IF;
 
 	create temporary table concept_specific_trials
 	(
@@ -1205,7 +1248,7 @@ BEGIN
 			FROM i2b2demodata.patient_dimension pd
 				LEFT JOIN
 				wrk_clinical_data wcd ON pd.sourcesystem_cd = wcd.usubjid
-			WHERE pd.sourcesystem_cd LIKE TrialId || ':%'
+			WHERE pd.sourcesystem_cd LIKE case when shared_patients is null then TrialId else shared_patients end || ':%'
 						AND pd.patient_num NOT IN (SELECT patient_num
 																			 FROM i2b2demodata.visit_dimension vd)
 			GROUP BY wcd.start_date, pd.patient_num, wcd.end_date;

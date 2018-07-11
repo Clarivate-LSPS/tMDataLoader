@@ -43,6 +43,7 @@ import java.sql.SQLException
 class ClinicalDataProcessor extends AbstractDataProcessor {
     StatisticCollector statistic = new StatisticCollector()
     def usedStudyId = ''
+    String sharedPatients = null
 
     Map<String, Object> previousVisitValuesByLabel = [:]
     Map<Object, String> previousVisitValuesByPair = [:]
@@ -226,6 +227,7 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
             ClinicalDataMapping mapping = ClinicalDataMapping.loadFromCsvLikeFile(mappingFile, colsMetaSize)
 
             mergeMode = getMergeMode(mappingFile)
+            sharedPatients = getSharedPatient(mappingFile)
 
             mapping.eachFileMapping { fileMapping ->
                 this.processFile(sql, dir.resolve(fileMapping.fileName), fileMapping)
@@ -244,6 +246,11 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
         }
         checkStudyExist(sql, studyInfo)
         return true
+    }
+
+    private getSharedPatient(CsvLikeFile mappingFile) {
+        def metaInfo = MetaInfoHeader.getMetaInfo(mappingFile)
+        return metaInfo.SHARED_PATIENTS
     }
 
     private MergeMode getMergeMode(CsvLikeFile mappingFile) {
@@ -336,7 +343,8 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
             config.logger.log("Study ID=${studyId}; Node=${studyNode}")
             def highlightFlag = config.highlightClinicalData ? 'Y' : 'N'
             def alwaysSetVisitName = config.alwaysSetVisitName ? 'Y' : 'N'
-            sql.call("{call " + config.controlSchema + "." + getProcedureName() + "(?,?,?,?,?,?,?)}", [studyId, studyNode, config.securitySymbol, highlightFlag, alwaysSetVisitName, jobId, mergeMode.name()])
+            sql.call("{call " + config.controlSchema + "." + getProcedureName() + "(?,?,?,?,?,?,?,?)}",
+                    [studyId, studyNode, config.securitySymbol, highlightFlag, alwaysSetVisitName, jobId, mergeMode.name(), sharedPatients])
         } else {
             config.logger.log(LogType.ERROR, "Study ID or Node not defined!")
             return false

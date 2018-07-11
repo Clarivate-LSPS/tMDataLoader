@@ -1802,8 +1802,8 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         when:
         processor.usedStudyId = ''
         def result = processor.process(
-                new File(studyDir(studyConceptName, studyConceptId+'2'), "ClinicalDataToUpload").toPath(),
-                [name: studyConceptName+ " Another", node: "Test Studies\\${studyConceptName} Another".toString()])
+                new File(studyDir(studyConceptName, studyConceptId + '2'), "ClinicalDataToUpload").toPath(),
+                [name: studyConceptName + " Another", node: "Test Studies\\${studyConceptName} Another".toString()])
 
         then:
         assertThat("Should check throw duplicate concept_cd", result, equalTo(false))
@@ -1829,7 +1829,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertThat("Should check throw duplicate concept_cd", result, equalTo(false))
     }
 
-    def 'Should check load cross study by exist another study path'(){
+    def 'Should check load cross study by exist another study path'() {
         given:
         def studyConceptId = "GSECONCEPTCD"
         def studyConceptName = 'Test Data With ConceptCD'
@@ -1844,10 +1844,75 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         when:
         processor.usedStudyId = ''
         def result = processor.process(
-                new File(studyDir('Test Data With Cross Study By Same Path','GSECSSP',additionalStudiesDir), 'ClinicalDatatoUpload').toPath(),
-                [name:'Test Data With Cross Study By Same Path', node: "${topFolder}\\Test Data With Cross Study By Same Path".toString()]
+                new File(studyDir('Test Data With Cross Study By Same Path', 'GSECSSP', additionalStudiesDir), 'ClinicalDatatoUpload').toPath(),
+                [name: 'Test Data With Cross Study By Same Path', node: "${topFolder}\\Test Data With Cross Study By Same Path".toString()]
         )
         then:
         assertThat("Should check parent nodes", result, equalTo(false))
+    }
+
+    def 'Should check load share patients to patient_mapping'() {
+        given:
+        def studyName = 'Test Study With Share Patients'
+        def currentStudyId = 'GSE0WSP'
+        def patientShareString = "SHARED_TEST"
+
+        when:
+        def result = processor.process(
+                new File(studyDir(studyName, currentStudyId), 'ClinicalDataToUpload').toPath(),
+                [name: studyName, node: "\\Test Studies2\\${studyName}".toString()]
+        )
+
+        then:
+        assertTrue('Upload didn\'t success', result)
+        assertThat(db, hasRecord(['patient_ide': "${patientShareString}:SW48"], 'i2b2demodata.patient_mapping'))
+
+        cleanup:
+        Study.deleteById(config, currentStudyId)
+        sql.executeUpdate("DELETE FROM i2b2demodata.patient_dimension WHERE sourcesystem_cd like ?", patientShareString + ':%')
+        sql.executeUpdate("DELETE FROM i2b2demodata.patient_mapping WHERE patient_ide like ?", patientShareString + ':%')
+    }
+
+    def 'Should check load two study with share patients'() {
+        given:
+        def studyNameFirst = 'Test Study With Share Patients'
+        def studyNameSecond = 'Test Study With Share Patients Second'
+        def firstStudyId = 'GSE0WSP'
+        def secondStudyId = 'GSE0WSPSECOND'
+        def patientShareString = "SHARED_TEST"
+
+        when:
+        def resultFirst = processor.process(
+                new File(studyDir(studyNameFirst, firstStudyId), 'ClinicalDataToUpload').toPath(),
+                [name: studyNameFirst, node: "\\Test Studies2\\${studyNameFirst}".toString()])
+
+        processor.usedStudyId = ''
+        def resultSecond = processor.process(
+                new File(studyDir(studyNameSecond, secondStudyId), 'ClinicalDataToUpload').toPath(),
+                [name: studyNameSecond, node: "\\Test Studies2\\${studyNameSecond}".toString()]
+        )
+
+        then:
+        assertTrue('First study didn\'t upload', resultFirst)
+        assertTrue('Second study didn\'t upload', resultSecond)
+        assertThat(db, hasRecord(['patient_ide': "${patientShareString}:SW48"], 'i2b2demodata.patient_mapping'))
+        assertThat(sql, hasRecord(['c_fullname': "\\Test Studies2\\${studyNameFirst}\\Subjects\\Demographics\\Age (AGE)\\"], "i2b2metadata.i2b2"))
+        assertThat(sql, hasRecord(['c_fullname': "\\Test Studies2\\${studyNameSecond}\\Subjects\\Demographics\\Age (AGE)\\"], "i2b2metadata.i2b2"))
+        def patientCount = sql.firstRow("""
+                select count(*) as cnt from  
+                  i2b2demodata.patient_dimension 
+                where sourcesystem_cd = ?
+            """, ["$patientShareString:SW48".toString()])
+        assertTrue(patientCount.cnt == 1)
+
+        def patientMapping = sql.firstRow("""
+                SELECT COUNT(*) as cnt from 
+                  i2b2demodata.patient_mapping  pm
+                  inner JOIN
+                  i2b2demodata.patient_dimension pd
+                  ON pm.patient_num = pd.patient_num
+                  where pd.sourcesystem_cd = ?                                                
+            """, ["$patientShareString:SW48".toString()])
+        assertTrue(patientMapping.cnt == 1)
     }
 }
