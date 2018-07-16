@@ -343,8 +343,9 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
             config.logger.log("Study ID=${studyId}; Node=${studyNode}")
             def highlightFlag = config.highlightClinicalData ? 'Y' : 'N'
             def alwaysSetVisitName = config.alwaysSetVisitName ? 'Y' : 'N'
-            sql.call("{call " + config.controlSchema + "." + getProcedureName() + "(?,?,?,?,?,?,?,?)}",
-                    [studyId, studyNode, config.securitySymbol, highlightFlag, alwaysSetVisitName, jobId, mergeMode.name(), sharedPatients])
+            def strongPatientCheck = config.strongCheck ? 'Y' : 'N'
+            sql.call("{call " + config.controlSchema + "." + getProcedureName() + "(?,?,?,?,?,?,?,?,?)}",
+                    [studyId, studyNode, config.securitySymbol, highlightFlag, alwaysSetVisitName, jobId, mergeMode.name(), sharedPatients, strongPatientCheck])
         } else {
             config.logger.log(LogType.ERROR, "Study ID or Node not defined!")
             return false

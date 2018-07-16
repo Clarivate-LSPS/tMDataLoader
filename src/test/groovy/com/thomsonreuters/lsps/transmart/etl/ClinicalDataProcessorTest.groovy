@@ -1915,4 +1915,154 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
             """, ["$patientShareString:SW48".toString()])
         assertTrue(patientMapping.cnt == 1)
     }
+
+    def 'It should check strong check patients'() {
+        given:
+        def clinicalData = ClinicalData.build('GSE0PT1', 'Test Study With Patient First Study') {
+            mappingFile {
+                addMetaInfo(['SHARED_PATIENTS: PT_TEST'])
+                forDataFile('TEST.txt') {
+                    map('Subjects+Demographics', 3, 'Age (AGE)')
+                    map('Subjects+Demographics', 4, 'Sex (SEX)')
+                    map('Subjects+Demographics', 5, 'Race (RACE)')
+                }
+            }
+            dataFile('TEST.txt', ['age', 'sex', 'race']) {
+                forSubject('PT01') {
+                    row '30', 'Male', 'Europian'
+                }
+                forSubject('PT02') {
+                    row '50', 'Female', 'Asian'
+                }
+                forSubject('PT03') {
+                    row '50', 'Male', 'Asian'
+                }
+            }
+        }
+        def clinicalDataSecond = ClinicalData.build('GSE0PT2', 'Test Study With Patient Second Study') {
+            mappingFile {
+                addMetaInfo(['SHARED_PATIENTS: PT_TEST'])
+                forDataFile('TEST.txt') {
+                    map('Subjects+Demographics', 3, 'Age (AGE)')
+                    map('Subjects+Demographics', 4, 'Sex (SEX)')
+                    map('Subjects+Demographics', 5, 'Race (RACE)')
+                }
+            }
+            dataFile('TEST.txt', ['age', 'sex', 'race']) {
+                forSubject('PT01') {
+                    row '30', 'Male', 'Europian'
+                }
+                forSubject('PT02') {
+                    row '30', 'Female', 'Asian'
+                }
+                forSubject('PT03') {
+                    row '50', 'Female', 'Asian'
+                }
+            }
+        }
+
+        when:
+        def result1 = clinicalData.load(config)
+
+        config.strongCheck = true
+        def result2 = clinicalDataSecond.load(config)
+
+        then:
+        assertTrue(result1)
+        assertFalse(result2)
+
+        def checkPatient = sql.firstRow("""
+                SELECT sex_cd, age_in_years_num, race_cd, pd.sourcesystem_cd from 
+                  i2b2demodata.patient_mapping  pm
+                  inner JOIN
+                  i2b2demodata.patient_dimension pd
+                  ON pm.patient_num = pd.patient_num
+                  where pd.sourcesystem_cd = ?                                                
+            """, [
+                "PT_TEST:PT02".toString()
+        ])
+        assertTrue('Sex must not to change', checkPatient.sex_cd == 'Female')
+        assertTrue('Age must not to change', checkPatient.age_in_years_num == 50)
+        assertTrue('Race must not to change', checkPatient.race_cd == 'Asian')
+
+        cleanup:
+        Study.deleteById(config, 'GSE0PT1')
+        Study.deleteById(config, 'GSE0PT2')
+    }
+
+    def 'It should check update patients without strong checking'() {
+        given:
+        def clinicalData = ClinicalData.build('GSE0PT1', 'Test Study With Patient First Study') {
+            mappingFile {
+                addMetaInfo(['SHARED_PATIENTS: PT_TEST'])
+                forDataFile('TEST.txt') {
+                    map('Subjects+Demographics', 3, 'Age (AGE)')
+                    map('Subjects+Demographics', 4, 'Sex (SEX)')
+                    map('Subjects+Demographics', 5, 'Race (RACE)')
+                }
+            }
+            dataFile('TEST.txt', ['age', 'sex', 'race']) {
+                forSubject('PT01') {
+                    row '30', 'Male', 'Europian'
+                }
+                forSubject('PT02') {
+                    row '50', 'Female', 'Asian'
+                }
+                forSubject('PT03') {
+                    row '50', 'Male', 'Asian'
+                }
+            }
+        }
+        def clinicalDataSecond = ClinicalData.build('GSE0PT2', 'Test Study With Patient Second Study') {
+            mappingFile {
+                addMetaInfo(['SHARED_PATIENTS: PT_TEST'])
+                forDataFile('TEST.txt') {
+                    map('Subjects+Demographics', 3, 'Age (AGE)')
+                    map('Subjects+Demographics', 4, 'Sex (SEX)')
+                    map('Subjects+Demographics', 5, 'Race (RACE)')
+                }
+            }
+            dataFile('TEST.txt', ['age', 'sex', 'race']) {
+                forSubject('PT01') {
+                    row '30', 'Male', 'Europian'
+                }
+                forSubject('PT02') {
+                    row '30', 'Female', 'Asian'
+                }
+                forSubject('PT03') {
+                    row '50', 'Female', 'Asian'
+                }
+            }
+        }
+
+        when:
+        def result1 = clinicalData.load(config)
+
+        def result2 = clinicalDataSecond.load(config)
+
+        then:
+        assertTrue(result1)
+        assertTrue(result2)
+
+        def checkPatient = sql.firstRow("""
+                SELECT sex_cd, age_in_years_num, race_cd, pd.sourcesystem_cd from 
+                  i2b2demodata.patient_mapping  pm
+                  inner JOIN
+                  i2b2demodata.patient_dimension pd
+                  ON pm.patient_num = pd.patient_num
+                  where pd.sourcesystem_cd = ?                                                
+            """, [
+                "PT_TEST:PT02".toString()
+        ])
+        assertTrue('Sex must not to change', checkPatient.sex_cd == 'Female')
+        assertTrue('Age must not to change', checkPatient.age_in_years_num == 30)
+        assertTrue('Race must not to change', checkPatient.race_cd == 'Asian')
+
+        cleanup:
+        Study.deleteById(config, 'GSE0PT1')
+        Study.deleteById(config, 'GSE0PT2')
+
+    }
+
+
 }

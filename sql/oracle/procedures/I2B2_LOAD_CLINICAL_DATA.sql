@@ -1,14 +1,15 @@
 create or replace
 PROCEDURE                                                       "I2B2_LOAD_CLINICAL_DATA" 
 (
-	trial_id           IN VARCHAR2,
-	top_node           IN VARCHAR2,
-	secure_study       IN VARCHAR2 := 'N',
-	highlight_study    IN VARCHAR2 := 'N',
-	alwaysSetVisitName IN VARCHAR2 := 'N',
-	currentJobID       IN NUMBER := NULL,
-	merge_mode         IN VARCHAR := 'REPLACE',
-	shared_patients    IN VARCHAR := NULL
+	trial_id             IN VARCHAR2,
+	top_node             IN VARCHAR2,
+	secure_study         IN VARCHAR2 := 'N',
+	highlight_study      IN VARCHAR2 := 'N',
+	alwaysSetVisitName   IN VARCHAR2 := 'N',
+	currentJobID         IN NUMBER := NULL,
+	merge_mode           IN VARCHAR := 'REPLACE',
+	shared_patients      IN VARCHAR := NULL,
+	strong_patient_check IN VARCHAR := 'N'
 )
 AS
 
@@ -87,6 +88,9 @@ AS
 	l_bad_concept_cd    VARCHAR2(4000);
 	l_bad_concept_cds   VARCHAR2(4000);
 	l_bad_concept_cds_max_len NUMBER;
+	strongPatientCheck        BOOLEAN;
+	badPatients               VARCHAR2(2000);
+
 
 	--Audit variables
   newJobFlag INTEGER(1);
@@ -102,6 +106,7 @@ AS
   invalid_topNode	exception;
   MULTIPLE_VISIT_NAMES	EXCEPTION;
   INDEX_NOT_EXISTS EXCEPTION;
+	patients_exists EXCEPTION;
   PRAGMA EXCEPTION_INIT(index_not_exists, -1418);
 
 	CURSOR trialVisitLabels IS
@@ -997,7 +1002,22 @@ BEGIN
 
 		commit;
 	end if;
-	
+
+	if strongPatientCheck
+	then
+		select LISTAGG(CONCAT(t.usubjid, ', ')) WITHIN GROUP(ORDER BY t.usubjid) into badPatients
+		from
+			tm_wz.wt_subject_info t inner join i2b2demodata.patient_dimension pd on t.usubjid = pd.sourcesystem_cd
+		where
+			t.sex_cd <> pd.sex_cd or
+			t.age_in_years_num <> pd.age_in_years_num or
+			t.race_cd <> pd.race_cd;
+
+		if badPatients is not null then
+			RAISE patients_exists;
+		END IF;
+	END IF;
+
 	--	update patients with changed information
 	
 	update /*+ parallel(patient_dimension, 8) */ patient_dimension pd
@@ -1909,6 +1929,12 @@ BEGIN
 	when multiple_visit_names then
 		stepCt := stepCt + 1;
 		cz_write_audit(jobId,databaseName,procedureName,'Not for all subject_id/category/label/value visit names specified. Visit names should be all empty or specified for all records.',0,stepCt,'Done');
+		cz_error_handler (jobID, procedureName);
+		cz_end_audit (jobID, 'FAIL');
+		rtnCode := 16;
+	WHEN patients_exists THEN
+		stepCt := stepCt + 1;
+		cz_write_audit(jobId,databaseName,procedureName,'New patients set ('||badPatients|| ') contain different values from exist in DB',0,stepCt,'Done');
 		cz_error_handler (jobID, procedureName);
 		cz_end_audit (jobID, 'FAIL');
 		rtnCode := 16;

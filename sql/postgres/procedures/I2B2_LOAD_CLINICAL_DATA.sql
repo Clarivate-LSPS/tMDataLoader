@@ -10,7 +10,8 @@ CREATE OR REPLACE FUNCTION i2b2_load_clinical_data(
   alwaysSetVisitName character varying DEFAULT 'N'::character varying,
   currentjobid numeric DEFAULT (-1),
   merge_mode character varying DEFAULT 'REPLACE'::character varying,
-  shared_patients CHARACTER VARYING DEFAULT NULL
+  shared_patients CHARACTER VARYING DEFAULT NULL,
+  strong_patient_check character varying DEFAULT 'N'::character varying
 )
   RETURNS numeric AS
 $BODY$
@@ -31,46 +32,47 @@ $BODY$
 ******************************************************************/
 Declare
 
-  --Audit variables
-  databaseName  VARCHAR(100);
-  procedureName VARCHAR(100);
-  jobID         NUMERIC(18, 0);
-  stepCt        NUMERIC(18, 0);
-  rowCt         NUMERIC(18, 0);
-  errorNumber   CHARACTER VARYING;
-  errorMessage  CHARACTER VARYING;
-  rtnCd         INTEGER;
+	--Audit variables
+	databaseName  VARCHAR(100);
+	procedureName VARCHAR(100);
+	jobID         NUMERIC(18, 0);
+	stepCt        NUMERIC(18, 0);
+	rowCt         NUMERIC(18, 0);
+	errorNumber   CHARACTER VARYING;
+	errorMessage  CHARACTER VARYING;
+	rtnCd         INTEGER;
 
-  topNode       VARCHAR(2000);
-  topLevel      NUMERIC(10, 0);
-  root_node       VARCHAR(2000);
-  root_node_cross VARCHAR(2000);
-  root_level      INTEGER;
-  study_name      VARCHAR(2000);
-  TrialID         VARCHAR(100);
-  secureStudy     VARCHAR(200);
-  tPath           VARCHAR(2000);
-  pCount          INTEGER;
-  pExists         INTEGER;
-  tText                VARCHAR(2000);
-  recreateIndexes      BOOLEAN;
-  recreateIndexesSql   TEXT;
-  updated_patient_nums INTEGER [];
-  pathRegexp           VARCHAR(2000);
-  updatedPath          VARCHAR(2000);
-  cur_row              RECORD;
-  pathCount            INTEGER;
-  trialVisitNum NUMERIC(18, 0);
-  studyNum      NUMERIC(18, 0);
-  defaultTime   TIMESTAMP;
+	topNode       VARCHAR(2000);
+	topLevel      NUMERIC(10, 0);
+	root_node       VARCHAR(2000);
+	root_node_cross VARCHAR(2000);
+	root_level      INTEGER;
+	study_name      VARCHAR(2000);
+	TrialID         VARCHAR(100);
+	secureStudy     VARCHAR(200);
+	tPath           VARCHAR(2000);
+	pCount          INTEGER;
+	pExists         INTEGER;
+	tText           VARCHAR(2000);
+	recreateIndexes      BOOLEAN;
+	recreateIndexesSql   TEXT;
+	updated_patient_nums INTEGER [];
+	pathRegexp           VARCHAR(2000);
+	updatedPath          VARCHAR(2000);
+	cur_row              RECORD;
+	pathCount            INTEGER;
+	trialVisitNum        NUMERIC(18, 0);
+	studyNum             NUMERIC(18, 0);
+	defaultTime          TIMESTAMP;
+	strongPatientCheck        BOOLEAN;
+	badPatients               VARCHAR(2000);
 
-  new_paths              varchar [];
-  array_len              numeric;
-  v_count numeric;
-  iPath   varchar;
-  l_bad_concept_cd varchar;
-  l_bad_concept_cds varchar;
-  l_bad_concept_cds_max_len numeric;
+	new_paths                 VARCHAR [];
+	array_len                 NUMERIC;
+	iPath                     VARCHAR;
+	l_bad_concept_cd          VARCHAR;
+	l_bad_concept_cds         VARCHAR;
+	l_bad_concept_cds_max_len NUMERIC;
 
 	addNodes CURSOR is
 	select DISTINCT leaf_node, node_name
@@ -138,6 +140,8 @@ BEGIN
 	if (secureStudy not in ('Y','N') ) then
 		secureStudy := 'Y';
 	end if;
+
+	strongPatientCheck := strong_patient_check = 'Y';
 
 	--	figure out how many nodes (folders) are at study name and above
 	--	\Public Studies\Clinical Studies\Pancreatic_Cancer_Smith_GSE22780\: topLevel = 4, so there are 3 nodes
@@ -1102,6 +1106,22 @@ BEGIN
 		select cz_write_audit(jobId,databaseName,procedureName,'Delete dropped subjects from patient_dimension',rowCt,stepCt,'Done') into rtnCd;
 	end if;
 
+	if strongPatientCheck
+		 then
+			select string_agg(t.usubjid, ', ') into badPatients
+			 from
+				 tm_wz.wt_subject_info t inner join i2b2demodata.patient_dimension pd on t.usubjid = pd.sourcesystem_cd
+			 where
+				 t.sex_cd <> pd.sex_cd or
+				 t.age_in_years_num <> pd.age_in_years_num or
+				 t.race_cd <> pd.race_cd;
+
+		if badPatients is not null then
+			select cz_error_handler (jobID, procedureName, '-1', 'New patients set ('||badPatients|| ') contain different values from exist in DB') into rtnCd;
+			select cz_end_audit (jobID, 'FAIL') into rtnCd;
+			return -16;
+		END IF;
+	END IF;
 	--	update patients with changed information
 	begin
 	with nsi as (select t.usubjid, t.sex_cd, t.age_in_years_num, t.race_cd from wt_subject_info t)

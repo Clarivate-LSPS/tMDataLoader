@@ -62,6 +62,7 @@ class CommandLineTool {
             _ longOpt: 'use-first-gene-id', 'When probe maps to multiple Entrez Gene IDs use only the first one'
             _ longOpt: 'check-duplicates', 'Check patient duplicates'
             _ longOpt: 'replace-study', 'Upload study by the same path'
+            _ longOpt: 'strong-check', 'Check previous patient values. It will stop upload if values is different'
         }
         // TODO: implement stop-on-fail mode!
         def opts = cli.parse(args)
@@ -265,6 +266,10 @@ class CommandLineTool {
             config.copySecurityFrom = true
             config.csStudyId = opts?.'copy-security-settings-from'
             println ">>> Copy security configuration from ${config.csStudyId}"
+        }
+
+        if (opts?.'strong-check') {
+            config.strongCheck = true
         }
 
         def extra_args = opts.arguments()
