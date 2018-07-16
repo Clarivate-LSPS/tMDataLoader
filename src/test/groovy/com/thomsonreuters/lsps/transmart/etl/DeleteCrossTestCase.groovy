@@ -1,6 +1,7 @@
 package com.thomsonreuters.lsps.transmart.etl
 
 import com.thomsonreuters.lsps.transmart.Fixtures
+import com.thomsonreuters.lsps.transmart.fixtures.ClinicalData
 import com.thomsonreuters.lsps.transmart.fixtures.Study
 import spock.lang.Specification
 
@@ -255,6 +256,190 @@ class DeleteCrossTestCase extends Specification implements ConfigAwareTestCase {
         isDelete ?
                 assertEquals('Row deleted from concept_dimension table', 0, (Integer) concept[0]) :
                 assertEquals('Row didn\'t delete from concept_dimension table', 1, (Integer) concept[0])
+
+    }
+    
+    def 'It should check not delete share patients if upload two study and remove one'(){
+        given:
+        def studyId1 = 'GSE0DT1'
+        def studyId2 = 'GSE0DT2'
+        
+        def clinicalData = ClinicalData.build(studyId1, 'Test Study With Patient First Study') {
+            mappingFile {
+                addMetaInfo(['SHARED_PATIENTS: PD_TEST'])
+                forDataFile('TEST.txt') {
+                    map('Subjects+Demographics', 3, 'Age (AGE)')
+                    map('Subjects+Demographics', 4, 'Sex (SEX)')
+                    map('Subjects+Demographics', 5, 'Race (RACE)')
+                }
+            }
+            dataFile('TEST.txt', ['age', 'sex', 'race']) {
+                forSubject('PD01') {
+                    row '30', 'Male', 'Europian'
+                }
+                forSubject('PD02') {
+                    row '50', 'Female', 'Asian'
+                }
+                forSubject('PD03') {
+                    row '50', 'Male', 'Asian'
+                }
+                forSubject('PD04') {
+                    row '70', 'Male', 'Asian'
+                }
+            }
+        }
+        def clinicalDataSecond = ClinicalData.build(studyId2, 'Test Study With Patient Second Study') {
+            mappingFile {
+                addMetaInfo(['SHARED_PATIENTS: PD_TEST'])
+                forDataFile('TEST.txt') {
+                    map('Subj+Demographics', 3, 'Age (AGE)')
+                    map('Subj+Demographics', 4, 'Sex (SEX)')
+                    map('Subj+Demographics', 5, 'Race (RACE)')
+                }
+            }
+            dataFile('TEST.txt', ['age', 'sex', 'race']) {
+                forSubject('PD01') {
+                    row '30', 'Male', 'Europian'
+                }
+                forSubject('PD02') {
+                    row '50', 'Female', 'Asian'
+                }
+                forSubject('PD03') {
+                    row '50', 'Male', 'Asian'
+                }
+            }
+        }
+        clinicalData.load(config, 'Delete tests')
+        clinicalDataSecond.load(config, 'Delete tests')
+
+        when:
+        def result = deleteDataProcessor.process([id: studyId1])
+
+        then:
+        assertTrue(result)
+        assertThatConceptDelete('\\Delete tests\\Test Study With Patient First Study\\')
+        assertThatConceptDelete('\\Delete tests\\Test Study With Patient Second Study\\', false)
+
+        def checkPatient = sql.firstRow("""
+                SELECT COUNT(*) as cnt from 
+                  i2b2demodata.patient_mapping  pm
+                  inner JOIN
+                  i2b2demodata.patient_dimension pd
+                  ON pm.patient_num = pd.patient_num
+                  where pd.sourcesystem_cd = ?                                                
+            """, [
+                "PD_TEST:PD02".toString()
+        ])
+        assertTrue('Patient is deleted', checkPatient.cnt == 1)
+
+        def checkPatient2 = sql.firstRow("""
+                SELECT COUNT(*) as cnt from 
+                  i2b2demodata.patient_mapping  pm
+                  inner JOIN
+                  i2b2demodata.patient_dimension pd
+                  ON pm.patient_num = pd.patient_num
+                  where pd.sourcesystem_cd = ?                                                
+            """, [
+                "PD_TEST:PD04".toString()
+        ])
+        assertTrue('Patient is not deleted', checkPatient2.cnt == 0)
+
+        cleanup:
+        Study.deleteById(config, studyId1)
+        Study.deleteById(config, studyId2)
+    }
+
+    def 'It should check delete share patients if upload two study and together delete'(){
+        given:
+        def studyId1 = 'GSE0DT1'
+        def studyId2 = 'GSE0DT2'
+
+        def clinicalData = ClinicalData.build(studyId1, 'Test Study With Patient First Study') {
+            mappingFile {
+                addMetaInfo(['SHARED_PATIENTS: PD_TEST'])
+                forDataFile('TEST.txt') {
+                    map('Subjects+Demographics', 3, 'Age (AGE)')
+                    map('Subjects+Demographics', 4, 'Sex (SEX)')
+                    map('Subjects+Demographics', 5, 'Race (RACE)')
+                }
+            }
+            dataFile('TEST.txt', ['age', 'sex', 'race']) {
+                forSubject('PD01') {
+                    row '30', 'Male', 'Europian'
+                }
+                forSubject('PD02') {
+                    row '50', 'Female', 'Asian'
+                }
+                forSubject('PD03') {
+                    row '50', 'Male', 'Asian'
+                }
+                forSubject('PD04') {
+                    row '70', 'Male', 'Asian'
+                }
+            }
+        }
+        def clinicalDataSecond = ClinicalData.build(studyId2, 'Test Study With Patient Second Study') {
+            mappingFile {
+                addMetaInfo(['SHARED_PATIENTS: PD_TEST'])
+                forDataFile('TEST.txt') {
+                    map('Subj+Demographics', 3, 'Age (AGE)')
+                    map('Subj+Demographics', 4, 'Sex (SEX)')
+                    map('Subj+Demographics', 5, 'Race (RACE)')
+                }
+            }
+            dataFile('TEST.txt', ['age', 'sex', 'race']) {
+                forSubject('PD01') {
+                    row '30', 'Male', 'Europian'
+                }
+                forSubject('PD02') {
+                    row '50', 'Female', 'Asian'
+                }
+                forSubject('PD03') {
+                    row '50', 'Male', 'Asian'
+                }
+            }
+        }
+        clinicalData.load(config, 'Delete tests')
+        clinicalDataSecond.load(config, 'Delete tests')
+
+        when:
+        def result1 = deleteDataProcessor.process([id: studyId1])
+        def result2 = deleteDataProcessor.process([id: studyId2])
+
+        then:
+        assertTrue(result1)
+        assertTrue(result2)
+        assertThatConceptDelete('\\Delete tests\\Test Study With Patient First Study\\')
+        assertThatConceptDelete('\\Delete tests\\Test Study With Patient Second Study\\')
+
+
+        def checkPatient = sql.firstRow("""
+                SELECT COUNT(*) as cnt from 
+                  i2b2demodata.patient_mapping  pm
+                  inner JOIN
+                  i2b2demodata.patient_dimension pd
+                  ON pm.patient_num = pd.patient_num
+                  where pd.sourcesystem_cd = ?                                                
+            """, [
+                "PD_TEST:PD02".toString()
+        ])
+        assertTrue('Patient is not deleted', checkPatient.cnt == 0)
+
+        def checkPatient2 = sql.firstRow("""
+                SELECT COUNT(*) as cnt from 
+                  i2b2demodata.patient_mapping  pm
+                  inner JOIN
+                  i2b2demodata.patient_dimension pd
+                  ON pm.patient_num = pd.patient_num
+                  where pd.sourcesystem_cd = ?                                                
+            """, [
+                "PD_TEST:PD04".toString()
+        ])
+        assertTrue('Patient is not deleted', checkPatient.cnt == 0)
+
+        cleanup:
+        Study.deleteById(config, studyId1)
+        Study.deleteById(config, studyId2)
 
     }
 }

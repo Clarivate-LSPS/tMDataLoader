@@ -80,34 +80,34 @@ BEGIN
         WHERE concept_path LIKE PATH || '%' ESCAPE '`' AND sourcesystem_cd IS NOT NULL
       );
       stepCt := stepCt + 1;
-      SELECT cz_write_audit(jobId, databaseName, procedureName, 'Found trial_visit_num', rowCt, stepCt, 'Done')
+      SELECT cz_write_audit(jobId, databaseName, procedureName, 'Found trial_visit_num', 1, stepCt, 'Done')
       INTO rtnCd;
-      BEGIN
-        DELETE FROM i2b2demodata.OBSERVATION_FACT
-        WHERE
-          concept_cd IN (SELECT C_BASECODE
-                         FROM i2b2metadata.I2B2
-                         WHERE C_FULLNAME LIKE PATH || '%' ESCAPE '`' AND sourcesystem_cd IS NOT NULL)
-          AND trial_visit_num = trialVisitNum;
-        GET DIAGNOSTICS rowCt := ROW_COUNT;
-        EXCEPTION
-        WHEN OTHERS
-          THEN
-            errorNumber := SQLSTATE;
-            errorMessage := SQLERRM;
-            --Handle errors.
-            SELECT cz_error_handler(jobID, procedureName, errorNumber, errorMessage)
-            INTO rtnCd;
-            --End Proc
-            SELECT cz_end_audit(jobID, 'FAIL')
-            INTO rtnCd;
-            RETURN -16;
-      END;
-      stepCt := stepCt + 1;
-      SELECT
-        cz_write_audit(jobId, databaseName, procedureName, 'Delete data for trial from I2B2DEMODATA observation_fact',
-                       rowCt, stepCt, 'Done')
-      INTO rtnCd;
+--       BEGIN
+--         DELETE FROM i2b2demodata.OBSERVATION_FACT
+--         WHERE
+--           concept_cd IN (SELECT C_BASECODE
+--                          FROM i2b2metadata.I2B2
+--                          WHERE C_FULLNAME LIKE PATH || '%' ESCAPE '`' AND sourcesystem_cd IS NOT NULL)
+--           AND trial_visit_num = trialVisitNum;
+--         GET DIAGNOSTICS rowCt := ROW_COUNT;
+--         EXCEPTION
+--         WHEN OTHERS
+--           THEN
+--             errorNumber := SQLSTATE;
+--             errorMessage := SQLERRM;
+--             --Handle errors.
+--             SELECT cz_error_handler(jobID, procedureName, errorNumber, errorMessage)
+--             INTO rtnCd;
+--             --End Proc
+--             SELECT cz_end_audit(jobID, 'FAIL')
+--             INTO rtnCd;
+--             RETURN -16;
+--       END;
+--       stepCt := stepCt + 1;
+--       SELECT
+--         cz_write_audit(jobId, databaseName, procedureName, 'Delete data for trial from I2B2DEMODATA observation_fact',
+--                        rowCt, stepCt, 'Done')
+--       INTO rtnCd;
     END IF;
 
     --CONCEPT DIMENSION

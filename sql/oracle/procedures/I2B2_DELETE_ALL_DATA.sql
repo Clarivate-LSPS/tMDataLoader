@@ -1,3 +1,6 @@
+create type patient_set_type is table of number(38,0);
+/
+
 create or replace
 PROCEDURE "I2B2_DELETE_ALL_DATA"
 (
@@ -40,6 +43,9 @@ AS
   both_parameters_specified exception;
 	res	number;
   studyNum NUMBER(18,0);
+  havePatients  INTEGER;
+  patient_set_t patient_set_type;
+  patient_deleting_set_t patient_set_type;
 
   cross_study EXCEPTION;
 BEGIN
@@ -272,6 +278,40 @@ BEGIN
           from de_subject_sample_mapping x
           where x.trial_name = trialId;
 
+      /* If we use share patient, we need to use SHARED_PATIENTS instead of TRIAL_ID */
+      SELECT count(*)
+      INTO havePatients
+      FROM i2b2demodata.patient_dimension p
+      WHERE p.sourcesystem_cd LIKE TrialId || ':%';
+
+      stepCt := stepCt + 1;
+      cz_write_audit(jobId,databaseName,procedureName,'havePatients ' || havePatients,0,stepCt,'Done');
+
+      IF havePatients = 0
+      THEN
+        /* Patients wasn't found, check observation fact by sourcesystem_cd and get patients_num*/
+
+        SELECT DISTINCT f1.patient_num bulk COLLECT into patient_set_t
+        FROM
+          i2b2demodata.observation_fact f1
+        WHERE
+          f1.sourcesystem_cd = TrialID;
+
+
+        SELECT DISTINCT f1.patient_num bulk COLLECT into patient_deleting_set_t
+          FROM
+          i2b2demodata.observation_fact f1
+        WHERE
+          f1.sourcesystem_cd = TrialID AND
+          not exists (select 1 from i2b2demodata.observation_fact f2 where
+            f1.patient_num = f2.patient_num and f2.sourcesystem_cd != TrialID
+          );
+      ELSE
+        SELECT DISTINCT p.patient_num bulk COLLECT into patient_set_t
+          FROM i2b2demodata.patient_dimension p
+        WHERE p.sourcesystem_cd LIKE trialId || ':%';
+      END IF;
+
     FOR i IN sourceCD.FIRST..sourceCD.LAST LOOP
 			i2b2_delete_lv_partition('DEAPP', 'DE_SUBJECT_MICROARRAY_DATA', 'TRIAL_SOURCE',
 															 trialID || ':' || sourceCD(i), drop_partition=>1,
@@ -293,25 +333,32 @@ BEGIN
 
     DELETE FROM i2b2demodata.visit_dimension
     WHERE patient_num IN
-          (SELECT patient_num
-           FROM i2b2demodata.patient_dimension
-           WHERE sourcesystem_cd LIKE trialId || ':%');
+          (select COLUMN_VALUE from TABLE(patient_set_t));
     stepCt := stepCt + 1;
     cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from I2B2DEMODATA visit_dimension',SQL%ROWCOUNT,stepCt,'Done');
 
     DELETE FROM i2b2demodata.observation_fact
     WHERE patient_num IN
-          (SELECT patient_num
-           FROM i2b2demodata.patient_dimension
-           WHERE sourcesystem_cd LIKE trialId || ':%');
+          (select COLUMN_VALUE from TABLE(patient_set_t));
     stepCt := stepCt + 1;
     cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from I2B2DEMODATA observation_fact',SQL%ROWCOUNT,stepCt,'Done');
     commit;
     
 		--	delete patient data
 
-		delete from patient_dimension
-		where sourcesystem_cd like trialId || ':%';
+    IF havePatients = 0
+    THEN
+      DELETE FROM i2b2demodata.patient_mapping
+      WHERE patient_num IN (SELECT COLUMN_VALUE
+                            FROM TABLE (patient_deleting_set_t));
+
+      DELETE FROM i2b2demodata.patient_dimension
+      WHERE patient_num IN (SELECT COLUMN_VALUE
+                            FROM table(patient_deleting_set_t));
+    ELSE
+      DELETE FROM i2b2demodata.patient_dimension
+      WHERE sourcesystem_cd LIKE trialId || ':%';
+    END IF;
 		stepCt := stepCt + 1;
 		cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from I2B2DEMODATA patient_dimension',SQL%ROWCOUNT,stepCt,'Done');
 		commit;

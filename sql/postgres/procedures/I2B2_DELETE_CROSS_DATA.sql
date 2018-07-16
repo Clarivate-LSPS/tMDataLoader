@@ -220,6 +220,14 @@ BEGIN
     INTO pCount
     FROM i2b2demodata.concept_dimension
     WHERE concept_path like upNode || '%' escape '`';
+
+    IF pCount = 0
+    THEN
+      SELECT count(*)
+      INTO pCount
+      FROM i2b2metadata.table_access
+      WHERE c_fullname LIKE upNode || '%' ESCAPE '`';
+    END IF;
   ELSE
     SELECT count(*)
     INTO pCount

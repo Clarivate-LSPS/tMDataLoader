@@ -87,14 +87,14 @@ Begin
         WHERE concept_path LIKE PATH || '%' AND sourcesystem_cd IS NOT NULL
       );
       cz_write_audit(jobId, databaseName, procedureName, 'Found trial_visit_num', SQL%ROWCOUNT, stepCt, 'Done');
-      DELETE
-      FROM OBSERVATION_FACT
-      WHERE
-        concept_cd IN (SELECT C_BASECODE FROM I2B2 WHERE C_FULLNAME LIKE PATH || '%'  AND sourcesystem_cd IS NOT NULL)
-      AND trial_visit_num = trialVisitNum;
-      stepCt := stepCt + 1;
-      cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from I2B2DEMODATA observation_fact',SQL%ROWCOUNT,stepCt,'Done');
-      COMMIT;
+--       DELETE
+--       FROM OBSERVATION_FACT
+--       WHERE
+--         concept_cd IN (SELECT C_BASECODE FROM I2B2 WHERE C_FULLNAME LIKE PATH || '%'  AND sourcesystem_cd IS NOT NULL)
+--       AND trial_visit_num = trialVisitNum;
+--       stepCt := stepCt + 1;
+--       cz_write_audit(jobId,databaseName,procedureName,'Delete data for trial from I2B2DEMODATA observation_fact',SQL%ROWCOUNT,stepCt,'Done');
+--       COMMIT;
     END IF;
 
       --CONCEPT DIMENSION
