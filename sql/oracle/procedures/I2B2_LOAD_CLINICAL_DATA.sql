@@ -98,7 +98,7 @@ AS
   procedureName VARCHAR(100);
   jobID number(18,0);
   stepCt number(18,0);
-  
+
   duplicate_values	exception;
 	forbidden_conceptcd EXCEPTION ;
 	duplicate_conceptcd EXCEPTION ;
@@ -107,6 +107,8 @@ AS
   MULTIPLE_VISIT_NAMES	EXCEPTION;
   INDEX_NOT_EXISTS EXCEPTION;
 	patients_exists EXCEPTION;
+	duplicate_shared_patient EXCEPTION;
+	duplicate_trial_id EXCEPTION;
   PRAGMA EXCEPTION_INIT(index_not_exists, -1418);
 
 	CURSOR trialVisitLabels IS
@@ -212,7 +214,27 @@ BEGIN
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Validate secure params',SQL%ROWCOUNT,stepCt,'Done');
 	commit;
-	
+
+	-- Check study and patient_mapping
+	SELECT count(*)
+	INTO pCount
+	FROM i2b2demodata.study
+	WHERE study_id = trim(shared_patients);
+	IF pCount > 0
+	THEN
+		raise duplicate_shared_patient;
+	END IF;
+
+	SELECT count(*)
+	INTO pCount
+	FROM i2b2demodata.patient_mapping
+	WHERE patient_ide LIKE TrialID || ':%';
+	IF pCount > 0
+	THEN
+		raise duplicate_trial_id;
+	END IF;
+
+
 	--	delete any existing data from lz_src_clinical_data and load new data
 	
 	/*delete from lz_src_clinical_data
@@ -1935,6 +1957,18 @@ BEGIN
 	WHEN patients_exists THEN
 		stepCt := stepCt + 1;
 		cz_write_audit(jobId,databaseName,procedureName,'New patients set ('||badPatients|| ') contain different values from exist in DB',0,stepCt,'Done');
+		cz_error_handler (jobID, procedureName);
+		cz_end_audit (jobID, 'FAIL');
+		rtnCode := 16;
+	WHEN duplicate_shared_patient THEN
+		stepCt := stepCt + 1;
+		cz_write_audit(jobId,databaseName,procedureName,'Please use another SHARED_PATIENTS, because it has already used in studies',0,stepCt,'Done');
+		cz_error_handler (jobID, procedureName);
+		cz_end_audit (jobID, 'FAIL');
+		rtnCode := 16;
+	WHEN duplicate_trial_id THEN
+		stepCt := stepCt + 1;
+		cz_write_audit(jobId,databaseName,procedureName,'Please use another TRIAL ID, because it has already used in share patients',0,stepCt,'Done');
 		cz_error_handler (jobID, procedureName);
 		cz_end_audit (jobID, 'FAIL');
 		rtnCode := 16;

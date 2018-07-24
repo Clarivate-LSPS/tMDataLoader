@@ -234,6 +234,35 @@ BEGIN
 		trial_visit_label = 'Default'
 	WHERE trial_visit_label is null;
 
+	-- Check study and patient_mapping
+	SELECT count(*)
+	INTO pCount
+	FROM i2b2demodata.study
+	WHERE study_id = trim(shared_patients);
+	IF pCount > 0
+	THEN
+		SELECT cz_error_handler(jobID, procedureName, '-1',
+														'Please use another SHARED_PATIENTS, because it has already used in studies')
+		INTO rtnCd;
+		SELECT cz_end_audit(jobID, 'FAIL')
+		INTO rtnCd;
+		RETURN -16;
+	END IF;
+
+	SELECT count(*)
+	INTO pCount
+	FROM i2b2demodata.patient_mapping
+	WHERE patient_ide LIKE TrialID || ':%';
+	IF pCount > 0
+	THEN
+		SELECT cz_error_handler(jobID, procedureName, '-1',
+														'Please use another TRIAL ID, because it has already used in share patients')
+		INTO rtnCd;
+		SELECT cz_end_audit(jobID, 'FAIL')
+		INTO rtnCd;
+		RETURN -16;
+	END IF;
+
 	-- Get root_node from topNode
 
 	select parse_nth_value(topNode, 2, '\') into root_node;

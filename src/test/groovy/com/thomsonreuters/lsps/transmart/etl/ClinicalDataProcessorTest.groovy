@@ -2064,5 +2064,157 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
 
     }
 
+    def 'It should upload studies with same study id and share patient id'() {
+        given:
+        def clinicalData = ClinicalData.build('GSE0PTT', 'Test Study With Share Patients') {
+            mappingFile {
+                addMetaInfo(['SHARED_PATIENTS: PTT_TEST'])
+                forDataFile('TEST.txt') {
+                    map('Subjects+Demographics', 3, 'Age (AGE)')
+                    map('Subjects+Demographics', 4, 'Sex (SEX)')
+                    map('Subjects+Demographics', 5, 'Race (RACE)')
+                }
+            }
+            dataFile('TEST.txt', ['age', 'sex', 'race']) {
+                forSubject('PTT01') {
+                    row '30', 'Male', 'Europian'
+                }
+                forSubject('PTT02') {
+                    row '50', 'Female', 'Asian'
+                }
+                forSubject('PTT03') {
+                    row '50', 'Male', 'Asian'
+                }
+                forSubject('PTT04') {
+                    row '10', 'Male', 'Asian'
+                }
+            }
+        }
+
+        def clinicalDataSecond = ClinicalData.build('PTT_TEST', 'Test Study With PTT_TEST ID') {
+            mappingFile {
+                forDataFile('TEST.txt') {
+                    map('Subjects+Demographics', 3, 'Age (AGE)')
+                    map('Subjects+Demographics', 4, 'Sex (SEX)')
+                    map('Subjects+Demographics', 5, 'Race (RACE)')
+                }
+            }
+            dataFile('TEST.txt', ['age', 'sex', 'race']) {
+                forSubject('PTT01') {
+                    row '30', 'Male', 'Europian'
+                }
+                forSubject('PTT02') {
+                    row '50', 'Female', 'Asian'
+                }
+                forSubject('PTT03') {
+                    row '50', 'Male', 'Asian'
+                }
+            }
+        }
+
+        when:
+        def result1 = clinicalData.load(config)
+        def result2 = clinicalDataSecond.load(config)
+
+        then:
+        assertTrue(result1)
+        assertFalse(result2)
+
+        def checkPatient = sql.firstRow("""
+                SELECT count(*) as cnt from 
+                  i2b2demodata.patient_mapping  pm
+                  inner JOIN
+                  i2b2demodata.patient_dimension pd
+                  ON pm.patient_num = pd.patient_num
+                  where pd.sourcesystem_cd in (?, ?, ?, ?)                                                
+            """, [
+                "PTT_TEST:PTT01".toString(),
+                "PTT_TEST:PTT02".toString(),
+                "PTT_TEST:PTT03".toString(),
+                "PTT_TEST:PTT04".toString()
+        ])
+        assertEquals('Count of patients is wrong', 4, checkPatient.cnt)
+
+        cleanup:
+        Study.deleteById(config, 'GSE0PTT')
+        Study.deleteById(config, 'PTT_TEST')
+    }
+
+    def 'It should upload studies with same share patient id and study id'() {
+        given:
+        def clinicalData = ClinicalData.build('PTT_TEST2', 'Test Study With PTT_TEST2 ID') {
+            mappingFile {
+                forDataFile('TEST.txt') {
+                    map('Subjects+Demographics', 3, 'Age (AGE)')
+                    map('Subjects+Demographics', 4, 'Sex (SEX)')
+                    map('Subjects+Demographics', 5, 'Race (RACE)')
+                }
+            }
+            dataFile('TEST.txt', ['age', 'sex', 'race']) {
+                forSubject('PTT01') {
+                    row '30', 'Male', 'Europian'
+                }
+                forSubject('PTT02') {
+                    row '50', 'Female', 'Asian'
+                }
+                forSubject('PTT03') {
+                    row '50', 'Male', 'Asian'
+                }
+            }
+        }
+
+        def clinicalDataSecond = ClinicalData.build('GSE0PTT2', 'Test Study With Share Patients') {
+            mappingFile {
+                addMetaInfo(['SHARED_PATIENTS: PTT_TEST2'])
+                forDataFile('TEST.txt') {
+                    map('Subjects+Demographics', 3, 'Age (AGE)')
+                    map('Subjects+Demographics', 4, 'Sex (SEX)')
+                    map('Subjects+Demographics', 5, 'Race (RACE)')
+                }
+            }
+            dataFile('TEST.txt', ['age', 'sex', 'race']) {
+                forSubject('PTT01') {
+                    row '30', 'Male', 'Europian'
+                }
+                forSubject('PTT02') {
+                    row '50', 'Female', 'Asian'
+                }
+                forSubject('PTT03') {
+                    row '50', 'Male', 'Asian'
+                }
+                forSubject('PTT04') {
+                    row '10', 'Male', 'Asian'
+                }
+            }
+        }
+
+
+        when:
+        def result1 = clinicalData.load(config)
+        def result2 = clinicalDataSecond.load(config)
+
+        then:
+        assertTrue(result1)
+        assertFalse(result2)
+
+        def checkPatient = sql.firstRow("""
+                SELECT count(*) as cnt from 
+                  i2b2demodata.patient_mapping  pm
+                  inner JOIN
+                  i2b2demodata.patient_dimension pd
+                  ON pm.patient_num = pd.patient_num
+                  where pd.sourcesystem_cd in (?, ?, ?, ?)                                                
+            """, [
+                "PTT_TEST2:PTT01".toString(),
+                "PTT_TEST2:PTT02".toString(),
+                "PTT_TEST2:PTT03".toString(),
+                "PTT_TEST2:PTT04".toString()
+        ])
+        assertEquals('Count of patients is wrong', 0, checkPatient.cnt)
+
+        cleanup:
+        Study.deleteById(config, 'GSE0PTT2')
+        Study.deleteById(config, 'PTT_TEST2')
+    }
 
 }
