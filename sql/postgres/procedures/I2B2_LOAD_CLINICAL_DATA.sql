@@ -1090,11 +1090,7 @@ BEGIN
 	if (merge_mode = 'REPLACE') then
 		begin
 			DELETE FROM i2b2demodata.visit_dimension
-			WHERE patient_num IN (
-				SELECT patient_num
-				FROM i2b2demodata.patient_dimension
-				WHERE sourcesystem_cd LIKE TrialId || ':%'
-							 );
+			WHERE sourcesystem_cd LIKE TrialId;
 			get diagnostics rowCt := ROW_COUNT;
 			exception
 			when others then

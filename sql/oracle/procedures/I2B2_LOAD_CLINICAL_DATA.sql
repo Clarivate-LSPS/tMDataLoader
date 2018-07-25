@@ -1002,11 +1002,7 @@ BEGIN
 	--	Delete dropped subjects from patient_dimension if they do not exist in de_subject_sample_mapping
 	if (merge_mode = 'REPLACE') then
 		DELETE FROM i2b2demodata.visit_dimension
-		WHERE patient_num IN (
-			SELECT patient_num
-			FROM i2b2demodata.patient_dimension
-			WHERE sourcesystem_cd LIKE TrialId || ':%'
-		);
+		WHERE sourcesystem_cd LIKE TrialId;
 		stepCt := stepCt + 1;
 		cz_write_audit(jobId,databaseName,procedureName,'Delete dropped subjects from visit_dimension',SQL%ROWCOUNT,stepCt,'Done');
 
