@@ -1,5 +1,6 @@
 package com.thomsonreuters.lsps.transmart.etl
 
+import com.thomsonreuters.lsps.db.core.DatabaseType
 import com.thomsonreuters.lsps.transmart.Fixtures
 import com.thomsonreuters.lsps.transmart.etl.matchers.HasSharePatients
 import com.thomsonreuters.lsps.transmart.etl.statistic.VariableType
@@ -37,7 +38,9 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         runScript('I2B2_CREATE_CONCEPT_COUNTS.sql')
         runScript('I2B2_ADD_NODE.sql')
         runScript('PATIENTS_STRONG_CHECK.sql')
-        runScript('I2B2_REMOVE_EMPTY_PARENT_NODES.sql')
+        if (database?.databaseType == DatabaseType.Oracle) {
+            runScript('I2B2_REMOVE_EMPTY_PARENT_NODES.sql')
+        }
         runScript('INSERT_PATIENT_MAPPING.sql')
     }
 
