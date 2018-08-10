@@ -1,6 +1,7 @@
 package com.thomsonreuters.lsps.transmart.etl
 
 import com.thomsonreuters.lsps.transmart.Fixtures
+import com.thomsonreuters.lsps.transmart.etl.matchers.HasSharePatients
 import com.thomsonreuters.lsps.transmart.etl.statistic.VariableType
 import com.thomsonreuters.lsps.transmart.fixtures.ClinicalData
 import com.thomsonreuters.lsps.transmart.fixtures.MappingFileBuilder
@@ -35,6 +36,9 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         runScript('I2B2_BUILD_METADATA_XML.sql')
         runScript('I2B2_CREATE_CONCEPT_COUNTS.sql')
         runScript('I2B2_ADD_NODE.sql')
+        runScript('PATIENTS_STRONG_CHECK.sql')
+        runScript('I2B2_REMOVE_EMPTY_PARENT_NODES.sql')
+        runScript('INSERT_PATIENT_MAPPING.sql')
     }
 
     ClinicalDataProcessor getProcessor() {
@@ -2120,20 +2124,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertTrue(result1)
         assertFalse(result2)
 
-        def checkPatient = sql.firstRow("""
-                SELECT count(*) as cnt from 
-                  i2b2demodata.patient_mapping  pm
-                  inner JOIN
-                  i2b2demodata.patient_dimension pd
-                  ON pm.patient_num = pd.patient_num
-                  where pd.sourcesystem_cd in (?, ?, ?, ?)                                                
-            """, [
-                "PTT_TEST:PTT01".toString(),
-                "PTT_TEST:PTT02".toString(),
-                "PTT_TEST:PTT03".toString(),
-                "PTT_TEST:PTT04".toString()
-        ])
-        assertEquals('Count of patients is wrong', 4, checkPatient.cnt)
+        assert db, hasSharePatients("PTT_TEST", ['PTT01', 'PTT02', 'PTT03', 'PTT04'])
 
         cleanup:
         Study.deleteById(config, 'GSE0PTT')
@@ -2197,20 +2188,7 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         assertTrue(result1)
         assertFalse(result2)
 
-        def checkPatient = sql.firstRow("""
-                SELECT count(*) as cnt from 
-                  i2b2demodata.patient_mapping  pm
-                  inner JOIN
-                  i2b2demodata.patient_dimension pd
-                  ON pm.patient_num = pd.patient_num
-                  where pd.sourcesystem_cd in (?, ?, ?, ?)                                                
-            """, [
-                "PTT_TEST2:PTT01".toString(),
-                "PTT_TEST2:PTT02".toString(),
-                "PTT_TEST2:PTT03".toString(),
-                "PTT_TEST2:PTT04".toString()
-        ])
-        assertEquals('Count of patients is wrong', 0, checkPatient.cnt)
+        assert db, hasSharePatients("PTT_TEST2", ["PTT01","PTT02","PTT03","PTT04"], 0)
 
         cleanup:
         Study.deleteById(config, 'GSE0PTT2')

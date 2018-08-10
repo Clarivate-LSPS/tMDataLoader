@@ -4,7 +4,9 @@ CREATE OR REPLACE FUNCTION tm_dataloader.i2b2_process_gwas_plink_data(
   trial_id     CHARACTER VARYING,
   top_node     CHARACTER VARYING,
   secure_study CHARACTER VARYING DEFAULT 'N' :: CHARACTER VARYING,
-  currentjobid NUMERIC DEFAULT (-1))
+  currentjobid NUMERIC DEFAULT (-1),
+  shared_patients      CHARACTER VARYING DEFAULT NULL,
+  strong_patient_check CHARACTER VARYING DEFAULT 'N' :: CHARACTER VARYING)
   RETURNS NUMERIC AS
 $BODY$
 DECLARE
@@ -50,8 +52,15 @@ BEGIN
   stepCt := stepCt + 1;
   select cz_write_audit(jobId,databaseName,procedureName,'Starting ' || procedureName,0,stepCt,'Done') into rtnCd;
 
-  select I2B2_LOAD_SAMPLES(trial_id, top_node, 'GWAS_PLINK', sourceCd, secure_study, jobID) into res;
+  select I2B2_LOAD_SAMPLES(trial_id, top_node, 'GWAS_PLINK', sourceCd, secure_study, jobID, shared_patients, strong_patient_check) into res;
   if res < 0 then
+    SELECT cz_error_handler(jobID, procedureName, res,
+                            'I2B2_LOAD_SAMPLES error')
+    INTO rtnCd;
+
+    SELECT cz_end_audit(jobID, 'FAIL')
+    INTO rtnCd;
+
     return res;
   end if;
 

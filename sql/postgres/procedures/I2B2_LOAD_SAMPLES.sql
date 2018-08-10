@@ -3,12 +3,14 @@
 --DROP FUNCTION i2b2_load_samples(character varying,character varying,character varying,character varying,character varying,numeric);
 
 CREATE OR REPLACE FUNCTION i2b2_load_samples
-( trial_id 		character varying
- ,top_node		character varying
- ,platform_type character varying
- ,source_cd character varying default 'STD'
- ,secure_study	character varying	default 'N'		--	security setting if new patients added to patient_dimension
- ,currentJobID 	numeric default -1
+(   trial_id             CHARACTER VARYING
+	, top_node             CHARACTER VARYING
+	, platform_type        CHARACTER VARYING
+	, source_cd            CHARACTER VARYING DEFAULT 'STD'
+	, secure_study         CHARACTER VARYING DEFAULT 'N'    --	security setting if new patients added to patient_dimension
+	, currentJobID         NUMERIC DEFAULT -1
+	, shared_patients      CHARACTER VARYING DEFAULT NULL
+	, strong_patient_check CHARACTER VARYING DEFAULT 'N' :: CHARACTER VARYING
 ) RETURNS numeric AS
 $BODY$
 /*************************************************************************
@@ -81,7 +83,15 @@ BEGIN
 
 	stepCt := 0;
 	stepCt := stepCt + 1;
-	select cz_write_audit(jobId,databaseName,procedureName,'Starting i2b2_load_samples',0,stepCt,'Done') into rtnCd;
+	SELECT cz_write_audit(jobId, databaseName, procedureName,
+												'Starting i2b2_load_samples (shared_patients: ' || coalesce(shared_patients, '<NULL>') || ')',
+												0, stepCt, 'Done')
+	INTO rtnCd;
+
+	IF strong_patient_check = 'Y' AND PATIENTS_STRONG_CHECK() < 0
+	THEN
+		RETURN -15;
+	END IF;
 
 	if (secureStudy not in ('Y','N') ) then
 		secureStudy := 'Y';
@@ -235,7 +245,10 @@ BEGIN
 	from (select distinct 'Unknown' as sex_cd,
 				 0 as age_in_years_num,
 				 null as race_cd,
-				 regexp_replace(TrialID || ':' || coalesce(s.site_id,'') || ':' || s.subject_id,'(::){1,}', ':', 'g') as sourcesystem_cd
+					regexp_replace(CASE WHEN shared_patients IS NULL
+						THEN TrialId
+												 ELSE shared_patients END || ':' || coalesce(s.site_id, '') || ':' || s.subject_id, '(::){1,}',
+												 ':', 'g') AS sourcesystem_cd
 		 from lt_src_mrna_subj_samp_map s
 		 where s.subject_id is not null
 		   and s.trial_name = TrialID
@@ -243,7 +256,11 @@ BEGIN
 		   and not exists
 			  (select 1 from i2b2demodata.patient_dimension x
 			   where x.sourcesystem_cd =
-				 regexp_replace(TrialID || ':' || coalesce(s.site_id,'') || ':' || s.subject_id,'(::){1,}', ':', 'g'))
+							 regexp_replace(
+									 CASE WHEN shared_patients IS NULL
+										 THEN TrialId
+									 ELSE shared_patients END || ':' || coalesce(s.site_id, '') || ':' || s.subject_id,
+									 '(::){1,}', ':', 'g'))
 		) x;
 	get diagnostics rowCt := ROW_COUNT;
 	exception
@@ -258,6 +275,8 @@ BEGIN
 	end;
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Insert subjects to patient_dimension',rowCt,stepCt,'Done') into rtnCd;
+
+	PERFORM INSERT_PATIENT_MAPPING(shared_patients, jobID);
 
 	--	add security for trial if new subjects added to patient_dimension
 
@@ -627,7 +646,10 @@ BEGIN
 					ln.tissue_type as sample_type, ln.attribute_1 as tissue_type, ln.attribute_2 as timepoint, a.platform as gpl_id
 				 from lt_src_mrna_subj_samp_map a
 				 inner join i2b2demodata.patient_dimension pd
-					on regexp_replace(TrialID || ':' || coalesce(a.site_id,'') || ':' || a.subject_id,'(::){1,}', ':', 'g') = pd.sourcesystem_cd
+						 ON regexp_replace(CASE WHEN shared_patients IS NULL
+						 THEN TrialId
+															 ELSE shared_patients END || ':' || coalesce(a.site_id, '') || ':' || a.subject_id,
+															 '(::){1,}', ':', 'g') = pd.sourcesystem_cd
 				 inner join wt_mrna_nodes ln
 					on 	a.platform = ln.platform
 					and a.tissue_type = ln.tissue_type
@@ -770,7 +792,10 @@ BEGIN
 		from lt_src_mrna_subj_samp_map a
 		--Joining to Pat_dim to ensure the ID's match. If not I2B2 won't work.
 		inner join i2b2demodata.patient_dimension b
-		  on regexp_replace(TrialID || ':' || coalesce(a.site_id,'') || ':' || a.subject_id,'(::){1,}', ':','g') = b.sourcesystem_cd
+				ON regexp_replace(CASE WHEN shared_patients IS NULL
+				THEN TrialId
+													ELSE shared_patients END || ':' || coalesce(a.site_id, '') || ':' || a.subject_id, '(::){1,}',
+													':', 'g') = b.sourcesystem_cd
 		inner join wt_mrna_nodes ln
 			on a.platform = ln.platform
 			and a.tissue_type = ln.tissue_type

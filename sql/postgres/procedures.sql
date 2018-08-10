@@ -57,3 +57,4 @@ $$;
 \i procedures/i2b2_proteomics_zscore_calc.sql
 \i procedures/I2B2_CREATE_SECURITY_FOR_TRIAL.sql
 \i procedures/I2B2_DELETE_CROSS_DATA.sql
+\i procedures/PATIENTS_STRONG_CHECK.sql

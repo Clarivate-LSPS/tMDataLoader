@@ -1,10 +1,12 @@
 CREATE OR REPLACE
 PROCEDURE I2B2_PROCESS_GWAS_PLINK_DATA
   (
-    trial_id     IN VARCHAR2,
-    top_node     IN VARCHAR2,
-    secure_study IN VARCHAR2 := 'N',
-    currentJobID IN NUMBER := NULL
+    trial_id             IN VARCHAR2,
+    top_node             IN VARCHAR2,
+    secure_study         IN VARCHAR2 := 'N',
+    currentJobID         IN NUMBER := NULL,
+    shared_patients      IN VARCHAR := NULL,
+    strong_patient_check IN VARCHAR := 'N'
   )
 as
   --Audit variables
@@ -44,6 +46,8 @@ as
     unmapped_platform exception;
     multiple_platform	exception;
     no_probeset_recs	exception;
+    ipm_excep EXCEPTION ;
+
   CURSOR addNodes is
     select distinct t.leaf_node
       ,t.node_name
@@ -152,7 +156,10 @@ as
       from (select distinct 'Unknown' as sex_cd,
                             0 as age_in_years_num,
                             null as race_cd,
-                            regexp_replace(TrialID || ':' || nvl(s.site_id,'') || ':' || s.subject_id,'(::){1,}', ':') as sourcesystem_cd
+                            regexp_replace(
+                                CASE WHEN shared_patients IS NULL
+                                  THEN TrialId
+                                ELSE shared_patients END || ':' || nvl(s.site_id,'') || ':' || s.subject_id,'(::){1,}', ':') as sourcesystem_cd
             from lt_src_mrna_subj_samp_map s
 
             where s.subject_id is not null
@@ -161,13 +168,22 @@ as
                   and not exists
             (select 1 from patient_dimension x
                 where x.sourcesystem_cd =
-                      regexp_replace(TrialID || ':' || nvl(s.site_id,'') || ':' || s.subject_id,'(::){1,}', ':'))
+                      regexp_replace(
+                          CASE WHEN shared_patients IS NULL
+                            THEN TrialId
+                          ELSE shared_patients END || ':' || nvl(s.site_id,'') || ':' || s.subject_id,'(::){1,}', ':'))
            ) x;
     pCount := SQL%ROWCOUNT;
     stepCt := stepCt + 1;
     cz_write_audit(jobId,databaseName,procedureName,'Insert subjects to patient_dimension',pCount,stepCt,'Done');
     commit;
     --	add security for trial if new subjects added to patient_dimension
+
+    pCount := INSERT_PATIENT_MAPPING(shared_patients,jobID);
+    if pCount < 0 THEN
+      RAISE ipm_excep;
+    END IF;
+
     if pCount > 0 then
       i2b2_create_security_for_trial(TrialId, secureStudy, jobID);
     end if;
@@ -500,7 +516,10 @@ as
             from lt_src_mrna_subj_samp_map a
               --Joining to Pat_dim to ensure the ID's match. If not I2B2 won't work.
               inner join patient_dimension b
-                on regexp_replace(TrialID || ':' || nvl(a.site_id,'') || ':' || a.subject_id,'(::){1,}', ':') = b.sourcesystem_cd
+                on regexp_replace(
+                       CASE WHEN shared_patients IS NULL
+                         THEN TrialId
+                       ELSE shared_patients END || ':' || nvl(a.site_id,'') || ':' || a.subject_id,'(::){1,}', ':') = b.sourcesystem_cd
               inner join wt_mrna_nodes ln
                 on nvl(a.platform, '@') = nvl(ln.platform, '@')
                    and a.tissue_type = ln.tissue_type
@@ -532,7 +551,10 @@ as
                    and case when instr(substr(a.category_cd,1,instr(a.category_cd,'ATTR2')+5),'ATTR1') > 1 then a.attribute_1 else '@' end = nvl(a2.attribute_1,'@')
                    and a2.node_type = 'ATTR2'
               left outer join patient_dimension sid
-                on  regexp_replace(TrialId || ':S:' || nvl(a.site_id,'') || ':' || a.subject_id || ':' || a.sample_cd,
+                on  regexp_replace(
+                        CASE WHEN shared_patients IS NULL
+                          THEN TrialId
+                        ELSE shared_patients END || ':S:' || nvl(a.site_id,'') || ':' || a.subject_id || ':' || a.sample_cd,
                                    '(::){1,}', ':') = sid.sourcesystem_cd
             where a.trial_name = TrialID
                   and nvl(a.source_cd,'STD') = sourceCD
@@ -733,6 +755,11 @@ as
     cz_write_audit(jobId,databasename,procedurename,'Unable to match probesets to platform in probeset_deapp',1,stepCt,'ERROR');
     CZ_ERROR_HANDLER(JOBID,PROCEDURENAME);
     cz_end_audit (jobId,'FAIL');
+
+    WHEN ipm_excep THEN
+    cz_write_audit(jobID, databaseName, procedureName,'INSERT_PATIENT_MAPPING error',1,stepCt,'ERROR');
+    cz_error_handler(jobID, procedureName);
+    cz_end_audit(jobID, 'FAIL');
 
     WHEN OTHERS THEN
     --Handle errors.

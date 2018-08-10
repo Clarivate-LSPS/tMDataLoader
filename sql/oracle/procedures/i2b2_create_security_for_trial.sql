@@ -205,9 +205,6 @@ BEGIN
 		from biomart.bio_experiment
 		where accession = TrialId;
 
-		stepCt := stepCt + 1;
-		cz_write_audit(jobId,databaseName,procedureName,'HERE',SQL%ROWCOUNT,stepCt,'Done');
-
 		INSERT INTO i2b2demodata.study (
 			study_num,
 			bio_experiment_id,

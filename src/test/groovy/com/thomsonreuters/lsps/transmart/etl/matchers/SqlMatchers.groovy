@@ -85,4 +85,12 @@ class SqlMatchers {
     static HasVisitDimension hasVisitDimension(String patientId, String sourcesystemCd, Map<String, Object> valueAttrs) {
         return new HasVisitDimension(patientId, sourcesystemCd, valueAttrs)
     }
+
+    public static HasSharePatients hasSharePatients(String sharePatientId, List<String> patients) {
+        return new HasSharePatients(sharePatientId, patients)
+    }
+
+    public static HasSharePatients hasSharePatients(String sharePatientId, List<String> patients, Integer expectedCount) {
+        return new HasSharePatients(sharePatientId, patients, expectedCount)
+    }
 }

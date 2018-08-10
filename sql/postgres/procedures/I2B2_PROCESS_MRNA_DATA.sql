@@ -3,14 +3,16 @@
 -- DROP FUNCTION i2b2_process_mrna_data(character varying, character varying, character varying, character varying, numeric, character varying, numeric);
 
 CREATE OR REPLACE FUNCTION i2b2_process_mrna_data
-( trial_id 		character varying
- ,top_node		character varying
- ,data_type		character varying default 'R'		--	R = raw data, do zscore calc, T = transformed data, load raw values as zscore,
-													--	L = log intensity data, skip log step in zscore calc
- ,source_cd		character varying default 'STD'		--	default source_cd = 'STD'
- ,log_base		numeric default 2					--	log base value for conversion back to raw
- ,secure_study	character varying	default 'N'		--	security setting if new patients added to patient_dimension
- ,currentJobID 	numeric default -1
+(   trial_id             CHARACTER VARYING
+	, top_node             CHARACTER VARYING
+	,	data_type            CHARACTER VARYING DEFAULT 'R'    --	R = raw data, do zscore calc, T = transformed data, load raw values as zscore,
+																													--	L = log intensity data, skip log step in zscore calc
+	, source_cd            CHARACTER VARYING DEFAULT 'STD'    --	default source_cd = 'STD'
+	, log_base             NUMERIC DEFAULT 2          --	log base value for conversion back to raw
+	, secure_study         CHARACTER VARYING DEFAULT 'N'    --	security setting if new patients added to patient_dimension
+	, currentJobID         NUMERIC DEFAULT -1
+	, shared_patients      CHARACTER VARYING DEFAULT NULL
+	, strong_patient_check CHARACTER VARYING DEFAULT 'N' :: CHARACTER VARYING
 ) RETURNS numeric AS
 $BODY$
 /*************************************************************************
@@ -101,9 +103,16 @@ BEGIN
 		return -16;
 	end if;
 
-	select I2B2_LOAD_SAMPLES(trial_id, top_node, 'MRNA_AFFYMETRIX', sourceCd, secure_study, jobID) into res;
+	select I2B2_LOAD_SAMPLES(trial_id, top_node, 'MRNA_AFFYMETRIX', sourceCd, secure_study, jobID, shared_patients, strong_patient_check) into res;
 	if res < 0 then
-	  return res;
+		SELECT cz_error_handler(jobID, procedureName, res,
+														'I2B2_LOAD_SAMPLES error')
+		INTO rtnCd;
+
+		SELECT cz_end_audit(jobID, 'FAIL')
+		INTO rtnCd;
+
+		return res;
 	end if;
 
 	--	check if trial/source_cd already loaded, if yes, get existing partition_id else get new one

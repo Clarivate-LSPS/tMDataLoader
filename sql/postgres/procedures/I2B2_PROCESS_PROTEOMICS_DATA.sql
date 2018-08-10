@@ -1,4 +1,14 @@
-CREATE OR REPLACE FUNCTION i2b2_process_proteomics_data(trial_id character varying, top_node character varying, data_type character varying DEFAULT 'R'::character varying, source_cd character varying DEFAULT 'STD'::character varying, log_base numeric DEFAULT 2, secure_study character varying DEFAULT NULL::character varying, currentjobid numeric DEFAULT NULL::numeric) RETURNS numeric
+CREATE OR REPLACE FUNCTION i2b2_process_proteomics_data(
+	trial_id             CHARACTER VARYING,
+	top_node             CHARACTER VARYING,
+	data_type            CHARACTER VARYING DEFAULT 'R' :: CHARACTER VARYING,
+	source_cd            CHARACTER VARYING DEFAULT 'STD' :: CHARACTER VARYING,
+	log_base             NUMERIC DEFAULT 2,
+	secure_study         CHARACTER VARYING DEFAULT NULL :: CHARACTER VARYING,
+	currentjobid         NUMERIC DEFAULT NULL :: NUMERIC,
+	shared_patients      CHARACTER VARYING DEFAULT NULL,
+	strong_patient_check CHARACTER VARYING DEFAULT 'N' :: CHARACTER VARYING
+) RETURNS numeric
     LANGUAGE plpgsql SECURITY DEFINER
     SET search_path FROM CURRENT
     AS $$
@@ -103,7 +113,18 @@ BEGIN
 	stepCt := 0;
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Starting i2b2_process_proteomics_data',0,stepCt,'Done') into rtnCd;
-	
+
+	IF strong_patient_check = 'Y' AND PATIENTS_STRONG_CHECK() < 0
+	THEN
+		SELECT cz_error_handler(jobID, procedureName, '-1',
+														'New patients set contain different values from exist in DB')
+		INTO rtnCd;
+
+		SELECT cz_end_audit(jobID, 'FAIL')
+		INTO rtnCd;
+
+		RETURN -16;
+	END IF;
 	--	Get count of records in LT_SRC_PROTEOMICS_SUB_SAM_MAP
 	
 	select count(*) into sCount
@@ -215,7 +236,9 @@ BEGIN
 	from (select distinct 'Unknown' as sex_cd,
 				 0 as age_in_years_num,
 				 null as race_cd,
-				 regexp_replace(TrialID || ':' || coalesce(s.site_id,'') || ':' || s.subject_id,'(::){1,}', ':', 'g') as sourcesystem_cd
+				 regexp_replace(CASE WHEN shared_patients IS NULL
+					 THEN TrialId
+												ELSE shared_patients END || ':' || coalesce(s.site_id,'') || ':' || s.subject_id,'(::){1,}', ':', 'g') as sourcesystem_cd
 		 from LT_SRC_PROTEOMICS_SUB_SAM_MAP s
 		     ,de_gpl_info g
 		 where s.subject_id is not null
@@ -226,7 +249,9 @@ BEGIN
 		   and not exists
 			  (select 1 from patient_dimension x
 			   where x.sourcesystem_cd = 
-				 regexp_replace(TrialID || ':' || coalesce(s.site_id,'') || ':' || s.subject_id,'(::){1,}', ':', 'g'))
+				 regexp_replace(CASE WHEN shared_patients IS NULL
+					 THEN TrialId
+												ELSE shared_patients END || ':' || coalesce(s.site_id,'') || ':' || s.subject_id,'(::){1,}', ':', 'g'))
 		) x;
 	exception
 	when others then
@@ -237,7 +262,19 @@ BEGIN
 	
 	get diagnostics rowCt := ROW_COUNT;
 	stepCt := stepCt + 1;
-	select cz_write_audit(jobId,databaseName,procedureName,'Insert subjects to patient_dimension',rowCt,stepCt,'Done') into rtnCd;	
+	select cz_write_audit(jobId,databaseName,procedureName,'Insert subjects to patient_dimension',rowCt,stepCt,'Done') into rtnCd;
+
+	select INSERT_PATIENT_MAPPING(shared_patients, jobID) into rtnCd;
+	if rtnCd < 0 THEN
+		SELECT cz_error_handler(jobID, procedureName, res,
+														'INSERT_PATIENT_MAPPING error')
+		INTO rtnCd;
+
+		SELECT cz_end_audit(jobID, 'FAIL')
+		INTO rtnCd;
+
+		RETURN rtnCd;
+	END IF;
 	select i2b2_create_security_for_trial(TrialId, secureStudy, jobID) into rtnCd;
 
 	--	Delete existing observation_fact data, will be repopulated
@@ -663,7 +700,9 @@ BEGIN
 		from lt_src_proteomics_sub_sam_map a		
 		--Joining to Pat_dim to ensure the ID's match. If not I2B2 won't work.
 		inner join patient_dimension b
-		  on regexp_replace(TrialID || ':' || coalesce(a.site_id,'') || ':' || a.subject_id,'(::){1,}', ':', 'g') = b.sourcesystem_cd
+		  on regexp_replace(CASE WHEN shared_patients IS NULL
+				THEN TrialId
+												ELSE shared_patients END || ':' || coalesce(a.site_id,'') || ':' || a.subject_id,'(::){1,}', ':', 'g') = b.sourcesystem_cd
 		inner join WT_PROTEOMICS_NODES ln
 			on a.platform = ln.platform
 			and a.category_cd=ln.category_cd
@@ -700,7 +739,9 @@ BEGIN
 			and case when instr(substr(a.category_cd,1,instr(a.category_cd,'ATTR2')+5),'ATTR1') > 1 then a.attribute_1 else '@' end = coalesce(a2.attribute_1,'@')
 			and a2.node_type = 'ATTR2'			  
 		left outer join patient_dimension sid
-			on  regexp_replace(TrialId || ':' || coalesce(a.site_id,'') || ':' || a.subject_id || ':' || a.sample_cd,
+			on  regexp_replace(CASE WHEN shared_patients IS NULL
+				THEN TrialId
+												 ELSE shared_patients END || ':' || coalesce(a.site_id,'') || ':' || a.subject_id || ':' || a.sample_cd,
 							  '(::){1,}', ':', 'g') = sid.sourcesystem_cd
 		where a.trial_name = TrialID
 		  and a.source_cd = sourceCD

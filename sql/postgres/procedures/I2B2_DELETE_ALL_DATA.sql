@@ -254,7 +254,7 @@ BEGIN
 		select count(x.source_cd) into sourceCDCount
 			  from deapp.de_subject_sample_mapping x
 			  where x.trial_name = trialId;
-    if (sourceCDCount <>0) then
+    if (sourceCDCount <> 0) then
       select distinct x.source_cd into sourceCD
           from deapp.de_subject_sample_mapping x
           where x.trial_name = trialId;
@@ -268,13 +268,10 @@ BEGIN
     FROM i2b2demodata.patient_dimension p
     WHERE p.sourcesystem_cd LIKE TrialId || ':%';
 
-    stepCt := stepCt + 1;
-    select cz_write_audit(jobId,databaseName,procedureName,'havePatients ' || havePatients,rowCt,stepCt,'Done') into rtnCd;
-
     IF havePatients = 0
     THEN
       /* Patients wasn't found, check observation fact by sourcesystem_cd and get patients_num*/
-      CREATE TEMPORARY TABLE patient_set_t WITHOUT OIDS AS
+      CREATE TEMPORARY TABLE IF NOT EXISTS patient_set_t WITHOUT OIDS AS
         SELECT DISTINCT f1.patient_num
         FROM
           i2b2demodata.observation_fact f1
@@ -337,6 +334,11 @@ BEGIN
       DELETE FROM i2b2demodata.patient_mapping
       WHERE patient_num IN (SELECT patient_num
                             FROM patient_deleting_set_t);
+      GET DIAGNOSTICS rowCt := ROW_COUNT;
+      stepCt := stepCt + 1;
+      SELECT cz_write_audit(jobId, databaseName, procedureName,
+                            'Delete data for cross patients from I2B2DEMODATA patient_mapping', rowCt, stepCt, 'Done')
+      INTO rtnCd;
 
       DELETE FROM i2b2demodata.patient_dimension
       WHERE patient_num IN (SELECT patient_num

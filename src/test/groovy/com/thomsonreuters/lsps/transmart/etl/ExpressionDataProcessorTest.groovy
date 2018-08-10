@@ -5,12 +5,15 @@ import com.thomsonreuters.lsps.transmart.Fixtures
 import com.thomsonreuters.lsps.transmart.fixtures.ExpressionData
 import com.thomsonreuters.lsps.transmart.fixtures.Study
 
+import static com.thomsonreuters.lsps.transmart.Fixtures.studyDir
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasNode
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasPatient
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasRecord
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasSample
+import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasSharePatients
 import static org.hamcrest.CoreMatchers.equalTo
 import static org.hamcrest.CoreMatchers.notNullValue
+import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertThat
 
 /**
@@ -18,6 +21,7 @@ import static org.junit.Assert.assertThat
  */
 class ExpressionDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase {
     private ExpressionDataProcessor _processor
+    private ClinicalDataProcessor _clinicalProcessor
 
     ExpressionData expressionData = Fixtures.getExpressionData()
     String studyName = expressionData.studyName
@@ -28,22 +32,27 @@ class ExpressionDataProcessorTest extends GroovyTestCase implements ConfigAwareT
         _processor ?: (_processor = new ExpressionDataProcessor(config))
     }
 
+    ClinicalDataProcessor getClinicalProcessor() {
+        _clinicalProcessor ?: (_clinicalProcessor = new ClinicalDataProcessor(config))
+    }
+
     @Override
     void setUp() {
         ConfigAwareTestCase.super.setUp()
         runScript('I2B2_PROCESS_MRNA_DATA.sql')
+        runScript('PATIENTS_STRONG_CHECK.sql')
         if (database?.databaseType == DatabaseType.Postgres) {
             runScript('I2B2_LOAD_SAMPLES.sql')
         }
     }
 
-    void assertThatSampleIsPresent(String sampleId, String gplId=platformId, sampleData) {
+    void assertThatSampleIsPresent(String sampleId, String gplId = platformId, sampleData) {
         def sample = sql.firstRow(
                 'select * from deapp.de_subject_sample_mapping where trial_name = ? and gpl_id = ? and sample_cd = ?',
                 studyId, gplId, sampleId)
         assertThat(sample, notNullValue())
         String suffix = '';
-        if (sample.hasProperty("partition_id")){
+        if (sample.hasProperty("partition_id")) {
             suffix = sample.partition_id ? "_${sample.partition_id}" : ''
         }
         sampleData.each { probe_id, value ->
@@ -110,5 +119,25 @@ class ExpressionDataProcessorTest extends GroovyTestCase implements ConfigAwareT
                 withPatientCount(3))
         assertThat(db, hasNode("\\Test Studies\\${studyName}\\Biomarker Data\\Test GEX Platform 2\\Blood\\").
                 withPatientCount(3))
+    }
+
+    void testItShouldStudyWithSharePatients() {
+        def studyName = 'Test Study With Share Patients'
+        def currentStudyId = 'GSE0WSP'
+        def patientShareString = "SHARED_TEST"
+        Study.deleteById(config, currentStudyId)
+
+        def clinical = clinicalProcessor.process(new File(studyDir(studyName, currentStudyId), 'ClinicalDataToUpload').toPath(),
+                [name: studyName, node: "\\Test Studies2\\${studyName}".toString()])
+
+        def expression = processor.process(new File(studyDir(studyName, currentStudyId), 'ExpressionDataToUpload').toPath(),
+                [name: studyName, node: "\\Test Studies2\\${studyName}".toString()])
+
+        assertTrue(clinical)
+        assertTrue(expression)
+
+        assert db, hasSharePatients(patientShareString,
+                ['HCC2935', 'HCC4006', 'HCC827', 'NCIH1650', 'NCIH1975', 'NCIH3255', 'PC14', 'SKMEL28', 'SW48']
+        )
     }
 }

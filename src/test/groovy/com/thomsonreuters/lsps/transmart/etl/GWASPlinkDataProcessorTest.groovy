@@ -6,6 +6,7 @@ import spock.lang.Specification
 
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasNode
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasRecord
+import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.hasSharePatients
 import static org.junit.Assert.assertThat
 
 /**
@@ -35,5 +36,29 @@ class GWASPlinkDataProcessorTest extends Specification implements ConfigAwareTes
         successfullyUploaded
         assertThat(sql, hasRecord('gwas_plink.plink_data', [study_id: gwasPlinkData.studyId], [:]))
         assertThat(sql, hasNode($/\Test Studies\$gwasPlinkData.studyName\GWAS\GWAS Plink\/$).withPatientCount(6))
+
+        cleanup:
+        Study.deleteById(config, studyId)
+    }
+
+    def "it should upload GWAS Plink data with share patients"() {
+        setup:
+        def sharePatientStudyId = 'GSE0WSP'
+        def sharePatientStudyName = 'Test Study With Share Patients'
+        Study.deleteById(config, sharePatientStudyId)
+        def gwasPlinkData = Fixtures.studiesDir.studyDir(sharePatientStudyName, sharePatientStudyId).getGWASPlinkData()
+
+        when:
+        def successfullyUploaded = gwasPlinkData.load(config)
+
+        then:
+        successfullyUploaded
+        assertThat(sql, hasRecord('gwas_plink.plink_data', [study_id: gwasPlinkData.studyId], [:]))
+        assertThat(sql, hasNode($/\Test Studies\$gwasPlinkData.studyName\GWAS\GWAS Plink\/$).withPatientCount(6))
+
+        assert db, hasSharePatients('SHARED_TEST', ['PAT1', 'PAT2', 'PAT3', 'PAT4', 'PAT5', 'PAT6'])
+
+        cleanup:
+        Study.deleteById(config, sharePatientStudyId)
     }
 }

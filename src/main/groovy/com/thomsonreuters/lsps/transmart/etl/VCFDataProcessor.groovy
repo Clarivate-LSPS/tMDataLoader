@@ -23,6 +23,7 @@ class VCFDataProcessor extends AbstractDataProcessor {
         def csv = new CsvLikeFile(mappingFile, '#')
         if (!studyInfo.id) {
             def metaInfo = MetaInfoHeader.getMetaInfo(csv)
+            sharedPatients = metaInfo.SHARED_PATIENTS
             studyInfo.id = metaInfo.STUDY_ID
             studyInfo.genomeBuild = metaInfo.GENOME_BUILD
             studyInfo.platformId = metaInfo.PLATFORM_ID ?:
@@ -281,11 +282,12 @@ class VCFDataProcessor extends AbstractDataProcessor {
         def studyId = studyInfo['id']
         def studyNode = studyInfo['node']
         def sources = studyInfo['sources']
+        def strongPatientCheck = config.strongCheck ? 'Y' : 'N'
         if (studyId && studyNode) {
             loadPlatform(jobId, sql, studyInfo)
             use(SqlMethods) {
                 sources.each { source ->
-                    sql.callProcedure(procedureName, studyId, studyNode, source, config.securitySymbol, jobId)
+                    sql.callProcedure(procedureName, studyId, studyNode, source, config.securitySymbol, jobId, sharedPatients, strongPatientCheck)
                 }
             }
             return true

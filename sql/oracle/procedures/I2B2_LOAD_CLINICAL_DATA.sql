@@ -1021,19 +1021,9 @@ BEGIN
 		commit;
 	end if;
 
-	if strongPatientCheck
+	if strong_patient_check = 'Y' and PATIENTS_STRONG_CHECK(jobID)< 0
 	then
-		select LISTAGG(CONCAT(t.usubjid, ', ')) WITHIN GROUP(ORDER BY t.usubjid) into badPatients
-		from
-			tm_wz.wt_subject_info t inner join i2b2demodata.patient_dimension pd on t.usubjid = pd.sourcesystem_cd
-		where
-			t.sex_cd <> pd.sex_cd or
-			t.age_in_years_num <> pd.age_in_years_num or
-			t.race_cd <> pd.race_cd;
-
-		if badPatients is not null then
 			RAISE patients_exists;
-		END IF;
 	END IF;
 
 	--	update patients with changed information
@@ -1092,30 +1082,7 @@ BEGIN
 	
 	commit;
 
-	IF shared_patients IS NOT NULL
-	THEN
-
-		INSERT INTO i2b2demodata.patient_mapping (
-			patient_ide,
-			patient_ide_source,
-			patient_num,
-			patient_ide_status
-		) SELECT
-				sourcesystem_cd,
-				'SUBJ_ID',
-				patient_num,
-				'ACTIVE'
-			FROM i2b2demodata.patient_dimension pd
-			WHERE
-				sourcesystem_cd LIKE shared_patients || ':%'
-				AND NOT exists(SELECT 1
-											 FROM i2b2demodata.patient_mapping pd2
-											 WHERE pd.sourcesystem_cd = pd2.patient_ide);
-
-		stepCt := stepCt + 1;
-		cz_write_audit(jobId, databaseName, procedureName, 'Insert new subjects into patient_mapping', SQL%ROWCOUNT, stepCt,
-									 'Done');
-	END IF;
+	pCount := INSERT_PATIENT_MAPPING(shared_patients, jobID);
 
 	EXECUTE IMMEDIATE 'TRUNCATE TABLE concept_specific_trials';
 
@@ -1952,7 +1919,7 @@ BEGIN
 		rtnCode := 16;
 	WHEN patients_exists THEN
 		stepCt := stepCt + 1;
-		cz_write_audit(jobId,databaseName,procedureName,'New patients set ('||badPatients|| ') contain different values from exist in DB',0,stepCt,'Done');
+		cz_write_audit(jobId,databaseName,procedureName,'New patients set contains different values from exist in DB',0,stepCt,'Done');
 		cz_error_handler (jobID, procedureName);
 		cz_end_audit (jobID, 'FAIL');
 		rtnCode := 16;

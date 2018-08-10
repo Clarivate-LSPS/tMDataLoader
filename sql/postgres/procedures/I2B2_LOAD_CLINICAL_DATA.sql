@@ -141,8 +141,6 @@ BEGIN
 		secureStudy := 'Y';
 	end if;
 
-	strongPatientCheck := strong_patient_check = 'Y';
-
 	--	figure out how many nodes (folders) are at study name and above
 	--	\Public Studies\Clinical Studies\Pancreatic_Cancer_Smith_GSE22780\: topLevel = 4, so there are 3 nodes
 	--	\Public Studies\GSE12345\: topLevel = 3, so there are 2 nodes
@@ -1131,22 +1129,17 @@ BEGIN
 		select cz_write_audit(jobId,databaseName,procedureName,'Delete dropped subjects from patient_dimension',rowCt,stepCt,'Done') into rtnCd;
 	end if;
 
-	if strongPatientCheck
-		 then
-			select string_agg(t.usubjid, ', ') into badPatients
-			 from
-				 tm_wz.wt_subject_info t inner join i2b2demodata.patient_dimension pd on t.usubjid = pd.sourcesystem_cd
-			 where
-				 t.sex_cd <> pd.sex_cd or
-				 t.age_in_years_num <> pd.age_in_years_num or
-				 t.race_cd <> pd.race_cd;
+  IF strong_patient_check = 'Y' AND PATIENTS_STRONG_CHECK(jobID) < 0
+  THEN
+		SELECT cz_error_handler(jobID, procedureName, '-1',
+														'New patients set contains different values from exist in DB')
+		INTO rtnCd;
 
-		if badPatients is not null then
-			select cz_error_handler (jobID, procedureName, '-1', 'New patients set ('||badPatients|| ') contain different values from exist in DB') into rtnCd;
-			select cz_end_audit (jobID, 'FAIL') into rtnCd;
-			return -16;
-		END IF;
-	END IF;
+		SELECT cz_end_audit(jobID, 'FAIL')
+		INTO rtnCd;
+
+		RETURN -16;
+  END IF;
 	--	update patients with changed information
 	begin
 	with nsi as (select t.usubjid, t.sex_cd, t.age_in_years_num, t.race_cd from wt_subject_info t)
@@ -1211,47 +1204,7 @@ BEGIN
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Insert new subjects into patient_dimension',rowCt,stepCt,'Done') into rtnCd;
 
-	IF shared_patients IS NOT NULL
-	THEN
-		BEGIN
-
-			INSERT INTO i2b2demodata.patient_mapping (
-				patient_ide,
-				patient_ide_source,
-				patient_num,
-				patient_ide_status
-			) SELECT
-					sourcesystem_cd,
-					'SUBJ_ID',
-					patient_num,
-					'ACTIVE'
-				FROM i2b2demodata.patient_dimension pd
-				WHERE
-					sourcesystem_cd LIKE shared_patients || ':%'
-					AND NOT exists(SELECT 1
-												 FROM i2b2demodata.patient_mapping pd2
-												 WHERE pd.sourcesystem_cd = pd2.patient_ide);
-
-			GET DIAGNOSTICS rowCt := ROW_COUNT;
-			EXCEPTION
-			WHEN OTHERS
-				THEN
-					errorNumber := SQLSTATE;
-					errorMessage := SQLERRM;
-					--Handle errors.
-					SELECT cz_error_handler(jobID, procedureName, errorNumber, errorMessage)
-					INTO rtnCd;
-					--End Proc
-					SELECT cz_end_audit(jobID, 'FAIL')
-					INTO rtnCd;
-					RETURN -16;
-		END;
-		stepCt := stepCt + 1;
-		SELECT
-			cz_write_audit(jobId, databaseName, procedureName, 'Insert new subjects into patient_mapping', rowCt, stepCt,
-										 'Done')
-		INTO rtnCd;
-	END IF;
+	PERFORM INSERT_PATIENT_MAPPING(shared_patients, jobID);
 
 	create temporary table concept_specific_trials
 	(

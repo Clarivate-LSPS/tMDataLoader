@@ -50,6 +50,8 @@ class SNPDataProcessor extends AbstractDataProcessor {
         dir.eachFileMatch(~/(?i).+_Subject_Sample_Mapping_File(_GPL\d+)*\.txt/) {
             platformList.addAll(processMappingFile(it, sql, studyInfo))
             checkStudyExist(sql, studyInfo)
+
+            sharedPatients = getSharedPatient(it)
         }
 
         platformList = platformList.toList()
@@ -152,8 +154,8 @@ class SNPDataProcessor extends AbstractDataProcessor {
                 sql.call("{call " + config.controlSchema + ".i2b2_load_annotation_deapp()}")
             }
 
-            sql.call("{call " + config.controlSchema + ".i2b2_process_snp_data (?, ?, ?, null, null, '" + config.securitySymbol + "', ?, ?)}",
-                    [studyId, studyNode, studyDataType, jobId, Sql.NUMERIC]) {}
+            sql.call("{call " + config.controlSchema + ".$procedureName (?, ?, ?, null, null, '" + config.securitySymbol + "', ?, ?, ?, ?)}",
+                    [studyId, studyNode, studyDataType, jobId, sharedPatients, strongPatientCheck, Sql.NUMERIC]) {}
         } else {
             config.logger.log(LogType.ERROR, "Study ID or Node or DataType not defined!")
             return false
@@ -184,7 +186,7 @@ class SNPDataProcessor extends AbstractDataProcessor {
 				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'STD')
 		""") {
                 stmt ->
-                    CsvLikeFile mappingFile = new CsvLikeFile(f)
+                    CsvLikeFile mappingFile = new CsvLikeFile(f, '#')
                     mappingFile.eachEntry { cols ->
                         // cols:0:calls_file_name, 1:copy_number_file_name, 2:study_id, 3:site_id, 4:subject_id,
                         // 5:sample_cd, 6:platform, 7:tissuetype, 8:attr1, 9:attr2, 10:category_cd

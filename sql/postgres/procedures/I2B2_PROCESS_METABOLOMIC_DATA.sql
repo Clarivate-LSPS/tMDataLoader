@@ -2,7 +2,14 @@
 
 -- DROP FUNCTION i2b2_process_metabolomic_data(character varying, character varying, character varying, character varying, numeric, character varying, numeric);
 
-CREATE OR REPLACE FUNCTION i2b2_process_metabolomic_data(trial_id character varying, top_node character varying, data_type character varying DEFAULT 'R'::character varying, source_code character varying DEFAULT 'STD'::character varying, log_base numeric DEFAULT 2, secure_study character varying DEFAULT 'N'::character varying, currentjobid numeric DEFAULT (-1))
+CREATE OR REPLACE FUNCTION i2b2_process_metabolomic_data(
+	trial_id             CHARACTER VARYING, top_node CHARACTER VARYING,
+	data_type            CHARACTER VARYING DEFAULT 'R' :: CHARACTER VARYING,
+	source_code          CHARACTER VARYING DEFAULT 'STD' :: CHARACTER VARYING, log_base NUMERIC DEFAULT 2,
+	secure_study         CHARACTER VARYING DEFAULT 'N' :: CHARACTER VARYING, currentjobid NUMERIC DEFAULT (-1),
+	shared_patients      CHARACTER VARYING DEFAULT NULL,
+	strong_patient_check CHARACTER VARYING DEFAULT 'N' :: CHARACTER VARYING
+)
   RETURNS numeric
   SET search_path FROM CURRENT
   AS $BODY$
@@ -117,7 +124,18 @@ BEGIN
 	stepCt := 0;
 	stepCt := stepCt + 1;
 	perform cz_write_audit(jobId,databaseName,procedureName,'Starting i2b2_process_metabolomics_data',0,stepCt,'Done');
-	
+
+	IF strong_patient_check = 'Y' AND PATIENTS_STRONG_CHECK() < 0
+	THEN
+		SELECT cz_error_handler(jobID, procedureName, '-1',
+														'New patients set contain different values from exist in DB')
+		INTO rtnCd;
+
+		SELECT cz_end_audit(jobID, 'FAIL')
+		INTO rtnCd;
+
+		RETURN -16;
+	END IF;
 	--	Get count of records in LT_SRC_METABOLOMIC_MAP
 	
 	select count(*) into sCount
@@ -223,7 +241,9 @@ BEGIN
 	from (select distinct 'Unknown' as sex_cd,
 				 0 as age_in_years_num,
 				 null as race_cd,
-				 regexp_replace(TrialID || ':' || coalesce(s.site_id,'') || ':' || s.subject_id,'(::){1,}', ':', 'g') as sourcesystem_cd
+				 regexp_replace(CASE WHEN shared_patients IS NULL
+					 THEN TrialId
+												ELSE shared_patients END || ':' || coalesce(s.site_id,'') || ':' || s.subject_id,'(::){1,}', ':', 'g') as sourcesystem_cd
 		 from LT_SRC_METABOLOMIC_MAP s
 		     ,de_gpl_info g
 		 where (s.subject_id IS NOT NULL AND s.subject_id::text <> '')
@@ -234,7 +254,9 @@ BEGIN
 		   and not exists
 			  (select 1 from patient_dimension x
 			   where x.sourcesystem_cd = 
-				 regexp_replace(TrialID || ':' || coalesce(s.site_id,'') || ':' || s.subject_id,'(::){1,}', ':', 'g'))
+				 regexp_replace(CASE WHEN shared_patients IS NULL
+					 THEN TrialId
+												ELSE shared_patients END || ':' || coalesce(s.site_id,'') || ':' || s.subject_id,'(::){1,}', ':', 'g'))
 		) as x;
 	get diagnostics rowCt := ROW_COUNT;
 	exception
@@ -250,6 +272,18 @@ BEGIN
 	
 	stepCt := stepCt + 1;
 	perform cz_write_audit(jobId,databaseName,procedureName,'Insert subjects to patient_dimension',rowCt,stepCt,'Done');
+
+	select INSERT_PATIENT_MAPPING(shared_patients, jobID) into rtnCd;
+	if rtnCd < 0 THEN
+		SELECT cz_error_handler(jobID, procedureName, res,
+														'INSERT_PATIENT_MAPPING error')
+		INTO rtnCd;
+
+		SELECT cz_end_audit(jobID, 'FAIL')
+		INTO rtnCd;
+
+		RETURN rtnCd;
+	END IF;
 	
 	perform i2b2_create_security_for_trial(TrialId, secureStudy, jobID);
 
@@ -702,7 +736,9 @@ category_cd,'PLATFORM',title),'ATTR1',coalesce(attribute_1,'')),'ATTR2',coalesce
 		from LT_SRC_METABOLOMIC_MAP a		
 		--Joining to Pat_dim to ensure the ID's match. If not I2B2 won't work.
 		inner join patient_dimension b
-		  on regexp_replace(TrialID || ':' || coalesce(a.site_id,'') || ':' || a.subject_id,'(::){1,}', ':', 'g') = b.sourcesystem_cd
+		  on regexp_replace(CASE WHEN shared_patients IS NULL
+				THEN TrialId
+												ELSE shared_patients END || ':' || coalesce(a.site_id,'') || ':' || a.subject_id,'(::){1,}', ':', 'g') = b.sourcesystem_cd
 		inner join WT_METABOLOMIC_NODES ln
 			on a.platform = ln.platform
 			and a.tissue_type = ln.tissue_type
@@ -734,7 +770,9 @@ category_cd,'PLATFORM',title),'ATTR1',coalesce(attribute_1,'')),'ATTR2',coalesce
 			and case when instr(substr(a.category_cd,1,instr(a.category_cd,'ATTR2')+5),'ATTR1') > 1 then a.attribute_1 else '@' end = coalesce(a2.attribute_1,'@')
 			and a2.node_type = 'ATTR2'			  
 		left outer join patient_dimension sid
-			on regexp_replace(TrialID || ':' || coalesce(a.site_id,'') || ':' || a.subject_id,'(::){1,}', ':','g') = sid.sourcesystem_cd
+			on regexp_replace(CASE WHEN shared_patients IS NULL
+				THEN TrialId
+												ELSE shared_patients END || ':' || coalesce(a.site_id,'') || ':' || a.subject_id,'(::){1,}', ':','g') = sid.sourcesystem_cd
 		where a.trial_name = TrialID
 		  and a.source_cd = sourceCD
 		  and  (ln.concept_cd IS NOT NULL AND ln.concept_cd::text <> '')) t;

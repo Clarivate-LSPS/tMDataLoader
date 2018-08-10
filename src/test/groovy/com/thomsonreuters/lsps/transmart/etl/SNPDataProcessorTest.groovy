@@ -1,9 +1,13 @@
 package com.thomsonreuters.lsps.transmart.etl
 
+import com.thomsonreuters.lsps.db.core.DatabaseType
+import com.thomsonreuters.lsps.transmart.fixtures.Study
+
 import static com.thomsonreuters.lsps.transmart.Fixtures.getAdditionalStudiesDir
 import static com.thomsonreuters.lsps.transmart.Fixtures.studyDir
 import static com.thomsonreuters.lsps.transmart.etl.matchers.SqlMatchers.*
 import static org.junit.Assert.assertThat
+
 /**
  * Created by bondarev on 2/24/14.
  */
@@ -18,6 +22,10 @@ class SNPDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase
     void setUp() {
         ConfigAwareTestCase.super.setUp()
         runScript('I2B2_PROCESS_SNP_DATA.sql')
+        runScript('INSERT_PATIENT_MAPPING.sql')
+        if (database.databaseType == DatabaseType.Postgres) {
+            runScript('I2B2_LOAD_SAMPLES.sql')
+        }
         new DeleteDataProcessor(config).process(['id': studyId])
     }
 
@@ -60,5 +68,18 @@ class SNPDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase
         assertThat(db, hasCopyNumber('TST002', 'CN_497981', 0.057206))
         assertThat(db, hasCopyNumber('TST001', 'SNP_A-2176913', 0.018677))
         assertThat(db, hasNode($/\Test Studies\${studyName}\SNP\${platformId}\Unknown\/$).withPatientCount(4))
+    }
+
+    void testItLoadsStudyWithSharePatients() {
+        def result
+        withErrorLogging {
+            result = processor.process(new File(studyDir('Test Study With Share Patients', 'GSE0WSP'), "SNPDataToUpload").toPath(),
+                    [name: studyName, node: "Test Studies\\Test Study With Share Patients".toString()])
+        }
+
+        assertTrue(result)
+        assert db, hasSharePatients('SHARED_TEST', ['Subject_0', 'Subject_1', 'Subject_2'])
+
+        Study.deleteById(config, 'GSE0WSP')
     }
 }

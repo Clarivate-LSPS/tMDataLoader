@@ -311,4 +311,18 @@ class VCFDataProcessorTest extends GroovyTestCase implements ConfigAwareTestCase
         File studyDir = Fixtures.invalidStudies.VCF.getProperty(studyName) as File
         assertFalse(dataProcessor.process(studyDir.toPath(), [name: studyName, node: $/Invalid Studies\${studyName}/$]))
     }
+
+    void testItLoadsStudyWithSharePatients() {
+        def sharePatientStudyId = 'GSE0WSP'
+        def sharePatientStudyName = 'Test Study With Share Patients'
+
+        def vcfData = Fixtures.studiesDir.studyDir(sharePatientStudyName, sharePatientStudyId).getVCFData()
+        def successfullyUploaded = vcfData.load(config)
+
+        assertTrue(successfullyUploaded)
+        assert db, hasSharePatients('SHARED_TEST', ['Subject_0', 'Subject_1'])
+
+        Study.deleteById(config, sharePatientStudyId)
+
+    }
 }

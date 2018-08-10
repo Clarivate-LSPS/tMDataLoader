@@ -21,6 +21,8 @@
 package com.thomsonreuters.lsps.transmart.etl
 
 import com.thomsonreuters.lsps.db.core.Database
+import com.thomsonreuters.lsps.transmart.files.CsvLikeFile
+import com.thomsonreuters.lsps.transmart.files.MetaInfoHeader
 import groovy.sql.Sql
 
 import java.nio.file.Path
@@ -30,6 +32,8 @@ abstract class AbstractDataProcessor implements DataProcessor {
     Database database
 
     MergeMode mergeMode = MergeMode.REPLACE
+    String sharedPatients = null
+    String strongPatientCheck
 
     AbstractDataProcessor(conf) {
         config = conf
@@ -48,7 +52,7 @@ abstract class AbstractDataProcessor implements DataProcessor {
 
     boolean process(Path dir, studyInfo) {
         def res = false
-
+        strongPatientCheck = config.strongCheck ? 'Y' : 'N'
         studyInfo.node = "\\${studyInfo.node}\\".replace("\\\\", '\\')
 
         logger.log("Connecting to database server")
@@ -111,5 +115,17 @@ abstract class AbstractDataProcessor implements DataProcessor {
         if (row && (String)row.c_fullname != (String)studyInfo.node) {
             throw new DataProcessingException("Other study with same id found by different path: ${row.c_fullname}" as String)
         }
+    }
+
+
+    protected getSharedPatient(Path path) {
+        CsvLikeFile mappingFile = new CsvLikeFile(path, '#')
+        def metaInfo = MetaInfoHeader.getMetaInfo(mappingFile)
+        return metaInfo.SHARED_PATIENTS
+    }
+
+    protected getSharedPatient(CsvLikeFile mappingFile) {
+        def metaInfo = MetaInfoHeader.getMetaInfo(mappingFile)
+        return metaInfo.SHARED_PATIENTS
     }
 }

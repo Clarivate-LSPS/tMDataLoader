@@ -3,15 +3,17 @@
 --
   CREATE OR REPLACE PROCEDURE "I2B2_PROCESS_RNA_SEQ_DATA"
 (
-  trial_id 		VARCHAR2
- ,top_node		varchar2
- ,data_type		varchar2 := 'R'		--	R = raw data, do zscore calc, T = transformed data, load raw values as zscore,
-									--	L = log intensity data, skip log step in zscore calc
- ,source_cd		varchar2 := 'STD'	--	default source_cd = 'STD'
- ,log_base		number := 2			--	log base value for conversion back to raw
- ,secure_study	varchar2			--	security setting if new patients added to patient_dimension
- ,currentJobID 	NUMBER := null
- ,rtn_code		OUT	NUMBER
+		trial_id                 VARCHAR2
+	, top_node                 VARCHAR2
+	, data_type                VARCHAR2 := 'R'    --	R = raw data, do zscore calc, T = transformed data, load raw values as zscore,
+	--	L = log intensity data, skip log step in zscore calc
+	, source_cd                VARCHAR2 := 'STD'  --	default source_cd = 'STD'
+	, log_base                 NUMBER := 2      --	log base value for conversion back to raw
+	, secure_study             VARCHAR2      --	security setting if new patients added to patient_dimension
+	, currentJobID             NUMBER := NULL
+	, shared_patients      IN  VARCHAR := NULL
+	, strong_patient_check IN  VARCHAR := 'N'
+	, rtn_code             OUT NUMBER
 )
 AS
 /*************************************************************************
@@ -64,7 +66,7 @@ AS
   unmapped_platform exception;
   multiple_platform	exception;
   no_probeset_recs	exception;
-
+	ipm_excep EXCEPTION ;
 
 
 	CURSOR addNodes is
@@ -245,7 +247,10 @@ EXECUTE IMMEDIATE 'alter session set NLS_NUMERIC_CHARACTERS=".,"';
 	from (select distinct 'Unknown' as sex_cd,
 				 0 as age_in_years_num,
 				 null as race_cd,
-				 regexp_replace(TrialID || ':' || s.site_id || ':' || s.subject_id,'(::){1,}', ':') as sourcesystem_cd
+				 regexp_replace(
+						 CASE WHEN shared_patients IS NULL
+							 THEN TrialId
+						 ELSE shared_patients END || ':' || s.site_id || ':' || s.subject_id,'(::){1,}', ':') as sourcesystem_cd
 		 from lt_src_RNA_SEQ_subj_samp_map s
 		    -- ,de_gpl_info g
 		 where s.subject_id is not null
@@ -256,7 +261,10 @@ EXECUTE IMMEDIATE 'alter session set NLS_NUMERIC_CHARACTERS=".,"';
 		   and not exists
 			  (select 1 from patient_dimension x
 			   where x.sourcesystem_cd =
-				 regexp_replace(TrialID || ':' || s.site_id || ':' || s.subject_id,'(::){1,}', ':'))
+				 regexp_replace(
+						 CASE WHEN shared_patients IS NULL
+							 THEN TrialId
+						 ELSE shared_patients END || ':' || s.site_id || ':' || s.subject_id,'(::){1,}', ':'))
 		) x;
 
 	pCount := SQL%ROWCOUNT;
@@ -264,6 +272,11 @@ EXECUTE IMMEDIATE 'alter session set NLS_NUMERIC_CHARACTERS=".,"';
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Insert subjects to patient_dimension',pCount,stepCt,'Done');
 	commit;
+
+	pCount := INSERT_PATIENT_MAPPING(shared_patients,jobID);
+	if pCount < 0 THEN
+		RAISE ipm_excep;
+	END IF;
 
 	i2b2_create_security_for_trial(TrialId, secureStudy, jobID);
 
@@ -641,7 +654,10 @@ EXECUTE IMMEDIATE 'alter session set NLS_NUMERIC_CHARACTERS=".,"';
 		from lt_src_RNA_SEQ_subj_samp_map a
 		--Joining to Pat_dim to ensure the ID's match. If not I2B2 won't work.
 		inner join patient_dimension b
-		  on regexp_replace(TrialID || ':' || a.site_id || ':' || a.subject_id,'(::){1,}', ':') = b.sourcesystem_cd
+		  on regexp_replace(
+						 CASE WHEN shared_patients IS NULL
+							 THEN TrialId
+						 ELSE shared_patients END || ':' || a.site_id || ':' || a.subject_id,'(::){1,}', ':') = b.sourcesystem_cd
 		inner join wt_RNA_SEQ_nodes ln
 			on a.platform = ln.platform
 			and a.category_cd=ln.category_cd
@@ -678,7 +694,10 @@ EXECUTE IMMEDIATE 'alter session set NLS_NUMERIC_CHARACTERS=".,"';
 			and case when instr(substr(a.category_cd,1,instr(a.category_cd,'ATTR2')+5),'ATTR1') > 1 then a.attribute_1 else '@' end = nvl(a2.attribute_1,'@')
 			and a2.node_type = 'ATTR2'
 		left outer join patient_dimension sid
-			on  regexp_replace(TrialId || ':S:' || a.site_id || ':' || a.subject_id || ':' || a.sample_cd,
+			on  regexp_replace(
+							CASE WHEN shared_patients IS NULL
+								THEN TrialId
+							ELSE shared_patients END || ':S:' || a.site_id || ':' || a.subject_id || ':' || a.sample_cd,
 							  '(::){1,}', ':') = sid.sourcesystem_cd
 		where a.trial_name = TrialID
 		  and a.source_cd = sourceCD
@@ -1075,6 +1094,11 @@ EXECUTE IMMEDIATE 'alter session set NLS_NUMERIC_CHARACTERS=".,"';
 		CZ_ERROR_HANDLER(JOBID,PROCEDURENAME);
 		cz_end_audit (jobId,'FAIL');
 		select 165 into rtn_code from dual;
+	WHEN ipm_excep THEN
+		cz_write_audit(jobID, databaseName, procedureName,'INSERT_PATIENT_MAPPING error',1,stepCt,'ERROR');
+		cz_error_handler(jobID, procedureName);
+		cz_end_audit(jobID, 'FAIL');
+		select 167 into rtn_code from dual;
 	WHEN OTHERS THEN
 		--Handle errors.
 		cz_error_handler (jobID, procedureName);

@@ -23,6 +23,8 @@ class RBMDataProcessor extends AbstractDataProcessor {
         dir.eachFileMatch(~/(?i).+_Subject_Sample_Mapping_File(_GPL\d+)*\.txt/) {
             platformList.addAll(processMappingFile(it, sql, studyInfo))
             checkStudyExist(sql, studyInfo)
+
+            sharedPatients = getSharedPatient(it)
         }
 
         platformList = platformList.toList()
@@ -58,8 +60,8 @@ class RBMDataProcessor extends AbstractDataProcessor {
                 sql.call("{call " + config.controlSchema + ".i2b2_load_rbm_annotation()}")
             }
 
-            sql.call("{call " + config.controlSchema + ".i2b2_load_rbm_data (?, ?, ?, null, null, '" + config.securitySymbol + "', ?, ?)}",
-                    [studyId, studyNode, studyDataType, jobId, Sql.NUMERIC]) {}
+            sql.call("{call " + config.controlSchema + ".$procedureName (?, ?, ?, null, null, '" + config.securitySymbol + "', ?, ?, ?, ?)}",
+                    [studyId, studyNode, studyDataType, jobId, sharedPatients, strongPatientCheck, Sql.NUMERIC]) {}
         } else {
             config.logger.log(LogType.ERROR, "Study ID or Node or DataType not defined!")
             return false

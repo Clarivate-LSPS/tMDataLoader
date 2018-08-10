@@ -58,8 +58,8 @@ class RNASeqDataProcessor extends AbstractDataProcessor {
         if (studyId && studyNode && studyDataType) {
             config.logger.log("Study ID=${studyId}; Node=${studyNode}; Data Type=${studyDataType}")
 
-            sql.call("{call " + config.controlSchema + ".i2b2_process_rna_seq_data (?, ?, ?, null, null, '" + config.securitySymbol + "', ?, ?)}",
-                    [studyId, studyNode, studyDataType, jobId, Sql.NUMERIC]) {}
+            sql.call("{call " + config.controlSchema + ".$procedureName (?, ?, ?, null, null, '" + config.securitySymbol + "', ?, ?, ?, ?)}",
+                    [studyId, studyNode, studyDataType, jobId, sharedPatients, strongPatientCheck, Sql.NUMERIC]) {}
 
             // Call loading annotation after data processing because we need data from filled
             // probeset_deapp to load full annotation info

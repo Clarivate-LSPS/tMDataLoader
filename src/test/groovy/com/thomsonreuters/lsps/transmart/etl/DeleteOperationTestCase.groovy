@@ -63,7 +63,9 @@ class DeleteOperationTestCase extends Specification implements ConfigAwareTestCa
         runScript('I2B2_DELETE_ALL_DATA.sql')
         runScript('I2B2_DELETE_ALL_NODES.sql')
         runScript('I2B2_DELETE_1_NODE.sql')
-        runScript('I2B2_REMOVE_EMPTY_PARENT_NODES.sql')
+        if (database?.databaseType == DatabaseType.Oracle) {
+            runScript('I2B2_REMOVE_EMPTY_PARENT_NODES.sql')
+        }
         processorDelete.process(id: null, path: studyPath)
         processorDelete.process(id: studyId, path: null)
     }

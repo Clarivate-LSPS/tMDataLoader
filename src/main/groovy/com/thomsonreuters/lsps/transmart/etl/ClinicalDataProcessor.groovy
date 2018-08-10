@@ -43,7 +43,6 @@ import java.sql.SQLException
 class ClinicalDataProcessor extends AbstractDataProcessor {
     StatisticCollector statistic = new StatisticCollector()
     def usedStudyId = ''
-    String sharedPatients = null
 
     Map<String, Object> previousVisitValuesByLabel = [:]
     Map<Object, String> previousVisitValuesByPair = [:]
@@ -248,11 +247,6 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
         return true
     }
 
-    private getSharedPatient(CsvLikeFile mappingFile) {
-        def metaInfo = MetaInfoHeader.getMetaInfo(mappingFile)
-        return metaInfo.SHARED_PATIENTS
-    }
-
     private MergeMode getMergeMode(CsvLikeFile mappingFile) {
         def metaInfo = MetaInfoHeader.getMetaInfo(mappingFile)
         String modeName = metaInfo.MERGE_MODE
@@ -343,7 +337,7 @@ class ClinicalDataProcessor extends AbstractDataProcessor {
             config.logger.log("Study ID=${studyId}; Node=${studyNode}")
             def highlightFlag = config.highlightClinicalData ? 'Y' : 'N'
             def alwaysSetVisitName = config.alwaysSetVisitName ? 'Y' : 'N'
-            def strongPatientCheck = config.strongCheck ? 'Y' : 'N'
+
             sql.call("{call " + config.controlSchema + "." + getProcedureName() + "(?,?,?,?,?,?,?,?,?)}",
                     [studyId, studyNode, config.securitySymbol, highlightFlag, alwaysSetVisitName, jobId, mergeMode.name(), sharedPatients, strongPatientCheck])
         } else {

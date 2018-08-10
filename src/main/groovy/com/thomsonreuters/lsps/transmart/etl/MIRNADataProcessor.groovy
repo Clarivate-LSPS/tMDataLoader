@@ -23,6 +23,7 @@ class MIRNADataProcessor extends AbstractDataProcessor {
         dir.eachFileMatch(~/(?i).+_Subject_Sample_Mapping_File(_GPL\d+)*\.txt/) {
             platformList.addAll(processMappingFile(it, sql, studyInfo))
             checkStudyExist(sql, studyInfo)
+            sharedPatients = getSharedPatient(it)
         }
 
         platformList = platformList.toList()
@@ -59,8 +60,8 @@ class MIRNADataProcessor extends AbstractDataProcessor {
                 sql.call("{call " + config.controlSchema + ".i2b2_load_mirna_annot_deapp()}")
             }
 
-            sql.call("{call " + config.controlSchema + ".i2b2_process_qpcr_mirna_data (?, ?, ?, null, null, '" + config.securitySymbol + "', ?, ?, ?)}",
-                    [studyId, studyNode, studyDataType, jobId, mirnaType, Sql.NUMERIC]) {}
+            sql.call("{call " + config.controlSchema + ".$procedureName (?, ?, ?, null, null, '" + config.securitySymbol + "', ?, ?, ?, ?, ?)}",
+                    [studyId, studyNode, studyDataType, jobId, mirnaType, sharedPatients, strongPatientCheck, Sql.NUMERIC]) {}
         } else {
             config.logger.log(LogType.ERROR, "Study ID or Node or DataType not defined!")
             return false
