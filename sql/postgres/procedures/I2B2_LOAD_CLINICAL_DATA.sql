@@ -66,6 +66,7 @@ Declare
 	defaultTime          TIMESTAMP;
 	strongPatientCheck        BOOLEAN;
 	badPatients               VARCHAR(2000);
+	sharedPatients						VARCHAR(2000);
 
 	new_paths                 VARCHAR [];
 	array_len                 NUMERIC;
@@ -141,6 +142,10 @@ BEGIN
 		secureStudy := 'Y';
 	end if;
 
+	IF (shared_patients is not null)
+	THEN
+		sharedPatients := upper(trim(shared_patients));
+	END IF;
 	--	figure out how many nodes (folders) are at study name and above
 	--	\Public Studies\Clinical Studies\Pancreatic_Cancer_Smith_GSE22780\: topLevel = 4, so there are 3 nodes
 	--	\Public Studies\GSE12345\: topLevel = 3, so there are 2 nodes
@@ -236,9 +241,18 @@ BEGIN
 	SELECT count(*)
 	INTO pCount
 	FROM i2b2demodata.study
-	WHERE study_id = trim(shared_patients);
+	WHERE study_id = sharedPatients;
 	IF pCount > 0
 	THEN
+		SELECT cz_error_handler(jobID, procedureName, '-1',
+														'Please use another SHARED_PATIENTS, because it has already used in studies')
+		INTO rtnCd;
+		SELECT cz_end_audit(jobID, 'FAIL')
+		INTO rtnCd;
+		RETURN -16;
+	END IF;
+
+	if (sharedPatients = TrialID) then
 		SELECT cz_error_handler(jobID, procedureName, '-1',
 														'Please use another SHARED_PATIENTS, because it has already used in studies')
 		INTO rtnCd;
@@ -315,7 +329,7 @@ BEGIN
 	set data_type = 'T'
 		-- All tag values prefixed with $$, so we should remove prefixes in category_path
 		,category_path = regexp_replace(regexp_replace(replace(replace(category_cd,'_',' '),'+','\'), '\$\$\d*[A-Z]\{([^}]+)\}', '\1', 'g'), '\$\$\d*[A-Z]', '', 'g')
-	  ,usubjid = REGEXP_REPLACE(case WHEN shared_patients is null then TrialID else shared_patients end || ':' || coalesce(site_id,'') || ':' || subject_id,
+	  ,usubjid = REGEXP_REPLACE(case WHEN shared_patients is null then TrialID else sharedPatients end || ':' || coalesce(site_id,'') || ':' || subject_id,
                    '(::){1,}', ':', 'g');
 	 get diagnostics rowCt := ROW_COUNT;
 	stepCt := stepCt + 1;
@@ -1189,7 +1203,7 @@ BEGIN
 		 (select distinct cd.usubjid from wt_subject_info cd
 		  except
 		  select distinct pd.sourcesystem_cd from i2b2demodata.patient_dimension pd
-		  where pd.sourcesystem_cd like case when shared_patients is null then TrialId else shared_patients end || ':%');
+		  where pd.sourcesystem_cd like case when shared_patients is null then TrialId else sharedPatients end || ':%');
 	get diagnostics rowCt := ROW_COUNT;
 	exception
 	when others then
@@ -1204,7 +1218,7 @@ BEGIN
 	stepCt := stepCt + 1;
 	select cz_write_audit(jobId,databaseName,procedureName,'Insert new subjects into patient_dimension',rowCt,stepCt,'Done') into rtnCd;
 
-	PERFORM INSERT_PATIENT_MAPPING(shared_patients, jobID);
+	PERFORM INSERT_PATIENT_MAPPING(sharedPatients, jobID);
 
 	create temporary table concept_specific_trials
 	(
@@ -1246,7 +1260,7 @@ BEGIN
 			FROM i2b2demodata.patient_dimension pd
 				LEFT JOIN
 				wrk_clinical_data wcd ON pd.sourcesystem_cd = wcd.usubjid
-			WHERE pd.sourcesystem_cd LIKE case when shared_patients is null then TrialId else shared_patients end || ':%'
+			WHERE pd.sourcesystem_cd LIKE case when shared_patients is null then TrialId else sharedPatients end || ':%'
 						AND pd.patient_num NOT IN (SELECT patient_num
 																			 FROM i2b2demodata.visit_dimension vd)
 			GROUP BY wcd.start_date, pd.patient_num, wcd.end_date;

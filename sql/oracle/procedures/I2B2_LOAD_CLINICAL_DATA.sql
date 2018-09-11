@@ -90,7 +90,7 @@ AS
 	l_bad_concept_cds_max_len NUMBER;
 	strongPatientCheck        BOOLEAN;
 	badPatients               VARCHAR2(2000);
-
+	sharedPatients            VARCHAR2(2000);
 
 	--Audit variables
   newJobFlag INTEGER(1);
@@ -194,6 +194,10 @@ BEGIN
 	if (secureStudy not in ('Y','N') ) then
 		secureStudy := 'Y';
 	end if;
+
+	if (shared_patients is not null) then
+		sharedPatients := upper(trim(shared_patients));
+	END IF;
   
   -- added by Eugr: enable parallel queries
   execute immediate 'alter session enable parallel dml';
@@ -219,9 +223,13 @@ BEGIN
 	SELECT count(*)
 	INTO pCount
 	FROM i2b2demodata.study
-	WHERE study_id = trim(shared_patients);
+	WHERE study_id = sharedPatients;
 	IF pCount > 0
 	THEN
+		raise duplicate_shared_patient;
+	END IF;
+
+	if (sharedPatients = TrialID) then
 		raise duplicate_shared_patient;
 	END IF;
 
@@ -325,8 +333,8 @@ BEGIN
 			regexp_replace(regexp_replace(replace(replace(category_cd, '_', ' '), '+', '\'), '\$\$\d*[A-Z]\{([^}]+)\}', '\1'),
 										 '\$\$\d*[A-Z]', ''),
 			(CASE WHEN site_id IS NOT NULL
-				THEN case WHEN shared_patients is null then TrialID else shared_patients end || ':' || site_id || ':' || subject_id
-			 ELSE case WHEN shared_patients is null then TrialID else shared_patients end || ':' || subject_id END),
+				THEN case WHEN shared_patients is null then TrialID else sharedPatients end || ':' || site_id || ':' || subject_id
+			 ELSE case WHEN shared_patients is null then TrialID else sharedPatients end || ':' || subject_id END),
 			'T',
 			valuetype_cd,
 			baseline_value,
@@ -1075,14 +1083,14 @@ BEGIN
 		 (select distinct cd.usubjid from tmp_subject_info cd
 		  minus
 		  select distinct pd.sourcesystem_cd from patient_dimension pd
-		  where pd.sourcesystem_cd like case WHEN shared_patients is null then TrialID else shared_patients end || ':%');
+		  where pd.sourcesystem_cd like case WHEN shared_patients is null then TrialID else sharedPatients end || ':%');
 		  
 	stepCt := stepCt + 1;
 	cz_write_audit(jobId,databaseName,procedureName,'Insert new subjects into patient_dimension',SQL%ROWCOUNT,stepCt,'Done');
 	
 	commit;
 
-	pCount := INSERT_PATIENT_MAPPING(shared_patients, jobID);
+	pCount := INSERT_PATIENT_MAPPING(sharedPatients, jobID);
 
 	EXECUTE IMMEDIATE 'TRUNCATE TABLE concept_specific_trials';
 
@@ -1125,7 +1133,7 @@ BEGIN
 					 FROM i2b2demodata.patient_dimension pd
 						 LEFT JOIN
 						 wrk_clinical_data wcd ON pd.sourcesystem_cd = wcd.usubjid
-					 WHERE pd.sourcesystem_cd LIKE case WHEN shared_patients is null then TrialID else shared_patients end || ':%'
+					 WHERE pd.sourcesystem_cd LIKE case WHEN shared_patients is null then TrialID else sharedPatients end || ':%'
 								 AND pd.patient_num NOT IN (SELECT patient_num
 																						FROM i2b2demodata.visit_dimension vd)
 					 GROUP BY wcd.start_date, pd.patient_num, wcd.end_date) t;

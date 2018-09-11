@@ -2198,4 +2198,39 @@ class ClinicalDataProcessorTest extends Specification implements ConfigAwareTest
         Study.deleteById(config, 'PTT_TEST2')
     }
 
+    def 'It should throw exception Please use another SHARED_PATIENTS'() {
+        given:
+        def clinicalData = ClinicalData.build('PTT_TEST_E1', 'Test Study With PTT_TEST_E1') {
+            mappingFile {
+                forDataFile('TEST.txt') {
+                    addMetaInfo(['SHARED_PATIENTS: PTT_TEST_E1'])
+                    map('Subjects+Demographics', 3, 'Age (AGE)')
+                    map('Subjects+Demographics', 4, 'Sex (SEX)')
+                    map('Subjects+Demographics', 5, 'Race (RACE)')
+                }
+            }
+            dataFile('TEST.txt', ['age', 'sex', 'race']) {
+                forSubject('PTT01') {
+                    row '30', 'Male', 'Europian'
+                }
+                forSubject('PTT02') {
+                    row '50', 'Female', 'Asian'
+                }
+                forSubject('PTT03') {
+                    row '50', 'Male', 'Asian'
+                }
+            }
+        }
+
+        when:
+        def result1 = clinicalData.load(config)
+
+        then:
+        assertFalse(result1)
+
+
+        cleanup:
+        Study.deleteById(config, 'PTT_TEST_E1')
+    }
+
 }
