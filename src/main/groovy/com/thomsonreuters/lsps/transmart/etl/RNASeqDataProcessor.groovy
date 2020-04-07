@@ -65,7 +65,7 @@ class RNASeqDataProcessor extends AbstractDataProcessor {
             // probeset_deapp to load full annotation info
 
             if (studyInfo['runPlatformLoad']) {
-                sql.call("{call " + config.controlSchema + ".i2b2_rna_seq_annotation(?, ?, ?)}", [Sql.NUMERIC,  studyInfo.platform, jobId])
+                sql.call("{call " + config.controlSchema + ".i2b2_rna_seq_annotation(?, ?)}", [studyInfo.platform, jobId as Integer])
             }
         } else {
             config.logger.log(LogType.ERROR, "Study ID or Node or DataType not defined!")

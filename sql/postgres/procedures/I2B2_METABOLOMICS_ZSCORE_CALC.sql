@@ -28,7 +28,7 @@ Date:1/3/2014
   procedureName varchar(100);
   jobID numeric;
   stepCt numeric;
-  rowCt			bigint;
+  rowCt			int;
   rtnCd			integer;
   errorNumber		character varying;
   errorMessage	character varying;
@@ -151,7 +151,7 @@ select cz_error_handler (jobID, procedureName, errorNumber, errorMessage) into r
 			select probeset
 				  ,intensity_value
 				  ,assay_id
-				  ,CASE WHEN intensity_value <= 0 THEN log(2,(intensity_value + 0.001)::numeric) ELSE log(2,intensity_value::numeric) END
+				  ,CASE WHEN intensity_value <= 0 THEN log(2.0,(intensity_value + 0.001)::numeric) ELSE log(2.0,intensity_value::numeric) END
 				  ,patient_id
 				  ,subject_id
 			from WT_SUBJECT_MBOLOMICS_PROBESET

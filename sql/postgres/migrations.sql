@@ -16,3 +16,5 @@
 \i migrations/gwas_plink/migrations.sql
 \i migrations/20160805133000000_ADD_COLUMN_FOR_TIMESTAMP.sql
 \i migrations/20161218000000000_add_platform_for_protein_tables.sql
+\i migrations/20191010000005000_METABOLOMICS.sql
+\i migrations/20191010000005000_VCF_UNIQUE.sql

@@ -147,7 +147,7 @@ BEGIN
 			select probeset
 				  ,intensity_value  ----UAT 154 changes done on 19/03/2014
 				  ,assay_id 
-				  ,round(log(2,intensity_value  + 0.001),4)  ----UAT 154 changes done on 19/03/2014
+				  ,round(log(2.0,(intensity_value  + 0.001)::numeric),4)  ----UAT 154 changes done on 19/03/2014
 				  ,patient_id
 		--		  ,sample_cd
 				  ,subject_id
@@ -273,8 +273,8 @@ BEGIN
                  ,m.subject_id
 	    --  ,decode(dataType,'R',m.intensity_value,'L',power(logBase, m.log_intensity),null)
                 ,m.intensity_value as intensity  ---UAT 154 changes done on 19/03/2014
-                ,(CASE WHEN m.zscore < -2.5 THEN -2.5 WHEN m.zscore >  2.5 THEN  2.5 ELSE round(m.zscore,5) END)	
-                ,round(m.log_intensity,4) as log_intensity
+                ,(CASE WHEN m.zscore < -2.5 THEN -2.5 WHEN m.zscore >  2.5 THEN  2.5 ELSE round(m.zscore::numeric,5) END)
+                ,round(m.log_intensity::numeric,4) as log_intensity
                 ,m.patient_id
 	from WT_SUBJECT_PROTEOMICS_MED m
        , DEAPP.DE_PROTEIN_ANNOTATION d

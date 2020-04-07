@@ -40,11 +40,11 @@ class PostProcessingTest extends Specification implements ConfigAwareTestCase {
         def res = sql.firstRow("Select search_secure_object_id as ssoi FROM searchapp.search_secure_object where bio_data_unique_id = 'EXP:'||?", clinicalData.studyId)
 
         // auth_principal_id = 1 is 'admin' user
-        // secure_access_level_id = 263803 - default value for 'VIEW' level
+        // secure_access_level_id = 8 - default value for 'VIEW' level
         sql.executeInsert("""INSERT INTO searchapp.search_auth_sec_object_access
                         (auth_sec_obj_access_id, auth_principal_id, secure_object_id, secure_access_level_id)
                         VALUES
-                        (-1, 1, ?, 263803)
+                        (-1, 1, ?, 8)
                         """, res.ssoi)
 
 

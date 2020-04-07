@@ -41,8 +41,8 @@ IF NOT EXISTS (select 1 from pg_tables where schemaname = 'deapp' and tablename=
   CREATE TABLE IF NOT EXISTS deapp.de_variant_subject_idx (
       dataset_id character varying(50),
       subject_id character varying(50),
-      "position" bigint,
-      variant_subject_idx_id bigint DEFAULT nextval('deapp.de_variant_subject_idx_seq'::regclass)
+      "position" int,
+      variant_subject_idx_id int DEFAULT nextval('deapp.de_variant_subject_idx_seq'::regclass)
   )
   TABLESPACE "deapp";
 
@@ -93,9 +93,9 @@ IF NOT EXISTS (select 1 from pg_tables where schemaname = 'deapp' and tablename=
   -- Name: de_variant_subject_summary; Type: TABLE; Schema: deapp; Owner: -
   --
   CREATE TABLE deapp.de_variant_subject_summary (
-      variant_subject_summary_id bigint DEFAULT nextval('deapp.de_variant_subject_summary_seq'::regclass) NOT NULL,
+      variant_subject_summary_id int DEFAULT nextval('deapp.de_variant_subject_summary_seq'::regclass) NOT NULL,
       chr character varying(50),
-      pos bigint,
+      pos int,
       dataset_id character varying(50) NOT NULL,
       subject_id character varying(50) NOT NULL,
       rs_id character varying(50),
@@ -105,7 +105,7 @@ IF NOT EXISTS (select 1 from pg_tables where schemaname = 'deapp' and tablename=
       reference boolean,
       allele1 integer,
       allele2 integer,
-      assay_id bigint
+      assay_id int
   )
   TABLESPACE "deapp";
 
@@ -163,10 +163,10 @@ IF NOT EXISTS (select 1 from pg_tables where schemaname = 'deapp' and tablename=
   -- Name: deapp.de_variant_subject_detail; Type: TABLE; Schema: deapp; Owner: -
   --
   CREATE TABLE deapp.de_variant_subject_detail (
-      variant_subject_detail_id bigint DEFAULT nextval('deapp.de_variant_subject_detail_seq'::regclass) NOT NULL,
+      variant_subject_detail_id int DEFAULT nextval('deapp.de_variant_subject_detail_seq'::regclass) NOT NULL,
       dataset_id character varying(50),
       chr character varying(50),
-      pos bigint,
+      pos int,
       rs_id character varying(50),
       ref character varying(500),
       alt character varying(500),
@@ -237,13 +237,13 @@ IF NOT EXISTS (select 1 from pg_tables where schemaname = 'deapp' and tablename=
   -- Name: deapp.de_variant_population_data; Type: TABLE; Schema: deapp; Owner: -
   --
   CREATE TABLE deapp.de_variant_population_data (
-      variant_population_data_id bigint DEFAULT nextval('deapp.de_variant_population_data_seq'::regclass) NOT NULL,
+      variant_population_data_id int DEFAULT nextval('deapp.de_variant_population_data_seq'::regclass) NOT NULL,
       dataset_id character varying(50),
       chr character varying(50),
-      pos bigint,
+      pos int,
       info_name character varying(100),
       info_index integer DEFAULT 0,
-      integer_value bigint,
+      integer_value int,
       float_value double precision,
       text_value character varying(5000)
   )
@@ -291,7 +291,7 @@ IF NOT EXISTS (select 1 from pg_tables where schemaname = 'deapp' and tablename=
   -- Name: deapp.de_variant_population_info; Type: TABLE; Schema: deapp; Owner: -
   --
   CREATE TABLE deapp.de_variant_population_info (
-      variant_population_info_id bigint DEFAULT nextval('deapp.de_variant_population_info_seq'::regclass) NOT NULL,
+      variant_population_info_id int DEFAULT nextval('deapp.de_variant_population_info_seq'::regclass) NOT NULL,
       dataset_id character varying(50),
       info_name character varying(100),
       description text,

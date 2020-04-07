@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION i2b2_load_rbm_annotation(currentjobid bigint DEFAULT NULL::bigint)
+CREATE OR REPLACE FUNCTION i2b2_load_rbm_annotation(currentjobid int DEFAULT NULL::int)
   RETURNS numeric AS
   $BODY$
 DECLARE
@@ -12,8 +12,8 @@ DECLARE
 	newJobFlag numeric(1);
 	databaseName character varying(100);
 	procedureName character varying(100);
-	jobID bigint;
-	stepCt bigint;
+	jobID int;
+	stepCt int;
 	gplId	character varying(100);
 	errorNumber		character varying;
 	errorMessage	character varying;

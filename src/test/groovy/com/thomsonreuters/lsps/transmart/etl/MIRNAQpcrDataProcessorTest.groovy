@@ -58,7 +58,7 @@ class MIRNAQpcrDataProcessorTest extends GroovyTestCase implements ConfigAwareTe
 
         assertThat(db, hasRecord('deapp.de_subject_sample_mapping',
                 [trial_name: studyId, gpl_id: platformId, subject_id: 'S57023', sample_cd: 'GSM918938'],
-                [tissue_type: 'Intestine', platform: mirnaType, trial_name: studyId]))
+                [tissue_type: 'Homo sapiens', platform: mirnaType, trial_name: studyId]))
 
         assertThat(db, hasRecord('deapp.de_subject_mirna_data',
                 [trial_source: studyId + ':STD', trial_name: studyId], null))

@@ -117,7 +117,7 @@ BEGIN
 				  ,intensity_value ----UAT 154 changes done on 19/03/2014
 				  ,assay_id 
 				  ,round((case when intensity_value<=0 then 0
-                                  when intensity_value>0 then log(2,intensity_value)
+                                  when intensity_value>0 then log(2.0,intensity_value::numeric)
                                   else 0 end),5)
 				  ,patient_id
 			--	  ,sample_cd
@@ -324,7 +324,7 @@ BEGIN
 			 	then m.log_intensity
 				else null
 			end
-	    ,(CASE WHEN m.zscore < -2.5 THEN -2.5 WHEN m.zscore >  2.5 THEN  2.5 ELSE round(m.zscore,5) END)
+	    ,(CASE WHEN m.zscore < -2.5 THEN -2.5 WHEN m.zscore >  2.5 THEN  2.5 ELSE round(m.zscore::numeric,5) END)
               --,m.zscore
 		  ,m.patient_id
 	--	  ,m.sample_id

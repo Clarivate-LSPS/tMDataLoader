@@ -28,16 +28,16 @@ DECLARE
   sqlText		varchar(1000);
   tText			varchar(1000);
   gplTitle		varchar(1000);
-  pExists		bigint;
-  partTbl   	bigint;
-  partExists 	bigint;
-  sampleCt		bigint;
-  idxExists 	bigint;
-  logBase		bigint;
+  pExists		int;
+  partTbl   	int;
+  partExists 	int;
+  sampleCt		int;
+  idxExists 	int;
+  logBase		int;
   pCount		integer;
   sCount		integer;
   tablespaceName	varchar(200);
-  v_bio_experiment_id	bigint;
+  v_bio_experiment_id	int;
   partitioniD	numeric(18,0);
   partitionName	varchar(100);
   partitionIndx	varchar(100);
@@ -46,8 +46,8 @@ DECLARE
   newJobFlag integer;
   databaseName varchar(100);
   procedureName varchar(100);
-  jobID bigint;
-  stepCt bigint;
+  jobID int;
+  stepCt int;
   rowCt			numeric(18,0);
   errorNumber		character varying;
   errorMessage	character varying;
@@ -222,7 +222,7 @@ BEGIN
 		  ,LOCALTIMESTAMP
 		  ,x.sourcesystem_cd
 	from (select distinct 'Unknown' as sex_cd,
-				 0 as age_in_years_num,
+				 null::integer as age_in_years_num,
 				 null as race_cd,
 				 regexp_replace(TrialID || ':' || coalesce(s.site_id,'') || ':' || s.subject_id,'(::){1,}', ':', 'g') as sourcesystem_cd
 		 from LT_SRC_RBM_SUBJ_SAMP_MAP s
@@ -620,13 +620,13 @@ category_cd,'PLATFORM',title),'ATTR1',coalesce(attribute_1,'')),'ATTR2',coalesce
   --SUBJECT_ID      = subject_id
   --SUBJECT_TYPE    = NULL
   --CONCEPT_CODE    = from LEAF records in wt_rbm_nodes
-  --SAMPLE_TYPE    	= TISSUE_TYPE
-  --SAMPLE_TYPE_CD  = concept_cd from TISSUETYPE records in wt_rbm_nodes
+  --SAMPLE_TYPE    	= attribute_1
+  --SAMPLE_TYPE_CD  = concept_cd from ATTR1 records in wt_rbm_nodes
   --TRIAL_NAME      = TRIAL_NAME
   --TIMEPOINT		= attribute_2
   --TIMEPOINT_CD	= concept_cd from ATTR2 records in wt_rbm_nodes
-  --TISSUE_TYPE     = attribute_1
-  --TISSUE_TYPE_CD  = concept_cd from ATTR1 records in wt_rbm_nodes
+  --TISSUE_TYPE     = TISSUE_TYPE
+  --TISSUE_TYPE_CD  = concept_cd from TISSUETYPE records in wt_rbm_nodes
   --PLATFORM        = RBM - this is required by ui code
   --PLATFORM_CD     = concept_cd from PLATFORM records in wt_rbm_nodes
   --DATA_UID		= concatenation of concept_cd-patient_num
@@ -693,13 +693,13 @@ category_cd,'PLATFORM',title),'ATTR1',coalesce(attribute_1,'')),'ATTR2',coalesce
 			  ,a.subject_id
 			  ,null as subject_type
 			  ,ln.concept_cd as concept_code
-			  ,a.tissue_type as sample_type
-			  ,ttp.concept_cd as sample_type_cd
+			  ,a.tissue_type as tissue_type
+			  ,ttp.concept_cd as tissue_type_cd
 			  ,a.trial_name
 			  ,a.attribute_2 as timepoint
 			  ,a2.concept_cd as timepoint_cd
-			  ,a.attribute_1 as tissue_type
-			  ,a1.concept_cd as tissue_type_cd
+			  ,a.attribute_1 as sample_type
+			  ,a1.concept_cd as sample_type_cd
 			  ,'RBM' as platform
 			  ,pn.concept_cd as platform_cd
 			  ,ln.concept_cd || '-' || b.patient_num::text as data_uid
@@ -766,31 +766,33 @@ category_cd,'PLATFORM',title),'ATTR1',coalesce(attribute_1,'')),'ATTR2',coalesce
 --	Insert records for patients and samples into observation_fact
 	begin
 	insert into i2b2demodata.observation_fact
-    (patient_num
-	,concept_cd
-	,modifier_cd
-	,valtype_cd
-	,tval_char
-	,sourcesystem_cd
-	,import_date
-	,valueflag_cd
-	,provider_id
-	,location_cd
-	,units_cd
-        ,INSTANCE_NUM
+    (patient_num,
+	concept_cd,
+	modifier_cd,
+	valtype_cd,
+	tval_char,
+	sourcesystem_cd,
+	start_date,
+	import_date,
+	valueflag_cd,
+	provider_id,
+	location_cd,
+	units_cd,
+	instance_num
     )
-    select distinct m.patient_id
-		  ,m.concept_code
-		  ,'@'
-		  ,'T' -- Text data type
-		  ,'E'  --Stands for Equals for Text Types
-		  ,m.trial_name
-		  ,LOCALTIMESTAMP
-		  ,'@'
-		  ,'@'
-		  ,'@'
-		  ,'' -- no units available
-                  ,1
+    select distinct m.patient_id,
+		  m.concept_code,
+		  '@',
+		  'T', -- Text data type
+		  'E',  --Stands for Equals for Text Types
+		  m.trial_name,
+		  'infinity'::timestamp,
+		  LOCALTIMESTAMP,
+		  '@',
+		  '@',
+		  '@',
+		  '', -- no units available
+		  1
     from  deapp.DE_SUBJECT_SAMPLE_MAPPING m
     where m.trial_name = TrialID 
 	  and m.source_cd = sourceCD
@@ -815,29 +817,31 @@ category_cd,'PLATFORM',title),'ATTR1',coalesce(attribute_1,'')),'ATTR2',coalesce
 	--	Insert sample facts 
 	begin
 	insert into i2b2demodata.observation_fact
-    (patient_num
-	,concept_cd
-	,modifier_cd
-	,valtype_cd
-	,tval_char
-	,sourcesystem_cd
-	,import_date
-	,valueflag_cd
-	,provider_id
-	,location_cd
-	,units_cd
+    (patient_num,
+	concept_cd,
+	modifier_cd,
+	valtype_cd,
+	tval_char,
+	sourcesystem_cd,
+	start_date,
+	import_date,
+	valueflag_cd,
+	provider_id,
+	location_cd,
+	units_cd
     )
-    select distinct m.sample_id
-		  ,m.concept_code
-		  ,m.trial_name
-		  ,'T' -- Text data type
-		  ,'E'  --Stands for Equals for Text Types
-		  ,m.trial_name
-		  ,LOCALTIMESTAMP
-		  ,'@'
-		  ,'@'
-		  ,'@'
-		  ,'' -- no units available
+    select distinct m.sample_id,
+		  m.concept_code,
+		  m.trial_name,
+		  'T', -- Text data type
+		  'E',  --Stands for Equals for Text Types
+		  m.trial_name,
+		  'infinity'::timestamp,
+		  LOCALTIMESTAMP,
+		  '@',
+		  '@',
+		  '@',
+		  '' -- no units available
     from  deapp.DE_SUBJECT_SAMPLE_MAPPING m
     where m.trial_name = TrialID 
 	  and m.source_cd = sourceCd

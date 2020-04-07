@@ -4,8 +4,8 @@ CREATE OR REPLACE FUNCTION COPY_SECURITY_FROM_OTHER_STUDY(studyid      CHARACTER
 SET search_path FROM CURRENT
 AS $BODY$
 DECLARE
-  bioDataId      BIGINT;
-  secureObjectId BIGINT;
+  bioDataId      INT;
+  secureObjectId INT;
 
   newJobFlag     INTEGER;
   databaseName   VARCHAR(100);

@@ -20,7 +20,7 @@ alter table tm_dataloader.lt_snp_copy_number owner to tm_dataloader;
 
 create UNLOGGED table IF NOT EXISTS tm_dataloader.lt_snp_gene_map(
   snp_name varchar,
-  entrez_gene_id bigint
+  entrez_gene_id int
 );
 
 alter table tm_dataloader.lt_snp_gene_map owner to tm_dataloader;

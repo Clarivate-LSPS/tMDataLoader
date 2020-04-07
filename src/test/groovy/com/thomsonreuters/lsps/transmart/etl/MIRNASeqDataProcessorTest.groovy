@@ -59,7 +59,7 @@ class MIRNASeqDataProcessorTest extends GroovyTestCase implements ConfigAwareTes
 
         assertThat(db, hasRecord('deapp.de_subject_sample_mapping',
                 [trial_name: studyId, gpl_id: platformId, subject_id: 'GSM918944', sample_cd: 'GSM918944'],
-                [tissue_type: 'Synovium', platform: mirnaType]))
+                [sample_type: 'Synovium', platform: mirnaType, tissue_type: 'Human']))
 
         assertThat(db, hasRecord('deapp.de_subject_mirna_data',
                 [trial_source: studyId + ':STD', trial_name: studyId], null))
@@ -79,7 +79,7 @@ class MIRNASeqDataProcessorTest extends GroovyTestCase implements ConfigAwareTes
 
         assertThat(db, hasRecord('deapp.de_subject_sample_mapping',
                 [trial_name: studyId, gpl_id: platformId, subject_id: 'GSM918944', sample_cd: 'GSM918944'],
-                [tissue_type: 'Synovium', platform: mirnaType]))
+                [sample_type: 'Synovium', platform: mirnaType]))
 
         assertThat(db, hasRecord('deapp.de_subject_mirna_data',
                 [trial_source: studyId + ':STD', trial_name: studyId], null))

@@ -7,7 +7,7 @@ create or replace function I2B2_DELETE_ALL_DATA
 $BODY$
 Declare
   TrialID   varchar(100);
-  bioexpid  bigint;
+  bioexpid  int;
   pathString  VARCHAR(700);
   TrialType 	VARCHAR(250);
   sourceCD  	VARCHAR(250);

@@ -221,7 +221,7 @@ BEGIN
 		  ,LOCALTIMESTAMP
 		  ,x.sourcesystem_cd
 	from (select distinct 'Unknown' as sex_cd,
-				 0 as age_in_years_num,
+				 null::integer as age_in_years_num,
 				 null as race_cd,
 				 regexp_replace(TrialID || ':' || coalesce(s.site_id,'') || ':' || s.subject_id,'(::){1,}', ':', 'g') as sourcesystem_cd
 		 from LT_SRC_METABOLOMIC_MAP s
@@ -609,13 +609,13 @@ category_cd,'PLATFORM',title),'ATTR1',coalesce(attribute_1,'')),'ATTR2',coalesce
   --SUBJECT_ID      = subject_id
   --SUBJECT_TYPE    = NULL
   --CONCEPT_CODE    = from LEAF records in WT_METABOLOMIC_NODES
-  --SAMPLE_TYPE    	= TISSUE_TYPE
-  --SAMPLE_TYPE_CD  = concept_cd from TISSUETYPE records in WT_METABOLOMIC_NODES
+  --SAMPLE_TYPE    	= attribute_1
+  --SAMPLE_TYPE_CD  = concept_cd from ATTR1 records in WT_METABOLOMIC_NODES
   --TRIAL_NAME      = TRIAL_NAME
   --TIMEPOINT		= attribute_2
   --TIMEPOINT_CD	= concept_cd from ATTR2 records in WT_METABOLOMIC_NODES
-  --TISSUE_TYPE     = attribute_1
-  --TISSUE_TYPE_CD  = concept_cd from ATTR1 records in WT_METABOLOMIC_NODES
+  --TISSUE_TYPE     = TISSUE_TYPE
+  --TISSUE_TYPE_CD  = concept_cd from TISSUETYPE records in WT_METABOLOMIC_NODES
   --PLATFORM        = metabolomics - this is required by ui code
   --PLATFORM_CD     = concept_cd from PLATFORM records in WT_METABOLOMIC_NODES
   --DATA_UID		= concatenation of concept_cd-patient_num
@@ -682,13 +682,13 @@ category_cd,'PLATFORM',title),'ATTR1',coalesce(attribute_1,'')),'ATTR2',coalesce
 			  ,a.subject_id
 			  ,null as subject_type
 			  ,ln.concept_cd as concept_code
-			  ,a.tissue_type as sample_type
-			  ,ttp.concept_cd as sample_type_cd
+			  ,a.tissue_type as tissue_type
+			  ,ttp.concept_cd as tissue_type_cd
 			  ,a.trial_name
 			  ,a.attribute_2 as timepoint
 			  ,a2.concept_cd as timepoint_cd
-			  ,a.attribute_1 as tissue_type
-			  ,a1.concept_cd as tissue_type_cd
+			  ,a.attribute_1 as sample_type
+			  ,a1.concept_cd as sample_type_cd
 			  ,'METABOLOMICS' as platform
 			  ,pn.concept_cd as platform_cd
 			  ,ln.concept_cd || '-' || b.patient_num::text as data_uid
@@ -755,31 +755,33 @@ category_cd,'PLATFORM',title),'ATTR1',coalesce(attribute_1,'')),'ATTR2',coalesce
 --	Insert records for patients and samples into observation_fact
 	begin
 	insert into observation_fact
-    (patient_num
-	,concept_cd
-	,modifier_cd
-	,valtype_cd
-	,tval_char
-	,sourcesystem_cd
-	,import_date
-	,valueflag_cd
-	,provider_id
-	,location_cd
-	,units_cd
-        ,INSTANCE_NUM
+    (patient_num,
+	concept_cd,
+	modifier_cd,
+	valtype_cd,
+	tval_char,
+	sourcesystem_cd,
+	start_date,
+	import_date,
+	valueflag_cd,
+	provider_id,
+	location_cd,
+	units_cd,
+	INSTANCE_NUM
     )
-    select distinct m.patient_id
-		  ,m.concept_code
-		  ,'@'
-		  ,'T' -- Text data type
-		  ,'E'  --Stands for Equals for Text Types
-		  ,m.trial_name
-		  ,LOCALTIMESTAMP
-		  ,'@'
-		  ,'@'
-		  ,'@'
-		  ,'' -- no units available
-                  ,1
+    select distinct m.patient_id,
+		  m.concept_code,
+		  '@',
+		  'T', -- Text data type
+		  'E',  --Stands for Equals for Text Types
+		  m.trial_name,
+		  'infinity'::timestamp,
+		  LOCALTIMESTAMP,
+		  '@',
+		  '@',
+		  '@',
+		  '', -- no units available
+		  1
     from  de_subject_sample_mapping m
     where m.trial_name = TrialID 
 	  and m.source_cd = sourceCD
@@ -802,29 +804,31 @@ category_cd,'PLATFORM',title),'ATTR1',coalesce(attribute_1,'')),'ATTR2',coalesce
 	--	Insert sample facts 
 	begin
 	insert into observation_fact
-    (patient_num
-	,concept_cd
-	,modifier_cd
-	,valtype_cd
-	,tval_char
-	,sourcesystem_cd
-	,import_date
-	,valueflag_cd
-	,provider_id
-	,location_cd
-	,units_cd
+    (patient_num,
+	concept_cd,
+	modifier_cd,
+	valtype_cd,
+	tval_char,
+	sourcesystem_cd,
+	start_date,
+	import_date,
+	valueflag_cd,
+	provider_id,
+	location_cd,
+	units_cd
     )
-    select distinct m.sample_id
-		  ,m.concept_code
-		  ,m.trial_name
-		  ,'T' -- Text data type
-		  ,'E'  --Stands for Equals for Text Types
-		  ,m.trial_name
-		  ,LOCALTIMESTAMP
-		  ,'@'
-		  ,'@'
-		  ,'@'
-		  ,'' -- no units available
+    select distinct m.sample_id,
+		  m.concept_code,
+		  m.trial_name,
+		  'T', -- Text data type
+		  'E',  --Stands for Equals for Text Types
+		  m.trial_name,
+		  'infinity'::timestamp,
+		  LOCALTIMESTAMP,
+		  '@',
+		  '@',
+		  '@',
+		  '' -- no units available
     from  de_subject_sample_mapping m
     where m.trial_name = TrialID 
 	  and m.source_cd = sourceCd
@@ -1065,7 +1069,7 @@ category_cd,'PLATFORM',title),'ATTR1',coalesce(attribute_1,'')),'ATTR2',coalesce
                 'select ' || partitioniD::text || ', m.trial_name || '':'' || mpp.source_cd, ' ||
                   '''' || TrialId || '''' ||
                 ',d.Id ,m.assay_id ,m.subject_id ,m.intensity_value ' ||
-                  ' ,log(2,m.intensity_value) ' ||
+                  ' ,log(2.0,m.intensity_value::numeric) ' ||
 			  ',case when m.intensity_value < -2.5 ' ||
 			        'then -2.5 ' ||
 					'when m.intensity_value > 2.5 ' ||

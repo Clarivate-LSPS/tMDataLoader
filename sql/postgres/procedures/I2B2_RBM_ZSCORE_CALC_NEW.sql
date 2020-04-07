@@ -1,7 +1,7 @@
 --
--- Name: i2b2_rbm_zscore_calc_new(character varying, character varying, character varying, numeric, character varying, bigint, character varying, bigint, character varying); Type: FUNCTION; Schema: tm_cz; Owner: -
+-- Name: i2b2_rbm_zscore_calc_new(character varying, character varying, character varying, numeric, character varying, int, character varying, int, character varying); Type: FUNCTION; Schema: tm_cz; Owner: -
 --
-CREATE OR REPLACE FUNCTION i2b2_rbm_zscore_calc_new(trial_id character varying, partition_name character varying, partition_indx character varying, partitionid numeric, run_type character varying DEFAULT 'L'::character varying, currentjobid bigint DEFAULT 0, data_type character varying DEFAULT 'R'::character varying, log_base bigint DEFAULT 2, source_cd character varying DEFAULT NULL::character varying) RETURNS void
+CREATE OR REPLACE FUNCTION i2b2_rbm_zscore_calc_new(trial_id character varying, partition_name character varying, partition_indx character varying, partitionid numeric, run_type character varying DEFAULT 'L'::character varying, currentjobid int DEFAULT 0, data_type character varying DEFAULT 'R'::character varying, log_base int DEFAULT 2, source_cd character varying DEFAULT NULL::character varying) RETURNS void
     LANGUAGE plpgsql VOLATILE SECURITY DEFINER
     SET search_path FROM CURRENT
     AS $$
@@ -20,18 +20,18 @@ Date:12/04/2013
   partitionName varchar(200);
   partitionindx varchar(200);
   stgTrial varchar(50);
-  idxExists bigint;
-  pExists	bigint;
-  nbrRecs bigint;
-  logBase bigint;
+  idxExists int;
+  pExists	int;
+  nbrRecs int;
+  logBase int;
    
   --Audit variables
   newJobFlag integer;
   databaseName varchar(100);
   procedureName varchar(100);
-  jobID bigint;
-  stepCt bigint;
-  rowCt			bigint;
+  jobID int;
+  stepCt int;
+  rowCt			int;
   rtnCd			integer;  
   errorNumber		character varying;
   errorMessage	character varying;
@@ -191,7 +191,7 @@ BEGIN
 				select probeset
 					  ,intensity_value 
 					  ,assay_id 
-					  ,CASE WHEN intensity_value <= 0 THEN log(2,(intensity_value + 0.001)) ELSE log(2,intensity_value) END
+					  ,CASE WHEN intensity_value <= 0 THEN log(2.0,(intensity_value + 0.001)::numeric) ELSE log(2.0,intensity_value::numeric) END
 					  ,patient_id
 				from wt_subject_rbm_probeset
 				where trial_name = TrialId;

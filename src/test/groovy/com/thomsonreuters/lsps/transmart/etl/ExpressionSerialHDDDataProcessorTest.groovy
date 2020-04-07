@@ -82,7 +82,7 @@ class ExpressionSerialHDDDataProcessorTest extends GroovyTestCase implements Con
 
         assertThat(db, hasRecord('deapp.de_subject_sample_mapping',
                 [trial_name: studyId, gpl_id: platformId, subject_id: 'CGTHW1'],
-                [sample_cd: 'CGTHW1', timepoint: null, tissue_type: null]))
+                [sample_cd: 'CGTHW1', timepoint: null, tissue_type: 'Blood', sample_type: null]))
 
         assertThat(db, hasRecord('i2b2metadata.i2b2',
                 [c_fullname: testNodeName, c_name: 'Sample Factors Week 1', sourcesystem_cd: studyId],

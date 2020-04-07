@@ -1,7 +1,7 @@
 --
 -- Name: i2b2_load_study_metadata(numeric); Type: FUNCTION; Schema: tm_dataloader; Owner: -
 --
-CREATE OR REPLACE FUNCTION i2b2_load_study_metadata(currentjobid numeric DEFAULT (-1)) RETURNS bigint
+CREATE OR REPLACE FUNCTION i2b2_load_study_metadata(currentjobid numeric DEFAULT (-1)) RETURNS int
     LANGUAGE plpgsql SECURITY DEFINER SET SEARCH_PATH FROM CURRENT
     AS $$
 /*************************************************************************
@@ -108,10 +108,8 @@ BEGIN
 									 ,case when m.design is null then null
 									  else 'STUDY_DESIGN:' ||
 										upper(regexp_replace(m.design, ' ', '_', 'g')) end as design
-									 ,case when is_date(m.start_date,'YYYYMMDD') = 1 then null
-										else to_date(m.start_date,'YYYYMMDD') end as start_date
-									 ,case when is_date(m.completion_date,'YYYYMMDD') = 1 then null
-										else to_date(m.completion_date,'YYYYMMDD') end as completion_date
+									 ,m.start_date
+									 ,m.completion_date
 									 ,coalesce(m.primary_investigator,m.study_owner) as primary_investigator
 									 ,m.overall_design
 									 ,case when m.institution is null then null
@@ -182,10 +180,8 @@ BEGIN
 				,case when m.design is null then null
 				 else 'STUDY_DESIGN:' ||
 					upper(regexp_replace(m.design, ' ', '_', 'g')) end as design
-				,case when is_date(m.start_date,'YYYYMMDD') = 1 then null
-				 else to_date(m.start_date,'YYYYMMDD') end as start_date
-				,case when is_date(m.completion_date,'YYYYMMDD') = 1 then null
-				 else to_date(m.completion_date,'YYYYMMDD') end as completion_date
+				,m.start_date
+				,m.completion_date
 				,coalesce(m.primary_investigator,m.study_owner) as primary_investigator
 				,m.contact_field
 				,'METADATA:' || m.study_id

@@ -63,13 +63,13 @@ class ExpressionDataProcessorTest extends GroovyTestCase implements ConfigAwareT
 
         assertThat(db, hasRecord('deapp.de_subject_sample_mapping',
                 [trial_name: studyId, gpl_id: platformId, subject_id: '453PMS', sample_cd: 'TST1000000808'],
-                [timepoint: 'Attr2Value', tissue_type: 'Attr1Value']))
+                [timepoint: 'Attr2Value', sample_type: 'Attr1Value', tissue_type: 'Blood']))
         assertThat(db, hasRecord('deapp.de_subject_sample_mapping',
                 [trial_name: studyId, gpl_id: platformId, subject_id: '454PMS', sample_cd: 'TST1000000809'],
-                [tissue_type: 'Attr1Value', timepoint: null]))
+                [sample_type: 'Attr1Value', timepoint: null, tissue_type: 'Blood']))
         assertThat(db, hasRecord('deapp.de_subject_sample_mapping',
                 [trial_name: studyId, gpl_id: platformId, subject_id: '455PMS', sample_cd: 'TST1000000810'],
-                [tissue_type: null, timepoint: 'Attr2Value']))
+                [sample_type: null, timepoint: 'Attr2Value', tissue_type: 'Blood']))
     }
 
     void testItMergeSamples() {

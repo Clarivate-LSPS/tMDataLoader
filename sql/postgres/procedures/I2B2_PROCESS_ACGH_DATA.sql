@@ -242,7 +242,7 @@ BEGIN
 		  ,current_timestamp
 		  ,x.sourcesystem_cd
 	from (select distinct 'Unknown' as sex_cd,
-				 0 as age_in_years_num,
+				 null::integer as age_in_years_num,
 				 null as race_cd,
 				 regexp_replace(TrialID || ':' || coalesce(s.site_id,'') || ':' || s.subject_id,'(::){1,}', ':', 'g') as sourcesystem_cd
 		 from lt_src_mrna_subj_samp_map s
@@ -649,13 +649,13 @@ BEGIN
 	--SUBJECT_ID      = subject_id
 	--SUBJECT_TYPE    = NULL
 	--CONCEPT_CODE    = from LEAF records in wt_mrna_nodes
-	--SAMPLE_TYPE    	= TISSUE_TYPE
-	--SAMPLE_TYPE_CD  = concept_cd from TISSUETYPE records in wt_mrna_nodes
+	--SAMPLE_TYPE    	= attribute_1
+	--SAMPLE_TYPE_CD  = concept_cd from ATTR1 records in tm_wz.wt_mrna_nodes
 	--TRIAL_NAME      = TRIAL_NAME
 	--TIMEPOINT		= attribute_2
 	--TIMEPOINT_CD	= concept_cd from ATTR2 records in wt_mrna_nodes
-	--TISSUE_TYPE     = attribute_1
-	--TISSUE_TYPE_CD  = concept_cd from ATTR1 records in wt_mrna_nodes
+	--TISSUE_TYPE     = TISSUE_TYPE
+	--TISSUE_TYPE_CD  = concept_cd from TISSUETYPE records in tm_wz.wt_mrna_nodes
 	--PLATFORM        = MRNA_AFFYMETRIX - this is required by ui code
 	--PLATFORM_CD     = concept_cd from PLATFORM records in wt_mrna_nodes
 	--DATA_UID		= concatenation of concept_cd-patient_num
@@ -670,9 +670,9 @@ BEGIN
 
 	begin
 	with upd as (select a.site_id, a.subject_id, a.sample_cd,
-					ln.concept_cd as concept_code, ttp.concept_cd as sample_type_cd, a2.concept_cd as timepoint_cd, a1.concept_cd as tissue_type_cd, a.category_cd,
+					ln.concept_cd as concept_code, ttp.concept_cd as tissue_type_cd, a2.concept_cd as timepoint_cd, a1.concept_cd as sample_type_cd, a.category_cd,
 				    pd.patient_num as patient_id, ln.concept_cd || '-' || pd.patient_num::text as data_uid,
-					ln.tissue_type as sample_type, ln.attribute_1 as tissue_type, ln.attribute_2 as timepoint, a.platform as gpl_id
+					ln.tissue_type as tissue_type, ln.attribute_1 as sample_type, ln.attribute_2 as timepoint, a.platform as gpl_id
 				 from lt_src_mrna_subj_samp_map a
 				 inner join i2b2demodata.patient_dimension pd
 					on regexp_replace(TrialID || ':' || coalesce(a.site_id,'') || ':' || a.subject_id,'(::){1,}', ':', 'g') = pd.sourcesystem_cd
@@ -796,13 +796,13 @@ BEGIN
 			  ,a.subject_id
 			  ,null as subject_type
 			  ,ln.concept_cd as concept_code
-			  ,a.tissue_type as sample_type
-			  ,ttp.concept_cd as sample_type_cd
+			  ,a.tissue_type as tissue_type
+			  ,ttp.concept_cd as tissue_type_cd
 			  ,a.trial_name
 			  ,a.attribute_2 as timepoint
 			  ,a2.concept_cd as timepoint_cd
-			  ,a.attribute_1 as tissue_type
-			  ,a1.concept_cd as tissue_type_cd
+			  ,a.attribute_1 as sample_type
+			  ,a1.concept_cd as sample_type_cd
 			--  ,'MRNA_AFFYMETRIX' as platform
 			  ,'ACGH' as platform
 			  ,pn.concept_cd as platform_cd

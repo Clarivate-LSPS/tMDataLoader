@@ -9,11 +9,11 @@ CREATE OR REPLACE FUNCTION i2b2_process_proteomics_data(trial_id character varyi
 
 ******************************************************************/
 --	***  NOTE ***
---	The input file columns are mapped to the following table columns.  This is done so that the javascript for the advanced workflows
---	selects the correct data for the dropdowns.
+--	The input file columns are mapped to the following table columns.
+--	This is a change from the swapping in tranSMART up to 16.3
 
---		tissue_type	=>	sample_type
---		attribute_1	=>	tissue_type
+--		tissue_type	=>	tissue_type
+--		attribute_1	=>	sample_type
 --		atrribute_2	=>	timepoint	
 Declare
   TrialID		character varying(100);
@@ -213,7 +213,7 @@ BEGIN
 		  ,now()
 		  ,x.sourcesystem_cd
 	from (select distinct 'Unknown' as sex_cd,
-				 0 as age_in_years_num,
+				 null::integer as age_in_years_num,
 				 null as race_cd,
 				 regexp_replace(TrialID || ':' || coalesce(s.site_id,'') || ':' || s.subject_id,'(::){1,}', ':', 'g') as sourcesystem_cd
 		 from LT_SRC_PROTEOMICS_SUB_SAM_MAP s
@@ -571,14 +571,14 @@ BEGIN
   --SUBJECT_ID      = subject_id
   --SUBJECT_TYPE    = NULL
   --CONCEPT_CODE    = from LEAF records in wt_proteomics_nodes
-  --SAMPLE_TYPE    	= TISSUE_TYPE
-  --SAMPLE_TYPE_CD  = concept_cd from TISSUETYPE records in wt_proteomics_nodes
+  --SAMPLE_TYPE    	= attribute_1
+  --SAMPLE_TYPE_CD  = concept_cd from ATTR1 records in wt_proteomics_nodes
   --TRIAL_NAME      = TRIAL_NAME
   --TIMEPOINT		= attribute_2
   --TIMEPOINT_CD	= concept_cd from ATTR2 records in wt_proteomics_nodes
-  --TISSUE_TYPE     = attribute_1
-  --TISSUE_TYPE_CD  = concept_cd from ATTR1 records in wt_proteomics_nodes
-  --PLATFORM        = PROTEOMICS - this is required by ui code
+  --TISSUE_TYPE     = TISSUE_TYPE
+  --TISSUE_TYPE_CD  = concept_cd from TISSUETYPE records in wt_proteomics_nodes
+  --PLATFORM        = PROTEIN - this is required by ui code
   --PLATFORM_CD     = concept_cd from PLATFORM records in wt_proteomics_nodes
   --DATA_UID		= concatenation of concept_cd-patient_num
   --GPL_ID			= platform from wt_subject_proteomics_data
@@ -643,13 +643,13 @@ BEGIN
 			  ,a.subject_id
 			  ,null as subject_type
 			  ,ln.concept_cd as concept_code
-			  ,a.tissue_type as sample_type
-			  ,ttp.concept_cd as sample_type_cd
+			  ,a.tissue_type as tissue_type
+			  ,ttp.concept_cd as tissue_type_cd
 			  ,a.trial_name
 			  ,a.attribute_2 as timepoint
 			  ,a2.concept_cd as timepoint_cd
-			  ,a.attribute_1 as tissue_type
-			  ,a1.concept_cd as tissue_type_cd
+			  ,a.attribute_1 as sample_type
+			  ,a1.concept_cd as sample_type_cd
 			  ,'PROTEIN' as platform
 			  ,pn.concept_cd as platform_cd
 			  ,ln.concept_cd || '-' || b.patient_num::text as data_uid
@@ -718,36 +718,37 @@ BEGIN
 
 	begin
 	insert into observation_fact
-    (patient_num
-	,concept_cd
-	,modifier_cd
-	,valtype_cd
-	,tval_char
-	,nval_num
-	,sourcesystem_cd
-	,import_date
-	,valueflag_cd
-	,provider_id
-	,location_cd
-	,units_cd
-         ,sample_cd
-        ,INSTANCE_NUM
-        
+    (patient_num,
+	concept_cd,
+	modifier_cd,
+	valtype_cd,
+	tval_char,
+	nval_num,
+	sourcesystem_cd,
+	start_date,
+	import_date,
+	valueflag_cd,
+	provider_id,
+	location_cd,
+	units_cd,
+	sample_cd,
+	INSTANCE_NUM
     )
-    select distinct m.patient_id
-		  ,m.concept_code
-		  ,'@'
-		  ,'T' -- Text data type
-		  ,'E'  --Stands for Equals for Text Types
-		  ,null::numeric	--	not numeric for qpcr_mirna
-		  ,m.trial_name
-		  ,now()
-		  ,'@'
-		  ,'@'
-		  ,'@'
-		  ,'' -- no units available
-                   ,m.sample_cd
-                   ,1
+    select distinct m.patient_id,
+		  m.concept_code,
+		  '@',
+		  'T', -- Text data type
+		  'E',  --Stands for Equals for Text Types
+		  null::numeric,	--	not numeric for qpcr_mirna
+		  m.trial_name,
+		  'infinity'::timestamp,
+		  current_timestamp,
+		  '@',
+		  '@',
+		  '@',
+		  '', -- no units available
+		  m.sample_cd,
+		  1
     from  de_subject_sample_mapping m
     where m.trial_name = TrialID 
 	  and m.source_cd = sourceCD
@@ -766,35 +767,37 @@ BEGIN
 
 	begin
 	insert into observation_fact
-    (patient_num
-	,concept_cd
-	,modifier_cd
-	,valtype_cd
-	,tval_char
-	,nval_num
-	,sourcesystem_cd
-	,import_date
-	,valueflag_cd
-	,provider_id
-	,location_cd
-	,units_cd
-         ,sample_cd
-        ,INSTANCE_NUM
+    (patient_num,
+	concept_cd,
+	modifier_cd,
+	valtype_cd,
+	tval_char,
+	nval_num,
+	sourcesystem_cd,
+	start_date,
+	import_date,
+	valueflag_cd,
+	provider_id,
+	location_cd,
+	units_cd,
+	sample_cd,
+	INSTANCE_NUM
     )
-    select distinct m.sample_id
-		  ,m.concept_code
-		  ,m.trial_name
-		  ,'T' -- Text data type
-		  ,'E'  --Stands for Equals for Text Types
-		  ,null::numeric	--	not numeric for miRNA
-		  ,m.trial_name
-		  ,now()
-		  ,'@'
-		  ,'@'
-		  ,'@'
-		  ,'' -- no units available
-                   ,m.sample_cd
-                  ,1
+    select distinct m.sample_id,
+		  m.concept_code,
+		  m.trial_name,
+		  'T', -- Text data type
+		  'E',  --Stands for Equals for Text Types
+		  null::numeric,	--	not numeric for miRNA
+		  m.trial_name,
+		  'infinity'::timestamp,
+		  current_timestamp,
+		  '@',
+		  '@',
+		  '@',
+		  '', -- no units available
+		  m.sample_cd,
+		  1
     from  de_subject_sample_mapping m
     where m.trial_name = TrialID 
 	  and m.source_cd = sourceCd

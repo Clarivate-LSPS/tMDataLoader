@@ -1,18 +1,18 @@
-CREATE OR REPLACE FUNCTION i2b2_rna_seq_annotation(gpl_id VARCHAR(50), currentjobid numeric DEFAULT NULL::numeric)
+CREATE OR REPLACE FUNCTION i2b2_rna_seq_annotation(gpl_id character varying, currentjobid int DEFAULT NULL::int)
   RETURNS numeric AS
   $BODY$
 DECLARE
 
-	gpl_rtn bigint;
+	gpl_rtn int;
 	newJobFlag numeric(1);
 	databaseName character varying(100);
 	procedureName character varying(100);
-	jobID bigint;
+	jobID int;
 	errorNumber		character varying;
 	errorMessage	character varying;
 	rtnCd			integer;
 	rowCt			numeric(18,0);
-	stepCt bigint;
+	stepCt int;
 BEGIN
 
 	stepCt := 0;

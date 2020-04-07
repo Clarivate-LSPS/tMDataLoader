@@ -8,7 +8,7 @@ BEGIN
       FROM   pg_catalog.pg_user
       WHERE  usename = 'tm_dataloader') THEN
 
-    CREATE ROLE tm_dataloader LOGIN UNENCRYPTED PASSWORD 'tm_dataloader';
+    CREATE ROLE tm_dataloader LOGIN PASSWORD 'tm_dataloader';
 
     RAISE WARNING 'tm_dataloader was created with default password. Please, change it to more secure';
   END IF;
