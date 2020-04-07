@@ -821,7 +821,7 @@ BEGIN
 		  '@',
 		  '@',
 		  '', -- no units available
-		  m.sample_cd
+		  m.sample_cd,
 		  1
     from  de_subject_sample_mapping m
     where m.trial_name = TrialID 
