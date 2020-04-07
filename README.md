@@ -1,13 +1,12 @@
 tMDataLoader
 ============
 
-[![Build Status](https://travis-ci.org/ThomsonReuters-LSPS/tMDataLoader.svg?branch=master)](https://travis-ci.org/ThomsonReuters-LSPS/tMDataLoader)
-
 tm_etl.jar - Transmart ETL tool
-Contributed by Thomson Reuters
+Contributed by Clarivate (Formerly the IP & Science business of Thomson Reuters)
 
 src folder contains all sources
 sample_data folder contains sample public datasets from GEO
+Documentation is available on wiki: https://github.com/Clarivate-LSPS/tMDataLoader/wiki
 
 WARNING: Since version 1.0.0 tMDataLoader working with own schema tm_dataloader for PostgreSQL version (it also uses
 its own user tm_dataloader and you should update you connection string).
@@ -104,6 +103,8 @@ The last level (before Clinical/Expression folders) defines the study name that 
 
 Please, refer to the data format description for further information.
 Please, don't use Non UTF-8 characters in the headers of file or data values
+
+For more detailed information go to https://github.com/Clarivate-LSPS/tMDataLoader/wiki .
 
 USING TOOL
 ==========
