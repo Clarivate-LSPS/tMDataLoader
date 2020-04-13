@@ -38,11 +38,11 @@ $$;
 \i procedures/I2B2_PROCESS_METABOLOMIC_DATA.sql
 \i procedures/I2B2_PROCESS_QPCR_MIRNA_DATA.sql
 \i procedures/I2B2_LOAD_MIRNA_ANNOT_DEAPP.sql
-\i procedures/I2B2_PROCESS_RNA_SEQ_DATA.sql
+\i procedures/I2B2_PROCESS_RNA_DATA.sql
 \i procedures/I2B2_LOAD_RBM_DATA.sql
 \i procedures/I2B2_LOAD_RBM_ANNOTATION.sql
 \i procedures/I2B2_RBM_ZSCORE_CALC_NEW.sql
-\i procedures/I2B2_RNA_SEQ_ANNOTATION.sql
+\i procedures/I2B2_RNA_ANNOTATION.sql
 \i procedures/I2B2_DELETE_PARTITION.sql
 \i procedures/I2B2_ADD_PLATFORM.sql
 \i procedures/I2B2_LOAD_CHROM_REGION.sql

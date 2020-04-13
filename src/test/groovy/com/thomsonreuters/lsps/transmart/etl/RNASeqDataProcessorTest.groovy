@@ -24,8 +24,8 @@ class RNASeqDataProcessorTest extends GroovyTestCase implements ConfigAwareTestC
         ConfigAwareTestCase.super.setUp()
         Study.deleteById(config, studyId)
 
-        runScript('I2B2_RNA_SEQ_ANNOTATION.sql')
-        runScript('I2B2_PROCESS_RNA_SEQ_DATA.sql')
+        runScript('I2B2_RNA_ANNOTATION.sql')
+        runScript('I2B2_PROCESS_RNA_DATA.sql')
     }
 
     void assertThatSampleIsPresent(String sampleId, sampleData) {
@@ -39,7 +39,7 @@ class RNASeqDataProcessorTest extends GroovyTestCase implements ConfigAwareTestC
         sampleData.each { probe_id, value ->
             def rows = sql.rows("select d.raw_intensity, d.log_intensity, d.zscore " +
                     "from deapp.de_subject_rna_data${suffix} d " +
-                    "inner join deapp.de_rnaseq_annotation a on d.probeset_id = a.transcript_id " +
+                    "inner join deapp.de_rna_annotation a on d.probeset_id = a.transcript_id " +
                     "where a.gpl_id = ? and d.assay_id = ? and a.gene_symbol = ?",
                     platformId, sample.assay_id, probe_id)
             assertThat(rows?.size(), equalTo(1))
@@ -72,7 +72,7 @@ class RNASeqDataProcessorTest extends GroovyTestCase implements ConfigAwareTestC
                 withPatientCount(2))
         assertThat(db, hasRecord('deapp.de_subject_sample_mapping',
                 [trial_name: studyId, gpl_id: platformId, subject_id: '2', sample_cd: 'S57024'],
-                [platform: 'RNA_AFFYMETRIX']))
+                [platform: 'RNASEQCOG']))
         assertThatSampleIsPresent('S57023', ['ASCC1': 2])
     }
 

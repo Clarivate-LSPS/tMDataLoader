@@ -602,7 +602,7 @@ BEGIN
   --TIMEPOINT_CD	= concept_cd from ATTR2 records in wt_mirna_nodes
   --TISSUE_TYPE     = tissue_type
   --TISSUE_TYPE_CD  = concept_cd from TISSUETYPE records in wt_mirna_nodes
-  --PLATFORM        = MIRNA_AFFYMETRIX - this is required by ui code
+  --PLATFORM        = MIRNA_QPCR or MIRNA_SEQ - this is required by ui code
   --PLATFORM_CD     = concept_cd from PLATFORM records in wt_qpcr_mirna_nodes
   --DATA_UID		= concatenation of concept_cd-patient_num
   --GPL_ID			= platform from wt_subject_mirna_data

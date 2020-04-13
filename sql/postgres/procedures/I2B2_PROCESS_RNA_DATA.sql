@@ -1,8 +1,8 @@
--- Function: i2b2_process_rna_seq_data(character varying, character varying, character varying, character varying, numeric, character varying, numeric)
+-- Function: i2b2_process_rna_data(character varying, character varying, character varying, character varying, numeric, character varying, numeric)
 
--- DROP FUNCTION i2b2_process_rna_seq_data(character varying, character varying, character varying, character varying, numeric, character varying, numeric);
+-- DROP FUNCTION i2b2_process_rna_data(character varying, character varying, character varying, character varying, numeric, character varying, numeric);
 
-CREATE OR REPLACE FUNCTION i2b2_process_rna_seq_data(trial_id character varying, top_node character varying, data_type character varying DEFAULT 'R'::character varying, source_code character varying DEFAULT 'STD'::character varying, log_base numeric DEFAULT 2, secure_study character varying DEFAULT NULL::character varying, currentjobid numeric DEFAULT (-1))
+CREATE OR REPLACE FUNCTION i2b2_process_rna_data(trial_id character varying, top_node character varying, data_type character varying DEFAULT 'R'::character varying, source_code character varying DEFAULT 'STD'::character varying, log_base numeric DEFAULT 2, secure_study character varying DEFAULT NULL::character varying, currentjobid numeric DEFAULT (-1))
   RETURNS numeric AS
 $BODY$
 DECLARE
@@ -98,7 +98,7 @@ BEGIN
   jobID := currentJobID;
 
   databaseName := current_schema();
-	procedureName := 'I2B2_PROCESS_RNA_SEQ_DATA';
+	procedureName := 'I2B2_PROCESS_RNA_DATA';
 
   --Audit JOB Initialization
   --If Job ID does not exist, then this is a single procedure run and we need to create it
@@ -110,16 +110,16 @@ BEGIN
 
 	stepCt := 0;
 	stepCt := stepCt + 1;
-	select cz_write_audit(jobId,databaseName,procedureName,'Starting i2b2_process_RNA_SEQ_data',0,stepCt,'Done') into rtnCd;
-	--	Get count of records in lt_src_RNA_SEQ_subj_samp_map
+	select cz_write_audit(jobId,databaseName,procedureName,'Starting i2b2_process_RNA_data',0,stepCt,'Done') into rtnCd;
+	--	Get count of records in lt_src_RNA_subj_samp_map
 
 	select count(*) into sCount
-	from lt_src_RNA_SEQ_subj_samp_map;
+	from lt_src_RNA_subj_samp_map;
 
 	--	check if all subject_sample map records have a platform, If not, abort run
 
 	select count(*) into pCount
-	from lt_src_RNA_SEQ_subj_samp_map
+	from lt_src_RNA_subj_samp_map
 	where coalesce(platform::text, '') = '';
 
 	if pCount > 0 then
@@ -132,7 +132,7 @@ BEGIN
 	--	check if all subject_sample map records have a tissue_type, If not, abort run
 
 	select count(*) into pCount
-	from lt_src_RNA_SEQ_subj_samp_map
+	from lt_src_RNA_subj_samp_map
 	where coalesce(tissue_type::text, '') = '';
 
 	if pCount > 0 then
@@ -142,24 +142,24 @@ BEGIN
 		return 162;
 	end if;
 
-	--	check if there are multiple platforms, if yes, then platform must be supplied in lt_src_RNA_SEQ_data
+	--	check if there are multiple platforms, if yes, then platform must be supplied in lt_src_RNA_data
 
 	select count(*) into pCount
 	from (select sample_cd
-		  from lt_src_RNA_SEQ_subj_samp_map
+		  from lt_src_RNA_subj_samp_map
 		  group by sample_cd
 		  having count(distinct platform) > 1) as x;
 
 	if pCount > 0 then
-		select cz_write_audit(jobId,databasename,procedurename,'Multiple platforms for sample_cd in lt_src_RNA_SEQ_subj_samp_map',1,stepCt,'ERROR') into rtnCd;
+		select cz_write_audit(jobId,databasename,procedurename,'Multiple platforms for sample_cd in lt_src_RNA_subj_samp_map',1,stepCt,'ERROR') into rtnCd;
 		select CZ_ERROR_HANDLER(JOBID,PROCEDURENAME) into rtnCd;
 		select cz_end_audit (jobId,'FAIL') into rtnCd;
 		return 164;
 	end if;
 
-	--	uppercase study_id in lt_src_RNA_SEQ_subj_samp_map in case curator forgot
+	--	uppercase study_id in lt_src_RNA_subj_samp_map in case curator forgot
 	begin
-	update lt_src_RNA_SEQ_subj_samp_map
+	update lt_src_RNA_subj_samp_map
 	set trial_name=upper(trial_name);
 	get diagnostics rowCt := ROW_COUNT;
 	exception
@@ -177,7 +177,7 @@ BEGIN
 	from deapp.de_subject_sample_mapping sm
 	where sm.trial_name = TrialId
 	and coalesce(sm.source_cd,'STD') = sourceCd
-	and sm.platform = 'RNA_AFFYMETRIX'
+	and sm.platform = 'RNASEQCOG'
 	and sm.partition_id is not null;
 
 	if partExists = 0 then
@@ -187,13 +187,13 @@ BEGIN
 		from deapp.de_subject_sample_mapping sm
 		where sm.trial_name = TrialId
 		and coalesce(sm.source_cd,'STD') = sourceCd
-		and sm.platform = 'RNA_AFFYMETRIX';
+		and sm.platform = 'RNASEQCOG';
 	end if;
 
 	partitionName := 'deapp.de_subject_rna_data_' || partitionId::text;
 	partitionIndx := 'de_subject_rna_data_' || partitionId::text;
 	stepCt := stepCt + 1;
-	select cz_write_audit(jobId,databaseName,procedureName,'Uppercase trial_name in lt_src_RNA_SEQ_subj_samp_map',rowCt,stepCt,'Done') into rtnCd;
+	select cz_write_audit(jobId,databaseName,procedureName,'Uppercase trial_name in lt_src_RNA_subj_samp_map',rowCt,stepCt,'Done') into rtnCd;
 
 	--	create records in patient_dimension for subject_ids if they do not exist
 	--	format of sourcesystem_cd:  trial:[site:]subject_cd
@@ -221,7 +221,7 @@ BEGIN
 				 null::integer as age_in_years_num,
 				 null as race_cd,
 				 regexp_replace(TrialId || ':' || coalesce(s.site_id,'') || ':' || s.subject_id,'(::){1,}', ':', 'g') as sourcesystem_cd
-		 from lt_src_RNA_SEQ_subj_samp_map s
+		 from lt_src_RNA_subj_samp_map s
 		 where (s.subject_id IS NOT NULL AND s.subject_id::text <> '')
 		   and s.trial_name = TrialID
 		   and coalesce(s.source_cd,'STD') = sourceCD
@@ -255,7 +255,7 @@ BEGIN
 		  from deapp.de_subject_sample_mapping x
 		  where x.trial_name = TrialId
 		    and coalesce(x.source_cd,'STD') = sourceCD
-		    and x.platform = 'RNA_AFFYMETRIX');
+		    and x.platform = 'RNASEQCOG');
 	get diagnostics rowCt := ROW_COUNT;
 	exception
 	when others then
@@ -277,7 +277,7 @@ BEGIN
 	delete from deapp.DE_SUBJECT_SAMPLE_MAPPING
 	where trial_name = TrialID
 	  and coalesce(source_cd,'STD') = sourceCd
-	  and platform = 'RNA_AFFYMETRIX'; --Making sure only RNA_sequencing data is deleted
+	  and platform = 'RNASEQCOG'; --Making sure only RNA_sequencing data is deleted
 	get diagnostics rowCt := ROW_COUNT;
 	exception
 	when others then
@@ -295,15 +295,15 @@ BEGIN
 
 --	truncate tmp node table
 
-	EXECUTE('truncate table wt_RNA_SEQ_nodes');
+	EXECUTE('truncate table wt_RNA_nodes');
 
 --	load temp table with leaf node path, use temp table with distinct sample_type, ATTR2, platform, and title   this was faster than doing subselect
 --	from wt_subject_RNA_sequencing_data
 
-	EXECUTE('truncate table wt_RNA_SEQ_node_values');
+	EXECUTE('truncate table wt_RNA_node_values');
 
 	begin
-	insert into wt_RNA_SEQ_node_values
+	insert into wt_RNA_node_values
 	(category_cd
 	,platform
 	,tissue_type
@@ -317,7 +317,7 @@ BEGIN
 	               ,a.attribute_1
 				   ,a.attribute_2
 				   ,a.platform
-    from lt_src_RNA_SEQ_subj_samp_map a
+    from lt_src_RNA_subj_samp_map a
 	where a.trial_name = TrialID
 	  and coalesce(a.source_cd,'STD') = sourceCD;
 	get diagnostics rowCt := ROW_COUNT;
@@ -333,10 +333,10 @@ BEGIN
 	end;
 
 	stepCt := stepCt + 1;
-	select cz_write_audit(jobId,databaseName,procedureName,'Insert node values into DEAPP wt_RNA_SEQ_node_values',rowCt,stepCt,'Done') into rtnCd;
+	select cz_write_audit(jobId,databaseName,procedureName,'Insert node values into DEAPP wt_RNA_node_values',rowCt,stepCt,'Done') into rtnCd;
 
 	begin
-	insert into wt_RNA_SEQ_nodes
+	insert into wt_RNA_nodes
 	(leaf_node
 	,category_cd
 	,platform
@@ -353,7 +353,7 @@ BEGIN
 		  ,attribute_1 as attribute_1
           ,attribute_2 as attribute_2
 		  ,'LEAF'
-	from  wt_RNA_SEQ_node_values;
+	from  wt_RNA_node_values;
 	get diagnostics rowCt := ROW_COUNT;
 	exception
 	when others then
@@ -367,11 +367,11 @@ BEGIN
 	end;
 
     stepCt := stepCt + 1;
-	select cz_write_audit(jobId,databaseName,procedureName,'Create leaf nodes in DEAPP tmp_RNA_SEQ_nodes',rowCt,stepCt,'Done') into rtnCd;
+	select cz_write_audit(jobId,databaseName,procedureName,'Create leaf nodes in DEAPP tmp_RNA_nodes',rowCt,stepCt,'Done') into rtnCd;
 
 	--	insert for platform node so platform concept can be populated
 		begin
-	insert into wt_RNA_SEQ_nodes
+	insert into wt_RNA_nodes
 	(leaf_node
 	,category_cd
 	,platform
@@ -389,7 +389,7 @@ BEGIN
 		  ,case when instr(substr(category_cd,1,instr(category_cd,'PLATFORM')+8),'ATTR1') > 1 then attribute_1 else null end as attribute_1
           ,case when instr(substr(category_cd,1,instr(category_cd,'PLATFORM')+8),'ATTR2') > 1 then attribute_2 else null end as attribute_2
 		  ,'PLATFORM'
-	from  wt_RNA_SEQ_node_values;
+	from  wt_RNA_node_values;
 	get diagnostics rowCt := ROW_COUNT;
 	exception
 	when others then
@@ -402,11 +402,11 @@ BEGIN
 		return -16;
 	end;
     stepCt := stepCt + 1;
-	select cz_write_audit(jobId,databaseName,procedureName,'Create platform nodes in wt_RNA_SEQ_nodes',rowCt,stepCt,'Done') into rtnCd;
+	select cz_write_audit(jobId,databaseName,procedureName,'Create platform nodes in wt_RNA_nodes',rowCt,stepCt,'Done') into rtnCd;
 
 	--	insert for ATTR1 node so ATTR1 concept can be populated in tissue_type_cd
 	begin
-	insert into wt_RNA_SEQ_nodes
+	insert into wt_RNA_nodes
 	(leaf_node
 	,category_cd
 	,platform
@@ -424,7 +424,7 @@ BEGIN
 		  ,attribute_1 as attribute_1
           ,case when instr(substr(category_cd,1,instr(category_cd,'ATTR1')+5),'ATTR2') > 1 then attribute_2 else null end as attribute_2
 		  ,'ATTR1'
-	from  wt_RNA_SEQ_node_values
+	from  wt_RNA_node_values
 	where category_cd like '%ATTR1%'
 	  and (attribute_1 IS NOT NULL AND attribute_1::text <> '');
 		   get diagnostics rowCt := ROW_COUNT;
@@ -439,11 +439,11 @@ BEGIN
 		return -16;
 	end;
     stepCt := stepCt + 1;
-	select cz_write_audit(jobId,databaseName,procedureName,'Create ATTR1 nodes in wt_RNA_SEQ_nodes',rowCt,stepCt,'Done') into rtnCd;
+	select cz_write_audit(jobId,databaseName,procedureName,'Create ATTR1 nodes in wt_RNA_nodes',rowCt,stepCt,'Done') into rtnCd;
 
 	--	insert for ATTR2 node so ATTR2 concept can be populated in timepoint_cd
 	begin
-	insert into wt_RNA_SEQ_nodes
+	insert into wt_RNA_nodes
 	(leaf_node
 	,category_cd
 	,platform
@@ -461,7 +461,7 @@ BEGIN
           ,case when instr(substr(category_cd,1,instr(category_cd,'ATTR2')+5),'ATTR1') > 1 then attribute_1 else null end as attribute_1
 		  ,attribute_2 as attribute_2
 		  ,'ATTR2'
-	from  wt_RNA_SEQ_node_values
+	from  wt_RNA_node_values
 	where category_cd like '%ATTR2%'
 	  and (attribute_2 IS NOT NULL AND attribute_2::text <> '');
 	get diagnostics rowCt := ROW_COUNT;
@@ -477,11 +477,11 @@ BEGIN
 	end;
 
     stepCt := stepCt + 1;
-	select cz_write_audit(jobId,databaseName,procedureName,'Create ATTR2 nodes in wt_RNA_SEQ_nodes',rowCt,stepCt,'Done') into rtnCd;
+	select cz_write_audit(jobId,databaseName,procedureName,'Create ATTR2 nodes in wt_RNA_nodes',rowCt,stepCt,'Done') into rtnCd;
 
 	--	insert for tissue_type node so sample_type_cd can be populated
 	begin
-	insert into wt_RNA_SEQ_nodes
+	insert into wt_RNA_nodes
 	(leaf_node
 	,category_cd
 	,platform
@@ -499,7 +499,7 @@ BEGIN
 		  ,case when instr(substr(category_cd,1,instr(category_cd,'TISSUETYPE')+10),'ATTR1') > 1 then attribute_1 else null end as attribute_1
           ,case when instr(substr(category_cd,1,instr(category_cd,'TISSUETYPE')+10),'ATTR2') > 1 then attribute_2 else null end as attribute_2
 		  ,'TISSUETYPE'
-	from  wt_RNA_SEQ_node_values
+	from  wt_RNA_node_values
 	where category_cd like '%TISSUETYPE%';
 	get diagnostics rowCt := ROW_COUNT;
 	exception
@@ -513,10 +513,10 @@ BEGIN
 		return -16;
 	end;
     stepCt := stepCt + 1;
-	select cz_write_audit(jobId,databaseName,procedureName,'Create ATTR2 nodes in wt_RNA_SEQ_nodes',rowCt,stepCt,'Done') into rtnCd;
+	select cz_write_audit(jobId,databaseName,procedureName,'Create ATTR2 nodes in wt_RNA_nodes',rowCt,stepCt,'Done') into rtnCd;
 
 	begin
-	update wt_RNA_SEQ_nodes
+	update wt_RNA_nodes
 	set node_name=parse_nth_value(leaf_node,length(leaf_node)-length(replace(leaf_node,'\','')),'\');
 	get diagnostics rowCt := ROW_COUNT;
 	exception
@@ -530,12 +530,12 @@ BEGIN
 		return -16;
 	end;
     stepCt := stepCt + 1;
-	select cz_write_audit(jobId,databaseName,procedureName,'Updated node_name in DEAPP tmp_RNA_SEQ_nodes',rowCt,stepCt,'Done') into rtnCd;
+	select cz_write_audit(jobId,databaseName,procedureName,'Updated node_name in DEAPP tmp_RNA_nodes',rowCt,stepCt,'Done') into rtnCd;
 
 --	add leaf nodes for RNA_sequencing data  The cursor will only add nodes that do not already exist.
 
  	new_paths := array(select distinct t.leaf_node
-                     from  wt_RNA_SEQ_nodes t
+                     from  wt_RNA_nodes t
                      	where not exists
                      		(select 1 from i2b2metadata.i2b2 x
                          	where t.leaf_node = x.c_fullname));
@@ -547,7 +547,7 @@ BEGIN
 
 --	update concept_cd for nodes, this is done to make the next insert easier
 	begin
-	update wt_RNA_SEQ_nodes t
+	update wt_RNA_nodes t
 	set concept_cd=(select c.concept_cd from i2b2demodata.concept_dimension c
 	                where c.concept_path = t.leaf_node
 				   )
@@ -568,7 +568,7 @@ BEGIN
 		return -16;
 	end;
 	stepCt := stepCt + 1;
-	select cz_write_audit(jobId,databaseName,procedureName,'Update wt_RNA_SEQ_nodes with newly created concept_cds',rowCt,stepCt,'Done') into rtnCd;
+	select cz_write_audit(jobId,databaseName,procedureName,'Update wt_RNA_nodes with newly created concept_cds',rowCt,stepCt,'Done') into rtnCd;
 
   --Load the DE_SUBJECT_SAMPLE_MAPPING from wt_subject_RNA_sequencing_data
 
@@ -576,18 +576,18 @@ BEGIN
   --SITE_ID         = site_id
   --SUBJECT_ID      = subject_id
   --SUBJECT_TYPE    = NULL
-  --CONCEPT_CODE    = from LEAF records in wt_RNA_SEQ_nodes
+  --CONCEPT_CODE    = from LEAF records in wt_RNA_nodes
   --SAMPLE_TYPE    	= attribute_1
-  --SAMPLE_TYPE_CD  = concept_cd from ATTR1 records in wt_RNA_SEQ_nodes
+  --SAMPLE_TYPE_CD  = concept_cd from ATTR1 records in wt_RNA_nodes
   --TRIAL_NAME      = TRIAL_NAME
   --TIMEPOINT		= attribute_2
-  --TIMEPOINT_CD	= concept_cd from ATTR2 records in wt_RNA_SEQ_nodes
+  --TIMEPOINT_CD	= concept_cd from ATTR2 records in wt_RNA_nodes
   --TISSUE_TYPE     = TISSUE_TYPE
-  --TISSUE_TYPE_CD  = concept_cd from TISSUETYPE records in wt_RNA_SEQ_nodes
+  --TISSUE_TYPE_CD  = concept_cd from TISSUETYPE records in wt_RNA_nodes
   --PLATFORM        = RNA_sequencing_AFFYMETRIX - this is required by ui code
-  --PLATFORM_CD     = concept_cd from PLATFORM records in wt_RNA_SEQ_nodes
+  --PLATFORM_CD     = concept_cd from PLATFORM records in wt_RNA_nodes
   --DATA_UID		= concatenation of concept_cd-patient_num
-  --GPL_ID			= platform from wt_subject_RNA_SEQ_data
+  --GPL_ID			= platform from wt_subject_RNA_data
   --CATEGORY_CD		= category_cd that generated ontology
   --SAMPLE_ID		= id of sample (trial:S:[site_id]:subject_id:sample_cd) from patient_dimension, may be the same as patient_num
   --SAMPLE_CD		= sample_cd
@@ -657,7 +657,7 @@ BEGIN
 			  ,a2.concept_cd as timepoint_cd
 			  ,a.attribute_1 as sample_type
 			  ,a1.concept_cd as sample_type_cd
-			  ,'RNA_AFFYMETRIX' as platform
+			  ,'RNASEQCOG' as platform
 			  ,pn.concept_cd as platform_cd
 			  ,ln.concept_cd || '-' || b.patient_num::text as data_uid
 			  ,a.platform as gpl_id
@@ -667,35 +667,35 @@ BEGIN
 			  ,a.source_cd
 			  ,TrialId as omic_source_study
 			  ,b.patient_num as omic_patient_id
-		from lt_src_RNA_SEQ_subj_samp_map a
+		from lt_src_RNA_subj_samp_map a
 		--Joining to Pat_dim to ensure the ID's match. If not I2B2 won't work.
 		inner join i2b2demodata.patient_dimension b
 		  on regexp_replace(TrialID || ':' || coalesce(a.site_id,'') || ':' || a.subject_id,'(::){1,}', ':', 'g') = b.sourcesystem_cd
-		inner join wt_RNA_SEQ_nodes ln
+		inner join wt_RNA_nodes ln
 			on a.platform = ln.platform
 			and a.tissue_type = ln.tissue_type
 			and coalesce(a.attribute_1,'@') = coalesce(ln.attribute_1,'@')
 			and coalesce(a.attribute_2,'@') = coalesce(ln.attribute_2,'@')
 			and ln.node_type = 'LEAF'
-		inner join wt_RNA_SEQ_nodes pn
+		inner join wt_RNA_nodes pn
 			on a.platform = pn.platform
 			and case when instr(substr(a.category_cd,1,instr(a.category_cd,'PLATFORM')+8),'TISSUETYPE') > 1 then a.tissue_type else '@' end = coalesce(pn.tissue_type,'@')
 			and case when instr(substr(a.category_cd,1,instr(a.category_cd,'PLATFORM')+8),'ATTR1') > 1 then a.attribute_1 else '@' end = coalesce(pn.attribute_1,'@')
 			and case when instr(substr(a.category_cd,1,instr(a.category_cd,'PLATFORM')+8),'ATTR2') > 1 then a.attribute_2 else '@' end = coalesce(pn.attribute_2,'@')
 			and pn.node_type = 'PLATFORM'
-		left outer join wt_RNA_SEQ_nodes ttp
+		left outer join wt_RNA_nodes ttp
 			on a.tissue_type = ttp.tissue_type
 			and case when instr(substr(a.category_cd,1,instr(a.category_cd,'TISSUETYPE')+10),'PLATFORM') > 1 then a.platform else '@' end = coalesce(ttp.platform,'@')
 			and case when instr(substr(a.category_cd,1,instr(a.category_cd,'TISSUETYPE')+10),'ATTR1') > 1 then a.attribute_1 else '@' end = coalesce(ttp.attribute_1,'@')
 			and case when instr(substr(a.category_cd,1,instr(a.category_cd,'TISSUETYPE')+10),'ATTR2') > 1 then a.attribute_2 else '@' end = coalesce(ttp.attribute_2,'@')
 			and ttp.node_type = 'TISSUETYPE'
-		left outer join wt_RNA_SEQ_nodes a1
+		left outer join wt_RNA_nodes a1
 			on a.attribute_1 = a1.attribute_1
 			and case when instr(substr(a.category_cd,1,instr(a.category_cd,'ATTR1')+5),'PLATFORM') > 1 then a.platform else '@' end = coalesce(a1.platform,'@')
 			and case when instr(substr(a.category_cd,1,instr(a.category_cd,'ATTR1')+5),'TISSUETYPE') > 1 then a.tissue_type else '@' end = coalesce(a1.tissue_type,'@')
 			and case when instr(substr(a.category_cd,1,instr(a.category_cd,'ATTR1')+5),'ATTR2') > 1 then a.attribute_2 else '@' end = coalesce(a1.attribute_2,'@')
 			and a1.node_type = 'ATTR1'
-		left outer join wt_RNA_SEQ_nodes a2
+		left outer join wt_RNA_nodes a2
 			on a.attribute_2 = a1.attribute_2
 			and case when instr(substr(a.category_cd,1,instr(a.category_cd,'ATTR2')+5),'PLATFORM') > 1 then a.platform else '@' end = coalesce(a2.platform,'@')
 			and case when instr(substr(a.category_cd,1,instr(a.category_cd,'ATTR2')+5),'TISSUETYPE') > 1 then a.tissue_type else '@' end = coalesce(a2.tissue_type,'@')
@@ -753,7 +753,7 @@ BEGIN
     from  deapp.de_subject_sample_mapping m
     where m.trial_name = TrialID
 	  and coalesce(m.source_cd,'STD') = sourceCD
-      and m.platform = 'RNA_AFFYMETRIX';
+      and m.platform = 'RNASEQCOG';
 	  get diagnostics rowCt := ROW_COUNT;
 	exception
 	when others then
@@ -801,7 +801,7 @@ BEGIN
     from  deapp.de_subject_sample_mapping m
     where m.trial_name = TrialID
 	  and coalesce(m.source_cd,'STD') = sourceCd
-      and m.platform = 'RNA_AFFYMETRIX'
+      and m.platform = 'RNASEQCOG'
 	  and m.patient_id != m.sample_id;
 	  get diagnostics rowCt := ROW_COUNT;
 	exception
@@ -822,7 +822,7 @@ BEGIN
 
      update i2b2metadata.i2b2 t
     set c_columndatatype = 'T', c_metadataxml = null, c_visualattributes='FA'
-    where t.c_basecode in (select distinct x.concept_cd from wt_RNA_SEQ_nodes x);
+    where t.c_basecode in (select distinct x.concept_cd from wt_RNA_nodes x);
 	get diagnostics rowCt := ROW_COUNT;
 	exception
 	when others then
@@ -872,7 +872,7 @@ BEGIN
                 </ConvertingUnits></UnitValues><Analysis><Enums /><Counts />
                 <New /></Analysis>'||(select xmlelement(name "SeriesMeta",xmlforest(m.display_value as "Value",m.display_unit as "Unit",m.display_label as "DisplayName")) as hi
       from lt_src_rna_display_mapping m where m.category_cd=ul.category_cd)||
-                '</ValueMetadata>') where n.c_fullname=(select leaf_node from wt_RNA_SEQ_nodes where category_cd=ul.category_cd and leaf_node=n.c_fullname);
+                '</ValueMetadata>') where n.c_fullname=(select leaf_node from wt_RNA_nodes where category_cd=ul.category_cd and leaf_node=n.c_fullname);
 
                 end loop;
          get diagnostics rowCt := ROW_COUNT;
@@ -895,7 +895,7 @@ BEGIN
     set c_visualattributes = 'LAH'
     where a.c_basecode in (select distinct x.concept_code from deapp.de_subject_sample_mapping x
                            where x.trial_name = TrialId
-                             and x.platform = 'RNA_AFFYMETRIX'
+                             and x.platform = 'RNASEQCOG'
                              and x.concept_code is not null);
 	get diagnostics rowCt := ROW_COUNT;
 	exception
@@ -913,7 +913,7 @@ BEGIN
     select cz_write_audit(jobId,databaseName,procedureName,'Update visual attributes for leaf nodes in I2B2METADATA i2b2',rowCt,stepCt,'Done') into rtnCd;
 
 	begin
-	select platform into my_platform from lt_src_RNA_SEQ_subj_samp_map
+	select platform into my_platform from lt_src_RNA_subj_samp_map
 	where trial_name = TrialId limit 1;
 
    insert into probeset_deapp
@@ -923,7 +923,7 @@ BEGIN
    )
 	select distinct s.probeset
                ,my_platform
-            from tm_lz.lt_src_rna_seq_data s
+            from tm_lz.lt_src_rna_data s
                  where s.trial_name=TrialId
                    and not exists
    (select 1 from tm_cz.probeset_deapp x
@@ -1010,32 +1010,32 @@ BEGIN
 	--	note: assay_id represents a unique subject/site/sample
 	begin
 	insert into wt_subject_rna_probeset
-	(probeset_id
+	(probeset
 --	,expr_id
 	,intensity_value
+	,assay_id
 	,patient_id
 --	,sample_cd
 --	,subject_id
 	,trial_name
-	,assay_id
 	) select md.probeset
 --		  ,sd.sample_cd
 		 , avg(md.intensity_value::numeric) as intensity_value
-		  ,sd.patient_id
+		 ,sd.assay_id
+		 ,sd.patient_id
 --		  ,sd.sample_cd
 --		  ,sd.subject_id
 		 ,TrialId as trial_name
-		  ,sd.assay_id
 	from deapp.de_subject_sample_mapping sd
-		,lt_src_RNA_SEQ_data md
+		,lt_src_RNA_data md
 		,probeset_deapp gs
 	where sd.sample_cd = md.expr_id
-	  and sd.platform = 'RNA_AFFYMETRIX'
+	  and sd.platform = 'RNASEQCOG'
 	  and sd.trial_name = TrialId
 	  and coalesce(sd.source_cd,'STD') = sourceCd
 	and md.probeset = gs.probeset
 	  and (CASE WHEN dataType = 'R' THEN sign(md.intensity_value::numeric) ELSE 1 END) = 1  --	take only >0 for dataType R
-	  and sd.subject_id in (select subject_id from lt_src_rna_seq_subj_samp_map)
+	  and sd.subject_id in (select subject_id from lt_src_rna_subj_samp_map)
 	group by md.probeset
 		  ,sd.patient_id
 		  ,sd.assay_id;
@@ -1068,7 +1068,7 @@ get diagnostics rowCt := ROW_COUNT;
 		,zscore
 		)
 		select TrialId || ':' || sourceCd
-			  ,probeset_id
+			  ,probeset
 			  ,assay_id
 			  ,patient_id
 			  ,trial_name
@@ -1101,7 +1101,7 @@ get diagnostics rowCt := ROW_COUNT;
 
 		if dataType = 'R' or dataType = 'L' then
 			begin
-			perform I2B2_RNA_SEQ_ZSCORE_CALC(TrialID, partitionName, partitionindx,partitioniD,'L',jobId,dataType,logBase,sourceCD);
+			perform I2B2_RNA_ZSCORE_CALC(TrialID, partitionName, partitionindx,partitioniD,'L',jobId,dataType,logBase,sourceCD);
 			get diagnostics rowCt := ROW_COUNT;
 	exception
 	when others then
@@ -1122,7 +1122,7 @@ get diagnostics rowCt := ROW_COUNT;
     ---Cleanup OVERALL JOB if this proc is being run standalone
 
 	stepCt := stepCt + 1;
-	select cz_write_audit(jobId,databaseName,procedureName,'End i2b2_process_RNA_SEQ_data',0,stepCt,'Done') into rtnCd;
+	select cz_write_audit(jobId,databaseName,procedureName,'End i2b2_process_RNA_data',0,stepCt,'Done') into rtnCd;
 
 	IF newJobFlag = 1
 	THEN

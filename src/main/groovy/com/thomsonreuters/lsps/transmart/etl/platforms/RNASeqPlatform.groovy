@@ -13,19 +13,19 @@ class RNASeqPlatform extends GenePlatform {
 
     @Override
     void cleanupTempTables(Sql sql) {
-        database.truncateTable(sql, 'lt_rnaseq_annotation')
+        database.truncateTable(sql, 'lt_rna_annotation')
     }
 
     @Override
     boolean isLoaded(Sql sql) {
-        def row = sql.firstRow("SELECT count(*) as cnt FROM deapp.de_rnaseq_annotation WHERE gpl_id=?", [id])
+        def row = sql.firstRow("SELECT count(*) as cnt FROM deapp.de_rna_annotation WHERE gpl_id=?", [id])
         return row?.cnt
     }
 
     @Override
     int loadEntries(Sql sql) {
         return loadEachEntry(sql, """
-            INSERT into lt_rnaseq_annotation (TRANSCRIPT_ID,GENE_SYMBOL,ORGANISM)
+            INSERT into lt_rna_annotation (TRANSCRIPT_ID,GENE_SYMBOL,ORGANISM)
             VALUES (?, ?, ?)
         """) { entry ->
             [

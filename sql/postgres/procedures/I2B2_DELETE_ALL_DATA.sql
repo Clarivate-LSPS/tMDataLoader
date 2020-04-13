@@ -285,7 +285,7 @@ BEGIN
       select cz_write_audit(jobId,databaseName,procedureName,'Delete RNASeq data for trial from DEAPP de_subject_rbm_data',rowCt,stepCt,'Done') into rtnCd;
 
       --	drop partition if it exists
-      select i2b2_delete_partition(trialId, 'RNA_AFFYMETRIX', 'de_subject_rna_data', 'deapp', sourceCd, jobId) into rtnCd;
+      select i2b2_delete_partition(trialId, 'RNASEQCOG', 'de_subject_rna_data', 'deapp', sourceCd, jobId) into rtnCd;
 
       exception when undefined_table then
           select cz_write_audit(jobId,databaseName,procedureName,'Table de_subject_rna_data is not defined.',0,stepCt,'Warning') into rtnCd;
