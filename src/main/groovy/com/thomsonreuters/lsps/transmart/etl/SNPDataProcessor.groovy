@@ -33,12 +33,12 @@ import java.util.concurrent.Future
 class SNPDataProcessor extends AbstractDataProcessor {
 
     int THREAD_COUNT = 4
-    SNPDataProcessor(Object conf) {
-        super(conf)
+    public SNPDataProcessor(Object conf) {
+        super(conf);
     }
 
     @Override
-    boolean processFiles(Path dir, Sql sql, studyInfo) {
+    public boolean processFiles(Path dir, Sql sql, studyInfo) {
         database.truncateTable(sql, 'lt_src_mrna_subj_samp_map')
         database.truncateTable(sql, 'lt_src_mrna_data')
 
